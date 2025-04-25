@@ -24,8 +24,8 @@ export default function VideoGrid({
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl md:text-2xl font-bold">{title}</h2>
         {showViewAll && (
-          <Link href={viewAllUrl}>
-            <a className="text-primary hover:underline">See All</a>
+          <Link href={viewAllUrl} className="text-primary hover:underline">
+            See All
           </Link>
         )}
       </div>
