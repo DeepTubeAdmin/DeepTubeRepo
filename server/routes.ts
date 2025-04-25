@@ -18,6 +18,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(401).json({ error: "Authentication required" });
   };
   
+  // Type guard function to ensure req.user is defined
+  function ensureUser(req: Request): asserts req is Request & { user: Express.User } {
+    if (!req.user) {
+      throw new Error("User is not authenticated");
+    }
+  }
+  
   // Stripe setup
   let stripe: Stripe | null = null;
   if (process.env.STRIPE_SECRET_KEY) {
@@ -136,6 +143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User purchases endpoints
   app.get("/api/user/purchases", isAuthenticated, async (req, res) => {
     try {
+      ensureUser(req);
       const purchases = await storage.getUserPurchases(req.user.id);
       res.json(purchases);
     } catch (error) {
@@ -146,6 +154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/videos/:id/purchase", isAuthenticated, async (req, res) => {
     try {
+      ensureUser(req);
       const videoId = parseInt(req.params.id);
       const video = await storage.getVideoById(videoId);
       
@@ -192,6 +201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Wishlist endpoints
   app.get("/api/user/wishlist", isAuthenticated, async (req, res) => {
     try {
+      ensureUser(req);
       const wishlist = await storage.getUserWishlist(req.user.id);
       res.json(wishlist);
     } catch (error) {
@@ -202,6 +212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/videos/:id/wishlist", isAuthenticated, async (req, res) => {
     try {
+      ensureUser(req);
       const videoId = parseInt(req.params.id);
       
       // Check if video exists
@@ -230,6 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/videos/:id/wishlist", isAuthenticated, async (req, res) => {
     try {
+      ensureUser(req);
       const videoId = parseInt(req.params.id);
       
       await storage.removeFromWishlist(req.user.id, videoId);
@@ -243,6 +255,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Credit purchase with Stripe
   app.post("/api/create-payment-intent", isAuthenticated, async (req, res) => {
     try {
+      ensureUser(req);
+      
       if (!stripe) {
         return res.status(500).json({ error: "Stripe is not configured" });
       }

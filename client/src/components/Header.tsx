@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Search, PlusCircle, User, Package, History, LogOut } from "lucide-react";
+import { Search, PlusCircle, User, Package, History, LogOut, ShoppingCart } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { formatNumber } from "@/lib/utils";
 import CreditPurchaseModal from "./CreditPurchaseModal";
+import { useAuth } from "@/hooks/use-auth";
 
 interface HeaderProps {
   credits: number;
@@ -21,10 +22,20 @@ interface HeaderProps {
 
 export default function Header({ credits, onCreditPurchase }: HeaderProps) {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const { logoutMutation } = useAuth();
+  const [_, setLocation] = useLocation();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     // Search functionality will be implemented later
+  };
+  
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
+  
+  const navigateToCheckout = () => {
+    setLocation("/checkout");
   };
 
   return (
@@ -75,10 +86,10 @@ export default function Header({ credits, onCreditPurchase }: HeaderProps) {
 
               {/* Buy Credits Button */}
               <Button 
-                onClick={() => setIsModalOpen(true)}
+                onClick={navigateToCheckout}
                 className="credit-button rounded-full px-4 py-1 font-bold flex items-center"
               >
-                <PlusCircle size={16} className="mr-1" /> Buy Credits
+                <ShoppingCart size={16} className="mr-1" /> Buy Credits
               </Button>
 
               {/* User Profile */}
@@ -104,7 +115,7 @@ export default function Header({ credits, onCreditPurchase }: HeaderProps) {
                     <span>History</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="cursor-pointer text-destructive">
+                  <DropdownMenuItem className="cursor-pointer text-destructive" onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Sign Out</span>
                   </DropdownMenuItem>
