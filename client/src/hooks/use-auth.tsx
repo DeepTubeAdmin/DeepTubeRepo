@@ -29,6 +29,7 @@ type RegisterData = {
   username: string;
   password: string;
   email?: string;
+  dateOfBirth?: Date;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -75,7 +76,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Registration successful",
-        description: `Welcome, ${user.username}!`,
+        description: user.isAdultVerified 
+          ? `Welcome, ${user.username}! Your account is verified for all content.`
+          : `Welcome, ${user.username}! Please note: Adult content requires age verification.`,
       });
     },
     onError: (error: Error) => {
