@@ -34,8 +34,8 @@ export default function Header({ credits, onCreditPurchase }: HeaderProps) {
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center">
-              <Link href="/">
-                <a className="text-primary font-bold text-2xl">AIVideoHub</a>
+              <Link href="/" className="text-primary font-bold text-2xl">
+                AIVideoHub
               </Link>
             </div>
 
