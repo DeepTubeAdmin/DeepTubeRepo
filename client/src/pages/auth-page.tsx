@@ -15,16 +15,31 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Video, CreditCard, Search } from "lucide-react";
+import { Loader2, Video, CreditCard, Search, Calendar as CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format } from "date-fns";
 
 const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
+// Calculate date 18 years ago to enforce minimum age
+const eighteenYearsAgo = new Date();
+eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18);
+
 const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   email: z.string().email("Please enter a valid email").optional(),
+  dateOfBirth: z.date()
+    .refine(date => date <= eighteenYearsAgo, {
+      message: "You must be at least 18 years old to register"
+    }),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
@@ -61,6 +76,7 @@ export default function AuthPage() {
     defaultValues: {
       username: "",
       email: "",
+      dateOfBirth: new Date(2000, 0, 1), // Default date for better UX
       password: "",
       confirmPassword: "",
     },
@@ -81,7 +97,7 @@ export default function AuthPage() {
       <div className="w-full md:w-1/2 p-8 flex flex-col justify-center">
         <div className="max-w-md mx-auto space-y-6">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-primary mb-2">AIVideoHub</h1>
+            <h1 className="text-4xl font-bold text-primary mb-2">Deep-Tube</h1>
             <p className="text-muted-foreground">
               The premier marketplace for AI-generated videos
             </p>
@@ -163,6 +179,49 @@ export default function AuthPage() {
                           <Input type="email" placeholder="Enter your email" {...field} />
                         </FormControl>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={registerForm.control}
+                    name="dateOfBirth"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Date of Birth <span className="text-red-500">*</span></FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={`w-full pl-3 text-left font-normal ${!field.value ? "text-muted-foreground" : ""}`}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              disabled={(date) => date > eighteenYearsAgo}
+                              initialFocus
+                              captionLayout="dropdown"
+                              fromYear={1940}
+                              toYear={new Date().getFullYear() - 18}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          You must be at least 18 years old to access adult content
+                        </p>
                       </FormItem>
                     )}
                   />

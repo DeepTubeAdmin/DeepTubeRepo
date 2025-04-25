@@ -9,6 +9,8 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   email: text("email"),
+  dateOfBirth: timestamp("date_of_birth"),
+  isAdultVerified: boolean("is_adult_verified").default(false),
   credits: integer("credits").default(0).notNull(),
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
@@ -118,6 +120,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
   email: true,
+  dateOfBirth: true,
+  isAdultVerified: true,
   credits: true,
 });
 
