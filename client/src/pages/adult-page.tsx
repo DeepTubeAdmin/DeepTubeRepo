@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import CategoryNavigation from "@/components/CategoryNavigation";
@@ -17,6 +17,28 @@ export default function AdultPage() {
   const { toast } = useToast();
   const { user, isLoading } = useAuth();
   const [_, setLocation] = useLocation();
+
+  // Use useEffect to handle redirects to prevent infinite loops
+  useEffect(() => {
+    // Redirect to auth page if not logged in
+    if (!isLoading && !user) {
+      toast({
+        title: "Age Verification Required",
+        description: "You must be logged in and at least 18 years old to access adult content.",
+        variant: "destructive"
+      });
+      setLocation("/auth");
+    }
+    // Check if user is age-verified (has dateOfBirth and is 18+)
+    else if (!isLoading && user && !user.isAdultVerified) {
+      toast({
+        title: "Age Verification Required",
+        description: "Your account is not verified for adult content. Please contact support.",
+        variant: "destructive"
+      });
+      setLocation("/");
+    }
+  }, [isLoading, user, toast, setLocation]);
 
   const handleCategoryChange = (slug: string) => {
     setActiveCategory(slug);

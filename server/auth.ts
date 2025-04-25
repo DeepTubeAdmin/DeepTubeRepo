@@ -68,9 +68,25 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ error: "Username already exists" });
       }
 
+      // Check for date of birth and verify age (18+)
+      let isAdultVerified = false;
+      if (req.body.dateOfBirth) {
+        const dob = new Date(req.body.dateOfBirth);
+        const today = new Date();
+        const eighteenYearsAgo = new Date(
+          today.getFullYear() - 18,
+          today.getMonth(),
+          today.getDate()
+        );
+        
+        // If DOB is at least 18 years ago, mark as adult-verified
+        isAdultVerified = dob <= eighteenYearsAgo;
+      }
+
       const user = await storage.createUser({
         ...req.body,
         password: await hashPassword(req.body.password),
+        isAdultVerified,
       });
 
       req.login(user, (err) => {
