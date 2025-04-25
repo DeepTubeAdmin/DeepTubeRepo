@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 10%;
+  --foreground: 0 0% 100%;
+  --muted: 210 6% 15%;
+  --muted-foreground: 240 5% 64.9%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --card: 240 11% 16%;
+  --card-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --primary: 30 100% 50%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 240 10% 3.9%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 35 91% 52%;
+  --radius: 0.5rem;
+  
+  /* Custom colors for the AI marketplace */
+  --surface: 240 11% 16%;
+  --surface-light: 240 6% 22%;
+  --text-primary: 0 0% 98%;
+  --text-secondary: 0 0% 80%;
+  --chart-1: 35 91% 52%;
+  --chart-2: 35 91% 45%;
+  --chart-3: 35 91% 60%;
+  --chart-4: 35 91% 75%;
+  --chart-5: 35 91% 38%;
+}
+
+.dark {
+  --background: 0 0% 10%;
+  --foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --card: 240 11% 16%;
+  --card-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --primary: 30 100% 50%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 240 10% 3.9%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 35 91% 52%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+.category-item:hover {
+  @apply bg-primary text-primary-foreground transition-colors;
+}
+
+.video-card {
+  @apply transition-transform duration-200;
+}
+
+.video-card:hover {
+  @apply transform scale-[1.03];
+}
+
+.video-card:hover .video-title {
+  @apply text-primary;
+}
+
+.credit-button {
+  @apply bg-primary text-primary-foreground font-bold;
+}
+
+.credit-button:hover {
+  @apply bg-primary/90;
+}
+
+.package-card {
+  @apply transition-colors cursor-pointer rounded-lg p-3 bg-muted hover:bg-primary hover:text-primary-foreground border-2 border-transparent;
+}
+
+.package-card.selected {
+  @apply border-primary;
+}
+
+.payment-method {
+  @apply p-2 rounded-lg border-2 border-transparent bg-muted transition-colors;
+}
+
+.payment-method.selected {
+  @apply border-primary;
+}
