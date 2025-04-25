@@ -212,7 +212,7 @@ export default function AuthPage() {
       <div className="w-full md:w-1/2 bg-gradient-to-br from-primary/90 to-primary-foreground/90 p-8 flex flex-col justify-center text-white">
         <div className="max-w-lg mx-auto space-y-8">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Discover Premium AI-Generated Videos
+            Welcome to Deep-Tube
           </h2>
           <p className="text-lg mb-6">
             Access thousands of high-quality AI-generated videos for your projects.

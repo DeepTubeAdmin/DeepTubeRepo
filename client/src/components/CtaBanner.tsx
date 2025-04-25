@@ -7,7 +7,7 @@ export default function CtaBanner() {
         <div className="flex flex-col md:flex-row items-center justify-between">
           <div className="mb-6 md:mb-0 md:mr-6 z-10">
             <h2 className="text-2xl md:text-3xl font-bold mb-2">
-              Create Your Own AI Video
+              Create Your Own Deep-Tube Video
             </h2>
             <p className="text-muted-foreground mb-4 max-w-lg">
               Upload your prompt or image and let our AI generate stunning videos. 
