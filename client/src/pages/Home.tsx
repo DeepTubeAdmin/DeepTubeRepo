@@ -55,7 +55,7 @@ export default function Home() {
       ) : (
         <div className="bg-secondary px-4 py-3 shadow-md">
           <div className="container mx-auto flex items-center justify-between">
-            <h1 className="text-primary font-bold text-2xl">AIVideoHub</h1>
+            <h1 className="text-primary font-bold text-2xl">Deep-Tube</h1>
             <div className="flex items-center space-x-3">
               <Button variant="outline" className="border-primary text-primary hover:bg-primary/10">
                 <svg

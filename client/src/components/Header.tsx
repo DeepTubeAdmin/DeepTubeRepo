@@ -46,7 +46,7 @@ export default function Header({ credits, onCreditPurchase }: HeaderProps) {
             {/* Logo */}
             <div className="flex items-center">
               <Link href="/" className="text-primary font-bold text-2xl">
-                AIVideoHub
+                Deep-Tube
               </Link>
             </div>
 
