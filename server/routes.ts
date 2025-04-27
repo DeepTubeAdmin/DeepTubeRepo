@@ -40,10 +40,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { name: "Romance", slug: "romance", icon: "heart" },
         { name: "Action", slug: "action", icon: "zap" },
         { name: "Surreal", slug: "surreal", icon: "cloud-rain" },
-        { name: "Parody", slug: "parody", icon: "laugh" },
-        { name: "Interactive", slug: "interactive", icon: "mouse-pointer" },
         { name: "Historical", slug: "historical", icon: "book" },
-        { name: "Kids", slug: "kids", icon: "baby" }
+        { name: "Kids", slug: "kids", icon: "baby" },
+        { name: "People", slug: "people", icon: "users" }
       ];
       
       // Find which categories need to be created
