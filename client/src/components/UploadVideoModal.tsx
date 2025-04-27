@@ -1,10 +1,19 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, Loader2 } from "lucide-react";
 import { SimpleDialog } from "@/components/ui/simple-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Category } from "@shared/schema";
 
 interface UploadVideoModalProps {
   isOpen: boolean;
@@ -19,6 +28,20 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
   const [aiGenerator, setAiGenerator] = useState("");
   const [prompt, setPrompt] = useState("");
   const [description, setDescription] = useState("");
+  const [categoryId, setCategoryId] = useState<string>("");
+  
+  // Fetch categories for the dropdown
+  const { data: categories, isLoading: categoriesLoading } = useQuery<Category[]>({
+    queryKey: ['/api/categories'],
+    enabled: isOpen, // Only fetch when modal is open
+  });
+  
+  // Reset form when modal is closed
+  useEffect(() => {
+    if (!isOpen) {
+      setCategoryId("");
+    }
+  }, [isOpen]);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -76,6 +99,15 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
       return;
     }
 
+    if (!categoryId) {
+      toast({
+        title: "Category required",
+        description: "Please select a category for your video",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!selectedFile) {
       toast({
         title: "No file selected",
@@ -99,6 +131,7 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
           description,
           aiGenerator,
           prompt,
+          categoryId,
           // In a real implementation, we would upload the file to storage
           // and get a URL back, then include it here
           thumbnail: "https://placehold.co/400x225?text=" + encodeURIComponent(title),
@@ -123,6 +156,7 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
       setAiGenerator("");
       setPrompt("");
       setDescription("");
+      setCategoryId("");
       setSelectedFile(null);
       onClose();
     } catch (error: any) {
@@ -135,7 +169,7 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
     } finally {
       setIsUploading(false);
     }
-  }, [title, description, aiGenerator, prompt, selectedFile, toast, onClose]);
+  }, [title, description, aiGenerator, prompt, categoryId, selectedFile, toast, onClose]);
 
   return (
     <SimpleDialog isOpen={isOpen} onClose={onClose} title="Upload a Video">
@@ -222,6 +256,38 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
               required
               minLength={10}
             />
+          </div>
+          
+          <div className="space-y-2">
+            <label htmlFor="category" className="text-sm font-medium">
+              Category
+            </label>
+            <Select 
+              value={categoryId} 
+              onValueChange={setCategoryId}
+            >
+              <SelectTrigger id="category">
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categoriesLoading ? (
+                  <div className="flex items-center justify-center p-2">
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Loading categories...
+                  </div>
+                ) : categories && categories.length > 0 ? (
+                  categories.map((category) => (
+                    <SelectItem key={category.id} value={String(category.id)}>
+                      {category.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className="p-2 text-sm text-muted-foreground">
+                    No categories found
+                  </div>
+                )}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="flex justify-end pt-2">
