@@ -227,7 +227,7 @@ export default function AuthPage() {
                         </Popover>
                         <FormMessage />
                         <p className="text-xs text-muted-foreground mt-1">
-                          You must be at least 18 years old to access adult content
+                          You must be at least 18 years old to use the platform
                         </p>
                       </FormItem>
                     )}

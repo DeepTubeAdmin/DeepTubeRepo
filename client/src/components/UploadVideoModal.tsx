@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Loader2, X } from "lucide-react";
+import { Upload, Loader2 } from "lucide-react";
+import { SimpleDialog } from "@/components/ui/simple-dialog";
 
 interface UploadVideoModalProps {
   isOpen: boolean;
@@ -19,12 +20,7 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
   const [prompt, setPrompt] = useState("");
   const [description, setDescription] = useState("");
 
-  console.log("UploadVideoModal rendering, isOpen:", isOpen);
-
-  // If modal is not open, don't render anything
-  if (!isOpen) return null;
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.type.startsWith("video/")) {
@@ -38,9 +34,9 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
         e.target.value = ""; // Reset input
       }
     }
-  };
+  }, [toast]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate form
@@ -139,135 +135,118 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
     } finally {
       setIsUploading(false);
     }
-  };
+  }, [title, description, aiGenerator, prompt, selectedFile, toast, onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm" 
-        onClick={onClose}
-      />
-      
-      {/* Modal content */}
-      <div className="bg-background rounded-lg shadow-lg w-full max-w-md mx-4 z-50 overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-xl font-semibold">Upload a Video</h2>
-          <Button variant="ghost" size="icon" onClick={onClose} className="ml-auto">
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </Button>
-        </div>
+    <SimpleDialog isOpen={isOpen} onClose={onClose} title="Upload a Video">
+      <div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Share your AI-generated video with the Deep-Tube community
+        </p>
         
-        <div className="p-4">
-          <p className="text-sm text-gray-500 mb-4">
-            Share your AI-generated video with the Deep-Tube community
-          </p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid w-full items-center gap-1.5">
+            <label htmlFor="video" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/30 hover:bg-muted/50 transition-colors">
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <Upload className="w-8 h-8 mb-2 text-primary" />
+                <p className="mb-2 text-sm text-center">
+                  <span className="font-semibold">Click to upload</span> or drag and drop
+                </p>
+                <p className="text-xs text-muted-foreground text-center">
+                  {selectedFile ? selectedFile.name : "MP4, WebM, or MOV (max. 500MB)"}
+                </p>
+              </div>
+              <input 
+                id="video" 
+                type="file" 
+                accept="video/*" 
+                className="hidden" 
+                onChange={handleFileChange}
+              />
+            </label>
+          </div>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid w-full items-center gap-1.5">
-              <label htmlFor="video" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/30 hover:bg-muted/50 transition-colors">
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <Upload className="w-8 h-8 mb-2 text-primary" />
-                  <p className="mb-2 text-sm text-center">
-                    <span className="font-semibold">Click to upload</span> or drag and drop
-                  </p>
-                  <p className="text-xs text-muted-foreground text-center">
-                    {selectedFile ? selectedFile.name : "MP4, WebM, or MOV (max. 500MB)"}
-                  </p>
-                </div>
-                <input 
-                  id="video" 
-                  type="file" 
-                  accept="video/*" 
-                  className="hidden" 
-                  onChange={handleFileChange}
-                />
-              </label>
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="title" className="text-sm font-medium">
-                Video Title
-              </label>
-              <Input 
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter a title for your video"
-                required
-                minLength={3}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="aiGenerator" className="text-sm font-medium">
-                AI Generator
-              </label>
-              <Input 
-                id="aiGenerator"
-                value={aiGenerator}
-                onChange={(e) => setAiGenerator(e.target.value)}
-                placeholder="Which AI tool was used (e.g. Midjourney, DALL-E)"
-                required
-                minLength={2}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="prompt" className="text-sm font-medium">
-                Prompt Used
-              </label>
-              <Textarea 
-                id="prompt"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Enter the prompt you used to generate this video"
-                className="resize-none min-h-[80px]"
-                required
-                minLength={10}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="description" className="text-sm font-medium">
-                Description
-              </label>
-              <Textarea 
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Add a description for your video"
-                className="resize-none min-h-[80px]"
-                required
-                minLength={10}
-              />
-            </div>
-            
-            <div className="flex justify-end pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                className="mr-2"
-                disabled={isUploading}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isUploading}>
-                {isUploading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  "Upload Video"
-                )}
-              </Button>
-            </div>
-          </form>
-        </div>
+          <div className="space-y-2">
+            <label htmlFor="title" className="text-sm font-medium">
+              Video Title
+            </label>
+            <Input 
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter a title for your video"
+              required
+              minLength={3}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label htmlFor="aiGenerator" className="text-sm font-medium">
+              AI Generator
+            </label>
+            <Input 
+              id="aiGenerator"
+              value={aiGenerator}
+              onChange={(e) => setAiGenerator(e.target.value)}
+              placeholder="Which AI tool was used (e.g. Midjourney, DALL-E)"
+              required
+              minLength={2}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label htmlFor="prompt" className="text-sm font-medium">
+              Prompt Used
+            </label>
+            <Textarea 
+              id="prompt"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Enter the prompt you used to generate this video"
+              className="resize-none min-h-[80px]"
+              required
+              minLength={10}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label htmlFor="description" className="text-sm font-medium">
+              Description
+            </label>
+            <Textarea 
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Add a description for your video"
+              className="resize-none min-h-[80px]"
+              required
+              minLength={10}
+            />
+          </div>
+          
+          <div className="flex justify-end pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="mr-2"
+              disabled={isUploading}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isUploading}>
+              {isUploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                "Upload Video"
+              )}
+            </Button>
+          </div>
+        </form>
       </div>
-    </div>
+    </SimpleDialog>
   );
 }
