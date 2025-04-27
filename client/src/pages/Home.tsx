@@ -3,12 +3,13 @@ import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import CategoryNavigation from "@/components/CategoryNavigation";
 import VideoGrid from "@/components/VideoGrid";
+import ImageGallery from "@/components/ImageGallery";
 import CtaBanner from "@/components/CtaBanner";
 import CategoryCard from "@/components/CategoryCard";
 import Footer from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Categories, FeaturedVideos, NewReleases, PopularCategories } from "@/data/mockData";
+import { Categories, FeaturedVideos, NewReleases, PopularCategories, AIGeneratedImages } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
 import { LogIn, Upload } from "lucide-react";
 
@@ -51,7 +52,7 @@ export default function Home() {
             <div className="flex items-center space-x-3">
               <Button variant="outline" className="border-primary text-primary hover:bg-primary/10">
                 <Upload className="mr-2 h-4 w-4" />
-                Upload Video
+                Upload Media
               </Button>
               <Button onClick={navigateToAuth} className="bg-primary">
                 <LogIn className="mr-2 h-4 w-4" /> Sign In
@@ -78,6 +79,13 @@ export default function Home() {
         <VideoGrid
           title="New Releases"
           videos={NewReleases}
+          onPreview={handlePreview}
+          onWishlist={handleWishlist}
+        />
+        
+        <ImageGallery
+          title="AI-Generated Images"
+          images={AIGeneratedImages}
           onPreview={handlePreview}
           onWishlist={handleWishlist}
         />

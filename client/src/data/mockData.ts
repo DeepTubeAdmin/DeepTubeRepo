@@ -120,6 +120,59 @@ export const FeaturedVideos: Video[] = [
   }
 ];
 
+export const AIGeneratedImages: Video[] = [
+  {
+    id: 101,
+    title: "Neon Cityscape at Dusk",
+    thumbnail: "https://images.pexels.com/photos/6444367/pexels-photo-6444367.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    credits: 250,
+    resolution: "4K",
+    duration: 0,
+    category: "urban",
+    contentType: "image"
+  },
+  {
+    id: 102,
+    title: "Surreal Landscape Fantasy",
+    thumbnail: "https://images.pexels.com/photos/3617457/pexels-photo-3617457.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    credits: 300,
+    resolution: "4K",
+    duration: 0,
+    category: "surreal",
+    contentType: "image"
+  },
+  {
+    id: 103,
+    title: "Abstract Dreamscape Patterns",
+    thumbnail: "https://images.pexels.com/photos/2832382/pexels-photo-2832382.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    credits: 200,
+    resolution: "HD",
+    duration: 0,
+    category: "abstract",
+    contentType: "image"
+  },
+  {
+    id: 104,
+    title: "Digital Portrait Composition",
+    thumbnail: "https://images.pexels.com/photos/954557/pexels-photo-954557.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    credits: 350,
+    resolution: "4K",
+    duration: 0,
+    category: "portrait",
+    contentType: "image"
+  },
+  {
+    id: 105,
+    title: "Cosmic Nebula Exploration",
+    thumbnail: "https://images.pexels.com/photos/1169754/pexels-photo-1169754.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    credits: 275,
+    resolution: "4K",
+    duration: 0,
+    category: "sci-fi",
+    contentType: "image"
+  }
+];
+
 export const NewReleases: Video[] = [
   {
     id: 5,
@@ -128,7 +181,8 @@ export const NewReleases: Video[] = [
     credits: 600,
     resolution: "4K",
     duration: 20,
-    category: "nature"
+    category: "nature",
+    contentType: "video"
   },
   {
     id: 6,

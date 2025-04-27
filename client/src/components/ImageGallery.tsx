@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Video } from "@shared/schema";
+import { Video as SchemaVideo } from "@shared/schema";
+import { Video as TypeVideo } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { formatNumber } from "@/lib/utils";

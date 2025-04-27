@@ -6,6 +6,7 @@ export interface Video {
   resolution: "HD" | "4K";
   duration: number; // in seconds
   category: string;
+  contentType?: "video" | "image"; // Added to support both videos and images
 }
 
 export interface Category {
