@@ -1,36 +1,9 @@
 import { useState } from "react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Loader2 } from "lucide-react";
-
-const uploadSchema = z.object({
-  title: z.string().min(3, "Title must be at least 3 characters long"),
-  aiGenerator: z.string().min(2, "AI Generator name is required"),
-  prompt: z.string().min(10, "Prompt must be at least 10 characters long"),
-  description: z.string().min(10, "Description must be at least 10 characters long"),
-});
-
-type UploadFormValues = z.infer<typeof uploadSchema>;
+import { Upload, Loader2, X } from "lucide-react";
 
 interface UploadVideoModalProps {
   isOpen: boolean;
@@ -41,16 +14,15 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [title, setTitle] = useState("");
+  const [aiGenerator, setAiGenerator] = useState("");
+  const [prompt, setPrompt] = useState("");
+  const [description, setDescription] = useState("");
 
-  const form = useForm<UploadFormValues>({
-    resolver: zodResolver(uploadSchema),
-    defaultValues: {
-      title: "",
-      aiGenerator: "",
-      prompt: "",
-      description: "",
-    },
-  });
+  console.log("UploadVideoModal rendering, isOpen:", isOpen);
+
+  // If modal is not open, don't render anything
+  if (!isOpen) return null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -68,7 +40,46 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
     }
   };
 
-  const onSubmit = async (data: UploadFormValues) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate form
+    if (!title || title.length < 3) {
+      toast({
+        title: "Invalid title",
+        description: "Title must be at least 3 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!aiGenerator || aiGenerator.length < 2) {
+      toast({
+        title: "Invalid AI Generator",
+        description: "AI Generator name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!prompt || prompt.length < 10) {
+      toast({
+        title: "Invalid prompt",
+        description: "Prompt must be at least 10 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!description || description.length < 10) {
+      toast({
+        title: "Invalid description",
+        description: "Description must be at least 10 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!selectedFile) {
       toast({
         title: "No file selected",
@@ -88,13 +99,13 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          title: data.title,
-          description: data.description,
-          aiGenerator: data.aiGenerator,
-          prompt: data.prompt,
+          title,
+          description,
+          aiGenerator,
+          prompt,
           // In a real implementation, we would upload the file to storage
           // and get a URL back, then include it here
-          thumbnail: "https://placehold.co/400x225?text=" + encodeURIComponent(data.title),
+          thumbnail: "https://placehold.co/400x225?text=" + encodeURIComponent(title),
           resolution: "HD",
           duration: 0, // This would come from analyzing the video file
         }),
@@ -111,7 +122,11 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
         description: "Your video has been uploaded and is being processed",
       });
       
-      form.reset();
+      // Reset form
+      setTitle("");
+      setAiGenerator("");
+      setPrompt("");
+      setDescription("");
       setSelectedFile(null);
       onClose();
     } catch (error: any) {
@@ -126,21 +141,31 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
     }
   };
 
-  console.log("UploadVideoModal rendering, isOpen:", isOpen);
-  
   return (
-    <Dialog open={isOpen} onOpenChange={onClose} forceMount>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="text-xl">Upload a Video</DialogTitle>
-          <DialogDescription>
-            Share your AI-generated video with the Deep-Tube community
-          </DialogDescription>
-        </DialogHeader>
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black/80 backdrop-blur-sm" 
+        onClick={onClose}
+      />
+      
+      {/* Modal content */}
+      <div className="bg-background rounded-lg shadow-lg w-full max-w-md mx-4 z-50 overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h2 className="text-xl font-semibold">Upload a Video</h2>
+          <Button variant="ghost" size="icon" onClick={onClose} className="ml-auto">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </Button>
+        </div>
         
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-            <div className="grid w-full max-w-sm items-center gap-1.5">
+        <div className="p-4">
+          <p className="text-sm text-gray-500 mb-4">
+            Share your AI-generated video with the Deep-Tube community
+          </p>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid w-full items-center gap-1.5">
               <label htmlFor="video" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/30 hover:bg-muted/50 transition-colors">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <Upload className="w-8 h-8 mb-2 text-primary" />
@@ -161,69 +186,63 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
               </label>
             </div>
             
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Video Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter a title for your video" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="space-y-2">
+              <label htmlFor="title" className="text-sm font-medium">
+                Video Title
+              </label>
+              <Input 
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter a title for your video"
+                required
+                minLength={3}
+              />
+            </div>
             
-            <FormField
-              control={form.control}
-              name="aiGenerator"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>AI Generator</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Which AI tool was used (e.g. Midjourney, DALL-E)" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="space-y-2">
+              <label htmlFor="aiGenerator" className="text-sm font-medium">
+                AI Generator
+              </label>
+              <Input 
+                id="aiGenerator"
+                value={aiGenerator}
+                onChange={(e) => setAiGenerator(e.target.value)}
+                placeholder="Which AI tool was used (e.g. Midjourney, DALL-E)"
+                required
+                minLength={2}
+              />
+            </div>
             
-            <FormField
-              control={form.control}
-              name="prompt"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Prompt Used</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Enter the prompt you used to generate this video" 
-                      className="resize-none min-h-[80px]"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="space-y-2">
+              <label htmlFor="prompt" className="text-sm font-medium">
+                Prompt Used
+              </label>
+              <Textarea 
+                id="prompt"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Enter the prompt you used to generate this video"
+                className="resize-none min-h-[80px]"
+                required
+                minLength={10}
+              />
+            </div>
             
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Add a description for your video" 
-                      className="resize-none min-h-[80px]"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="space-y-2">
+              <label htmlFor="description" className="text-sm font-medium">
+                Description
+              </label>
+              <Textarea 
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Add a description for your video"
+                className="resize-none min-h-[80px]"
+                required
+                minLength={10}
+              />
+            </div>
             
             <div className="flex justify-end pt-2">
               <Button
@@ -247,8 +266,8 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
               </Button>
             </div>
           </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </div>
   );
 }

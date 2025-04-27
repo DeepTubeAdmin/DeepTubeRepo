@@ -31,7 +31,7 @@ export default function Header() {
   };
 
   const handleUploadClick = () => {
-    console.log("Upload button clicked");
+    console.log("Upload button clicked with isOpen:", uploadModalOpen);
     
     if (!user) {
       console.log("User not authenticated, redirecting to auth page");
@@ -44,8 +44,9 @@ export default function Header() {
       return;
     }
     
-    console.log("Opening upload modal");
+    console.log("Setting upload modal to open");
     setUploadModalOpen(true);
+    console.log("Upload modal state after setting:", !uploadModalOpen ? "open" : "closed");
   };
 
   return (
