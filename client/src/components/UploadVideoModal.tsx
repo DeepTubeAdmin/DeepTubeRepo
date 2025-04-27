@@ -62,38 +62,11 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate form
+    // Validate form - only title and category are required
     if (!title || title.length < 3) {
       toast({
         title: "Invalid title",
         description: "Title must be at least 3 characters long",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!aiGenerator || aiGenerator.length < 2) {
-      toast({
-        title: "Invalid AI Generator",
-        description: "AI Generator name is required",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!prompt || prompt.length < 10) {
-      toast({
-        title: "Invalid prompt",
-        description: "Prompt must be at least 10 characters long",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!description || description.length < 10) {
-      toast({
-        title: "Invalid description",
-        description: "Description must be at least 10 characters long",
         variant: "destructive",
       });
       return;
@@ -202,7 +175,7 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
           
           <div className="space-y-2">
             <label htmlFor="title" className="text-sm font-medium">
-              Video Title
+              Video Title <span className="text-destructive">*</span>
             </label>
             <Input 
               id="title"
@@ -215,56 +188,13 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
           </div>
           
           <div className="space-y-2">
-            <label htmlFor="aiGenerator" className="text-sm font-medium">
-              AI Generator
-            </label>
-            <Input 
-              id="aiGenerator"
-              value={aiGenerator}
-              onChange={(e) => setAiGenerator(e.target.value)}
-              placeholder="Which AI tool was used (e.g. Midjourney, DALL-E)"
-              required
-              minLength={2}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <label htmlFor="prompt" className="text-sm font-medium">
-              Prompt Used
-            </label>
-            <Textarea 
-              id="prompt"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Enter the prompt you used to generate this video"
-              className="resize-none min-h-[80px]"
-              required
-              minLength={10}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <label htmlFor="description" className="text-sm font-medium">
-              Description
-            </label>
-            <Textarea 
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add a description for your video"
-              className="resize-none min-h-[80px]"
-              required
-              minLength={10}
-            />
-          </div>
-          
-          <div className="space-y-2">
             <label htmlFor="category" className="text-sm font-medium">
-              Category
+              Category <span className="text-destructive">*</span>
             </label>
             <Select 
               value={categoryId} 
               onValueChange={setCategoryId}
+              required
             >
               <SelectTrigger id="category">
                 <SelectValue placeholder="Select a category" />
@@ -288,6 +218,44 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
                 )}
               </SelectContent>
             </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <label htmlFor="aiGenerator" className="text-sm font-medium">
+              AI Generator (Optional)
+            </label>
+            <Input 
+              id="aiGenerator"
+              value={aiGenerator}
+              onChange={(e) => setAiGenerator(e.target.value)}
+              placeholder="Which AI tool was used (e.g. Midjourney, DALL-E)"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label htmlFor="prompt" className="text-sm font-medium">
+              Prompt Used (Optional)
+            </label>
+            <Textarea 
+              id="prompt"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Enter the prompt you used to generate this video"
+              className="resize-none min-h-[80px]"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label htmlFor="description" className="text-sm font-medium">
+              Description (Optional)
+            </label>
+            <Textarea 
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Add a description for your video"
+              className="resize-none min-h-[80px]"
+            />
           </div>
           
           <div className="flex justify-end pt-2">

@@ -183,8 +183,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { title, description, aiGenerator, prompt, thumbnail, categoryId, 
         resolution = "HD", duration = 0 } = req.body;
       
-      if (!title || !aiGenerator || !prompt) {
-        return res.status(400).json({ error: "Title, AI Generator, and Prompt are required" });
+      // Only title and category are required now
+      if (!title) {
+        return res.status(400).json({ error: "Title is required" });
       }
       
       if (!categoryId) {
