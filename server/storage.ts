@@ -1,11 +1,9 @@
 import { 
-  users, categories, videos, purchases, wishlistItems, creditTransactions,
+  users, categories, videos, wishlistItems,
   type User, type InsertUser, 
   type Category, type InsertCategory,
   type Video, type InsertVideo,
-  type Purchase, type InsertPurchase,
-  type WishlistItem, type InsertWishlistItem,
-  type CreditTransaction, type InsertCreditTransaction
+  type WishlistItem, type InsertWishlistItem
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -21,9 +19,6 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, data: Partial<InsertUser>): Promise<User>;
-  updateUserCredits(id: number, credits: number): Promise<User>;
-  updateStripeCustomerId(id: number, customerId: string): Promise<User>;
-  updateUserStripeInfo(id: number, data: { stripeCustomerId: string, stripeSubscriptionId: string }): Promise<User>;
   
   // Category operations
   getCategories(): Promise<Category[]>;
@@ -38,20 +33,11 @@ export interface IStorage {
   getNewVideos(limit?: number): Promise<Video[]>;
   createVideo(video: InsertVideo): Promise<Video>;
   
-  // Purchase operations
-  createPurchase(purchase: InsertPurchase): Promise<Purchase>;
-  getUserPurchases(userId: number): Promise<Purchase[]>;
-  isPurchased(userId: number, videoId: number): Promise<boolean>;
-  
   // Wishlist operations
   addToWishlist(item: InsertWishlistItem): Promise<WishlistItem>;
   removeFromWishlist(userId: number, videoId: number): Promise<void>;
   getUserWishlist(userId: number): Promise<WishlistItem[]>;
   isWishlisted(userId: number, videoId: number): Promise<boolean>;
-  
-  // Credit transactions operations
-  createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction>;
-  getUserCreditTransactions(userId: number): Promise<CreditTransaction[]>;
   
   // Session store
   sessionStore: SessionStore;
@@ -94,32 +80,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
   
-  async updateUserCredits(id: number, credits: number): Promise<User> {
-    const [user] = await db.update(users)
-      .set({ credits })
-      .where(eq(users.id, id))
-      .returning();
-    return user;
-  }
-  
-  async updateStripeCustomerId(id: number, stripeCustomerId: string): Promise<User> {
-    const [user] = await db.update(users)
-      .set({ stripeCustomerId })
-      .where(eq(users.id, id))
-      .returning();
-    return user;
-  }
-  
-  async updateUserStripeInfo(id: number, data: { stripeCustomerId: string, stripeSubscriptionId: string }): Promise<User> {
-    const [user] = await db.update(users)
-      .set({ 
-        stripeCustomerId: data.stripeCustomerId,
-        stripeSubscriptionId: data.stripeSubscriptionId 
-      })
-      .where(eq(users.id, id))
-      .returning();
-    return user;
-  }
+  // User methods implementations
 
   // Category operations
   async getCategories(): Promise<Category[]> {
@@ -167,25 +128,6 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  // Purchase operations
-  async createPurchase(purchase: InsertPurchase): Promise<Purchase> {
-    const [result] = await db.insert(purchases).values(purchase).returning();
-    return result;
-  }
-  
-  async getUserPurchases(userId: number): Promise<Purchase[]> {
-    return db.select().from(purchases).where(eq(purchases.userId, userId));
-  }
-  
-  async isPurchased(userId: number, videoId: number): Promise<boolean> {
-    const [purchase] = await db.select().from(purchases)
-      .where(and(
-        eq(purchases.userId, userId),
-        eq(purchases.videoId, videoId)
-      ));
-    return !!purchase;
-  }
-
   // Wishlist operations
   async addToWishlist(item: InsertWishlistItem): Promise<WishlistItem> {
     const [result] = await db.insert(wishlistItems).values(item).returning();
@@ -213,17 +155,7 @@ export class DatabaseStorage implements IStorage {
     return !!item;
   }
 
-  // Credit transactions operations
-  async createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction> {
-    const [result] = await db.insert(creditTransactions).values(transaction).returning();
-    return result;
-  }
-  
-  async getUserCreditTransactions(userId: number): Promise<CreditTransaction[]> {
-    return db.select().from(creditTransactions)
-      .where(eq(creditTransactions.userId, userId))
-      .orderBy(desc(creditTransactions.transactionDate));
-  }
+  // End of implementation
 }
 
 export const storage = new DatabaseStorage();

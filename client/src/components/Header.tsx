@@ -1,8 +1,9 @@
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Search, User, Package, History, LogOut } from "lucide-react";
+import { Search, User, Package, History, LogOut, Upload } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,10 +12,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import UploadVideoModal from "./UploadVideoModal";
 
 export default function Header() {
-  const { logoutMutation } = useAuth();
+  const { user, logoutMutation } = useAuth();
+  const { toast } = useToast();
   const [_, setLocation] = useLocation();
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,6 +28,19 @@ export default function Header() {
   
   const handleLogout = () => {
     logoutMutation.mutate();
+  };
+
+  const handleUploadClick = () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "You need to sign in to upload videos",
+        variant: "destructive",
+      });
+      setLocation("/auth");
+      return;
+    }
+    setUploadModalOpen(true);
   };
 
   return (
@@ -61,7 +79,9 @@ export default function Header() {
             <Button 
               variant="outline"
               className="rounded-full px-4 py-1 font-medium hidden sm:flex items-center"
+              onClick={handleUploadClick}
             >
+              <Upload className="mr-2 h-4 w-4" />
               Upload Video
             </Button>
 
@@ -116,6 +136,12 @@ export default function Header() {
           </form>
         </div>
       </div>
+      
+      {/* Upload Video Modal */}
+      <UploadVideoModal 
+        isOpen={uploadModalOpen} 
+        onClose={() => setUploadModalOpen(false)} 
+      />
     </header>
   );
 }

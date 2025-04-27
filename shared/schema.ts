@@ -14,7 +14,6 @@ export const users = pgTable("users", {
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
-  purchases: many(purchases),
   wishlist: many(wishlistItems),
 }));
 
@@ -36,6 +35,8 @@ export const videos = pgTable("videos", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description"),
+  aiGenerator: text("ai_generator").notNull(),
+  prompt: text("prompt").notNull(),
   thumbnail: text("thumbnail").notNull(),
   videoUrl: text("video_url"),
   preview: text("preview"),
@@ -50,7 +51,6 @@ export const videosRelations = relations(videos, ({ one, many }) => ({
     fields: [videos.categoryId],
     references: [categories.id],
   }),
-  purchases: many(purchases),
   wishlistItems: many(wishlistItems),
 }));
 
@@ -79,15 +79,11 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
   email: true,
   dateOfBirth: true,
-  isAdultVerified: true,
-  credits: true,
 });
 
 export const insertCategorySchema = createInsertSchema(categories);
 export const insertVideoSchema = createInsertSchema(videos);
-export const insertPurchaseSchema = createInsertSchema(purchases);
 export const insertWishlistItemSchema = createInsertSchema(wishlistItems);
-export const insertCreditTransactionSchema = createInsertSchema(creditTransactions);
 
 // Type definitions
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -99,11 +95,5 @@ export type Category = typeof categories.$inferSelect;
 export type InsertVideo = z.infer<typeof insertVideoSchema>;
 export type Video = typeof videos.$inferSelect;
 
-export type InsertPurchase = z.infer<typeof insertPurchaseSchema>;
-export type Purchase = typeof purchases.$inferSelect;
-
 export type InsertWishlistItem = z.infer<typeof insertWishlistItemSchema>;
 export type WishlistItem = typeof wishlistItems.$inferSelect;
-
-export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSchema>;
-export type CreditTransaction = typeof creditTransactions.$inferSelect;
