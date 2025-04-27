@@ -68,9 +68,16 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ error: "Username already exists" });
       }
 
+      // Format date string to proper Date object if needed
+      let userData = { ...req.body };
+      
+      if (userData.dateOfBirth && typeof userData.dateOfBirth === 'string') {
+        userData.dateOfBirth = new Date(userData.dateOfBirth);
+      }
+
       const user = await storage.createUser({
-        ...req.body,
-        password: await hashPassword(req.body.password),
+        ...userData,
+        password: await hashPassword(userData.password),
       });
 
       req.login(user, (err) => {

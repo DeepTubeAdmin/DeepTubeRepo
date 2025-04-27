@@ -87,7 +87,14 @@ export default function AuthPage() {
   };
 
   const onRegisterSubmit = (data: RegisterFormValues) => {
-    const { confirmPassword, ...registerData } = data;
+    const { confirmPassword, ...rest } = data;
+    
+    // Convert date to ISO string for server-side processing
+    const registerData = {
+      ...rest,
+      dateOfBirth: rest.dateOfBirth.toISOString(),
+    };
+    
     registerMutation.mutate(registerData);
   };
 
@@ -274,8 +281,8 @@ export default function AuthPage() {
             Welcome to Deep-Tube
           </h2>
           <p className="text-lg mb-6">
-            Access thousands of high-quality AI-generated videos for your projects.
-            Purchase with credits and download instantly.
+            Discover and share high-quality AI-generated videos from creators around the world. 
+            Upload your own AI-generated content and join our community.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -294,8 +301,8 @@ export default function AuthPage() {
                 <CreditCard className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="font-medium text-lg">Credit System</h3>
-                <p className="text-white/80">Pay only for what you need</p>
+                <h3 className="font-medium text-lg">AI Showcase</h3>
+                <p className="text-white/80">Share your AI generation skills</p>
               </div>
             </div>
 

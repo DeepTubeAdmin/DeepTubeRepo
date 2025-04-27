@@ -29,7 +29,7 @@ type RegisterData = {
   username: string;
   password: string;
   email?: string;
-  dateOfBirth?: Date;
+  dateOfBirth?: Date | string;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
