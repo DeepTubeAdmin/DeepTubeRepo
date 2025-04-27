@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -55,9 +55,15 @@ export default function AuthPage() {
   const [_, setLocation] = useLocation();
   const { user, loginMutation, registerMutation, isLoading } = useAuth();
 
-  // Redirect if already logged in
+  // Use the useEffect hook for navigation after render
+  useEffect(() => {
+    if (user) {
+      setLocation("/");
+    }
+  }, [user, setLocation]);
+  
+  // If user is logged in, we'll render nothing but useEffect will handle redirect
   if (user) {
-    setLocation("/");
     return null;
   }
 
