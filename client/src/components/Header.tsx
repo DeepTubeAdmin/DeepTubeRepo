@@ -84,6 +84,16 @@ export default function Header() {
               <Upload className="mr-2 h-4 w-4" />
               Upload Video
             </Button>
+            
+            {/* Mobile Upload Button */}
+            <Button
+              variant="outline"
+              size="icon"
+              className="sm:hidden"
+              onClick={handleUploadClick}
+            >
+              <Upload className="h-4 w-4" />
+            </Button>
 
             {/* User Profile */}
             <DropdownMenu>

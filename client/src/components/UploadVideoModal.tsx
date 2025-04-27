@@ -81,9 +81,30 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
     setIsUploading(true);
     
     try {
-      // Here we would normally upload the file and data to the server
-      // For now, we'll just simulate a successful upload
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Upload the form data to the server
+      const response = await fetch('/api/videos/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: data.title,
+          description: data.description,
+          aiGenerator: data.aiGenerator,
+          prompt: data.prompt,
+          // In a real implementation, we would upload the file to storage
+          // and get a URL back, then include it here
+          thumbnail: "https://placehold.co/400x225?text=" + encodeURIComponent(data.title),
+          resolution: "HD",
+          duration: 0, // This would come from analyzing the video file
+        }),
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to upload video");
+      }
       
       toast({
         title: "Upload successful",
@@ -93,10 +114,11 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
       form.reset();
       setSelectedFile(null);
       onClose();
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Upload error:", error);
       toast({
         title: "Upload failed",
-        description: "There was an error uploading your video",
+        description: error.message || "There was an error uploading your video",
         variant: "destructive",
       });
     } finally {

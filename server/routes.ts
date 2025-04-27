@@ -2,7 +2,6 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-import Stripe from "stripe";
 import { z } from "zod";
 import { insertCategorySchema, insertVideoSchema } from "@shared/schema";
 
@@ -25,15 +24,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
   
-  // Stripe setup
-  let stripe: Stripe | null = null;
-  if (process.env.STRIPE_SECRET_KEY) {
-    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: "2023-10-16" as any, // Type cast to fix compatibility issue
-    });
-  } else {
-    console.warn("Missing STRIPE_SECRET_KEY environment variable. Stripe payment functionality will not work.");
-  }
+  // Setup for video uploads
 
   // Categories endpoints
   app.get("/api/categories", async (req, res) => {
@@ -140,61 +131,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User purchases endpoints
-  app.get("/api/user/purchases", isAuthenticated, async (req, res) => {
+  // Video upload endpoint
+  app.post("/api/videos/upload", isAuthenticated, async (req, res) => {
     try {
       ensureUser(req);
-      const purchases = await storage.getUserPurchases(req.user.id);
-      res.json(purchases);
-    } catch (error) {
-      console.error("Error fetching user purchases:", error);
-      res.status(500).json({ error: "Failed to fetch user purchases" });
-    }
-  });
-
-  app.post("/api/videos/:id/purchase", isAuthenticated, async (req, res) => {
-    try {
-      ensureUser(req);
-      const videoId = parseInt(req.params.id);
-      const video = await storage.getVideoById(videoId);
       
-      if (!video) {
-        return res.status(404).json({ error: "Video not found" });
+      const { title, description, aiGenerator, prompt, thumbnail, resolution = "HD", duration = 0 } = req.body;
+      
+      if (!title || !aiGenerator || !prompt) {
+        return res.status(400).json({ error: "Title, AI Generator, and Prompt are required" });
       }
       
-      // Check if user already purchased this video
-      const alreadyPurchased = await storage.isPurchased(req.user.id, videoId);
-      if (alreadyPurchased) {
-        return res.status(400).json({ error: "Video already purchased" });
-      }
-      
-      // Check if user has enough credits
-      if (req.user.credits < video.credits) {
-        return res.status(400).json({ error: "Insufficient credits" });
-      }
-      
-      // Process purchase
-      const purchase = await storage.createPurchase({
-        userId: req.user.id,
-        videoId: video.id,
-        creditsPaid: video.credits,
+      // Create video record
+      const video = await storage.createVideo({
+        title,
+        description: description || "",
+        aiGenerator,
+        prompt,
+        thumbnail: thumbnail || "https://placehold.co/400x225?text=AI+Video", // Placeholder
+        videoUrl: null,
+        preview: null,
+        resolution,
+        duration,
+        categoryId: null,
       });
       
-      // Update user's credits
-      const newCredits = req.user.credits - video.credits;
-      await storage.updateUserCredits(req.user.id, newCredits);
-      
-      // Create credit transaction record
-      await storage.createCreditTransaction({
-        userId: req.user.id,
-        amount: -video.credits,
-        type: "purchase",
-      });
-      
-      res.status(201).json({ purchase, remainingCredits: newCredits });
+      res.status(201).json(video);
     } catch (error) {
-      console.error("Error purchasing video:", error);
-      res.status(500).json({ error: "Failed to purchase video" });
+      console.error("Error uploading video:", error);
+      res.status(500).json({ error: "Failed to upload video" });
     }
   });
 
@@ -252,99 +217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Credit purchase with Stripe
-  app.post("/api/create-payment-intent", isAuthenticated, async (req, res) => {
-    try {
-      ensureUser(req);
-      
-      if (!stripe) {
-        return res.status(500).json({ error: "Stripe is not configured" });
-      }
-      
-      const { amount } = req.body;
-      
-      // Validate amount
-      if (!amount || typeof amount !== 'number' || amount <= 0) {
-        return res.status(400).json({ error: "Invalid amount" });
-      }
-      
-      // Create payment intent
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // Convert to cents
-        currency: "usd",
-        metadata: {
-          userId: req.user.id.toString(),
-          credits: (amount * 1000).toString(), // $1 = 1000 credits
-        },
-      });
-      
-      res.json({ clientSecret: paymentIntent.client_secret });
-    } catch (error) {
-      console.error("Error creating payment intent:", error);
-      res.status(500).json({ error: "Failed to create payment intent" });
-    }
-  });
 
-  // Webhook for Stripe events
-  app.post("/api/webhook", async (req, res) => {
-    if (!stripe) {
-      return res.status(500).json({ error: "Stripe is not configured" });
-    }
-    
-    const sig = req.headers['stripe-signature'];
-    
-    if (!sig || !process.env.STRIPE_WEBHOOK_SECRET) {
-      return res.status(400).json({ error: "Missing Stripe signature or webhook secret" });
-    }
-    
-    let event;
-    
-    try {
-      event = stripe.webhooks.constructEvent(
-        req.body,
-        sig,
-        process.env.STRIPE_WEBHOOK_SECRET
-      );
-    } catch (err: any) {
-      console.error(`Webhook Error: ${err.message}`);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-    
-    // Handle successful payment
-    if (event.type === 'payment_intent.succeeded') {
-      const paymentIntent = event.data.object;
-      const userId = parseInt(paymentIntent.metadata.userId);
-      const credits = parseInt(paymentIntent.metadata.credits);
-      
-      try {
-        // Get current user
-        const user = await storage.getUser(userId);
-        if (!user) {
-          console.error(`User not found: ${userId}`);
-          return res.status(404).json({ error: "User not found" });
-        }
-        
-        // Update user credits
-        const newCredits = user.credits + credits;
-        await storage.updateUserCredits(userId, newCredits);
-        
-        // Create credit transaction record
-        await storage.createCreditTransaction({
-          userId,
-          amount: credits,
-          type: "purchase",
-          stripePaymentId: paymentIntent.id,
-        });
-        
-        console.log(`Added ${credits} credits to user ${userId}`);
-      } catch (error) {
-        console.error("Error processing payment success:", error);
-        return res.status(500).json({ error: "Failed to process payment" });
-      }
-    }
-    
-    res.json({ received: true });
-  });
 
   const httpServer = createServer(app);
   return httpServer;
