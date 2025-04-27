@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import UploadVideoModal from "./UploadVideoModal";
+import UploadMediaModal from "./UploadMediaModal";
 
 export default function Header() {
   const { user, logoutMutation } = useAuth();
@@ -37,7 +37,7 @@ export default function Header() {
       console.log("User not authenticated, redirecting to auth page");
       toast({
         title: "Authentication required",
-        description: "You need to sign in to upload videos",
+        description: "You need to sign in to upload media",
         variant: "destructive",
       });
       setLocation("/auth");
@@ -88,7 +88,7 @@ export default function Header() {
               onClick={handleUploadClick}
             >
               <Upload className="mr-2 h-4 w-4" />
-              Upload Video
+              Upload Media
             </Button>
             
             {/* Mobile Upload Button */}
@@ -153,8 +153,8 @@ export default function Header() {
         </div>
       </div>
       
-      {/* Upload Video Modal */}
-      <UploadVideoModal 
+      {/* Upload Media Modal */}
+      <UploadMediaModal 
         isOpen={uploadModalOpen} 
         onClose={() => setUploadModalOpen(false)} 
       />

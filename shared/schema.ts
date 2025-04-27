@@ -30,18 +30,20 @@ export const categoriesRelations = relations(categories, ({ many }) => ({
   videos: many(videos),
 }));
 
-// Videos table
+// Videos and Images table (renamed in code but keeping same table name for DB compatibility)
 export const videos = pgTable("videos", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description"),
-  aiGenerator: text("ai_generator").notNull(),
-  prompt: text("prompt").notNull(),
+  aiGenerator: text("ai_generator"),
+  prompt: text("prompt"),
   thumbnail: text("thumbnail").notNull(),
   videoUrl: text("video_url"),
+  imageUrl: text("image_url"),
   preview: text("preview"),
-  resolution: text("resolution").notNull(),
-  duration: integer("duration").notNull(), // in seconds
+  contentType: text("content_type").notNull().default("video"), // "video" or "image"
+  resolution: text("resolution").default("HD"),
+  duration: integer("duration").default(0), // in seconds
   categoryId: integer("category_id").references(() => categories.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
