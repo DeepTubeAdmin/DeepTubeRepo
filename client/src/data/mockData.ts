@@ -205,7 +205,8 @@ export const NewReleases: Video[] = [
     credits: 850,
     resolution: "4K",
     duration: 25,
-    category: "urban"
+    category: "urban",
+    contentType: "video"
   },
   {
     id: 8,
@@ -214,7 +215,8 @@ export const NewReleases: Video[] = [
     credits: 300,
     resolution: "HD",
     duration: 15,
-    category: "style-transfer"
+    category: "style-transfer",
+    contentType: "video"
   }
 ];
 
