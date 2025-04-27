@@ -33,9 +33,9 @@ export const Categories: Category[] = [
   },
   {
     id: 6,
-    name: "Music",
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
-    slug: "music"
+    name: "Nature",
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 14c.9-1 1.5-2.3 1.8-3.8.2-1.2-.1-2.3-.5-3.3-.5-1.6-1.9-2.7-3.5-3.4-2.3-.8-5-.6-7.1.8C5.4 5.5 4 7.7 3.6 10c-.4 1.5-.2 3 .4 4.4 1 2.2 3.2 3.6 5.6 3.6h.2"></path><path d="M17 14h-1.5c-1.1 0-2.5.2-3.5.9-.8.5-1.5 1.4-2 2.3-.4.8-.8 1.7-1 2.6"></path></svg>',
+    slug: "nature"
   },
   {
     id: 7,
