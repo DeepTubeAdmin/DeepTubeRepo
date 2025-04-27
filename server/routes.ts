@@ -24,7 +24,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
   
-  // Setup for video uploads
+  // Setup predefined categories - must be before the /api/categories/:slug route
+  app.get("/api/categories/seed", async (req, res) => {
+    try {
+      // Get existing categories
+      const existingCategories = await storage.getCategories();
+      
+      // Define all required categories
+      const requiredCategories = [
+        { name: "Sci-Fi", slug: "sci-fi", icon: "rocket" },
+        { name: "Comedy", slug: "comedy", icon: "smile" },
+        { name: "Animation", slug: "animation", icon: "film" },
+        { name: "Music", slug: "music", icon: "music" },
+        { name: "Horror", slug: "horror", icon: "skull" },
+        { name: "Romance", slug: "romance", icon: "heart" },
+        { name: "Action", slug: "action", icon: "zap" },
+        { name: "Surreal", slug: "surreal", icon: "cloud-rain" },
+        { name: "Parody", slug: "parody", icon: "laugh" },
+        { name: "Interactive", slug: "interactive", icon: "mouse-pointer" },
+        { name: "Historical", slug: "historical", icon: "book" },
+        { name: "Kids", slug: "kids", icon: "baby" }
+      ];
+      
+      // Find which categories need to be created
+      const existingSlugs = existingCategories.map(c => c.slug);
+      const categoriesToCreate = requiredCategories.filter(
+        c => !existingSlugs.includes(c.slug)
+      );
+      
+      // Create missing categories
+      const newCategories = [];
+      for (const category of categoriesToCreate) {
+        const newCategory = await storage.createCategory(category);
+        newCategories.push(newCategory);
+      }
+      
+      res.json({
+        message: `${newCategories.length} categories created, ${existingCategories.length} already existed`,
+        created: newCategories
+      });
+    } catch (error) {
+      console.error("Error seeding categories:", error);
+      res.status(500).json({ error: "Failed to seed categories" });
+    }
+  });
 
   // Categories endpoints
   app.get("/api/categories", async (req, res) => {
@@ -37,7 +80,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/categories/:slug", async (req, res) => {
+  // Define specific routes before parameterized routes
+  app.get("/api/categories/by-slug/:slug", async (req, res) => {
     try {
       const category = await storage.getCategoryBySlug(req.params.slug);
       if (!category) {
@@ -136,10 +180,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       ensureUser(req);
       
-      const { title, description, aiGenerator, prompt, thumbnail, resolution = "HD", duration = 0 } = req.body;
+      const { title, description, aiGenerator, prompt, thumbnail, categoryId, 
+        resolution = "HD", duration = 0 } = req.body;
       
       if (!title || !aiGenerator || !prompt) {
         return res.status(400).json({ error: "Title, AI Generator, and Prompt are required" });
+      }
+      
+      if (!categoryId) {
+        return res.status(400).json({ error: "Category selection is required" });
+      }
+      
+      // Verify category exists
+      if (categoryId) {
+        const category = await storage.getCategoryById(parseInt(categoryId));
+        if (!category) {
+          return res.status(400).json({ error: "Selected category does not exist" });
+        }
       }
       
       // Create video record
@@ -153,7 +210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         preview: null,
         resolution,
         duration,
-        categoryId: null,
+        categoryId: parseInt(categoryId),
       });
       
       res.status(201).json(video);
