@@ -6,9 +6,11 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { formatNumber } from "@/lib/utils";
 import { Heart, Image } from "lucide-react";
 
+type ImageType = SchemaVideo | TypeVideo;
+
 interface ImageGalleryProps {
   title: string;
-  images: Video[];
+  images: ImageType[];
   onPreview?: (imageId: number) => void;
   onWishlist?: (imageId: number) => void;
   showViewAll?: boolean;
@@ -49,7 +51,7 @@ export default function ImageGallery({
 }
 
 interface ImageCardProps {
-  image: Video;
+  image: ImageType;
   onPreview?: (imageId: number) => void;
   onWishlist?: (imageId: number) => void;
 }
@@ -105,7 +107,7 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
         <h3 className="font-semibold text-sm line-clamp-2 h-10">{image.title}</h3>
         <div className="flex justify-between items-center mt-2">
           <span className="text-xs text-muted-foreground">
-            {image.aiGenerator || "AI Generated"}
+            {(image as any).aiGenerator || "AI Generated"}
           </span>
         </div>
       </div>

@@ -89,7 +89,8 @@ export const FeaturedVideos: Video[] = [
     credits: 500,
     resolution: "4K",
     duration: 15,
-    category: "urban"
+    category: "urban",
+    contentType: "video"
   },
   {
     id: 2,
@@ -98,7 +99,8 @@ export const FeaturedVideos: Video[] = [
     credits: 750,
     resolution: "4K",
     duration: 30,
-    category: "sci-fi"
+    category: "sci-fi",
+    contentType: "video"
   },
   {
     id: 3,
@@ -107,7 +109,8 @@ export const FeaturedVideos: Video[] = [
     credits: 350,
     resolution: "HD",
     duration: 10,
-    category: "style-transfer"
+    category: "style-transfer",
+    contentType: "video"
   },
   {
     id: 4,
@@ -116,7 +119,8 @@ export const FeaturedVideos: Video[] = [
     credits: 1200,
     resolution: "4K",
     duration: 45,
-    category: "portrait-animations"
+    category: "portrait-animations",
+    contentType: "video"
   }
 ];
 
@@ -191,7 +195,8 @@ export const NewReleases: Video[] = [
     credits: 450,
     resolution: "HD",
     duration: 60,
-    category: "nature"
+    category: "nature",
+    contentType: "video"
   },
   {
     id: 7,
