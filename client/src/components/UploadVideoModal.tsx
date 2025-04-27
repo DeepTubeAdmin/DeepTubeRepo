@@ -126,8 +126,10 @@ export default function UploadVideoModal({ isOpen, onClose }: UploadVideoModalPr
     }
   };
 
+  console.log("UploadVideoModal rendering, isOpen:", isOpen);
+  
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={onClose} forceMount>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-xl">Upload a Video</DialogTitle>

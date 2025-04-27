@@ -31,7 +31,10 @@ export default function Header() {
   };
 
   const handleUploadClick = () => {
+    console.log("Upload button clicked");
+    
     if (!user) {
+      console.log("User not authenticated, redirecting to auth page");
       toast({
         title: "Authentication required",
         description: "You need to sign in to upload videos",
@@ -40,6 +43,8 @@ export default function Header() {
       setLocation("/auth");
       return;
     }
+    
+    console.log("Opening upload modal");
     setUploadModalOpen(true);
   };
 
