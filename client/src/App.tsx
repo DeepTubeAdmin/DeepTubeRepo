@@ -5,10 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/Home";
 import AuthPage from "@/pages/auth-page";
-import Checkout from "@/pages/checkout";
-import AdultPage from "@/pages/adult-page";
 import NotFound from "@/pages/not-found";
-import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "@/hooks/use-auth";
 
 function Router() {
@@ -16,8 +13,6 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/auth" component={AuthPage} />
-      <Route path="/adult" component={AdultPage} />
-      <ProtectedRoute path="/checkout" component={Checkout} />
       <Route component={NotFound} />
     </Switch>
   );

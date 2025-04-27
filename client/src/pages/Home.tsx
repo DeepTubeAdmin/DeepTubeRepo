@@ -10,12 +10,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Categories, FeaturedVideos, NewReleases, PopularCategories } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
-import { LogIn } from "lucide-react";
+import { LogIn, Upload } from "lucide-react";
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState<string>("trending");
   const { toast } = useToast();
-  const { user, isLoading } = useAuth();
+  const { user } = useAuth();
   const [_, setLocation] = useLocation();
 
   const handleCategoryChange = (slug: string) => {
@@ -36,14 +36,6 @@ export default function Home() {
     });
   };
 
-  const handleCreditPurchase = (amount: number) => {
-    // In a real app, this would call our API to update user credits
-    toast({
-      title: "Credits Purchased!",
-      description: `${amount.toLocaleString()} credits have been added to your account.`,
-    });
-  };
-
   const navigateToAuth = () => {
     setLocation("/auth");
   };
@@ -51,33 +43,15 @@ export default function Home() {
   return (
     <>
       {user ? (
-        <Header credits={user.credits} onCreditPurchase={handleCreditPurchase} />
+        <Header />
       ) : (
         <div className="bg-secondary px-4 py-3 shadow-md">
           <div className="container mx-auto flex items-center justify-between">
             <h1 className="text-primary font-bold text-2xl">Deep-Tube</h1>
             <div className="flex items-center space-x-3">
               <Button variant="outline" className="border-primary text-primary hover:bg-primary/10">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="mr-2 h-4 w-4"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
+                <Upload className="mr-2 h-4 w-4" />
                 Upload Video
-              </Button>
-              <Button onClick={() => setLocation("/adult")} variant="outline" className="border-red-500 text-red-500 hover:bg-red-500/10">
-                18+
               </Button>
               <Button onClick={navigateToAuth} className="bg-primary">
                 <LogIn className="mr-2 h-4 w-4" /> Sign In
