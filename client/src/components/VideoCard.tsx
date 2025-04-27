@@ -45,7 +45,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           />
         </AspectRatio>
         <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
-          <span className="text-primary font-bold">{video.credits}</span> credits
+          {video.resolution}
         </div>
         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black bg-opacity-50">
           <Button 
@@ -62,7 +62,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         </h3>
         <div className="flex justify-between items-center mt-1">
           <div className="text-muted-foreground text-sm">
-            {video.resolution} • {formatDuration(video.duration)}
+            {formatDuration(video.duration)}
           </div>
           <Button 
             variant="ghost" 
