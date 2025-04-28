@@ -262,7 +262,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resolution = "HD", 
         duration = 0,
         vimeoId,        // Added support for Vimeo ID
-        contentType = "video" 
+        contentType = "video",
+        embedCode,      // For embedded content
+        imageUrl,       // For image uploads
+        videoUrl        // For direct video URLs
       } = req.body;
       
       // Only title and category are required now
@@ -307,6 +310,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contentType,
         categoryId: parseInt(categoryId),
         vimeoId,
+        credits: 0, // Default to 0 credits for free content
+        embedCode: contentType === "embed" ? embedCode : null,
+        imageUrl: contentType === "image" ? imageUrl : null,
       });
       
       res.status(201).json(video);
@@ -563,6 +569,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               duration,
               categoryId: parseInt(categoryId),
               vimeoId: result.videoId,
+              credits: 0, // Default to 0 credits for free content
+              preview: null,
             });
             
             // Return both Vimeo result and our video record
