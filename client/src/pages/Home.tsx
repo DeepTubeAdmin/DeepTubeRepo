@@ -4,7 +4,6 @@ import Header from "@/components/Header";
 import CategoryNavigation from "@/components/CategoryNavigation";
 import VideoGrid from "@/components/VideoGrid";
 import ImageGallery from "@/components/ImageGallery";
-import CtaBanner from "@/components/CtaBanner";
 import CategoryCard from "@/components/CategoryCard";
 import Footer from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
@@ -89,8 +88,6 @@ export default function Home() {
           onPreview={handlePreview}
           onWishlist={handleWishlist}
         />
-        
-        <CtaBanner />
         
         <section className="mb-8">
           <div className="flex items-center justify-between mb-4">
