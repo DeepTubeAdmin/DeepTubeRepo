@@ -80,7 +80,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
               showPortrait={false}
             />
           ) : isHovering && video.contentType === 'embed' && youtubeId ? (
-            // For YouTube embeds on hover, show the YouTube video preview or a dynamic thumbnail
+            // For YouTube embeds on hover, show the YouTube video preview with an overlay to catch clicks
             <div className="w-full h-full relative">
               <iframe 
                 className="absolute inset-0 w-full h-full border-0"
@@ -89,7 +89,20 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               ></iframe>
-              <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/20 to-transparent"></div>
+              {/* This transparent overlay prevents clicks from going to the iframe */}
+              <div 
+                className="absolute inset-0 bg-transparent z-10 cursor-pointer" 
+                onClick={handlePreview}
+                aria-label="Open full video player"
+              >
+                {/* Show a play button overlay on hover */}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity">
+                  <div className="bg-primary p-3 rounded-full animate-pulse">
+                    <Play className="h-8 w-8 text-white" />
+                  </div>
+                </div>
+              </div>
+              <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/30 to-transparent"></div>
             </div>
           ) : (
             <img
