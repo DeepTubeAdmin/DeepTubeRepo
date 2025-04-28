@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/Home";
 import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
+import MediaDetail from "@/pages/media-detail";
 import { AuthProvider } from "@/hooks/use-auth";
 
 function Router() {
@@ -13,6 +14,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/media/:id" component={MediaDetail} />
       <Route component={NotFound} />
     </Switch>
   );

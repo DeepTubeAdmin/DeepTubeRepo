@@ -1,8 +1,9 @@
-import { Heart, Play } from "lucide-react";
+import { Heart, Play, ExternalLink } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Video } from "@/types";
 import { useState } from "react";
 import VimeoEmbed from "./VimeoEmbed";
+import { Link } from "wouter";
 
 interface VideoCardProps {
   video: Video;
@@ -91,15 +92,20 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
       </div>
       
       <div className="p-2">
-        <h3 
-          className="text-sm font-medium line-clamp-1 hover:text-primary transition-colors cursor-pointer"
-          onClick={handlePreview}
-        >
-          {video.title}
-        </h3>
+        <div className="flex justify-between items-center">
+          <h3 
+            className="text-sm font-medium line-clamp-1 hover:text-primary transition-colors cursor-pointer"
+            onClick={handlePreview}
+          >
+            {video.title}
+          </h3>
+          <Link to={`/media/${video.id}`} className="text-muted-foreground hover:text-primary transition-colors">
+            <ExternalLink className="h-3.5 w-3.5 ml-1" />
+          </Link>
+        </div>
         <div className="flex justify-between items-center mt-1.5">
           <span className="text-xs text-muted-foreground">
-            AI Generated
+            {video.aiGenerator || "AI Generated"}
           </span>
           
           <button 

@@ -338,7 +338,7 @@ export default function MediaDetail() {
                       <Input
                         placeholder="Your name"
                         value={username}
-                        onChange={(e) => setUsername(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
                         className="w-full"
                       />
                     </div>
@@ -347,7 +347,7 @@ export default function MediaDetail() {
                   <Textarea
                     placeholder="Write your comment here..."
                     value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCommentText(e.target.value)}
                     className="w-full min-h-[100px]"
                   />
                   
