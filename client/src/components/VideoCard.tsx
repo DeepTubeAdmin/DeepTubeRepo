@@ -1,8 +1,5 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Heart, Play } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { cn } from "@/lib/utils";
 import { Video } from "@/types";
 import { useState } from "react";
 
@@ -14,6 +11,7 @@ interface VideoCardProps {
 
 export default function VideoCard({ video, onPreview, onWishlist }: VideoCardProps) {
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
   
   const handleWishlist = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -29,6 +27,18 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
     }
   };
 
+  const handleMouseEnter = () => {
+    setIsHovering(true);
+    // This would trigger the video preview automatically when hovering
+    if (onPreview) {
+      onPreview(video.id);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+  };
+
   const formatDuration = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -36,13 +46,18 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
   };
 
   return (
-    <div className="video-card bg-card overflow-hidden rounded-md shadow-sm hover:shadow-md transition-all">
+    <div 
+      id={`video-preview-${video.id}`}
+      className="video-card bg-card overflow-hidden rounded-md shadow-sm hover:shadow-md transition-all"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <div className="relative group">
         <AspectRatio ratio={16/9}>
           <img
             src={video.thumbnail}
             alt={video.title}
-            className="object-cover w-full h-full"
+            className={`object-cover w-full h-full transition-opacity duration-300 ${isHovering ? 'opacity-70' : 'opacity-100'}`}
           />
         </AspectRatio>
         
@@ -54,14 +69,13 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           {video.resolution}
         </div>
         
-        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <button 
-            className="bg-primary hover:bg-primary/90 text-white font-medium px-3 py-1.5 rounded-md text-sm"
-            onClick={handlePreview}
-          >
-            <Play className="h-3 w-3 inline mr-1" /> Preview
-          </button>
-        </div>
+        {isHovering && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="animate-pulse">
+              <Play className="h-12 w-12 text-white opacity-70" />
+            </div>
+          </div>
+        )}
       </div>
       
       <div className="p-2">

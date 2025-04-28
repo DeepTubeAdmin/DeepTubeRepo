@@ -58,6 +58,7 @@ interface ImageCardProps {
 
 function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
 
   const handleClick = () => {
     if (onPreview) {
@@ -72,15 +73,32 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
       onWishlist(image.id);
     }
   };
+  
+  const handleMouseEnter = () => {
+    setIsHovering(true);
+    // This would trigger the image preview automatically when hovering
+    if (onPreview) {
+      onPreview(image.id);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+  };
 
   return (
-    <div className="video-card bg-card overflow-hidden rounded-md shadow-sm hover:shadow-md transition-all">
+    <div 
+      id={`video-preview-${image.id}`}
+      className="video-card bg-card overflow-hidden rounded-md shadow-sm hover:shadow-md transition-all"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <div className="relative group">
         <AspectRatio ratio={16 / 9}>
           <img
             src={image.thumbnail}
             alt={image.title}
-            className="w-full h-full object-cover"
+            className={`w-full h-full object-cover transition-opacity duration-300 ${isHovering ? 'opacity-70' : 'opacity-100'}`}
           />
         </AspectRatio>
         
@@ -91,19 +109,20 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
           </div>
         </div>
         
-        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <button 
-            className="bg-primary hover:bg-primary/90 text-white font-medium px-3 py-1.5 rounded-md text-sm"
-            onClick={handleClick}
-          >
-            Preview
-          </button>
-        </div>
+        {isHovering && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="animate-pulse">
+              <Image className="h-12 w-12 text-white opacity-70" />
+            </div>
+          </div>
+        )}
       </div>
       
       <div className="p-2">
-        <h3 className="text-sm font-medium line-clamp-1 hover:text-primary transition-colors cursor-pointer"
-            onClick={handleClick}>
+        <h3 
+          className="text-sm font-medium line-clamp-1 hover:text-primary transition-colors cursor-pointer"
+          onClick={handleClick}
+        >
           {image.title}
         </h3>
         <div className="flex justify-between items-center mt-1.5">

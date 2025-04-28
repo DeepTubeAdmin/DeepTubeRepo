@@ -23,10 +23,16 @@ export default function Home() {
   };
 
   const handlePreview = (videoId: number) => {
-    toast({
-      title: "Video Preview",
-      description: `Preview functionality will be implemented for video ID: ${videoId}`,
-    });
+    // Only show toast notification if this is the first preview or on click
+    // Avoid showing toast on every hover as that would be annoying
+    const videoElement = document.getElementById(`video-preview-${videoId}`);
+    if (!videoElement) {
+      toast({
+        title: "Preview Started",
+        description: `Previewing content ID: ${videoId}`,
+        duration: 2000,
+      });
+    }
   };
 
   const handleWishlist = (videoId: number) => {
