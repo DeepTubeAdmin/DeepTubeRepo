@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, Loader2, Image as ImageIcon, Video as VideoIcon, Link as LinkIcon } from "lucide-react";
 import { SimpleDialog } from "@/components/ui/simple-dialog";
-import { youtubeUrlToEmbedCode, extractYoutubeVideoId } from "@/lib/utils";
+import { youtubeUrlToEmbedCode, extractYoutubeVideoId, getYoutubeThumbnailUrl } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -135,6 +135,17 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
     setIsUploading(true);
     
     try {
+      // Generate a proper thumbnail for YouTube embeds
+      let thumbnailUrl = "https://placehold.co/400x225?text=" + encodeURIComponent(title);
+      
+      // If it's a YouTube embed, extract the video ID and get a thumbnail
+      if (contentType === "embed") {
+        const videoId = extractYoutubeVideoId(originalYoutubeUrl || embedCode);
+        if (videoId) {
+          thumbnailUrl = getYoutubeThumbnailUrl(videoId);
+        }
+      }
+      
       // Upload the form data to the server
       const response = await fetch('/api/videos/upload', {
         method: 'POST',
@@ -148,13 +159,12 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           prompt,
           categoryId,
           contentType,
-          // In a real implementation, we would upload the file to storage
-          // and get a URL back, then include it here
-          thumbnail: "https://placehold.co/400x225?text=" + encodeURIComponent(title),
+          // Use YouTube thumbnail for embeds when available
+          thumbnail: thumbnailUrl,
           [contentType === "video" ? "videoUrl" : contentType === "image" ? "imageUrl" : "embedCode"]: 
             contentType === "embed" ? embedCode : "https://example.com/placeholder",
           resolution: contentType === "video" ? "HD" : undefined,
-          duration: contentType === "video" ? 0 : undefined, // This would come from analyzing the video file
+          duration: 0, // This would come from analyzing the video file
           credits: 0, // Default to 0 credits for free content
         }),
         credentials: 'include',
