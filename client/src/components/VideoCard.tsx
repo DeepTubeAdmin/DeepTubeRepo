@@ -53,7 +53,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className="relative group">
+      <div className="relative group" onClick={handlePreview}>
         <AspectRatio ratio={16/9}>
           {isHovering && video.vimeoId ? (
             <VimeoEmbed 
@@ -68,6 +68,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
             <div 
               className="w-full h-full"
               dangerouslySetInnerHTML={{ __html: video.embedCode }} 
+              onClick={(e) => e.stopPropagation()}
             />
           ) : (
             <img

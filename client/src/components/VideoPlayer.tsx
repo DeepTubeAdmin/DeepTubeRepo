@@ -63,10 +63,12 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                   showPortrait={false}
                 />
               ) : video.contentType === 'embed' && video.embedCode ? (
-                <div 
-                  className="aspect-video" 
-                  dangerouslySetInnerHTML={{ __html: video.embedCode }} 
-                />
+                <div className="aspect-video w-full">
+                  <div 
+                    className="w-full h-full"
+                    dangerouslySetInnerHTML={{ __html: video.embedCode }} 
+                  />
+                </div>
               ) : (
                 <div className="aspect-video bg-gray-200 flex items-center justify-center text-muted-foreground">
                   No video available
