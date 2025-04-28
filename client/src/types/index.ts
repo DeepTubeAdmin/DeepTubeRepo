@@ -19,6 +19,7 @@ export interface Video {
   contentType?: "video" | "image" | "embed"; // Added to support videos, images, and embeds
   vimeoId?: string;   // Vimeo video ID
   videoUrl?: string;  // URL to the video file or Vimeo URL
+  imageUrl?: string;  // URL to the image file for image content type
   embedCode?: string; // Embed code for embedded content
 }
 

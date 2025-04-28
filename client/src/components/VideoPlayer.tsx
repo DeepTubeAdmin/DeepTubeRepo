@@ -53,10 +53,10 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto" aria-labelledby="video-title" aria-describedby="video-details">
+      <DialogContent className="sm:max-w-5xl md:max-w-6xl lg:max-w-7xl max-h-[95vh] overflow-y-auto w-[95vw]" aria-labelledby="video-title" aria-describedby="video-details">
         {loading ? (
           <div className="flex items-center justify-center py-12" aria-live="polite">
-            <Loader2 className="h-8 w-8 animate-spin text-border" aria-label="Loading video" />
+            <Loader2 className="h-10 w-10 animate-spin text-border" aria-label="Loading video" />
           </div>
         ) : error ? (
           <div className="text-center py-12 text-destructive" aria-live="assertive">
@@ -89,6 +89,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                           .replace('height="315"', 'height="100%"')
                           .replace('title="YouTube video player"', `title="${video.title || 'YouTube video'}"`)
                           .replace('frameborder="0"', 'frameborder="0" role="presentation"')
+                          .replace('allow="', 'allow="fullscreen; ')
                           + `<style>
                               .embed-container iframe,
                               .embed-container object,
@@ -105,57 +106,65 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                     />
                   </div>
                 </div>
+              ) : video.contentType === 'image' ? (
+                <div className="flex justify-center bg-black/10 py-4">
+                  <img 
+                    src={video.thumbnail || video.imageUrl} 
+                    alt={video.title} 
+                    className="max-h-[70vh] object-contain rounded-md shadow-lg"
+                  />
+                </div>
               ) : (
-                <div className="aspect-video bg-gray-200 flex items-center justify-center text-muted-foreground">
-                  No video available
+                <div className="aspect-video bg-gray-200 flex items-center justify-center text-muted-foreground h-[70vh]">
+                  No media available
                 </div>
               )}
             </div>
             
-            <div className="px-4 py-4">
-              <DialogTitle id="video-title" className="text-xl font-semibold mb-3">{video.title}</DialogTitle>
+            <div className="px-6 py-5">
+              <DialogTitle id="video-title" className="text-2xl font-bold mb-4">{video.title}</DialogTitle>
               
-              <div className="flex items-center gap-2 mb-4 flex-wrap">
-                <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
+              <div className="flex items-center gap-3 mb-5 flex-wrap">
+                <span className="bg-primary/10 text-primary text-sm px-3 py-1 rounded-full">
                   {video.resolution}
                 </span>
                 
                 {video.category && (
-                  <span className="bg-secondary text-primary text-xs px-2 py-1 rounded-full flex items-center">
+                  <span className="bg-secondary text-primary text-sm px-3 py-1 rounded-full flex items-center">
                     <span className="mr-1">Category:</span>
                     {video.category.name}
                   </span>
                 )}
                 
                 {video.contentType === 'embed' ? (
-                  <span className="text-xs text-muted-foreground bg-yellow-50 text-yellow-700 px-2 py-1 rounded-full">
+                  <span className="text-sm text-muted-foreground bg-yellow-50 text-yellow-700 px-3 py-1 rounded-full">
                     YouTube Embed
                   </span>
                 ) : (
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-sm text-muted-foreground bg-primary/5 px-3 py-1 rounded-full">
                     AI Generated
                   </span>
                 )}
                 
                 {video.aiGenerator && (
-                  <span className="text-xs text-muted-foreground">
-                    with {video.aiGenerator}
+                  <span className="text-sm text-muted-foreground bg-secondary/30 px-3 py-1 rounded-full">
+                    {video.aiGenerator}
                   </span>
                 )}
               </div>
               
-              <div id="video-details" className="space-y-5">
+              <div id="video-details" className="space-y-6">
                 {video.prompt && (
-                  <div className="mt-4 p-3 bg-muted/30 rounded-md">
-                    <h3 className="text-sm font-medium mb-2">Prompt</h3>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{video.prompt}</p>
+                  <div className="mt-5 p-4 bg-muted/30 rounded-lg border border-muted">
+                    <h3 className="text-base font-semibold mb-3">AI Prompt</h3>
+                    <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{video.prompt}</p>
                   </div>
                 )}
                 
                 {video.description && (
-                  <div className="mt-4 p-3 bg-muted/30 rounded-md">
-                    <h3 className="text-sm font-medium mb-2">Description</h3>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{video.description}</p>
+                  <div className="mt-5 p-4 bg-muted/30 rounded-lg border border-muted">
+                    <h3 className="text-base font-semibold mb-3">Description</h3>
+                    <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{video.description}</p>
                   </div>
                 )}
               </div>
