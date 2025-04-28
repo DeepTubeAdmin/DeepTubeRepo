@@ -3,9 +3,7 @@ import VideoGrid from './VideoGrid';
 import ImageGallery from './ImageGallery';
 import { Video } from '@/types';
 import { Loader2 } from 'lucide-react';
-
-const VIDEOS_PER_ROW = 5; // Approximate number of videos per row
-const ITEMS_PER_IMAGE_ROW = 5; // Approximate number of images per row
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface InfiniteContentFeedProps {
   onPreview?: (videoId: number) => void;
@@ -25,6 +23,16 @@ export default function InfiniteContentFeed({ onPreview, onWishlist }: InfiniteC
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const observer = useRef<IntersectionObserver | null>(null);
+  const isMobile = useIsMobile();
+  
+  // Determine how many items should be shown per row based on screen size
+  const getItemsPerRow = () => {
+    if (isMobile) return 2; // Mobile: 2 items per row
+    if (window.innerWidth < 768) return 3; // Small tablets: 3 items
+    if (window.innerWidth < 1024) return 4; // Tablets: 4 items
+    if (window.innerWidth < 1280) return 5; // Small desktop: 5 items
+    return 6; // Large desktop: 6 items
+  };
   const loadingRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (isLoading) return;
@@ -76,6 +84,23 @@ export default function InfiniteContentFeed({ onPreview, onWishlist }: InfiniteC
     fetchContentBlocks(page);
   }, [page, fetchContentBlocks]);
 
+  // Use effect to handle window resize and update items per row
+  const [itemsPerRow, setItemsPerRow] = useState(getItemsPerRow());
+  
+  useEffect(() => {
+    const handleResize = () => {
+      setItemsPerRow(getItemsPerRow());
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isMobile]);
+  
+  // Function to limit items to single row
+  const limitToSingleRow = (items: Video[]) => {
+    return items.slice(0, itemsPerRow);
+  };
+  
   return (
     <div className="space-y-8">
       {isInitialLoad ? (
@@ -84,25 +109,30 @@ export default function InfiniteContentFeed({ onPreview, onWishlist }: InfiniteC
         </div>
       ) : (
         <>
-          {contentBlocks.map((block) => (
-            <div key={block.id} className="mb-10">
-              {block.type === 'videos' ? (
-                <VideoGrid
-                  title={block.title}
-                  videos={block.items}
-                  onPreview={onPreview}
-                  onWishlist={onWishlist}
-                />
-              ) : (
-                <ImageGallery
-                  title={block.title}
-                  images={block.items}
-                  onPreview={onPreview}
-                  onWishlist={onWishlist}
-                />
-              )}
-            </div>
-          ))}
+          {contentBlocks.map((block) => {
+            // Limit items to what fits in a single row based on screen size
+            const limitedItems = limitToSingleRow(block.items);
+            
+            return (
+              <div key={block.id} className="mb-10">
+                {block.type === 'videos' ? (
+                  <VideoGrid
+                    title={block.title}
+                    videos={limitedItems}
+                    onPreview={onPreview}
+                    onWishlist={onWishlist}
+                  />
+                ) : (
+                  <ImageGallery
+                    title={block.title}
+                    images={limitedItems}
+                    onPreview={onPreview}
+                    onWishlist={onWishlist}
+                  />
+                )}
+              </div>
+            );
+          })}
           
           {hasMore && (
             <div 
