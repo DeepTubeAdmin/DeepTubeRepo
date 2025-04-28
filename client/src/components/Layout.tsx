@@ -16,7 +16,7 @@ export default function Layout({ children, showHeader = true }: LayoutProps) {
         {children}
       </div>
       
-      <div className="sticky bottom-0 w-full z-10 shadow-lg">
+      <div className="sticky bottom-0 w-full z-10">
         <Footer />
       </div>
     </div>

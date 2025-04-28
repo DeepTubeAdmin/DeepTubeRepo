@@ -36,6 +36,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 // Mock data for the forum posts
 const forumCategories = [
