@@ -417,6 +417,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Video/Image detail endpoint
+  app.get("/api/videos/:id", async (req, res) => {
+    try {
+      const videoId = parseInt(req.params.id);
+      
+      // Get video details
+      const video = await storage.getVideoById(videoId);
+      if (!video) {
+        return res.status(404).json({ error: "Video/Image not found" });
+      }
+      
+      // Get category info
+      const category = video.categoryId 
+        ? await storage.getCategoryById(video.categoryId) 
+        : null;
+      
+      // Get comments
+      const comments = await storage.getCommentsByVideoId(videoId);
+      
+      // Check if item is wishlisted by current user (if authenticated)
+      let isWishlisted = false;
+      if (req.isAuthenticated() && req.user) {
+        isWishlisted = await storage.isWishlisted(req.user.id, videoId);
+      }
+      
+      // Return complete details
+      res.json({
+        ...video,
+        category,
+        comments,
+        isWishlisted
+      });
+      
+    } catch (error) {
+      console.error("Error fetching video details:", error);
+      res.status(500).json({ error: "Failed to fetch video details" });
+    }
+  });
+  
+  // Comments API
+  app.get("/api/videos/:id/comments", async (req, res) => {
+    try {
+      const videoId = parseInt(req.params.id);
+      const comments = await storage.getCommentsByVideoId(videoId);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({ error: "Failed to fetch comments" });
+    }
+  });
+  
+  app.post("/api/videos/:id/comments", async (req, res) => {
+    try {
+      const videoId = parseInt(req.params.id);
+      
+      // Check if video exists
+      const video = await storage.getVideoById(videoId);
+      if (!video) {
+        return res.status(404).json({ error: "Video not found" });
+      }
+      
+      const { username, content } = req.body;
+      
+      // Validate required fields
+      if (!username) {
+        return res.status(400).json({ error: "Username is required" });
+      }
+      
+      if (!content) {
+        return res.status(400).json({ error: "Comment content is required" });
+      }
+      
+      // Create comment with or without user ID
+      const commentData: any = {
+        videoId,
+        username,
+        content
+      };
+      
+      // If user is authenticated, associate comment with user
+      if (req.isAuthenticated() && req.user) {
+        commentData.userId = req.user.id;
+      }
+      
+      const comment = await storage.addComment(commentData);
+      res.status(201).json(comment);
+      
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      res.status(500).json({ error: "Failed to add comment" });
+    }
+  });
+
   // Upload a video to Vimeo
   app.post("/api/vimeo/upload", isAuthenticated, upload.single("video"), async (req, res) => {
     try {
