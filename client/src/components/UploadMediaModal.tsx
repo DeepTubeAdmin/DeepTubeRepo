@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Loader2, Image as ImageIcon, Video as VideoIcon } from "lucide-react";
+import { Upload, Loader2, Image as ImageIcon, Video as VideoIcon, Link as LinkIcon } from "lucide-react";
 import { SimpleDialog } from "@/components/ui/simple-dialog";
 import {
   Select,
@@ -35,7 +35,8 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
   const [prompt, setPrompt] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState<string>("");
-  const [contentType, setContentType] = useState<"video" | "image">("video");
+  const [contentType, setContentType] = useState<"video" | "image" | "embed">("video");
+  const [embedCode, setEmbedCode] = useState<string>("");
   
   // Fetch categories for the dropdown
   const { data: categories, isLoading: categoriesLoading } = useQuery<Category[]>({
@@ -52,6 +53,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
       setAiGenerator("");
       setPrompt("");
       setDescription("");
+      setEmbedCode("");
     }
   }, [isOpen]);
 
@@ -97,10 +99,19 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
       return;
     }
 
-    if (!selectedFile) {
+    if (contentType !== "embed" && !selectedFile) {
       toast({
         title: "No file selected",
         description: `Please select a ${contentType} file to upload`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (contentType === "embed" && !embedCode) {
+      toast({
+        title: "No embed code",
+        description: "Please enter the embed code from YouTube, Vimeo, or other platforms",
         variant: "destructive",
       });
       return;
@@ -125,7 +136,8 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           // In a real implementation, we would upload the file to storage
           // and get a URL back, then include it here
           thumbnail: "https://placehold.co/400x225?text=" + encodeURIComponent(title),
-          [contentType === "video" ? "videoUrl" : "imageUrl"]: "https://example.com/placeholder",
+          [contentType === "video" ? "videoUrl" : contentType === "image" ? "imageUrl" : "embedCode"]: 
+            contentType === "embed" ? embedCode : "https://example.com/placeholder",
           resolution: contentType === "video" ? "HD" : undefined,
           duration: contentType === "video" ? 0 : undefined, // This would come from analyzing the video file
         }),
@@ -169,8 +181,8 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           Share your AI-generated content with the DeepTube community
         </p>
         
-        <Tabs defaultValue="video" onValueChange={(value) => setContentType(value as "video" | "image")}>
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+        <Tabs defaultValue="video" onValueChange={(value) => setContentType(value as "video" | "image" | "embed")}>
+          <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="video" className="flex items-center gap-2">
               <VideoIcon className="w-4 h-4" />
               Video
@@ -178,6 +190,10 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
             <TabsTrigger value="image" className="flex items-center gap-2">
               <ImageIcon className="w-4 h-4" />
               Image
+            </TabsTrigger>
+            <TabsTrigger value="embed" className="flex items-center gap-2">
+              <LinkIcon className="w-4 h-4" />
+              Embed
             </TabsTrigger>
           </TabsList>
           
