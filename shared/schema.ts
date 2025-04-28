@@ -48,6 +48,7 @@ export const videos = pgTable("videos", {
   categoryId: integer("category_id").references(() => categories.id),
   vimeoId: text("vimeo_id"), // Store Vimeo video ID
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  credits: integer("credits").notNull().default(0), // Number of credits required to purchase
 });
 
 export const videosRelations = relations(videos, ({ one, many }) => ({
