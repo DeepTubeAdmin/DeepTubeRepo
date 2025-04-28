@@ -79,10 +79,6 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           {formatDuration(video.duration)}
         </div>
         
-        <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
-          {video.resolution}
-        </div>
-        
         {isHovering && !video.vimeoId && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="animate-pulse">
