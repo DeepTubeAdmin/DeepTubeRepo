@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import Layout from "@/components/Layout";
 import { 
   MessageSquare, 
   Plus, 
@@ -245,9 +244,7 @@ export default function ForumPage() {
   };
 
   return (
-    <>
-      <Header />
-      
+    <Layout>
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="flex items-center gap-4 mb-8">
           <MessageSquare className="h-8 w-8 text-primary" />
@@ -495,71 +492,65 @@ export default function ForumPage() {
                         </Button>
                       </div>
                     </CardHeader>
-                    <CardContent className="py-2">
-                      <p className="text-muted-foreground">{thread.content}</p>
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {thread.tags.map((tag, i) => (
-                          <Badge key={i} variant="secondary" className="bg-secondary/50">
-                            #{tag}
-                          </Badge>
-                        ))}
-                      </div>
+                    <CardContent className={`${activeThread === thread.id ? '' : 'line-clamp-2'}`}>
+                      <p className="text-sm text-muted-foreground whitespace-pre-line">
+                        {thread.content}
+                      </p>
+                      {thread.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-3">
+                          {thread.tags.map(tag => (
+                            <Badge key={tag} variant="secondary" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </CardContent>
-                    <CardFooter className="pt-2 flex justify-between">
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <MessageCircle size={16} />
-                        <span className="text-sm">{thread.commentCount} comments</span>
-                      </div>
+                    <CardFooter className="pt-0 flex justify-between">
                       <Button 
                         variant="ghost" 
-                        size="sm" 
-                        onClick={() => {
-                          setActiveThread(activeThread === thread.id ? null : thread.id);
-                          if (activeThread !== thread.id) {
-                            setVisibleCommentForms({...visibleCommentForms, [thread.id]: false});
-                          }
-                        }}
+                        size="sm"
+                        className="text-muted-foreground"
+                        onClick={() => setActiveThread(activeThread === thread.id ? null : thread.id)}
                       >
-                        {activeThread === thread.id ? "Hide Comments" : "Show Comments"}
+                        {activeThread === thread.id ? (
+                          <>
+                            <ChevronUp size={16} className="mr-1" />
+                            Show Less
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown size={16} className="mr-1" />
+                            Show More
+                          </>
+                        )}
                       </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="flex items-center gap-1 text-muted-foreground"
+                          onClick={() => openCommentForm(thread.id)}
+                        >
+                          <MessageCircle size={16} />
+                          <span>Reply ({thread.commentCount})</span>
+                        </Button>
+                      </div>
                     </CardFooter>
                     
-                    {/* Comments Section */}
+                    {/* Comments section */}
                     {activeThread === thread.id && (
-                      <div className="px-6 pb-6 pt-1 border-t mt-2">
-                        <div className="space-y-4 mb-4">
-                          {comments
-                            .filter(comment => comment.threadId === thread.id)
-                            .map(comment => (
-                              <div key={comment.id} className="flex gap-4 pb-3 border-b last:border-0">
-                                <Avatar className="h-8 w-8">
-                                  <AvatarFallback>{comment.author[0].toUpperCase()}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <div className="font-medium">{comment.author}</div>
-                                    <div className="text-xs text-muted-foreground">{comment.timestamp}</div>
-                                  </div>
-                                  <p className="text-sm">{comment.content}</p>
-                                  <div className="flex items-center gap-2 mt-2">
-                                    <Button variant="ghost" size="sm" className="h-6 px-2">
-                                      <ThumbsUp size={14} className="mr-1" />
-                                      <span className="text-xs">{comment.upvotes}</span>
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">Reply</Button>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                        </div>
+                      <div className="px-6 pb-4 space-y-4">
+                        <Separator />
                         
-                        {visibleCommentForms[thread.id] ? (
-                          <div className="space-y-3">
+                        {/* Comment form */}
+                        {visibleCommentForms[thread.id] && (
+                          <div className="mt-4 space-y-3">
                             <Textarea 
-                              placeholder="Add your comment..."
+                              placeholder={`Reply to ${thread.author}'s thread...`}
                               value={newComment}
                               onChange={e => setNewComment(e.target.value)}
-                              rows={3}
+                              className="min-h-[100px]"
                             />
                             <div className="flex justify-end gap-2">
                               <Button 
@@ -574,41 +565,63 @@ export default function ForumPage() {
                                 onClick={() => handleAddComment(thread.id)}
                                 disabled={!newComment.trim()}
                               >
-                                Post Comment
+                                Post Reply
                               </Button>
                             </div>
                           </div>
-                        ) : (
-                          <Button 
-                            variant="outline" 
-                            className="w-full mt-2"
-                            onClick={() => openCommentForm(thread.id)}
-                          >
-                            Add a Comment
-                          </Button>
                         )}
+                        
+                        {/* Comments list */}
+                        <div className="space-y-3 mt-3">
+                          <h4 className="font-medium text-sm flex items-center gap-1">
+                            <MessageCircle size={14} />
+                            Comments ({thread.commentCount})
+                          </h4>
+                          
+                          {comments
+                            .filter(comment => comment.threadId === thread.id)
+                            .map(comment => (
+                              <div key={comment.id} className="bg-muted/50 rounded-lg p-3">
+                                <div className="flex justify-between items-center mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <Avatar className="h-6 w-6">
+                                      <AvatarFallback>{comment.author.charAt(0).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    <span className="font-medium text-sm">{comment.author}</span>
+                                  </div>
+                                  <span className="text-xs text-muted-foreground">{comment.timestamp}</span>
+                                </div>
+                                <p className="text-sm">{comment.content}</p>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <Button variant="ghost" size="sm" className="h-auto py-1 px-2">
+                                    <ThumbsUp size={14} className="mr-1" />
+                                    <span className="text-xs">{comment.upvotes}</span>
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                            
+                          {!visibleCommentForms[thread.id] && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="mt-2 w-full"
+                              onClick={() => openCommentForm(thread.id)}
+                            >
+                              <MessageCircle size={14} className="mr-1" />
+                              Write a comment
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </Card>
                 ))
               )}
             </div>
-            
-            {/* Pagination */}
-            <div className="flex justify-center mt-8">
-              <div className="join">
-                <Button variant="outline" size="sm" className="px-4">Previous</Button>
-                <Button variant="outline" size="sm" className="px-4 bg-muted">1</Button>
-                <Button variant="outline" size="sm" className="px-4">2</Button>
-                <Button variant="outline" size="sm" className="px-4">3</Button>
-                <Button variant="outline" size="sm" className="px-4">Next</Button>
-              </div>
-            </div>
           </div>
         </div>
       </main>
-      
-      <Footer />
-    </>
+    </Layout>
   );
 }

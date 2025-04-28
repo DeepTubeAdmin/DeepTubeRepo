@@ -54,44 +54,41 @@ export default function Home() {
     }
   };
 
-  const renderHeader = () => {
-    if (user) {
-      return true; // Let Layout handle showing the regular header
-    } else {
-      return (
-        <div className="bg-secondary px-4 py-3 shadow-md">
-          <div className="container mx-auto flex items-center justify-between">
-            <h1 className="text-primary font-bold text-2xl">DeepTube<span className="text-xs align-top">.co</span></h1>
-            <div className="flex items-center space-x-3">
-              <Button 
-                variant="outline" 
-                className="border-primary text-primary hover:bg-primary/10"
-                onClick={handleUploadClick}
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                Upload Media
-              </Button>
-              <Button 
-                variant="outline" 
-                className="border-primary text-primary hover:bg-primary/10"
-                onClick={() => window.open('https://www.synthesia.io/?via=seth-glass', '_blank')}
-              >
-                <WandSparkles className="mr-2 h-4 w-4" />
-                Create
-              </Button>
-              <Button onClick={navigateToAuth} className="bg-primary">
-                <LogIn className="mr-2 h-4 w-4" /> Sign In
-              </Button>
-            </div>
+  // Custom header for non-authenticated users
+  const renderGuestHeader = () => {
+    return (
+      <div className="bg-secondary px-4 py-3 shadow-md">
+        <div className="container mx-auto flex items-center justify-between">
+          <h1 className="text-primary font-bold text-2xl">DeepTube<span className="text-xs align-top">.co</span></h1>
+          <div className="flex items-center space-x-3">
+            <Button 
+              variant="outline" 
+              className="border-primary text-primary hover:bg-primary/10"
+              onClick={handleUploadClick}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Upload Media
+            </Button>
+            <Button 
+              variant="outline" 
+              className="border-primary text-primary hover:bg-primary/10"
+              onClick={() => window.open('https://www.synthesia.io/?via=seth-glass', '_blank')}
+            >
+              <WandSparkles className="mr-2 h-4 w-4" />
+              Create
+            </Button>
+            <Button onClick={navigateToAuth} className="bg-primary">
+              <LogIn className="mr-2 h-4 w-4" /> Sign In
+            </Button>
           </div>
         </div>
-      );
-    }
+      </div>
+    );
   };
 
   return (
     <Layout showHeader={user ? true : false}>
-      {!user && renderHeader()}
+      {!user && renderGuestHeader()}
       
       {/* AI Video Creation Banner */}
       <div className="bg-primary/5 border-y border-primary/20">
