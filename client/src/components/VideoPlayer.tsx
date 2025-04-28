@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import VimeoEmbed from './VimeoEmbed';
 import { Video } from '@/types';
 import { apiRequest } from '@/lib/queryClient';
@@ -53,7 +53,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto" aria-labelledby="video-title">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto" aria-labelledby="video-title" aria-describedby="video-details">
         {loading ? (
           <div className="flex items-center justify-center py-12" aria-live="polite">
             <Loader2 className="h-8 w-8 animate-spin text-border" aria-label="Loading video" />
@@ -112,10 +112,10 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
               )}
             </div>
             
-            <div className="px-2">
-              <h2 id="video-title" className="text-xl font-semibold">{video.title}</h2>
+            <div className="px-4 py-4">
+              <DialogTitle id="video-title" className="text-xl font-semibold mb-3">{video.title}</DialogTitle>
               
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <div className="flex items-center gap-2 mb-4 flex-wrap">
                 <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
                   {video.resolution}
                 </span>
@@ -144,19 +144,21 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                 )}
               </div>
               
-              {video.prompt && (
-                <div className="mt-4">
-                  <h3 className="text-sm font-medium mb-1">Prompt</h3>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{video.prompt}</p>
-                </div>
-              )}
-              
-              {video.description && (
-                <div className="mt-4">
-                  <h3 className="text-sm font-medium mb-1">Description</h3>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{video.description}</p>
-                </div>
-              )}
+              <div id="video-details" className="space-y-5">
+                {video.prompt && (
+                  <div className="mt-4 p-3 bg-muted/30 rounded-md">
+                    <h3 className="text-sm font-medium mb-2">Prompt</h3>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{video.prompt}</p>
+                  </div>
+                )}
+                
+                {video.description && (
+                  <div className="mt-4 p-3 bg-muted/30 rounded-md">
+                    <h3 className="text-sm font-medium mb-2">Description</h3>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{video.description}</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ) : null}
