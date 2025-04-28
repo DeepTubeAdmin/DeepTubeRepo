@@ -213,10 +213,12 @@ export default function MediaDetail() {
                 />
               </AspectRatio>
             ) : media.contentType === 'embed' && media.embedCode ? (
-              <div 
-                className="w-full aspect-video" 
-                dangerouslySetInnerHTML={{ __html: media.embedCode }} 
-              />
+              <div className="relative w-full aspect-video">
+                <div 
+                  className="absolute inset-0 w-full h-full"
+                  dangerouslySetInnerHTML={{ __html: media.embedCode }} 
+                />
+              </div>
             ) : (
               vimeoId ? (
                 <VimeoEmbed 
