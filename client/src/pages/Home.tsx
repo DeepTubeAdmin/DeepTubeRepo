@@ -2,14 +2,13 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import CategoryNavigation from "@/components/CategoryNavigation";
-import VideoGrid from "@/components/VideoGrid";
-import ImageGallery from "@/components/ImageGallery";
 import CategoryCard from "@/components/CategoryCard";
 import Footer from "@/components/Footer";
 import VideoPlayer from "@/components/VideoPlayer";
+import InfiniteContentFeed from "@/components/InfiniteContentFeed";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Categories, FeaturedVideos, NewReleases, PopularCategories, AIGeneratedImages } from "@/data/mockData";
+import { Categories, PopularCategories } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
 import { LogIn, Upload, Video, WandSparkles } from "lucide-react";
 
@@ -112,27 +111,7 @@ export default function Home() {
           onCategoryChange={handleCategoryChange} 
         />
         
-        <VideoGrid
-          title="Featured AI Videos"
-          videos={FeaturedVideos}
-          onPreview={handlePreview}
-          onWishlist={handleWishlist}
-        />
-        
-        <VideoGrid
-          title="New Releases"
-          videos={NewReleases}
-          onPreview={handlePreview}
-          onWishlist={handleWishlist}
-        />
-        
-        <ImageGallery
-          title="AI-Generated Images"
-          images={AIGeneratedImages}
-          onPreview={handlePreview}
-          onWishlist={handleWishlist}
-        />
-        
+        {/* Popular Categories Section */}
         <section className="mb-10">
           <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-2 mb-6">
             <h2 className="text-xl md:text-2xl font-bold text-primary">Popular Categories</h2>
@@ -144,6 +123,12 @@ export default function Home() {
             ))}
           </div>
         </section>
+        
+        {/* Infinite Content Feed with Video-Image alternating pattern */}
+        <InfiniteContentFeed 
+          onPreview={handlePreview}
+          onWishlist={handleWishlist}
+        />
       </main>
       
       <Footer />
