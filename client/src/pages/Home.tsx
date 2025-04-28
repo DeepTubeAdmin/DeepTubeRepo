@@ -26,19 +26,9 @@ export default function Home() {
   };
 
   const handlePreview = (videoId: number) => {
-    // When explicitly clicked, open the modal player
+    // Only open the modal player when explicitly clicked, not on hover
     setSelectedVideoId(videoId);
     setIsPlayerOpen(true);
-    
-    // Only show toast notification if this is the first preview or on click
-    const videoElement = document.getElementById(`video-preview-${videoId}`);
-    if (!videoElement) {
-      toast({
-        title: "Preview Started",
-        description: `Previewing content ID: ${videoId}`,
-        duration: 2000,
-      });
-    }
   };
 
   const handleWishlist = (videoId: number) => {

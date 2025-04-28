@@ -32,10 +32,8 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
 
   const handleMouseEnter = () => {
     setIsHovering(true);
-    // This would trigger the video preview automatically when hovering
-    if (onPreview) {
-      onPreview(video.id);
-    }
+    // We don't want to call onPreview here anymore as it triggers the popup
+    // Instead, the video preview is handled directly in this component
   };
 
   const handleMouseLeave = () => {

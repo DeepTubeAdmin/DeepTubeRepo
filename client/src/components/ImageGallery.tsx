@@ -68,10 +68,8 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
   
   const handleMouseEnter = () => {
     setIsHovering(true);
-    // This would trigger the image preview automatically when hovering
-    if (onPreview) {
-      onPreview(image.id);
-    }
+    // We don't want to call onPreview here as it triggers the popup
+    // Instead, image hover effect is handled directly in this component
   };
 
   const handleMouseLeave = () => {
