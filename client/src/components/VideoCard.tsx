@@ -70,11 +70,19 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
               showPortrait={false}
             />
           ) : isHovering && video.contentType === 'embed' && video.embedCode ? (
-            <div 
-              className="w-full h-full"
-              dangerouslySetInnerHTML={{ __html: video.embedCode }} 
-              onClick={(e) => e.stopPropagation()}
-            />
+            // For YouTube embeds on hover, just show the thumbnail with an overlay
+            <div className="w-full h-full relative">
+              <img
+                src={video.thumbnail}
+                alt={video.title}
+                className="w-full h-full object-cover opacity-80"
+              />
+              <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                <div className="bg-primary/90 p-2 rounded-full">
+                  <Play className="h-8 w-8 text-white" />
+                </div>
+              </div>
+            </div>
           ) : (
             <img
               src={video.thumbnail}
@@ -90,7 +98,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           </div>
         )}
         
-        {isHovering && !video.vimeoId && video.contentType !== 'embed' && (
+        {isHovering && video.contentType !== 'embed' && !video.vimeoId && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="animate-pulse">
               <Play className="h-12 w-12 text-white opacity-70" />

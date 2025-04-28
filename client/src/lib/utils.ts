@@ -47,7 +47,18 @@ export function youtubeUrlToEmbedCode(url: string): string | null {
   
   if (!videoId) return null;
   
-  return `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>`;
+  // Note: We're using different embed parameters for different contexts.
+  // In the preview we use mute=1 and in the modal we enable autoplay
+  return `<iframe 
+    width="100%" 
+    height="100%" 
+    src="https://www.youtube.com/embed/${videoId}?rel=0&enablejsapi=1&mute=1" 
+    title="YouTube video player" 
+    frameborder="0" 
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    allowfullscreen 
+    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+  ></iframe>`;
 }
 
 // Get YouTube thumbnail URL from video ID

@@ -78,9 +78,16 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
               ) : video.contentType === 'embed' && video.embedCode ? (
                 <div className="aspect-video w-full">
                   <div 
-                    className="w-full h-full"
-                    dangerouslySetInnerHTML={{ __html: video.embedCode }} 
-                  />
+                    className="w-full h-full relative"
+                    style={{ paddingBottom: '56.25%' }}
+                  >
+                    <div 
+                      className="absolute inset-0"
+                      dangerouslySetInnerHTML={{ 
+                        __html: video.embedCode.replace('width="100%"', 'width="100%" height="100%"')
+                      }} 
+                    />
+                  </div>
                 </div>
               ) : (
                 <div className="aspect-video bg-gray-200 flex items-center justify-center text-muted-foreground">
