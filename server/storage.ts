@@ -117,14 +117,14 @@ export class DatabaseStorage implements IStorage {
       return db.select()
         .from(videos)
         .where(eq(videos.contentType, contentType))
-        .orderBy(sql`RANDOM()`)
+        .orderBy(desc(videos.createdAt)) // Order by newest first
         .limit(limit);
     }
     
-    // If no content type filter, use a simpler query
+    // If no content type filter, use a simpler query but still order by newest
     return db.select()
       .from(videos)
-      .orderBy(sql`RANDOM()`)
+      .orderBy(desc(videos.createdAt)) // Order by newest first
       .limit(limit);
   }
   
