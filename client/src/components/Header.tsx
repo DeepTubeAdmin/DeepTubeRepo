@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Search, User, Package, History, LogOut, Upload } from "lucide-react";
+import { Search, User, Package, History, LogOut, Upload, WandSparkles } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,6 +51,25 @@ export default function Header() {
 
   return (
     <header className="bg-secondary sticky top-0 z-50 shadow-md">
+      <div className="bg-primary/5 border-b border-primary/20">
+        <div className="container mx-auto px-4 py-2 flex flex-col md:flex-row items-center justify-between">
+          <div className="flex items-center mb-2 md:mb-0">
+            <Video className="h-5 w-5 text-primary mr-2" />
+            <div>
+              <h3 className="font-medium text-sm text-primary">Create AI Videos with Synthesia</h3>
+            </div>
+          </div>
+          <Button 
+            size="sm"
+            className="bg-primary hover:bg-primary/90 text-xs px-3 py-1 h-auto"
+            onClick={() => window.open('https://www.synthesia.io/?via=seth-glass', '_blank')}
+          >
+            <WandSparkles className="mr-1 h-3 w-3" />
+            Try Synthesia
+          </Button>
+        </div>
+      </div>
+      
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo */}
@@ -91,6 +110,16 @@ export default function Header() {
               Upload Media
             </Button>
             
+            {/* Create Button */}
+            <Button 
+              variant="outline"
+              className="rounded-full px-4 py-1 font-medium hidden sm:flex items-center"
+              onClick={() => window.open('https://www.synthesia.io/?via=seth-glass', '_blank')}
+            >
+              <WandSparkles className="mr-2 h-4 w-4" />
+              Create
+            </Button>
+            
             {/* Mobile Upload Button */}
             <Button
               variant="outline"
@@ -99,6 +128,16 @@ export default function Header() {
               onClick={handleUploadClick}
             >
               <Upload className="h-4 w-4" />
+            </Button>
+            
+            {/* Mobile Create Button */}
+            <Button
+              variant="outline"
+              size="icon"
+              className="sm:hidden"
+              onClick={() => window.open('https://www.synthesia.io/?via=seth-glass', '_blank')}
+            >
+              <WandSparkles className="h-4 w-4" />
             </Button>
 
             {/* User Profile */}

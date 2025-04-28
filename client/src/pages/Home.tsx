@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Categories, FeaturedVideos, NewReleases, PopularCategories, AIGeneratedImages } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
-import { LogIn, Upload } from "lucide-react";
+import { LogIn, Upload, Video, WandSparkles } from "lucide-react";
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState<string>("trending");
@@ -59,6 +59,14 @@ export default function Home() {
                 <Upload className="mr-2 h-4 w-4" />
                 Upload Media
               </Button>
+              <Button 
+                variant="outline" 
+                className="border-primary text-primary hover:bg-primary/10"
+                onClick={() => window.open('https://www.synthesia.io/?via=seth-glass', '_blank')}
+              >
+                <WandSparkles className="mr-2 h-4 w-4" />
+                Create
+              </Button>
               <Button onClick={navigateToAuth} className="bg-primary">
                 <LogIn className="mr-2 h-4 w-4" /> Sign In
               </Button>
@@ -66,6 +74,26 @@ export default function Home() {
           </div>
         </div>
       )}
+      
+      {/* AI Video Creation Banner */}
+      <div className="bg-primary/5 border-y border-primary/20">
+        <div className="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between">
+          <div className="flex items-center mb-4 md:mb-0">
+            <Video className="h-8 w-8 text-primary mr-3" />
+            <div>
+              <h3 className="font-bold text-lg text-primary">Create AI Videos with Synthesia</h3>
+              <p className="text-sm text-muted-foreground">Generate professional AI videos in minutes without cameras or actors</p>
+            </div>
+          </div>
+          <Button 
+            className="bg-primary hover:bg-primary/90"
+            onClick={() => window.open('https://www.synthesia.io/?via=seth-glass', '_blank')}
+          >
+            <WandSparkles className="mr-2 h-4 w-4" />
+            Try Synthesia
+          </Button>
+        </div>
+      </div>
       
       <main className="container mx-auto px-4 py-5">
         <CategoryNavigation 
