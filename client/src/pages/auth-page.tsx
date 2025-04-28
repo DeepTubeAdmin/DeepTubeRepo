@@ -56,18 +56,6 @@ export default function AuthPage() {
   const [_, setLocation] = useLocation();
   const { user, loginMutation, registerMutation, isLoading } = useAuth();
 
-  // Use the useEffect hook for navigation after render
-  useEffect(() => {
-    if (user) {
-      setLocation("/");
-    }
-  }, [user, setLocation]);
-  
-  // If user is logged in, we'll render nothing but useEffect will handle redirect
-  if (user) {
-    return null;
-  }
-
   // Login form
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -88,6 +76,18 @@ export default function AuthPage() {
       confirmPassword: "",
     },
   });
+
+  // Use the useEffect hook for navigation after render
+  useEffect(() => {
+    if (user) {
+      setLocation("/");
+    }
+  }, [user, setLocation]);
+  
+  // If user is logged in, we'll render nothing but useEffect will handle redirect
+  if (user) {
+    return null;
+  }
 
   const onLoginSubmit = (data: LoginFormValues) => {
     loginMutation.mutate(data);
