@@ -39,22 +39,18 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
   const [contentType, setContentType] = useState<"video" | "image" | "embed">("video");
   const [embedCode, setEmbedCode] = useState<string>("");
   
+  // Store original URL to allow toggling between URL and embed code
+  const [originalYoutubeUrl, setOriginalYoutubeUrl] = useState<string>("");
+  
   // Handle YouTube URL to embed code conversion
   const handleEmbedCodeChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
-    
-    // Check if it's a YouTube URL instead of an embed code
-    if ((value.includes('youtube.com') || value.includes('youtu.be')) && !value.includes('<iframe')) {
-      // Try to convert it to an embed code
-      const embedCode = youtubeUrlToEmbedCode(value);
-      if (embedCode) {
-        setEmbedCode(embedCode);
-        return;
-      }
-    }
-    
-    // Otherwise just set the raw value
     setEmbedCode(value);
+    
+    // Store YouTube URL for reference, but don't auto-convert immediately
+    if ((value.includes('youtube.com') || value.includes('youtu.be')) && !value.includes('<iframe')) {
+      setOriginalYoutubeUrl(value);
+    }
   }, []);
   
   // Fetch categories for the dropdown
@@ -159,6 +155,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
             contentType === "embed" ? embedCode : "https://example.com/placeholder",
           resolution: contentType === "video" ? "HD" : undefined,
           duration: contentType === "video" ? 0 : undefined, // This would come from analyzing the video file
+          credits: 0, // Default to 0 credits for free content
         }),
         credentials: 'include',
       });
@@ -493,9 +490,25 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                   placeholder="Paste embed code or YouTube URL (e.g. https://youtu.be/abcdef or <iframe> code)"
                   className="resize-none min-h-[120px] font-mono text-sm"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  You can paste a YouTube URL directly, or you can find embed codes by clicking "Share" and then "Embed" on platforms like YouTube, Vimeo, etc.
-                </p>
+                <div className="flex justify-between items-center mt-1">
+                  <p className="text-xs text-muted-foreground">
+                    You can paste a YouTube URL directly and click "Convert to Embed Code", or you can paste a regular embed code.
+                  </p>
+                  {originalYoutubeUrl && (
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline"
+                      className="ml-2 text-xs" 
+                      onClick={() => {
+                        const embedCode = youtubeUrlToEmbedCode(originalYoutubeUrl);
+                        if (embedCode) setEmbedCode(embedCode);
+                      }}
+                    >
+                      Convert to Embed Code
+                    </Button>
+                  )}
+                </div>
               </div>
               
               <div className="space-y-2">
