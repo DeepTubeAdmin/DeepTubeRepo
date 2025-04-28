@@ -224,7 +224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           response.blocks.push({
             type: 'videos',
             id: blockId,
-            title: `AI Videos - Section ${blockId + 1}`,
+            title: '',
             items: videos
           });
         } else {
@@ -234,7 +234,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           response.blocks.push({
             type: 'images',
             id: blockId,
-            title: `AI Image Gallery - Collection ${blockId + 1}`,
+            title: '',
             items: images
           });
         }
