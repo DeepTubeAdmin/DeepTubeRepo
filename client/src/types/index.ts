@@ -9,9 +9,10 @@ export interface Video {
   description?: string;
   aiGenerator?: string;
   prompt?: string;
-  contentType?: "video" | "image"; // Added to support both videos and images
+  contentType?: "video" | "image" | "embed"; // Added to support videos, images, and embeds
   vimeoId?: string;   // Vimeo video ID
   videoUrl?: string;  // URL to the video file or Vimeo URL
+  embedCode?: string; // Embed code for embedded content
 }
 
 export interface Category {

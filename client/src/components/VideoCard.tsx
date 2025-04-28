@@ -64,6 +64,11 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
               showByline={false}
               showPortrait={false}
             />
+          ) : isHovering && video.contentType === 'embed' && video.embedCode ? (
+            <div 
+              className="w-full h-full"
+              dangerouslySetInnerHTML={{ __html: video.embedCode }} 
+            />
           ) : (
             <img
               src={video.thumbnail}
@@ -73,11 +78,13 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           )}
         </AspectRatio>
         
-        <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
-          {formatDuration(video.duration)}
-        </div>
+        {video.duration > 0 && (
+          <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+            {formatDuration(video.duration)}
+          </div>
+        )}
         
-        {isHovering && !video.vimeoId && (
+        {isHovering && !video.vimeoId && video.contentType !== 'embed' && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="animate-pulse">
               <Play className="h-12 w-12 text-white opacity-70" />
