@@ -1,9 +1,10 @@
 import { 
-  users, categories, videos, wishlistItems,
+  users, categories, videos, wishlistItems, comments,
   type User, type InsertUser, 
   type Category, type InsertCategory,
   type Video, type InsertVideo,
-  type WishlistItem, type InsertWishlistItem
+  type WishlistItem, type InsertWishlistItem,
+  type Comment, type InsertComment
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -39,6 +40,10 @@ export interface IStorage {
   removeFromWishlist(userId: number, videoId: number): Promise<void>;
   getUserWishlist(userId: number): Promise<WishlistItem[]>;
   isWishlisted(userId: number, videoId: number): Promise<boolean>;
+  
+  // Comment operations
+  addComment(comment: InsertComment): Promise<Comment>;
+  getCommentsByVideoId(videoId: number): Promise<Comment[]>;
   
   // Session store
   sessionStore: SessionStore;
@@ -174,6 +179,19 @@ export class DatabaseStorage implements IStorage {
         eq(wishlistItems.videoId, videoId)
       ));
     return !!item;
+  }
+
+  // Comment operations
+  async addComment(comment: InsertComment): Promise<Comment> {
+    const [result] = await db.insert(comments).values(comment).returning();
+    return result;
+  }
+  
+  async getCommentsByVideoId(videoId: number): Promise<Comment[]> {
+    return db.select()
+      .from(comments)
+      .where(eq(comments.videoId, videoId))
+      .orderBy(desc(comments.createdAt));
   }
 
   // End of implementation

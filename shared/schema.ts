@@ -76,6 +76,27 @@ export const wishlistItemsRelations = relations(wishlistItems, ({ one }) => ({
   }),
 }));
 
+// Comments table for videos/images
+export const comments = pgTable("comments", {
+  id: serial("id").primaryKey(),
+  videoId: integer("video_id").references(() => videos.id, { onDelete: "cascade" }).notNull(),
+  username: text("username").notNull(), // Can be anonymous
+  userId: integer("user_id").references(() => users.id), // Optional for anonymous users
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const commentsRelations = relations(comments, ({ one }) => ({
+  video: one(videos, {
+    fields: [comments.videoId],
+    references: [videos.id],
+  }),
+  user: one(users, {
+    fields: [comments.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -87,6 +108,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export const insertCategorySchema = createInsertSchema(categories);
 export const insertVideoSchema = createInsertSchema(videos);
 export const insertWishlistItemSchema = createInsertSchema(wishlistItems);
+export const insertCommentSchema = createInsertSchema(comments);
 
 // Type definitions
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -100,3 +122,6 @@ export type Video = typeof videos.$inferSelect;
 
 export type InsertWishlistItem = z.infer<typeof insertWishlistItemSchema>;
 export type WishlistItem = typeof wishlistItems.$inferSelect;
+
+export type InsertComment = z.infer<typeof insertCommentSchema>;
+export type Comment = typeof comments.$inferSelect;
