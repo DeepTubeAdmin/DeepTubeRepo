@@ -40,8 +40,9 @@ export const videos = pgTable("videos", {
   thumbnail: text("thumbnail").notNull(),
   videoUrl: text("video_url"),
   imageUrl: text("image_url"),
+  embedCode: text("embed_code"),
   preview: text("preview"),
-  contentType: text("content_type").notNull().default("video"), // "video" or "image"
+  contentType: text("content_type").notNull().default("video"), // "video", "image", or "embed"
   resolution: text("resolution").default("HD"),
   duration: integer("duration").default(0), // in seconds
   categoryId: integer("category_id").references(() => categories.id),

@@ -34,11 +34,13 @@ type DetailedMedia = {
   credits: number;
   resolution: "HD" | "4K";
   duration: number;
-  contentType?: "video" | "image";
+  contentType?: "video" | "image" | "embed";
   categoryId?: number;
   category?: { id: number; name: string; slug: string };
   vimeoId?: string;
   videoUrl?: string;
+  imageUrl?: string;
+  embedCode?: string;
   aiGenerator?: string;
   prompt?: string;
   createdAt: string;

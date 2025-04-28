@@ -172,7 +172,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
     } finally {
       setIsUploading(false);
     }
-  }, [title, description, aiGenerator, prompt, categoryId, contentType, selectedFile, toast, onClose]);
+  }, [title, description, aiGenerator, prompt, categoryId, contentType, selectedFile, embedCode, toast, onClose]);
 
   return (
     <SimpleDialog isOpen={isOpen} onClose={onClose} title="Upload Media">
@@ -455,6 +455,133 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                     </>
                   ) : (
                     "Upload Image"
+                  )}
+                </Button>
+              </div>
+            </form>
+          </TabsContent>
+          
+          <TabsContent value="embed" className="mt-0">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="embed-code" className="text-sm font-medium">
+                  Embed Code <span className="text-destructive">*</span>
+                </label>
+                <Textarea 
+                  id="embed-code"
+                  value={embedCode}
+                  onChange={(e) => setEmbedCode(e.target.value)}
+                  placeholder="Paste embed code from YouTube, Vimeo, or other platforms (e.g. <iframe src='https://www.youtube.com/embed/...'></iframe>)"
+                  className="resize-none min-h-[120px] font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  You can find embed codes by clicking "Share" and then "Embed" on platforms like YouTube, Vimeo, etc.
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="embed-title" className="text-sm font-medium">
+                  Media Title <span className="text-destructive">*</span>
+                </label>
+                <Input 
+                  id="embed-title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Enter a title for your embedded media"
+                  required
+                  minLength={3}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="embed-category" className="text-sm font-medium">
+                  Category <span className="text-destructive">*</span>
+                </label>
+                <Select 
+                  value={categoryId} 
+                  onValueChange={setCategoryId}
+                  required
+                >
+                  <SelectTrigger id="embed-category">
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoriesLoading ? (
+                      <div className="flex items-center justify-center p-2">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Loading categories...
+                      </div>
+                    ) : categories && categories.length > 0 ? (
+                      categories.map((category) => (
+                        <SelectItem key={category.id} value={String(category.id)}>
+                          {category.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="p-2 text-sm text-muted-foreground">
+                        No categories found
+                      </div>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="embed-aiGenerator" className="text-sm font-medium">
+                  AI Generator (Optional)
+                </label>
+                <Input 
+                  id="embed-aiGenerator"
+                  value={aiGenerator}
+                  onChange={(e) => setAiGenerator(e.target.value)}
+                  placeholder="Which AI tool was used (e.g. Midjourney, DALL-E)"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="embed-prompt" className="text-sm font-medium">
+                  Prompt Used (Optional)
+                </label>
+                <Textarea 
+                  id="embed-prompt"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="Enter the prompt you used to generate this content"
+                  className="resize-none min-h-[80px]"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="embed-description" className="text-sm font-medium">
+                  Description (Optional)
+                </label>
+                <Textarea 
+                  id="embed-description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Add a description for your embedded media"
+                  className="resize-none min-h-[80px]"
+                />
+              </div>
+              
+              <div className="flex justify-end pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  className="mr-2"
+                  disabled={isUploading}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isUploading}>
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    "Upload Embed"
                   )}
                 </Button>
               </div>
