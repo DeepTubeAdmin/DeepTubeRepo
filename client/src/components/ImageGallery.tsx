@@ -26,17 +26,17 @@ export default function ImageGallery({
   viewAllUrl = '#',
 }: ImageGalleryProps) {
   return (
-    <div className="py-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">{title}</h2>
+    <section className="mb-10">
+      <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-2 mb-6">
+        <h2 className="text-xl md:text-2xl font-bold text-primary">{title}</h2>
         {showViewAll && (
-          <a href={viewAllUrl} className="text-primary hover:underline">
+          <a href={viewAllUrl} className="text-primary hover:text-primary-dark transition-colors hover:underline">
             View All
           </a>
         )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 overflow-x-auto pb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
         {images.filter(img => img.contentType === "image").map((image) => (
           <ImageCard
             key={image.id}
@@ -46,7 +46,7 @@ export default function ImageGallery({
           />
         ))}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -57,7 +57,7 @@ interface ImageCardProps {
 }
 
 function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
-  const [isHovering, setIsHovering] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
 
   const handleClick = () => {
     if (onPreview) {
@@ -67,19 +67,15 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
 
   const handleWishlist = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setIsWishlisted(!isWishlisted);
     if (onWishlist) {
       onWishlist(image.id);
     }
   };
 
   return (
-    <div
-      className="rounded-lg overflow-hidden bg-card shadow-md hover:shadow-lg transition-all cursor-pointer relative"
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
-      onClick={handleClick}
-    >
-      <div className="relative">
+    <div className="video-card bg-card overflow-hidden rounded-md shadow-sm hover:shadow-md transition-all">
+      <div className="relative group">
         <AspectRatio ratio={16 / 9}>
           <img
             src={image.thumbnail}
@@ -88,27 +84,39 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
           />
         </AspectRatio>
         
-        <Badge className="absolute top-2 right-2 bg-black/60 text-white">
-          <Image className="w-3 h-3 mr-1" />
-          AI Image
-        </Badge>
+        <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+          <div className="flex items-center">
+            <Image className="w-3 h-3 mr-1" />
+            <span>AI</span>
+          </div>
+        </div>
         
-        {onWishlist && (
-          <button
-            onClick={handleWishlist}
-            className="absolute bottom-2 right-2 p-2 rounded-full bg-black/60 text-white hover:bg-primary transition-colors"
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <button 
+            className="bg-primary hover:bg-primary/90 text-white font-medium px-3 py-1.5 rounded-md text-sm"
+            onClick={handleClick}
           >
-            <Heart className="w-4 h-4" />
+            Preview
           </button>
-        )}
+        </div>
       </div>
       
-      <div className="p-3">
-        <h3 className="font-semibold text-sm line-clamp-2 h-10">{image.title}</h3>
-        <div className="flex justify-between items-center mt-2">
+      <div className="p-2">
+        <h3 className="text-sm font-medium line-clamp-1 hover:text-primary transition-colors cursor-pointer"
+            onClick={handleClick}>
+          {image.title}
+        </h3>
+        <div className="flex justify-between items-center mt-1.5">
           <span className="text-xs text-muted-foreground">
             {(image as any).aiGenerator || "AI Generated"}
           </span>
+          
+          <button 
+            onClick={handleWishlist}
+            className="text-muted-foreground hover:text-primary transition-colors"
+          >
+            <Heart className="h-4 w-4" fill={isWishlisted ? "currentColor" : "none"} />
+          </button>
         </div>
       </div>
     </div>
