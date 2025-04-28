@@ -23,6 +23,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format } from "date-fns";
+import { FaFacebook, FaGoogle, FaApple } from "react-icons/fa";
 
 const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -103,6 +104,12 @@ export default function AuthPage() {
     
     registerMutation.mutate(registerData);
   };
+  
+  const handleSocialLogin = (provider: string) => {
+    // In a real implementation, this would initiate OAuth flow
+    console.log(`Initiating ${provider} login flow`);
+    // For now we just log the attempt
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row">
@@ -162,6 +169,38 @@ export default function AuthPage() {
                   </Button>
                 </form>
               </Form>
+              
+              <div className="relative flex items-center pt-4">
+                <div className="flex-grow border-t border-muted"></div>
+                <span className="flex-shrink mx-4 text-muted-foreground text-sm">or continue with</span>
+                <div className="flex-grow border-t border-muted"></div>
+              </div>
+              
+              <div className="flex flex-col space-y-3 pt-4">
+                <Button 
+                  onClick={() => handleSocialLogin("facebook")}
+                  className="bg-[#1877F2] hover:bg-[#1877F2]/90 text-white"
+                >
+                  <FaFacebook className="mr-2 h-4 w-4" />
+                  Continue with Facebook
+                </Button>
+                
+                <Button 
+                  onClick={() => handleSocialLogin("google")}
+                  className="bg-white border border-gray-300 hover:bg-gray-100 text-black"
+                >
+                  <FaGoogle className="mr-2 h-4 w-4 text-[#4285F4]" />
+                  Continue with Google
+                </Button>
+                
+                <Button 
+                  onClick={() => handleSocialLogin("apple")}
+                  className="bg-black hover:bg-black/90 text-white"
+                >
+                  <FaApple className="mr-2 h-4 w-4" />
+                  Continue with Apple
+                </Button>
+              </div>
             </TabsContent>
 
             {/* Register Form */}
@@ -275,6 +314,38 @@ export default function AuthPage() {
                   </Button>
                 </form>
               </Form>
+              
+              <div className="relative flex items-center pt-4">
+                <div className="flex-grow border-t border-muted"></div>
+                <span className="flex-shrink mx-4 text-muted-foreground text-sm">or register with</span>
+                <div className="flex-grow border-t border-muted"></div>
+              </div>
+              
+              <div className="flex flex-col space-y-3 pt-4">
+                <Button 
+                  onClick={() => handleSocialLogin("facebook")}
+                  className="bg-[#1877F2] hover:bg-[#1877F2]/90 text-white"
+                >
+                  <FaFacebook className="mr-2 h-4 w-4" />
+                  Continue with Facebook
+                </Button>
+                
+                <Button 
+                  onClick={() => handleSocialLogin("google")}
+                  className="bg-white border border-gray-300 hover:bg-gray-100 text-black"
+                >
+                  <FaGoogle className="mr-2 h-4 w-4 text-[#4285F4]" />
+                  Continue with Google
+                </Button>
+                
+                <Button 
+                  onClick={() => handleSocialLogin("apple")}
+                  className="bg-black hover:bg-black/90 text-white"
+                >
+                  <FaApple className="mr-2 h-4 w-4" />
+                  Continue with Apple
+                </Button>
+              </div>
             </TabsContent>
           </Tabs>
         </div>
