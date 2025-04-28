@@ -6,10 +6,10 @@ export default function Footer() {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <h3 className="text-primary font-bold text-xl mb-4">Deep-Tube</h3>
+            <h3 className="text-primary font-bold text-xl mb-4">DeepTube</h3>
             <p className="text-muted-foreground mb-4">
-              The premier marketplace for AI-generated videos. Create, buy, and sell
-              stunning AI-generated content.
+              The premier media sharing platform for AI-generated content. Create, share, and discover
+              stunning AI-generated videos and images.
             </p>
             <div className="flex space-x-4">
               <a href="#" className="text-muted-foreground hover:text-primary" aria-label="Twitter">
@@ -92,7 +92,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-gray-800 mt-8 pt-6 text-center text-muted-foreground">
-          <p>&copy; 2025 Deep-Tube. All rights reserved.</p>
+          <p>&copy; 2025 DeepTube. All rights reserved.</p>
         </div>
       </div>
     </footer>
