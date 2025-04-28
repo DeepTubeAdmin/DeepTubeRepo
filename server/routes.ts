@@ -196,8 +196,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       ensureUser(req);
       
-      const { title, description, aiGenerator, prompt, thumbnail, categoryId, 
-        resolution = "HD", duration = 0 } = req.body;
+      const { 
+        title, 
+        description, 
+        aiGenerator, 
+        prompt, 
+        thumbnail, 
+        categoryId, 
+        resolution = "HD", 
+        duration = 0,
+        vimeoId,        // Added support for Vimeo ID
+        contentType = "video" 
+      } = req.body;
       
       // Only title and category are required now
       if (!title) {
@@ -216,6 +226,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // If Vimeo ID is provided, try to get video details from Vimeo
+      let vimeoDetails = null;
+      if (vimeoId) {
+        try {
+          vimeoDetails = await vimeoService.getVideo(vimeoId);
+        } catch (vimeoError) {
+          console.error("Error fetching Vimeo video details:", vimeoError);
+          // Continue with upload even if Vimeo fetch fails
+        }
+      }
+      
       // Create video record
       const video = await storage.createVideo({
         title,
@@ -223,11 +244,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         aiGenerator,
         prompt,
         thumbnail: thumbnail || "https://placehold.co/400x225?text=AI+Video", // Placeholder
-        videoUrl: null,
+        videoUrl: vimeoId ? `https://vimeo.com/${vimeoId}` : null,
         preview: null,
         resolution,
-        duration,
+        duration: vimeoDetails?.duration || duration,
+        contentType,
         categoryId: parseInt(categoryId),
+        vimeoId,
       });
       
       res.status(201).json(video);
@@ -347,7 +370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No file uploaded" });
       }
       
-      const { name, description, privacy } = req.body;
+      const { name, description, privacy, categoryId, aiGenerator, prompt } = req.body;
       
       if (!name) {
         return res.status(400).json({ error: "Video name is required" });
@@ -366,6 +389,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Clean up temporary file
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
+        }
+        
+        // If categoryId is provided, create a video record in our database
+        if (categoryId && result.videoId) {
+          try {
+            // Get video data from Vimeo to extract thumbnail and duration
+            const vimeoVideo = await vimeoService.getVideo(result.videoId);
+            const thumbnail = vimeoService.getThumbnail(vimeoVideo);
+            
+            // Calculate duration in seconds
+            const duration = vimeoVideo.duration || 0;
+            
+            // Create a video record
+            const video = await storage.createVideo({
+              title: name,
+              description: description || "",
+              aiGenerator: aiGenerator || null,
+              prompt: prompt || null,
+              thumbnail: thumbnail || "https://placehold.co/400x225?text=Video",
+              videoUrl: `https://vimeo.com/${result.videoId}`,
+              contentType: "video",
+              resolution: "HD",
+              duration,
+              categoryId: parseInt(categoryId),
+              vimeoId: result.videoId,
+            });
+            
+            // Return both Vimeo result and our video record
+            return res.json({
+              ...result,
+              video
+            });
+          } catch (dbError) {
+            console.error("Error saving video to database:", dbError);
+            // Still return the Vimeo result even if database save fails
+            return res.json({
+              ...result,
+              dbError: "Failed to save video to database, but Vimeo upload was successful"
+            });
+          }
         }
         
         res.json(result);

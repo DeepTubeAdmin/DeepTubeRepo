@@ -147,6 +147,13 @@ export default function Home() {
       </main>
       
       <Footer />
+      
+      {/* Video Player Modal */}
+      <VideoPlayer 
+        videoId={selectedVideoId} 
+        isOpen={isPlayerOpen} 
+        onClose={closePlayer} 
+      />
     </>
   );
 }
