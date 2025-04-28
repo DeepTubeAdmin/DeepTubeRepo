@@ -102,19 +102,27 @@ export default function InfiniteContentFeed({ onPreview, onWishlist }: InfiniteC
   };
   
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {isInitialLoad ? (
         <div className="py-20 flex justify-center">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
         </div>
       ) : (
         <>
-          {contentBlocks.map((block) => {
+          {contentBlocks.map((block, index) => {
             // Limit items to what fits in a single row based on screen size
             const limitedItems = limitToSingleRow(block.items);
             
+            // Determine if this is a transition between content types
+            const isContentTypeTransition = index > 0 && 
+              contentBlocks[index-1] && 
+              contentBlocks[index-1].type !== block.type;
+            
             return (
-              <div key={block.id} className="mb-10">
+              <div 
+                key={`${block.type}-${block.id}`} 
+                className={isContentTypeTransition ? "mt-10 mb-2" : "mb-2"}
+              >
                 {block.type === 'videos' ? (
                   <VideoGrid
                     title={block.title}
@@ -137,14 +145,14 @@ export default function InfiniteContentFeed({ onPreview, onWishlist }: InfiniteC
           {hasMore && (
             <div 
               ref={loadingRef} 
-              className="py-8 flex justify-center"
+              className="py-6 flex justify-center"
             >
               {isLoading && <Loader2 className="h-8 w-8 animate-spin text-primary" />}
             </div>
           )}
           
           {!hasMore && (
-            <div className="py-8 text-center text-muted-foreground">
+            <div className="py-6 text-center text-muted-foreground">
               You've reached the end of the content
             </div>
           )}
