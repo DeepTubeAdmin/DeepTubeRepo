@@ -53,11 +53,12 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
   return (
     <div 
       id={`video-preview-${video.id}`}
-      className="video-card bg-card overflow-hidden rounded-md shadow-sm hover:shadow-md transition-all"
+      className="video-card bg-card overflow-hidden rounded-md shadow-sm hover:shadow-md transition-all cursor-pointer"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onClick={handlePreview}
     >
-      <div className="relative group" onClick={handlePreview}>
+      <div className="relative group">
         <AspectRatio ratio={16/9}>
           {isHovering && video.vimeoId ? (
             <VimeoEmbed 

@@ -155,19 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/videos/:id", async (req, res) => {
-    try {
-      const videoId = parseInt(req.params.id);
-      const video = await storage.getVideoById(videoId);
-      if (!video) {
-        return res.status(404).json({ error: "Video not found" });
-      }
-      res.json(video);
-    } catch (error) {
-      console.error("Error fetching video:", error);
-      res.status(500).json({ error: "Failed to fetch video" });
-    }
-  });
+  // Removed duplicate route - see detailed version below
 
   app.post("/api/videos", isAuthenticated, async (req, res) => {
     try {
@@ -427,12 +415,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/videos/:id", async (req, res) => {
     try {
       const videoId = parseInt(req.params.id);
+      console.log("API: Fetching video with ID:", videoId);
+      
+      if (isNaN(videoId)) {
+        console.error("Invalid video ID:", req.params.id);
+        return res.status(400).json({ error: "Invalid video ID format" });
+      }
       
       // Get video details
       const video = await storage.getVideoById(videoId);
+      
       if (!video) {
+        console.error("Video not found with ID:", videoId);
         return res.status(404).json({ error: "Video/Image not found" });
       }
+      
+      console.log("API: Retrieved video:", video.id, video.title, "Content type:", video.contentType);
       
       // Get category info
       const category = video.categoryId 
@@ -441,6 +439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get comments
       const comments = await storage.getCommentsByVideoId(videoId);
+      console.log("API: Retrieved", comments.length, "comments for video", videoId);
       
       // Check if item is wishlisted by current user (if authenticated)
       let isWishlisted = false;
@@ -448,13 +447,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isWishlisted = await storage.isWishlisted(req.user.id, videoId);
       }
       
-      // Return complete details
-      res.json({
+      const responseData = {
         ...video,
         category,
         comments,
         isWishlisted
-      });
+      };
+      
+      console.log("API: Sending video data with embedCode of length:", 
+                 video.embedCode ? video.embedCode.length : 0);
+      
+      // Return complete details
+      res.json(responseData);
       
     } catch (error) {
       console.error("Error fetching video details:", error);

@@ -28,8 +28,17 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
       try {
         console.log("VideoPlayer: Making API request to /api/videos/" + videoId);
         const response = await apiRequest('GET', `/api/videos/${videoId}`);
+        if (!response.ok) {
+          throw new Error(`Error fetching video: ${response.status} ${response.statusText}`);
+        }
+        
         const data = await response.json();
         console.log("VideoPlayer: Received video data:", data);
+        
+        if (!data) {
+          throw new Error("No video data returned from server");
+        }
+        
         setVideo(data);
       } catch (err) {
         console.error('Error fetching video:', err);
