@@ -110,7 +110,7 @@ export default function AuthPage() {
       <div className="w-full md:w-1/2 p-8 flex flex-col justify-center">
         <div className="max-w-md mx-auto space-y-6">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-primary mb-2">DeepTube</h1>
+            <h1 className="text-4xl font-bold text-primary mb-2">DeepTube<span className="text-sm">.co</span></h1>
             <p className="text-muted-foreground">
               The premier media sharing platform for AI-generated content
             </p>
@@ -284,7 +284,7 @@ export default function AuthPage() {
       <div className="w-full md:w-1/2 bg-gradient-to-br from-primary/90 to-primary-foreground/90 p-8 flex flex-col justify-center text-white">
         <div className="max-w-lg mx-auto space-y-8">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Welcome to DeepTube
+            Welcome to DeepTube.co
           </h2>
           <p className="text-lg mb-6">
             Discover and share high-quality AI-generated media from creators around the world. 

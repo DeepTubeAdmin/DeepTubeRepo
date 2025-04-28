@@ -92,7 +92,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-gray-800 mt-8 pt-6 text-center text-muted-foreground">
-          <p>&copy; 2025 DeepTube. All rights reserved.</p>
+          <p>&copy; 2025 <a href="https://deeptube.co" className="text-primary hover:underline">DeepTube.co</a>. All rights reserved.</p>
         </div>
       </div>
     </footer>

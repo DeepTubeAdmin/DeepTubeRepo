@@ -75,7 +75,7 @@ export default function Header() {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="text-primary font-bold text-2xl">
-              DeepTube
+              DeepTube<span className="text-xs align-top">.co</span>
             </Link>
           </div>
 
