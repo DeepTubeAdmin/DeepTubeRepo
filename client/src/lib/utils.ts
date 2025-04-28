@@ -25,3 +25,27 @@ export function extractVideoId(vimeoUrl: string | null): string | null {
   
   return match ? match[1] : null;
 }
+
+// Extract YouTube video ID from various YouTube URL formats
+export function extractYoutubeVideoId(url: string): string | null {
+  if (!url) return null;
+  
+  // Handle various YouTube URL formats
+  // youtube.com/watch?v=VIDEOID
+  // youtu.be/VIDEOID
+  // youtube.com/embed/VIDEOID
+  // youtube.com/v/VIDEOID
+  const regex = /(?:youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=)|youtu\.be\/)([\w-]{11})/;
+  const match = url.match(regex);
+  
+  return match ? match[1] : null;
+}
+
+// Convert YouTube URL to embed code
+export function youtubeUrlToEmbedCode(url: string): string | null {
+  const videoId = extractYoutubeVideoId(url);
+  
+  if (!videoId) return null;
+  
+  return `<iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+}

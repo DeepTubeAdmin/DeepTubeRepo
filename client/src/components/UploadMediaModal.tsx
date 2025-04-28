@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, Loader2, Image as ImageIcon, Video as VideoIcon, Link as LinkIcon } from "lucide-react";
 import { SimpleDialog } from "@/components/ui/simple-dialog";
+import { youtubeUrlToEmbedCode, extractYoutubeVideoId } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -37,6 +38,24 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
   const [categoryId, setCategoryId] = useState<string>("");
   const [contentType, setContentType] = useState<"video" | "image" | "embed">("video");
   const [embedCode, setEmbedCode] = useState<string>("");
+  
+  // Handle YouTube URL to embed code conversion
+  const handleEmbedCodeChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    
+    // Check if it's a YouTube URL instead of an embed code
+    if ((value.includes('youtube.com') || value.includes('youtu.be')) && !value.includes('<iframe')) {
+      // Try to convert it to an embed code
+      const embedCode = youtubeUrlToEmbedCode(value);
+      if (embedCode) {
+        setEmbedCode(embedCode);
+        return;
+      }
+    }
+    
+    // Otherwise just set the raw value
+    setEmbedCode(value);
+  }, []);
   
   // Fetch categories for the dropdown
   const { data: categories, isLoading: categoriesLoading } = useQuery<Category[]>({
@@ -470,12 +489,12 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                 <Textarea 
                   id="embed-code"
                   value={embedCode}
-                  onChange={(e) => setEmbedCode(e.target.value)}
-                  placeholder="Paste embed code from YouTube, Vimeo, or other platforms (e.g. <iframe src='https://www.youtube.com/embed/...'></iframe>)"
+                  onChange={handleEmbedCodeChange}
+                  placeholder="Paste embed code or YouTube URL (e.g. https://youtu.be/abcdef or <iframe> code)"
                   className="resize-none min-h-[120px] font-mono text-sm"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  You can find embed codes by clicking "Share" and then "Embed" on platforms like YouTube, Vimeo, etc.
+                  You can paste a YouTube URL directly, or you can find embed codes by clicking "Share" and then "Embed" on platforms like YouTube, Vimeo, etc.
                 </p>
               </div>
               
