@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Categories } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
 import { LogIn, Upload, Video, WandSparkles } from "lucide-react";
+import LoginRequiredModal from "@/components/LoginRequiredModal";
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState<string>("trending");
@@ -18,6 +19,7 @@ export default function Home() {
   const [_, setLocation] = useLocation();
   const [selectedVideoId, setSelectedVideoId] = useState<number | undefined>(undefined);
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const handleCategoryChange = (slug: string) => {
     setActiveCategory(slug);
@@ -53,6 +55,13 @@ export default function Home() {
   const closePlayer = () => {
     setIsPlayerOpen(false);
   };
+  
+  const handleUploadClick = () => {
+    // For non-authenticated users, show login modal
+    if (!user) {
+      setIsLoginModalOpen(true);
+    }
+  };
 
   return (
     <>
@@ -63,7 +72,11 @@ export default function Home() {
           <div className="container mx-auto flex items-center justify-between">
             <h1 className="text-primary font-bold text-2xl">DeepTube<span className="text-xs align-top">.co</span></h1>
             <div className="flex items-center space-x-3">
-              <Button variant="outline" className="border-primary text-primary hover:bg-primary/10">
+              <Button 
+                variant="outline" 
+                className="border-primary text-primary hover:bg-primary/10"
+                onClick={handleUploadClick}
+              >
                 <Upload className="mr-2 h-4 w-4" />
                 Upload Media
               </Button>
@@ -124,6 +137,12 @@ export default function Home() {
         videoId={selectedVideoId} 
         isOpen={isPlayerOpen} 
         onClose={closePlayer} 
+      />
+      
+      {/* Login Required Modal */}
+      <LoginRequiredModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)} 
       />
     </>
   );
