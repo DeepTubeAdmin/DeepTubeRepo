@@ -1,11 +1,10 @@
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+// No imports needed
 
 export default function Footer() {
   return (
     <footer className="bg-secondary py-8 mt-12">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <h3 className="text-primary font-bold text-xl mb-4">Deep-Tube</h3>
             <p className="text-muted-foreground mb-4">
@@ -89,23 +88,6 @@ export default function Footer() {
                 </a>
               </li>
             </ul>
-          </div>
-
-          <div>
-            <h4 className="text-white font-bold mb-4">Newsletter</h4>
-            <p className="text-muted-foreground mb-2">
-              Stay updated with the latest AI video generation technology
-            </p>
-            <div className="flex">
-              <Input
-                type="email"
-                placeholder="Your email"
-                className="w-full p-2 bg-muted text-white rounded-l-md focus:outline-none"
-              />
-              <Button className="bg-primary text-primary-foreground px-4 rounded-r-md font-bold">
-                Subscribe
-              </Button>
-            </div>
           </div>
         </div>
 
