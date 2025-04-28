@@ -14,12 +14,14 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import UploadMediaModal from "./UploadMediaModal";
+import LoginRequiredModal from "./LoginRequiredModal";
 
 export default function Header() {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,22 +33,14 @@ export default function Header() {
   };
 
   const handleUploadClick = () => {
-    console.log("Upload button clicked with isOpen:", uploadModalOpen);
-    
     if (!user) {
-      console.log("User not authenticated, redirecting to auth page");
-      toast({
-        title: "Authentication required",
-        description: "You need to sign in to upload media",
-        variant: "destructive",
-      });
-      setLocation("/auth");
+      // Show login required modal instead of redirect
+      setIsLoginModalOpen(true);
       return;
     }
     
-    console.log("Setting upload modal to open");
+    // If user is authenticated, open upload modal
     setUploadModalOpen(true);
-    console.log("Upload modal state after setting:", !uploadModalOpen ? "open" : "closed");
   };
 
   return (
@@ -196,6 +190,12 @@ export default function Header() {
       <UploadMediaModal 
         isOpen={uploadModalOpen} 
         onClose={() => setUploadModalOpen(false)} 
+      />
+      
+      {/* Login Required Modal */}
+      <LoginRequiredModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)} 
       />
     </header>
   );
