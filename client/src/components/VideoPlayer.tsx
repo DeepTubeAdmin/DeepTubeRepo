@@ -84,7 +84,11 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                     <div 
                       className="absolute inset-0"
                       dangerouslySetInnerHTML={{ 
-                        __html: video.embedCode.replace('width="100%"', 'width="100%" height="100%"')
+                        __html: video.embedCode
+                          .replace('width="560"', 'width="100%"')
+                          .replace('height="315"', 'height="100%"')
+                          .replace('src="', 'src="') 
+                          + `<style>.embed-container iframe,.embed-container object,.embed-container embed{position:absolute;top:0;left:0;width:100%;height:100%;}</style>`
                       }} 
                     />
                   </div>
@@ -99,13 +103,28 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
             <div className="px-2">
               <h2 className="text-xl font-semibold">{video.title}</h2>
               
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
                   {video.resolution}
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  AI Generated
-                </span>
+                
+                {video.category && (
+                  <span className="bg-secondary text-primary text-xs px-2 py-1 rounded-full flex items-center">
+                    <span className="mr-1">Category:</span>
+                    {video.category.name}
+                  </span>
+                )}
+                
+                {video.contentType === 'embed' ? (
+                  <span className="text-xs text-muted-foreground bg-yellow-50 text-yellow-700 px-2 py-1 rounded-full">
+                    YouTube Embed
+                  </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">
+                    AI Generated
+                  </span>
+                )}
+                
                 {video.aiGenerator && (
                   <span className="text-xs text-muted-foreground">
                     with {video.aiGenerator}
