@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Clock, Info, MessageSquare, Image as ImageIcon } from 'lucide-react';
+import { Heart, Clock, Info, MessageSquare, Image as ImageIcon, Link as LinkIcon, Video as VideoIcon } from 'lucide-react';
 
 // Define the structure of media item and comment
 type DetailedMedia = {
@@ -212,6 +212,11 @@ export default function MediaDetail() {
                   className="w-full h-full object-contain" 
                 />
               </AspectRatio>
+            ) : media.contentType === 'embed' && media.embedCode ? (
+              <div 
+                className="w-full aspect-video" 
+                dangerouslySetInnerHTML={{ __html: media.embedCode }} 
+              />
             ) : (
               vimeoId ? (
                 <VimeoEmbed 
@@ -243,8 +248,14 @@ export default function MediaDetail() {
               
               {media.contentType && (
                 <Badge variant="outline" className="text-xs flex gap-1 items-center">
-                  {media.contentType === 'image' ? <ImageIcon className="h-3 w-3" /> : null}
-                  {media.contentType === 'image' ? 'Image' : 'Video'}
+                  {media.contentType === 'image' ? <ImageIcon className="h-3 w-3" /> : 
+                   media.contentType === 'embed' ? <LinkIcon className="h-3 w-3" /> :
+                   <VideoIcon className="h-3 w-3" />}
+                  {media.contentType === 'image' 
+                    ? 'Image' 
+                    : media.contentType === 'embed' 
+                      ? 'Embed' 
+                      : 'Video'}
                 </Badge>
               )}
               
