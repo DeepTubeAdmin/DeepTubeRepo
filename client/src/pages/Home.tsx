@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import Header from "@/components/Header";
 import CategoryNavigation from "@/components/CategoryNavigation";
-import Footer from "@/components/Footer";
 import VideoPlayer from "@/components/VideoPlayer";
 import InfiniteContentFeed from "@/components/InfiniteContentFeed";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +9,7 @@ import { Categories } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
 import { LogIn, Upload, Video, WandSparkles } from "lucide-react";
 import LoginRequiredModal from "@/components/LoginRequiredModal";
+import Layout from "@/components/Layout";
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState<string>("trending");
@@ -55,11 +54,11 @@ export default function Home() {
     }
   };
 
-  return (
-    <>
-      {user ? (
-        <Header />
-      ) : (
+  const renderHeader = () => {
+    if (user) {
+      return true; // Let Layout handle showing the regular header
+    } else {
+      return (
         <div className="bg-secondary px-4 py-3 shadow-md">
           <div className="container mx-auto flex items-center justify-between">
             <h1 className="text-primary font-bold text-2xl">DeepTube<span className="text-xs align-top">.co</span></h1>
@@ -86,7 +85,13 @@ export default function Home() {
             </div>
           </div>
         </div>
-      )}
+      );
+    }
+  };
+
+  return (
+    <Layout showHeader={user ? true : false}>
+      {!user && renderHeader()}
       
       {/* AI Video Creation Banner */}
       <div className="bg-primary/5 border-y border-primary/20">
@@ -122,8 +127,6 @@ export default function Home() {
         />
       </main>
       
-      <Footer />
-      
       {/* Video Player Modal */}
       <VideoPlayer 
         videoId={selectedVideoId} 
@@ -136,6 +139,6 @@ export default function Home() {
         isOpen={isLoginModalOpen} 
         onClose={() => setIsLoginModalOpen(false)} 
       />
-    </>
+    </Layout>
   );
 }

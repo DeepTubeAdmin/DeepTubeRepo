@@ -9,6 +9,7 @@ import NotFound from "@/pages/not-found";
 import MediaDetail from "@/pages/media-detail";
 import ForumPage from "@/pages/forum-page";
 import { AuthProvider } from "@/hooks/use-auth";
+import Layout from "@/components/Layout";
 
 function Router() {
   return (
@@ -27,9 +28,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
-          <div className="min-h-screen flex flex-col bg-background">
+          <div className="bg-background">
             <Toaster />
-            <Router />
+            <Layout showHeader={false}>
+              <Router />
+            </Layout>
           </div>
         </TooltipProvider>
       </AuthProvider>
