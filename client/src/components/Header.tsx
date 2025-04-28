@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Search, User, Package, History, LogOut, Upload, WandSparkles, Video } from "lucide-react";
+import { Search, User, Package, History, LogOut, Upload, WandSparkles, Video, MessageSquare } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -114,6 +114,17 @@ export default function Header() {
               Create
             </Button>
             
+            {/* Forum Button */}
+            <Link href="/forum">
+              <Button 
+                variant="outline"
+                className="rounded-full px-4 py-1 font-medium hidden sm:flex items-center"
+              >
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Forum
+              </Button>
+            </Link>
+            
             {/* Mobile Upload Button */}
             <Button
               variant="outline"
@@ -133,6 +144,17 @@ export default function Header() {
             >
               <WandSparkles className="h-4 w-4" />
             </Button>
+            
+            {/* Mobile Forum Button */}
+            <Link href="/forum">
+              <Button
+                variant="outline"
+                size="icon"
+                className="sm:hidden"
+              >
+                <MessageSquare className="h-4 w-4" />
+              </Button>
+            </Link>
 
             {/* User Profile */}
             <DropdownMenu>

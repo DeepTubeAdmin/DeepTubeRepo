@@ -7,6 +7,7 @@ import Home from "@/pages/Home";
 import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
 import MediaDetail from "@/pages/media-detail";
+import ForumPage from "@/pages/forum-page";
 import { AuthProvider } from "@/hooks/use-auth";
 
 function Router() {
@@ -15,6 +16,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/media/:id" component={MediaDetail} />
+      <Route path="/forum" component={ForumPage} />
       <Route component={NotFound} />
     </Switch>
   );
