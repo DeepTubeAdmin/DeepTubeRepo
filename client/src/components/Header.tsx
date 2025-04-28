@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Search, User, Package, History, LogOut, Upload, WandSparkles } from "lucide-react";
+import { Search, User, Package, History, LogOut, Upload, WandSparkles, Video } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -84,7 +84,7 @@ export default function Header() {
             <form onSubmit={handleSearch} className="relative w-full">
               <Input
                 type="text"
-                placeholder="Search for AI videos..."
+                placeholder="Search for AI-generated media..."
                 className="w-full py-2 px-4 bg-muted text-foreground rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <Button
@@ -177,7 +177,7 @@ export default function Header() {
           <form onSubmit={handleSearch} className="relative w-full">
             <Input
               type="text"
-              placeholder="Search for AI videos..."
+              placeholder="Search for AI-generated media..."
               className="w-full py-2 px-4 bg-muted text-foreground rounded-full"
             />
             <Button
