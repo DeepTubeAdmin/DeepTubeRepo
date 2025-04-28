@@ -27,7 +27,9 @@ export default function Home() {
 
   const handlePreview = (videoId: number) => {
     // Only open the modal player when explicitly clicked, not on hover
+    console.log("Home: handlePreview called with videoId:", videoId);
     setSelectedVideoId(videoId);
+    console.log("Home: Setting isPlayerOpen to true");
     setIsPlayerOpen(true);
   };
 

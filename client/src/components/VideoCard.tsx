@@ -25,8 +25,12 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
   };
 
   const handlePreview = () => {
+    console.log("Preview clicked for video ID:", video.id);
     if (onPreview) {
+      console.log("Calling onPreview with video ID:", video.id);
       onPreview(video.id);
+    } else {
+      console.log("onPreview callback is not defined");
     }
   };
 

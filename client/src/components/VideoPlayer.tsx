@@ -17,15 +17,19 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log("VideoPlayer: Effect triggered with videoId:", videoId, "isOpen:", isOpen);
     if (!isOpen || !videoId) return;
 
     const fetchVideo = async () => {
+      console.log("VideoPlayer: Fetching video with ID:", videoId);
       setLoading(true);
       setError(null);
       
       try {
+        console.log("VideoPlayer: Making API request to /api/videos/" + videoId);
         const response = await apiRequest('GET', `/api/videos/${videoId}`);
         const data = await response.json();
+        console.log("VideoPlayer: Received video data:", data);
         setVideo(data);
       } catch (err) {
         console.error('Error fetching video:', err);
