@@ -4,7 +4,8 @@ import { Video as TypeVideo } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { formatNumber } from "@/lib/utils";
-import { Heart, Image } from "lucide-react";
+import { Heart, Image, ExternalLink } from "lucide-react";
+import { Link } from "wouter";
 
 type ImageType = SchemaVideo | TypeVideo;
 
@@ -110,12 +111,17 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
       </div>
       
       <div className="p-2">
-        <h3 
-          className="text-sm font-medium line-clamp-1 hover:text-primary transition-colors cursor-pointer"
-          onClick={handleClick}
-        >
-          {image.title}
-        </h3>
+        <div className="flex justify-between items-center">
+          <h3 
+            className="text-sm font-medium line-clamp-1 hover:text-primary transition-colors cursor-pointer"
+            onClick={handleClick}
+          >
+            {image.title}
+          </h3>
+          <Link to={`/media/${image.id}`} className="text-muted-foreground hover:text-primary transition-colors">
+            <ExternalLink className="h-3.5 w-3.5 ml-1" />
+          </Link>
+        </div>
         <div className="flex justify-between items-center mt-1.5">
           <span className="text-xs text-muted-foreground">
             {(image as any).aiGenerator || "AI Generated"}
