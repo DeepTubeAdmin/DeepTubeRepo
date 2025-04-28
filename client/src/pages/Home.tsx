@@ -2,13 +2,12 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import CategoryNavigation from "@/components/CategoryNavigation";
-import CategoryCard from "@/components/CategoryCard";
 import Footer from "@/components/Footer";
 import VideoPlayer from "@/components/VideoPlayer";
 import InfiniteContentFeed from "@/components/InfiniteContentFeed";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Categories, PopularCategories } from "@/data/mockData";
+import { Categories } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
 import { LogIn, Upload, Video, WandSparkles } from "lucide-react";
 
@@ -110,19 +109,6 @@ export default function Home() {
           activeCategory={activeCategory}
           onCategoryChange={handleCategoryChange} 
         />
-        
-        {/* Popular Categories Section */}
-        <section className="mb-10">
-          <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-2 mb-6">
-            <h2 className="text-xl md:text-2xl font-bold text-primary">Popular Categories</h2>
-          </div>
-          
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-            {PopularCategories.map((category) => (
-              <CategoryCard key={category.id} category={category} />
-            ))}
-          </div>
-        </section>
         
         {/* Infinite Content Feed with Video-Image alternating pattern */}
         <InfiniteContentFeed 
