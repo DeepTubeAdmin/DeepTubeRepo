@@ -1,9 +1,10 @@
-import { Heart, Play, ExternalLink } from "lucide-react";
+import { Heart, Play, ExternalLink, Clock } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Video } from "@/types";
 import { useState } from "react";
 import VimeoEmbed from "./VimeoEmbed";
 import { Link } from "wouter";
+import { formatNumber } from "@/lib/utils";
 
 interface VideoCardProps {
   video: Video;
@@ -104,9 +105,13 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           </Link>
         </div>
         <div className="flex justify-between items-center mt-1.5">
-          <span className="text-xs text-muted-foreground">
-            {video.aiGenerator || "AI Generated"}
-          </span>
+          <div className="flex items-center text-xs text-muted-foreground">
+            <span className="mr-3">{formatNumber(Math.floor(Math.random() * 10000) + 1000)} views</span>
+            <span className="flex items-center">
+              <Clock className="h-3 w-3 mr-1" />
+              {Math.floor(Math.random() * 30) + 1}d ago
+            </span>
+          </div>
           
           <button 
             onClick={handleWishlist}

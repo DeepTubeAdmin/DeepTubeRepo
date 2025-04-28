@@ -101,39 +101,42 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
           </div>
         </div>
         
+        {/* Information overlay that only appears on hover */}
         {isHovering && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="animate-pulse">
-              <Image className="h-12 w-12 text-white opacity-70" />
+          <>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="animate-pulse">
+                <Image className="h-12 w-12 text-white opacity-70" />
+              </div>
             </div>
-          </div>
+            
+            <div className="absolute bottom-0 left-0 right-0 bg-black/80 p-2 transition-all">
+              <div className="flex justify-between items-center">
+                <h3 
+                  className="text-white text-sm font-medium line-clamp-1 hover:text-primary-300 transition-colors cursor-pointer"
+                  onClick={handleClick}
+                >
+                  {image.title}
+                </h3>
+                <Link to={`/media/${image.id}`} className="text-white/80 hover:text-primary-300 transition-colors ml-2">
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+              <div className="flex justify-between items-center mt-1">
+                <span className="text-xs text-white/80">
+                  {(image as any).aiGenerator || "AI Generated"}
+                </span>
+                
+                <button 
+                  onClick={handleWishlist}
+                  className="text-white/80 hover:text-primary-300 transition-colors"
+                >
+                  <Heart className="h-4 w-4" fill={isWishlisted ? "currentColor" : "none"} />
+                </button>
+              </div>
+            </div>
+          </>
         )}
-      </div>
-      
-      <div className="p-2">
-        <div className="flex justify-between items-center">
-          <h3 
-            className="text-sm font-medium line-clamp-1 hover:text-primary transition-colors cursor-pointer"
-            onClick={handleClick}
-          >
-            {image.title}
-          </h3>
-          <Link to={`/media/${image.id}`} className="text-muted-foreground hover:text-primary transition-colors">
-            <ExternalLink className="h-3.5 w-3.5 ml-1" />
-          </Link>
-        </div>
-        <div className="flex justify-between items-center mt-1.5">
-          <span className="text-xs text-muted-foreground">
-            {(image as any).aiGenerator || "AI Generated"}
-          </span>
-          
-          <button 
-            onClick={handleWishlist}
-            className="text-muted-foreground hover:text-primary transition-colors"
-          >
-            <Heart className="h-4 w-4" fill={isWishlisted ? "currentColor" : "none"} />
-          </button>
-        </div>
       </div>
     </div>
   );
