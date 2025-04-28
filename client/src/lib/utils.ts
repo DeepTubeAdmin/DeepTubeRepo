@@ -41,6 +41,17 @@ export function extractYoutubeVideoId(url: string): string | null {
   return match ? match[1] : null;
 }
 
+// Extract YouTube video ID from embed code
+export function extractYoutubeIdFromEmbed(embedCode: string): string | null {
+  if (!embedCode) return null;
+  
+  // Extract from iframe src attribute
+  const srcRegex = /src="https?:\/\/(?:www\.)?youtube\.com\/embed\/([\w-]{11})(?:\?.*)?"/;
+  const match = embedCode.match(srcRegex);
+  
+  return match ? match[1] : null;
+}
+
 // Convert YouTube URL to embed code
 export function youtubeUrlToEmbedCode(url: string): string | null {
   const videoId = extractYoutubeVideoId(url);

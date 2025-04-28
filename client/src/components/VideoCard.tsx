@@ -1,10 +1,10 @@
 import { Heart, Play, ExternalLink, Clock } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Video } from "@/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import VimeoEmbed from "./VimeoEmbed";
 import { Link } from "wouter";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, extractYoutubeIdFromEmbed } from "@/lib/utils";
 
 interface VideoCardProps {
   video: Video;
@@ -15,6 +15,16 @@ interface VideoCardProps {
 export default function VideoCard({ video, onPreview, onWishlist }: VideoCardProps) {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
+  const [youtubeId, setYoutubeId] = useState<string | null>(null);
+  
+  // Extract YouTube ID from embed code if applicable
+  useEffect(() => {
+    if (video.contentType === 'embed' && video.embedCode) {
+      const id = extractYoutubeIdFromEmbed(video.embedCode);
+      setYoutubeId(id);
+      console.log(`Extracted YouTube ID: ${id} for video ${video.id}`);
+    }
+  }, [video.id, video.embedCode, video.contentType]);
   
   const handleWishlist = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -69,19 +79,17 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
               showByline={false}
               showPortrait={false}
             />
-          ) : isHovering && video.contentType === 'embed' && video.embedCode ? (
-            // For YouTube embeds on hover, just show the thumbnail with an overlay
+          ) : isHovering && video.contentType === 'embed' && youtubeId ? (
+            // For YouTube embeds on hover, show the YouTube video preview or a dynamic thumbnail
             <div className="w-full h-full relative">
-              <img
-                src={video.thumbnail}
-                alt={video.title}
-                className="w-full h-full object-cover opacity-80"
-              />
-              <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                <div className="bg-primary/90 p-2 rounded-full">
-                  <Play className="h-8 w-8 text-white" />
-                </div>
-              </div>
+              <iframe 
+                className="absolute inset-0 w-full h-full border-0"
+                src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${youtubeId}`}
+                title={`${video.title} Preview`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+              <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/20 to-transparent"></div>
             </div>
           ) : (
             <img
@@ -102,6 +110,15 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="animate-pulse">
               <Play className="h-12 w-12 text-white opacity-70" />
+            </div>
+          </div>
+        )}
+        
+        {/* YouTube Play Button for YouTube videos when not hovering */}
+        {!isHovering && video.contentType === 'embed' && (
+          <div className="absolute inset-0 flex items-center justify-center group-hover:opacity-0 transition-opacity">
+            <div className="bg-primary/90 p-2 rounded-full">
+              <Play className="h-8 w-8 text-white" />
             </div>
           </div>
         )}
