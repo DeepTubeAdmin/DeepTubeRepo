@@ -53,13 +53,13 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto" aria-labelledby="video-title">
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-border" />
+          <div className="flex items-center justify-center py-12" aria-live="polite">
+            <Loader2 className="h-8 w-8 animate-spin text-border" aria-label="Loading video" />
           </div>
         ) : error ? (
-          <div className="text-center py-12 text-destructive">
+          <div className="text-center py-12 text-destructive" aria-live="assertive">
             <p>{error}</p>
           </div>
         ) : video ? (
@@ -78,7 +78,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
               ) : video.contentType === 'embed' && video.embedCode ? (
                 <div className="aspect-video w-full">
                   <div 
-                    className="w-full h-full relative"
+                    className="w-full h-full relative embed-container"
                     style={{ paddingBottom: '56.25%' }}
                   >
                     <div 
@@ -87,8 +87,20 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                         __html: video.embedCode
                           .replace('width="560"', 'width="100%"')
                           .replace('height="315"', 'height="100%"')
-                          .replace('src="', 'src="') 
-                          + `<style>.embed-container iframe,.embed-container object,.embed-container embed{position:absolute;top:0;left:0;width:100%;height:100%;}</style>`
+                          .replace('title="YouTube video player"', `title="${video.title || 'YouTube video'}"`)
+                          .replace('frameborder="0"', 'frameborder="0" role="presentation"')
+                          + `<style>
+                              .embed-container iframe,
+                              .embed-container object,
+                              .embed-container embed {
+                                position: absolute;
+                                top: 0;
+                                left: 0;
+                                width: 100%;
+                                height: 100%;
+                                border-radius: 4px;
+                              }
+                            </style>`
                       }} 
                     />
                   </div>
@@ -101,7 +113,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
             </div>
             
             <div className="px-2">
-              <h2 className="text-xl font-semibold">{video.title}</h2>
+              <h2 id="video-title" className="text-xl font-semibold">{video.title}</h2>
               
               <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">

@@ -5,7 +5,14 @@ export interface Video {
   credits: number;
   resolution: "HD" | "4K";
   duration: number; // in seconds
-  category: string;
+  categoryId: number;
+  category?: {
+    id: number;
+    name: string;
+    slug: string;
+    icon?: string;
+    image?: string | null;
+  };
   description?: string;
   aiGenerator?: string;
   prompt?: string;
