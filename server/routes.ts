@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { z } from "zod";
-import { insertCategorySchema, insertVideoSchema } from "@shared/schema";
+import { insertCategorySchema, insertVideoSchema, type Video } from "@shared/schema";
 import * as vimeoService from "./vimeo";
 import multer from "multer";
 import path from "path";
@@ -188,6 +188,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching videos by category:", error);
       res.status(500).json({ error: "Failed to fetch videos by category" });
+    }
+  });
+  
+  // Get paginated content with alternating pattern (3 rows videos, 2 rows images)
+  app.get("/api/content/infinite", async (req, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = parseInt(req.query.pageSize as string) || 5; // Default to 5 blocks per page
+      
+      // Create a response with mixed content blocks
+      const response = {
+        page,
+        pageSize,
+        hasMore: page < 10, // For demo, limit to 10 pages
+        blocks: [] as Array<{
+          type: 'videos' | 'images';
+          id: number;
+          title: string;
+          items: Video[];
+        }>
+      };
+      
+      const baseIndex = (page - 1) * pageSize;
+      
+      // Create pattern of 3 video blocks followed by 2 image blocks
+      for (let i = 0; i < pageSize; i++) {
+        const blockId = baseIndex + i;
+        const blockType = i < 3 ? 'videos' : 'images';
+        
+        if (blockType === 'videos') {
+          // Get video content
+          const videos = await storage.getVideos(5); // Get 5 random videos
+          
+          response.blocks.push({
+            type: 'videos',
+            id: blockId,
+            title: `AI Videos - Section ${blockId + 1}`,
+            items: videos
+          });
+        } else {
+          // Get image content
+          const images = await storage.getVideos(5, 'image'); // Get 5 random images
+          
+          response.blocks.push({
+            type: 'images',
+            id: blockId,
+            title: `AI Image Gallery - Collection ${blockId + 1}`,
+            items: images
+          });
+        }
+      }
+      
+      res.json(response);
+    } catch (error) {
+      console.error("Error fetching infinite content:", error);
+      res.status(500).json({ error: "Failed to fetch content" });
     }
   });
 

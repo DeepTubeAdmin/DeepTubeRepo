@@ -104,8 +104,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Video operations
-  async getVideos(limit: number = 50): Promise<Video[]> {
-    return db.select().from(videos).limit(limit);
+  async getVideos(limit: number = 50, contentType?: string): Promise<Video[]> {
+    let query = db.select().from(videos);
+    
+    // Filter by content type if specified
+    if (contentType) {
+      return db.select()
+        .from(videos)
+        .where(eq(videos.contentType, contentType))
+        .orderBy(sql`RANDOM()`)
+        .limit(limit);
+    }
+    
+    // If no content type filter, use a simpler query
+    return db.select()
+      .from(videos)
+      .orderBy(sql`RANDOM()`)
+      .limit(limit);
   }
   
   async getVideoById(id: number): Promise<Video | undefined> {
