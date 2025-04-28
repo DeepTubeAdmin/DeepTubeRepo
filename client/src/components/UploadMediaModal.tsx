@@ -166,7 +166,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
     <SimpleDialog isOpen={isOpen} onClose={onClose} title="Upload Media">
       <div>
         <p className="text-sm text-muted-foreground mb-4">
-          Share your AI-generated content with the Deep-Tube community
+          Share your AI-generated content with the DeepTube community
         </p>
         
         <Tabs defaultValue="video" onValueChange={(value) => setContentType(value as "video" | "image")}>
