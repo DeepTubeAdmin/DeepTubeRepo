@@ -6,6 +6,9 @@ export interface Video {
   resolution: "HD" | "4K";
   duration: number; // in seconds
   category: string;
+  description?: string;
+  aiGenerator?: string;
+  prompt?: string;
   contentType?: "video" | "image"; // Added to support both videos and images
   vimeoId?: string;   // Vimeo video ID
   videoUrl?: string;  // URL to the video file or Vimeo URL

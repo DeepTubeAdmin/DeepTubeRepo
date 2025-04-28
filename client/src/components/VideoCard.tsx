@@ -55,11 +55,22 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
     >
       <div className="relative group">
         <AspectRatio ratio={16/9}>
-          <img
-            src={video.thumbnail}
-            alt={video.title}
-            className={`object-cover w-full h-full transition-opacity duration-300 ${isHovering ? 'opacity-70' : 'opacity-100'}`}
-          />
+          {isHovering && video.vimeoId ? (
+            <VimeoEmbed 
+              videoId={video.vimeoId} 
+              autoplay={true}
+              loop={true}
+              showTitle={false}
+              showByline={false}
+              showPortrait={false}
+            />
+          ) : (
+            <img
+              src={video.thumbnail}
+              alt={video.title}
+              className={`object-cover w-full h-full transition-opacity duration-300 ${isHovering ? 'opacity-70' : 'opacity-100'}`}
+            />
+          )}
         </AspectRatio>
         
         <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
@@ -70,7 +81,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           {video.resolution}
         </div>
         
-        {isHovering && (
+        {isHovering && !video.vimeoId && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="animate-pulse">
               <Play className="h-12 w-12 text-white opacity-70" />

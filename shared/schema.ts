@@ -45,6 +45,7 @@ export const videos = pgTable("videos", {
   resolution: text("resolution").default("HD"),
   duration: integer("duration").default(0), // in seconds
   categoryId: integer("category_id").references(() => categories.id),
+  vimeoId: text("vimeo_id"), // Store Vimeo video ID
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -6,6 +6,7 @@ import VideoGrid from "@/components/VideoGrid";
 import ImageGallery from "@/components/ImageGallery";
 import CategoryCard from "@/components/CategoryCard";
 import Footer from "@/components/Footer";
+import VideoPlayer from "@/components/VideoPlayer";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Categories, FeaturedVideos, NewReleases, PopularCategories, AIGeneratedImages } from "@/data/mockData";
@@ -17,14 +18,19 @@ export default function Home() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [_, setLocation] = useLocation();
+  const [selectedVideoId, setSelectedVideoId] = useState<number | undefined>(undefined);
+  const [isPlayerOpen, setIsPlayerOpen] = useState(false);
 
   const handleCategoryChange = (slug: string) => {
     setActiveCategory(slug);
   };
 
   const handlePreview = (videoId: number) => {
+    // When explicitly clicked, open the modal player
+    setSelectedVideoId(videoId);
+    setIsPlayerOpen(true);
+    
     // Only show toast notification if this is the first preview or on click
-    // Avoid showing toast on every hover as that would be annoying
     const videoElement = document.getElementById(`video-preview-${videoId}`);
     if (!videoElement) {
       toast({
@@ -44,6 +50,10 @@ export default function Home() {
 
   const navigateToAuth = () => {
     setLocation("/auth");
+  };
+
+  const closePlayer = () => {
+    setIsPlayerOpen(false);
   };
 
   return (
