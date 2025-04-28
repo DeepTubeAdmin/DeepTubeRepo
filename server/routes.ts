@@ -4,6 +4,23 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { z } from "zod";
 import { insertCategorySchema, insertVideoSchema } from "@shared/schema";
+import * as vimeoService from "./vimeo";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from 'url';
+
+// Get directory paths in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Set up multer for file uploads
+const upload = multer({
+  dest: path.join(__dirname, '../uploads/'),
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB limit
+  }
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
@@ -274,6 +291,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Vimeo Integration Routes
+  
+  // Get user's Vimeo videos
+  app.get("/api/vimeo/videos", isAuthenticated, async (req, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const perPage = parseInt(req.query.perPage as string) || 10;
+      
+      const videos = await vimeoService.getUserVideos(page, perPage);
+      res.json(videos);
+    } catch (error) {
+      console.error("Error fetching Vimeo videos:", error);
+      res.status(500).json({ error: "Failed to fetch videos" });
+    }
+  });
+  
+  // Get a specific Vimeo video
+  app.get("/api/vimeo/videos/:id", async (req, res) => {
+    try {
+      const videoId = req.params.id;
+      const video = await vimeoService.getVideo(videoId);
+      res.json(video);
+    } catch (error) {
+      console.error("Error fetching Vimeo video:", error);
+      res.status(500).json({ error: "Failed to fetch video" });
+    }
+  });
+  
+  // Search Vimeo videos
+  app.get("/api/vimeo/search", async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      const page = parseInt(req.query.page as string) || 1;
+      const perPage = parseInt(req.query.perPage as string) || 10;
+      
+      if (!query) {
+        return res.status(400).json({ error: "Search query is required" });
+      }
+      
+      const results = await vimeoService.searchVideos(query, page, perPage);
+      res.json(results);
+    } catch (error) {
+      console.error("Error searching Vimeo videos:", error);
+      res.status(500).json({ error: "Failed to search videos" });
+    }
+  });
+  
+  // Upload a video to Vimeo
+  app.post("/api/vimeo/upload", isAuthenticated, upload.single("video"), async (req, res) => {
+    try {
+      ensureUser(req);
+      
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      
+      const { name, description, privacy } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Video name is required" });
+      }
+      
+      const filePath = req.file.path;
+      
+      try {
+        const result = await vimeoService.uploadVideo(
+          filePath, 
+          name, 
+          description || "", 
+          privacy as any || "anybody"
+        );
+        
+        // Clean up temporary file
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+        
+        res.json(result);
+      } catch (uploadError) {
+        // Clean up temporary file on error
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+        throw uploadError;
+      }
+    } catch (error) {
+      console.error("Error uploading to Vimeo:", error);
+      res.status(500).json({ error: "Failed to upload video" });
+    }
+  });
 
 
   const httpServer = createServer(app);

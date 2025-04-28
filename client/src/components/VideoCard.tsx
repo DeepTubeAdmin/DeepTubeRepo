@@ -2,6 +2,7 @@ import { Heart, Play } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Video } from "@/types";
 import { useState } from "react";
+import VimeoEmbed from "./VimeoEmbed";
 
 interface VideoCardProps {
   video: Video;

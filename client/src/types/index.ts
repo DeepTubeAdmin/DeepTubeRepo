@@ -7,6 +7,8 @@ export interface Video {
   duration: number; // in seconds
   category: string;
   contentType?: "video" | "image"; // Added to support both videos and images
+  vimeoId?: string;   // Vimeo video ID
+  videoUrl?: string;  // URL to the video file or Vimeo URL
 }
 
 export interface Category {
