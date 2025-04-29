@@ -14,7 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState<string>("trending");
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'viewed'>('newest');
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -47,7 +47,7 @@ export default function Home() {
     setShowFilterMenu(!showFilterMenu);
   };
   
-  const handleSortChange = (sortOption: 'newest' | 'oldest') => {
+  const handleSortChange = (sortOption: 'newest' | 'oldest' | 'viewed') => {
     setSortBy(sortOption);
     setShowFilterMenu(false);
   };
@@ -203,6 +203,14 @@ export default function Home() {
                   onClick={() => handleSortChange('oldest')}
                 >
                   Oldest First
+                </Button>
+                <Button
+                  variant={sortBy === 'viewed' ? "default" : "ghost"}
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={() => handleSortChange('viewed')}
+                >
+                  Most Viewed
                 </Button>
               </div>
             )}
