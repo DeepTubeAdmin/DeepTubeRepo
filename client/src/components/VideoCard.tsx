@@ -1,4 +1,4 @@
-import { Heart } from "lucide-react";
+import { Heart, Play } from "lucide-react";
 import { Video } from "@/types";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
@@ -13,6 +13,7 @@ interface VideoCardProps {
 export default function VideoCard({ video, onPreview, onWishlist }: VideoCardProps) {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [youtubeId, setYoutubeId] = useState<string | null>(null);
+  const [isPreviewShown, setIsPreviewShown] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const iframeRef = useRef<HTMLDivElement>(null);
@@ -28,18 +29,17 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
   }, [video.embedCode, video.contentType]);
   
   // Super simple mouseenter/mouseleave handler with pure DOM
-  const handleMouseEnter = () => {
-    console.log(`Mouse entered card ${video.id}`);
+  // Function to manually play the preview
+  const playPreview = () => {
+    console.log(`Manually playing preview for ${video.id}`);
+    setIsPreviewShown(true);
+    
     try {
-      // For MP4 videos - basic autoplay using DOM
+      // For MP4 videos
       if (video.contentType === 'video' && videoRef.current) {
         videoRef.current.style.opacity = '1';
-        videoRef.current.style.pointerEvents = 'auto'; // Enable interaction
-        // Manually setting these attributes for maximum compatibility
-        videoRef.current.setAttribute('autoplay', '');
-        videoRef.current.setAttribute('muted', '');
-        videoRef.current.setAttribute('playsinline', '');
-        videoRef.current.muted = true; // Extra muted setting to ensure it works
+        videoRef.current.style.pointerEvents = 'auto';
+        videoRef.current.muted = true;
         videoRef.current.play().catch(e => console.error('Error playing video:', e));
       }
       
@@ -47,11 +47,10 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
       if (video.contentType === 'embed' && iframeRef.current) {
         const container = iframeRef.current;
         container.style.opacity = '1';
-        container.style.pointerEvents = 'auto'; // Enable interaction
+        container.style.pointerEvents = 'auto';
         
-        // Create a new iframe element when hovering - use modern autoplay approach
         if (youtubeId) {
-          // YouTube specific embed with autoplay forced
+          // YouTube embed
           container.innerHTML = '';
           const iframe = document.createElement('iframe');
           iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0`;
@@ -62,7 +61,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           iframe.allowFullscreen = true;
           container.appendChild(iframe);
         } else if (video.vimeoId) {
-          // Vimeo specific embed with autoplay forced
+          // Vimeo embed
           container.innerHTML = '';
           const iframe = document.createElement('iframe');
           iframe.src = `https://player.vimeo.com/video/${video.vimeoId}?autoplay=1&muted=1`;
@@ -83,12 +82,21 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         }
       }
     } catch (err) {
-      console.error('Error handling mouse enter:', err);
+      console.error('Error playing preview:', err);
     }
   };
   
+  // Auto-preview on mouse enter (keeping same approach in case it works)
+  const handleMouseEnter = () => {
+    console.log(`Mouse entered card ${video.id}`);
+    playPreview();
+  };
+  
+  // Stop preview and cleanup on mouse leave
   const handleMouseLeave = () => {
     console.log(`Mouse left card ${video.id}`);
+    setIsPreviewShown(false);
+    
     try {
       // For MP4 videos
       if (video.contentType === 'video' && videoRef.current) {
@@ -111,7 +119,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         }
       }
     } catch (err) {
-      console.error('Error handling mouse leave:', err);
+      console.error('Error stopping preview:', err);
     }
   };
 
@@ -176,6 +184,18 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
             className="absolute top-0 left-0 w-full h-full bg-black"
           ></div>
         )}
+        
+        {/* Manual Preview Button (for when hover doesn't work) */}
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            playPreview();
+          }}
+          className="absolute top-2 left-2 z-30 bg-orange-500 hover:bg-orange-600 text-white p-1 rounded-full flex items-center justify-center"
+          title="Play preview"
+        >
+          <Play size={16} />
+        </button>
         
         {/* Play overlay */}
         <div className="play-overlay absolute inset-0 flex items-center justify-center z-10"
