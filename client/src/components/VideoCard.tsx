@@ -1,7 +1,6 @@
 import { Heart } from "lucide-react";
 import { Video } from "@/types";
-import { useState, useEffect, useRef } from "react";
-import VimeoEmbed from "./VimeoEmbed";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { formatNumber, extractYoutubeIdFromEmbed, isRedditEmbed, extractRedditInfo } from "@/lib/utils";
 
@@ -15,106 +14,95 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [youtubeId, setYoutubeId] = useState<string | null>(null);
-  const [redditInfo, setRedditInfo] = useState<{subreddit: string | null, postId: string | null, user: string | null} | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const iframeContainerRef = useRef<HTMLDivElement>(null);
   
-  // Extract embed info from code if applicable
   useEffect(() => {
     if (video.contentType === 'embed' && video.embedCode) {
-      // Check if it's a YouTube embed
-      const youtubeId = extractYoutubeIdFromEmbed(video.embedCode);
-      if (youtubeId) {
-        setYoutubeId(youtubeId);
-        console.log(`Extracted YouTube ID: ${youtubeId} for video ${video.id}`);
-        return;
+      const ytId = extractYoutubeIdFromEmbed(video.embedCode);
+      if (ytId) {
+        setYoutubeId(ytId);
       }
-      
-      // Check if it's a Reddit embed
-      if (isRedditEmbed(video.embedCode)) {
-        const info = extractRedditInfo(video.embedCode);
-        setRedditInfo(info);
-        console.log(`Extracted Reddit info: Subreddit=${info.subreddit}, Post=${info.postId} for video ${video.id}`);
-        
-        // If subreddit was not extracted but we know it's a Reddit embed,
-        // attempt to extract from URL pattern in the embed code
-        if (!info.subreddit && video.embedCode.includes('reddit.com/r/')) {
-          const urlPattern = /reddit\.com\/r\/([^\/]+)\/comments\/([^\/]+)/;
-          const match = video.embedCode.match(urlPattern);
-          if (match) {
-            setRedditInfo({
-              subreddit: match[1],
-              postId: match[2],
-              user: null
-            });
-            console.log(`Extracted Reddit info from URL: Subreddit=${match[1]}, Post=${match[2]} for video ${video.id}`);
-          }
+    }
+  }, [video.embedCode, video.contentType]);
+
+  useEffect(() => {
+    // This is important - we need to directly interact with the DOM for videos to play on hover
+    const videoElement = document.querySelector(`#video-preview-${video.id}`) as HTMLVideoElement;
+    const cardElement = document.querySelector(`#video-card-${video.id}`);
+    
+    if (!cardElement) return;
+    
+    // Using the old-school event listener approach for maximum compatibility
+    const handleMouseEnter = () => {
+      console.log(`Mouse over video card ${video.id}`);
+      if (videoElement && video.contentType === 'video') {
+        try {
+          videoElement.currentTime = 0;
+          videoElement.play().catch(e => console.error("Failed to play video:", e));
+        } catch (err) {
+          console.error("Error playing video:", err);
         }
       }
-    }
-  }, [video.id, video.embedCode, video.contentType, video.thumbnail]);
-  
-  // Handle MP4 video hover preview
-  useEffect(() => {
-    if (!videoRef.current) return;
-    
-    if (isHovering && video.contentType === 'video') {
-      console.log(`Playing preview for video ${video.id}`);
-      videoRef.current.currentTime = 0;
-      const playPromise = videoRef.current.play();
       
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.error(`Error playing preview for video ${video.id}:`, error);
-        });
+      // For YouTube/Vimeo embeds
+      const container = document.querySelector(`#iframe-container-${video.id}`);
+      if (container && video.contentType === 'embed') {
+        try {
+          // Clear any existing content
+          container.innerHTML = '';
+          
+          if (youtubeId) {
+            const iframe = document.createElement('iframe');
+            iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0`;
+            iframe.width = "100%";
+            iframe.height = "100%";
+            iframe.frameBorder = "0";
+            iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+            iframe.allowFullscreen = true;
+            container.appendChild(iframe);
+          } else if (video.vimeoId) {
+            const iframe = document.createElement('iframe');
+            iframe.src = `https://player.vimeo.com/video/${video.vimeoId}?autoplay=1&muted=1`;
+            iframe.width = "100%";
+            iframe.height = "100%";
+            iframe.frameBorder = "0";
+            iframe.allow = "autoplay; fullscreen; picture-in-picture";
+            iframe.allowFullscreen = true;
+            container.appendChild(iframe);
+          }
+        } catch (err) {
+          console.error("Error creating iframe:", err);
+        }
       }
-    } else if (videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.currentTime = 0;
-    }
-  }, [isHovering, video.id, video.contentType]);
-  
-  // Handle YouTube/iframe preview
-  useEffect(() => {
-    if (!iframeContainerRef.current) return;
+    };
     
-    if (isHovering && video.contentType === 'embed') {
-      const container = iframeContainerRef.current;
-      if (youtubeId) {
-        console.log(`Creating YouTube preview iframe for ${youtubeId}`);
-        // Create iframe for YouTube preview
-        const iframe = document.createElement('iframe');
-        iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0`;
-        iframe.className = 'w-full h-full';
-        iframe.frameBorder = '0';
-        iframe.allow = 'autoplay; picture-in-picture';
-        iframe.allowFullscreen = true;
-        iframe.title = video.title;
-        
-        // Clear container and append iframe
-        container.innerHTML = '';
-        container.appendChild(iframe);
-      } else if (video.vimeoId) {
-        console.log(`Creating Vimeo preview iframe for ${video.vimeoId}`);
-        // Create iframe for Vimeo preview
-        const iframe = document.createElement('iframe');
-        iframe.src = `https://player.vimeo.com/video/${video.vimeoId}?autoplay=1&loop=1&title=0&byline=0&portrait=0&muted=1`;
-        iframe.className = 'w-full h-full';
-        iframe.frameBorder = '0';
-        iframe.allow = 'autoplay; fullscreen; picture-in-picture';
-        iframe.allowFullscreen = true;
-        iframe.title = video.title;
-        
-        // Clear container and append iframe
-        container.innerHTML = '';
-        container.appendChild(iframe);
+    const handleMouseLeave = () => {
+      console.log(`Mouse out of video card ${video.id}`);
+      if (videoElement && video.contentType === 'video') {
+        try {
+          videoElement.pause();
+          videoElement.currentTime = 0;
+        } catch (err) {
+          console.error("Error pausing video:", err);
+        }
       }
-    } else if (iframeContainerRef.current && !isHovering) {
-      // Clear iframe container when not hovering
-      iframeContainerRef.current.innerHTML = '';
-    }
-  }, [isHovering, youtubeId, video.vimeoId, video.contentType, video.title]);
-  
+      
+      // For YouTube/Vimeo embeds - clear the iframe
+      const container = document.querySelector(`#iframe-container-${video.id}`);
+      if (container) {
+        container.innerHTML = '';
+      }
+    };
+    
+    cardElement.addEventListener('mouseenter', handleMouseEnter);
+    cardElement.addEventListener('mouseleave', handleMouseLeave);
+    
+    // Clean up
+    return () => {
+      cardElement.removeEventListener('mouseenter', handleMouseEnter);
+      cardElement.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [video.id, video.contentType, youtubeId, video.vimeoId]);
+
   const handleWishlist = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsWishlisted(!isWishlisted);
@@ -129,16 +117,6 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
     }
   };
 
-  const handleMouseEnter = () => {
-    console.log(`Mouse enter for video ${video.id}, type: ${video.contentType}`);
-    setIsHovering(true);
-  };
-
-  const handleMouseLeave = () => {
-    console.log(`Mouse leave for video ${video.id}`);
-    setIsHovering(false);
-  };
-
   const formatDuration = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -147,54 +125,50 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
 
   return (
     <div 
+      id={`video-card-${video.id}`}
       className="video-card video-item relative"
       data-id={video.id}
       data-type={video.contentType}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
       onClick={handlePreview}
     >
       <div className="thumbnail-container relative overflow-hidden aspect-video">
-        <div className="bg-gray-800 thumbnail flex items-center justify-center relative h-full">
-          <img 
-            src={video.thumbnail || "https://via.placeholder.com/640x360?text=No+Thumbnail"} 
-            alt={video.title} 
-            className="thumbnail w-full h-full object-cover" 
-          />
-        </div>
+        {/* Thumbnail Image */}
+        <img 
+          src={video.thumbnail || "https://via.placeholder.com/640x360?text=No+Thumbnail"} 
+          alt={video.title} 
+          className="thumbnail w-full h-full object-cover" 
+        />
         
-        {/* Video preview on hover for MP4 videos */}
+        {/* Video Preview (for MP4 videos) */}
         {video.contentType === 'video' && video.videoUrl && (
           <video 
-            ref={videoRef}
+            id={`video-preview-${video.id}`}
             muted 
             loop 
-            className={`absolute top-0 left-0 w-full h-full object-cover ${isHovering ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}
+            playsInline
+            className="absolute top-0 left-0 w-full h-full object-cover opacity-0 hover:opacity-100 transition-opacity duration-300 z-20"
             src={video.videoUrl}
             poster={video.thumbnail || undefined}
             preload="metadata"
-            playsInline
           />
         )}
         
-        {/* YouTube/Vimeo preview container */}
+        {/* Iframe Container (for YouTube/Vimeo) */}
         {video.contentType === 'embed' && (
           <div 
-            ref={iframeContainerRef}
-            className={`iframe-container absolute top-0 left-0 w-full h-full ${isHovering ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300 bg-black z-10`}
+            id={`iframe-container-${video.id}`}
+            className="iframe-container absolute top-0 left-0 w-full h-full opacity-0 hover:opacity-100 transition-opacity duration-300 bg-black z-20"
           ></div>
         )}
         
-        {/* Play overlay for videos and embeds */}
-        {(video.contentType === 'video' || video.contentType === 'embed') && (
-          <div className={`play-overlay absolute inset-0 flex items-center justify-center ${isHovering ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}>
-            <div className="bg-black bg-opacity-50 rounded-full p-3">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-              </svg>
-            </div>
+        {/* Play overlay */}
+        <div className="play-overlay absolute inset-0 flex items-center justify-center opacity-100 hover:opacity-0 transition-opacity duration-300 z-10">
+          <div className="bg-black bg-opacity-50 rounded-full p-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
           </div>
-        )}
+        </div>
         
         {/* Duration badge */}
         {video.duration > 0 && video.contentType !== 'image' && (

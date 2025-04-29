@@ -321,13 +321,34 @@
 }
 
 /* Video hover effects */
+/* Enhanced hover video effects - each rule separated for clarity */
+
+/* Video card hover states */
 .video-card:hover video,
-.video-card:hover .iframe-container {
+.video-card:hover [id^="video-preview-"] {
   opacity: 1 !important;
+  z-index: 30 !important;
 }
 
+.video-card:hover [id^="iframe-container-"] {
+  opacity: 1 !important;
+  z-index: 30 !important;
+}
+
+/* Play overlay (hide on hover) */
 .video-card:hover .play-overlay {
   opacity: 0 !important;
+  pointer-events: none !important; /* This ensures the play overlay doesn't block interaction */
+  z-index: 10 !important;
+}
+
+/* Individual video elements with direct IDs */
+[id^="video-preview-"] {
+  z-index: 20;
+}
+
+[id^="iframe-container-"] {
+  z-index: 20;
 }
 
 .credit-button {
