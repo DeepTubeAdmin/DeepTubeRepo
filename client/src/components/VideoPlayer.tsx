@@ -23,6 +23,16 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
   const [error, setError] = useState<string | null>(null);
   const embedContainerRef = useRef<HTMLDivElement>(null);
   
+  // Handler for report button
+  const handleReport = () => {
+    if (video) {
+      if (window.confirm(`Are you sure you want to report "${video.title}" for violating our Terms of Service?`)) {
+        // Here we would normally make an API call to report the video
+        alert("Thank you for your report. Our moderation team will review this content.");
+      }
+    }
+  };
+  
   // This effect loads the video data
   useEffect(() => {
     console.log("VideoPlayer: Effect triggered with videoId:", videoId, "isOpen:", isOpen);
@@ -300,7 +310,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                     <i className="fas fa-download mr-2"></i>
                     <span>Download</span>
                   </button>
-                  <button className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded flex items-center" onClick={() => window.confirm("Are you sure you want to report this content for violating our Terms of Service?")}>
+                  <button className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded flex items-center" onClick={handleReport}>
                     <i className="fas fa-flag mr-2"></i>
                     <span>Report</span>
                   </button>
