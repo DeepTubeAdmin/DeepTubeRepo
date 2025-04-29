@@ -45,8 +45,8 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('content');
 
   useEffect(() => {
-    // Only admin can access this page
-    if (user?.username !== 'Admin') {
+    // Only admin can access this page (user with ID 1 or 2 as defined in server/routes.ts)
+    if (!user || (user.id !== 1 && user.id !== 2)) {
       setLocation('/');
       return;
     }
