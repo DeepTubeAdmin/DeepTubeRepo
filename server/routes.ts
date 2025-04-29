@@ -185,7 +185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const page = parseInt(req.query.page as string) || 1;
       const pageSize = parseInt(req.query.pageSize as string) || 5; // Default to 5 blocks per page
       const categorySlug = req.query.category as string || '';
-      const sortBy = (req.query.sortBy as 'newest' | 'oldest') || 'newest';
+      const sortBy = (req.query.sortBy as 'newest' | 'oldest' | 'viewed') || 'newest';
       
       // Get categoryId if category slug is provided
       let categoryId: number | undefined = undefined;
