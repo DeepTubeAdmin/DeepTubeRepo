@@ -13,7 +13,7 @@
   --card-foreground: 0 0% 98%;
   --border: 0 0% 20%;
   --input: 0 0% 15%;
-  --primary: 38 80% 55%;  /* Pornhub yellow-orange */
+  --primary: 25 100% 50%;  /* Pornhub orange */
   --primary-foreground: 0 0% 0%;
   --secondary: 0 0% 15%;
   --secondary-foreground: 0 0% 98%;
@@ -21,7 +21,7 @@
   --accent-foreground: 0 0% 98%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
-  --ring: 38 80% 55%;
+  --ring: 25 100% 50%;
   --radius: 0.25rem;
   
   /* Custom colors for the AI marketplace */
@@ -53,7 +53,7 @@
   --card-foreground: 0 0% 98%;
   --border: 0 0% 20%;
   --input: 0 0% 15%;
-  --primary: 38 80% 55%; /* Pornhub yellow-orange */
+  --primary: 25 100% 50%; /* Pornhub orange */
   --primary-foreground: 0 0% 0%;
   --secondary: 0 0% 15%;
   --secondary-foreground: 0 0% 98%;

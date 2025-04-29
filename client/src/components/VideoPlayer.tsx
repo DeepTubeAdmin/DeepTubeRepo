@@ -201,10 +201,17 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-5xl md:max-w-6xl lg:max-w-7xl max-h-[95vh] overflow-y-auto w-[95vw] bg-black border-gray-800 p-0">
-        <DialogTitle className="sr-only" id="video-player-title">
-          {video?.title || "Video Player"}
-        </DialogTitle>
+      <DialogContent className="sm:max-w-5xl md:max-w-6xl lg:max-w-7xl max-h-[95vh] overflow-y-auto w-[95vw] bg-[#1a1a1a] border-gray-800 p-0">
+        <div className="absolute top-4 right-4 z-10">
+          <button 
+            onClick={onClose}
+            className="bg-black/60 hover:bg-black/80 text-white rounded-full w-10 h-10 flex items-center justify-center"
+            aria-label="Close"
+          >
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+        
         {loading ? (
           <div className="flex items-center justify-center py-16" aria-live="polite">
             <Loader2 className="h-10 w-10 animate-spin text-primary" aria-label="Loading video" />
@@ -214,9 +221,9 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
             <p>{error}</p>
           </div>
         ) : video ? (
-          <div>
+          <div className="flex flex-col">
             {/* Media section */}
-            <div className="bg-black">
+            <div className="bg-black relative">
               {video.vimeoId ? (
                 <VimeoEmbed
                   videoId={video.vimeoId}
@@ -234,7 +241,6 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                     className="w-full h-full relative embed-container"
                     style={{ paddingBottom: '56.25%' }}
                   >
-                    {/* Dynamically created iframe will be inserted here */}
                     <div 
                       ref={embedContainerRef}
                       className="absolute inset-0"
@@ -268,54 +274,67 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
             </div>
             
             {/* Info section */}
-            <div className="px-6 py-5 border-t border-gray-800">
-              <h2 id="video-title" className="text-xl font-bold mb-2 text-white">{video.title}</h2>
-              
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-gray-400 text-sm">
-                  {Math.floor(Math.random() * 10000) + 100} views
-                </span>
-                <span className="text-gray-400">•</span>
-                <span className="text-gray-400 text-sm">
-                  Added {Math.floor(Math.random() * 15) + 1} days ago
-                </span>
-                
-                {video.categoryId && (
-                  <>
-                    <span className="text-gray-400">•</span>
-                    <span className="text-primary hover:text-primary/80 text-sm cursor-pointer">
-                      Category {video.categoryId}
+            <div className="px-6 py-5">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex-1">
+                  <h2 id="video-title" className="text-xl font-semibold mb-2 text-white">{video.title}</h2>
+                  
+                  <div className="flex items-center text-gray-400 text-sm">
+                    <span className="flex items-center">
+                      <i className="fas fa-eye mr-1"></i>
+                      {Math.floor(Math.random() * 10000) + 100} views
                     </span>
-                  </>
-                )}
+                    <span className="mx-2">•</span>
+                    <span>
+                      Added {Math.floor(Math.random() * 15) + 1} days ago
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <button className="bg-[#333] hover:bg-[#444] text-white px-3 py-2 rounded flex items-center">
+                    <i className="fas fa-thumbs-up mr-2"></i>
+                    <span>93%</span>
+                  </button>
+                  <button className="bg-primary hover:bg-primary/90 text-white px-3 py-2 rounded flex items-center">
+                    <i className="fas fa-download mr-2"></i>
+                    <span>Download</span>
+                  </button>
+                </div>
               </div>
               
               <div className="flex flex-wrap items-center gap-2 mb-6">
                 {video.contentType === 'embed' ? (
                   video.embedCode && isRedditEmbed(video.embedCode) ? (
-                    <span className="bg-gray-800 text-white text-xs px-2 py-1 rounded">
-                      Reddit Embed
+                    <span className="bg-[#333] text-white text-xs px-2 py-1 rounded">
+                      <i className="fab fa-reddit mr-1"></i> Reddit Embed
                     </span>
                   ) : (
-                    <span className="bg-gray-800 text-white text-xs px-2 py-1 rounded">
-                      YouTube Embed
+                    <span className="bg-[#333] text-white text-xs px-2 py-1 rounded">
+                      <i className="fab fa-youtube mr-1"></i> YouTube Embed
                     </span>
                   )
                 ) : (
-                  <span className="bg-gray-800 text-white text-xs px-2 py-1 rounded">
-                    AI Generated
+                  <span className="bg-[#333] text-white text-xs px-2 py-1 rounded">
+                    <i className="fas fa-robot mr-1"></i> AI Generated
                   </span>
                 )}
                 
                 {video.resolution && (
-                  <span className="bg-gray-800 text-white text-xs px-2 py-1 rounded">
-                    {video.resolution}
+                  <span className="bg-[#333] text-white text-xs px-2 py-1 rounded">
+                    <i className="fas fa-video mr-1"></i> {video.resolution}
                   </span>
                 )}
                 
                 {video.aiGenerator && (
-                  <span className="bg-gray-800 text-white text-xs px-2 py-1 rounded">
-                    {video.aiGenerator}
+                  <span className="bg-[#333] text-white text-xs px-2 py-1 rounded">
+                    <i className="fas fa-magic mr-1"></i> {video.aiGenerator}
+                  </span>
+                )}
+                
+                {video.categoryId && (
+                  <span className="bg-[#333] text-white text-xs px-2 py-1 rounded">
+                    <i className="fas fa-tag mr-1"></i> Category {video.categoryId}
                   </span>
                 )}
               </div>
@@ -323,17 +342,81 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
               <div className="space-y-4 pt-4 border-t border-gray-800">
                 {video.prompt && (
                   <div className="mb-4">
-                    <h3 className="text-white text-sm font-semibold uppercase mb-2">AI Prompt</h3>
-                    <p className="text-sm leading-relaxed text-gray-400 whitespace-pre-wrap">{video.prompt}</p>
+                    <h3 className="text-white text-sm font-semibold mb-2">
+                      <i className="fas fa-comment-alt mr-2"></i> AI PROMPT
+                    </h3>
+                    <div className="bg-[#111] p-3 rounded text-sm leading-relaxed text-gray-300 whitespace-pre-wrap">
+                      {video.prompt}
+                    </div>
                   </div>
                 )}
                 
                 {video.description && (
                   <div className="mb-4">
-                    <h3 className="text-white text-sm font-semibold uppercase mb-2">Description</h3>
-                    <p className="text-sm leading-relaxed text-gray-400 whitespace-pre-wrap">{video.description}</p>
+                    <h3 className="text-white text-sm font-semibold mb-2">
+                      <i className="fas fa-info-circle mr-2"></i> DESCRIPTION
+                    </h3>
+                    <div className="bg-[#111] p-3 rounded text-sm leading-relaxed text-gray-300 whitespace-pre-wrap">
+                      {video.description}
+                    </div>
                   </div>
                 )}
+                
+                <div className="mt-6">
+                  <h3 className="text-white text-sm font-semibold mb-3">
+                    <i className="fas fa-comments mr-2"></i> COMMENTS
+                  </h3>
+                  
+                  {/* Comment form */}
+                  <div className="mb-4 bg-[#111] p-3 rounded">
+                    <textarea 
+                      className="w-full bg-[#222] text-white text-sm p-3 rounded border border-gray-700 focus:border-primary focus:ring-0 outline-none" 
+                      rows={3}
+                      placeholder="Add a comment..."
+                    ></textarea>
+                    <div className="flex justify-end mt-2">
+                      <button className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded text-sm">
+                        Post Comment
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Comments list */}
+                  <div className="space-y-4">
+                    {/* Sample comment */}
+                    <div className="flex space-x-3 bg-[#111] p-3 rounded">
+                      <div className="shrink-0">
+                        <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-white">
+                          <i className="fas fa-user text-sm"></i>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center mb-1">
+                          <span className="font-medium text-white text-sm">Anonymous User</span>
+                          <span className="mx-2 text-gray-500 text-xs">•</span>
+                          <span className="text-gray-500 text-xs">2 days ago</span>
+                        </div>
+                        <p className="text-gray-300 text-sm">This is amazing! The AI generation quality is incredible. Would love to know more about the prompt used.</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex space-x-3 bg-[#111] p-3 rounded">
+                      <div className="shrink-0">
+                        <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-white">
+                          <i className="fas fa-user text-sm"></i>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center mb-1">
+                          <span className="font-medium text-white text-sm">AI Enthusiast</span>
+                          <span className="mx-2 text-gray-500 text-xs">•</span>
+                          <span className="text-gray-500 text-xs">5 days ago</span>
+                        </div>
+                        <p className="text-gray-300 text-sm">Very cool content. How long did this take to generate? I'm experimenting with similar techniques.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
