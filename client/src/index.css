@@ -118,7 +118,7 @@
   padding: 8px 16px;
   margin: 0 4px;
   border-radius: 16px;
-  background-color: #272727;
+  background-color: #272727 !important; /* Force background color to be the same */
   white-space: nowrap;
   transition: background-color 0.3s;
   display: flex;
@@ -126,16 +126,18 @@
   justify-content: center;
   min-width: 80px;
   text-align: center;
+  color: #fff !important; /* Keep text color consistent */
 }
 
 .nav-tab:hover {
-  background-color: #383838;
+  background-color: #383838 !important;
 }
 
 .nav-tab.active {
-  background-color: var(--primary);
-  color: black;
-  font-weight: 600;
+  /* Keep consistent styling for active state */
+  font-weight: 600 !important;
+  /* Add a subtle indicator like an underline or border */
+  box-shadow: 0 2px 0 #FF9000;
 }
 
 /* Video cards */

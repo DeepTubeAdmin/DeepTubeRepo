@@ -282,7 +282,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
   }, [title, description, aiGenerator, prompt, categoryId, contentType, selectedFile, embedCode, thumbnailUrl, originalYoutubeUrl, originalRedditUrl, toast, onClose]);
 
   return (
-    <SimpleDialog isOpen={isOpen} onClose={onClose} title="Upload New Media" className="bg-[#1a1a1a] border-gray-800 max-w-xl">
+    <SimpleDialog isOpen={isOpen} onClose={onClose} title="Upload New Media" className="bg-[#1a1a1a] border-gray-800 max-w-lg">
       <div>
         <div className="flex items-center justify-between mb-6">
           <p className="text-sm text-gray-400">
@@ -326,7 +326,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           <TabsContent value="video" className="mt-0">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid w-full items-center gap-1.5">
-                <label htmlFor="video-media" className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-700 rounded-lg cursor-pointer bg-[#111] hover:bg-[#181818] transition-colors">
+                <label htmlFor="video-media" className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-700 rounded-lg cursor-pointer bg-[#111] hover:bg-[#181818] transition-colors">
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <i className="fas fa-cloud-upload-alt text-3xl mb-3 text-primary"></i>
                     <p className="mb-2 text-sm text-center text-gray-300">
