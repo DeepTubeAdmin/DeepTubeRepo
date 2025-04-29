@@ -7,8 +7,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Loader2, CreditCard, ChevronLeft } from "lucide-react";
-import Header from "@/components/Header";
-// Footer is included in Layout
+import Layout from "@/components/Layout";
 
 // Make sure to call `loadStripe` outside of a component's render to avoid
 // recreating the `Stripe` object on every render.
@@ -135,10 +134,8 @@ export default function Checkout() {
   }
 
   return (
-    <>
-      <Header credits={user.credits} onCreditPurchase={() => {}} />
-      
-      <main className="container mx-auto px-4 py-5 max-w-3xl">
+    <Layout>
+      <div className="container mx-auto px-4 py-5 max-w-3xl">
         <Button 
           variant="outline" 
           className="mb-6" 
@@ -192,9 +189,7 @@ export default function Checkout() {
             </div>
           )}
         </div>
-      </main>
-      
-      <Footer />
-    </>
+      </div>
+    </Layout>
   );
 }

@@ -5,7 +5,7 @@ import CategoryNavigation from "@/components/CategoryNavigation";
 import VideoGrid from "@/components/VideoGrid";
 import CtaBanner from "@/components/CtaBanner";
 import CategoryCard from "@/components/CategoryCard";
-import Footer from "@/components/Footer";
+import Layout from "@/components/Layout";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Categories, FeaturedVideos, NewReleases, PopularCategories } from "@/data/mockData";
@@ -70,7 +70,7 @@ export default function AdultPage() {
   };
 
   return (
-    <>
+    <Layout showHeader={false}>
       {user ? (
         <Header credits={user.credits} onCreditPurchase={handleCreditPurchase} />
       ) : (
@@ -116,7 +116,7 @@ export default function AdultPage() {
         </div>
       </div>
       
-      <main className="container mx-auto px-4 py-5">
+      <div className="container mx-auto px-4 py-5">
         <CategoryNavigation 
           categories={Categories} 
           activeCategory={activeCategory}
@@ -178,9 +178,7 @@ export default function AdultPage() {
             ))}
           </div>
         </section>
-      </main>
-      
-      <Footer />
-    </>
+      </div>
+    </Layout>
   );
 }
