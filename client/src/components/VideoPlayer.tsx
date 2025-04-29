@@ -63,6 +63,11 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
   useEffect(() => {
     if (!isOpen || !video || video.contentType !== 'embed' || !video.embedCode) return;
     
+    console.log("VideoPlayer: Processing embed code", { 
+      isRedditEmbed: video.embedCode ? isRedditEmbed(video.embedCode) : false,
+      embedLength: video.embedCode.length
+    });
+    
     // Clear previous content
     if (youtubeContainerRef.current) {
       youtubeContainerRef.current.innerHTML = '';
@@ -100,27 +105,48 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
       console.log("VideoPlayer: Creating Reddit embed from code");
       
       if (youtubeContainerRef.current) {
-        // We need to render the Reddit embed and its script
-        youtubeContainerRef.current.innerHTML = video.embedCode;
+        // We need to properly render the Reddit embed
+        // First, create a container for the embed
+        const redditContainer = document.createElement('div');
+        redditContainer.className = 'reddit-embed-container';
+        redditContainer.style.width = '100%';
+        redditContainer.style.height = '100%';
+        redditContainer.style.position = 'absolute';
+        redditContainer.style.top = '0';
+        redditContainer.style.left = '0';
+        redditContainer.style.overflow = 'hidden';
+        
+        // Insert the embed code
+        redditContainer.innerHTML = video.embedCode;
+        
+        // Append to our container
+        youtubeContainerRef.current.appendChild(redditContainer);
+        
+        // Force set height on blockquote to ensure it displays
+        const blockquote = redditContainer.querySelector('blockquote');
+        if (blockquote) {
+          blockquote.style.height = '100%';
+          blockquote.style.minHeight = '500px';
+          blockquote.setAttribute('data-embed-height', '100%');
+        }
         
         // Load the Reddit widget script
-        if (!document.querySelector('script[src="https://embed.reddit.com/widgets.js"]')) {
+        setTimeout(() => {
+          // Remove any existing Reddit scripts to avoid duplicates
+          const existingScript = document.querySelector('script[src="https://embed.reddit.com/widgets.js"]');
+          if (existingScript) {
+            existingScript.remove();
+          }
+          
+          // Create and add a new script
           const script = document.createElement('script');
           script.src = 'https://embed.reddit.com/widgets.js';
           script.async = true;
           script.charset = 'UTF-8';
           document.body.appendChild(script);
-        } else {
-          // If the script is already loaded, manually trigger a redditEmbedsInit
-          // to ensure the embed renders properly
-          try {
-            if ((window as any).redditEmbedsInit) {
-              (window as any).redditEmbedsInit();
-            }
-          } catch (e) {
-            console.error('Failed to initialize Reddit embed:', e);
-          }
-        }
+          
+          console.log("VideoPlayer: Added new Reddit embed script");
+        }, 100);
       }
     }
     // Generic embed code (for other platforms)

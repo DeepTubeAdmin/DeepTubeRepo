@@ -152,9 +152,10 @@ export function redditUrlToEmbedCode(url: string): string | null {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
     
-  return `<blockquote class="reddit-embed-bq" style="height:500px" data-embed-height="546">
+  // The proper Reddit embed format requires only the blockquote
+  // The script will be dynamically added when the embed is displayed
+  return `<blockquote class="reddit-embed-bq" style="height:500px" data-embed-height="546" data-embed-live="true">
   <a href="${url}">${title || 'Reddit Post'}</a>
   in <a href="https://www.reddit.com/r/${subreddit}/">r/${subreddit}</a>
-  </blockquote>
-  <script async src="https://embed.reddit.com/widgets.js" charset="UTF-8"></script>`;
+  </blockquote>`;
 }

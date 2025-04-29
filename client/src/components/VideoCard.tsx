@@ -4,7 +4,7 @@ import { Video } from "@/types";
 import { useState, useEffect } from "react";
 import VimeoEmbed from "./VimeoEmbed";
 import { Link } from "wouter";
-import { formatNumber, extractYoutubeIdFromEmbed } from "@/lib/utils";
+import { formatNumber, extractYoutubeIdFromEmbed, isRedditEmbed, extractRedditInfo } from "@/lib/utils";
 
 interface VideoCardProps {
   video: Video;
@@ -16,15 +16,32 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [youtubeId, setYoutubeId] = useState<string | null>(null);
+  const [redditInfo, setRedditInfo] = useState<{subreddit: string | null, postId: string | null, user: string | null} | null>(null);
   
-  // Extract YouTube ID from embed code if applicable
+  // Extract embed info from code if applicable
   useEffect(() => {
     if (video.contentType === 'embed' && video.embedCode) {
-      const id = extractYoutubeIdFromEmbed(video.embedCode);
-      setYoutubeId(id);
-      console.log(`Extracted YouTube ID: ${id} for video ${video.id}`);
+      // Check if it's a YouTube embed
+      const youtubeId = extractYoutubeIdFromEmbed(video.embedCode);
+      if (youtubeId) {
+        setYoutubeId(youtubeId);
+        console.log(`Extracted YouTube ID: ${youtubeId} for video ${video.id}`);
+        return;
+      }
+      
+      // Check if it's a Reddit embed
+      if (isRedditEmbed(video.embedCode)) {
+        const info = extractRedditInfo(video.embedCode);
+        setRedditInfo(info);
+        console.log(`Extracted Reddit info: Subreddit=${info.subreddit}, Post=${info.postId} for video ${video.id}`);
+        
+        // If thumbnail is missing or generic, set a custom Reddit thumbnail
+        if (!video.thumbnail || video.thumbnail.includes('placehold.co')) {
+          // This is handled in the rendering part below
+        }
+      }
     }
-  }, [video.id, video.embedCode, video.contentType]);
+  }, [video.id, video.embedCode, video.contentType, video.thumbnail]);
   
   const handleWishlist = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -99,6 +116,18 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
                 <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity"></div>
               </div>
               <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/30 to-transparent"></div>
+            </div>
+          ) : video.contentType === 'embed' && redditInfo?.subreddit ? (
+            // Custom Reddit thumbnail with badge
+            <div className="relative w-full h-full">
+              <img
+                src={`https://placehold.co/400x225/FF4500/FFFFFF?text=r/${redditInfo.subreddit}`}
+                alt={`Reddit: r/${redditInfo.subreddit}`}
+                className={`object-cover w-full h-full transition-opacity duration-300 ${isHovering ? 'opacity-70' : 'opacity-100'}`}
+              />
+              <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full shadow-md">
+                Reddit
+              </div>
             </div>
           ) : (
             <img
