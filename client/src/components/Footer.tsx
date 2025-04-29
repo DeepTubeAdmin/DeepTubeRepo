@@ -1,4 +1,4 @@
-// No imports needed
+import { Link } from "wouter";
 
 export default function Footer() {
   return (
@@ -8,9 +8,9 @@ export default function Footer() {
           <p className="text-muted-foreground">
             &copy; 2025 <a href="https://deeptube.co" className="text-primary hover:underline">DeepTube.co</a>
           </p>
-          <a href="#" className="text-muted-foreground hover:text-primary">
+          <Link href="/terms-of-service" className="text-muted-foreground hover:text-primary">
             Terms of Service
-          </a>
+          </Link>
         </div>
       </div>
     </footer>

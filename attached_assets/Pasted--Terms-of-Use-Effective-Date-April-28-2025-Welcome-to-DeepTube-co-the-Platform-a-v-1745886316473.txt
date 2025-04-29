@@ -1,0 +1,91 @@
+# Terms of Use
+
+**Effective Date**: April 28, 2025
+
+Welcome to DeepTube.co (the “Platform”), a video hosting and marketplace service for AI-generated videos, operated by DeepTube LLC (“we,” “us,” or “our”). By accessing or using the Platform, you (“User,” “you,” or “your”) agree to be bound by these Terms of Use (“Terms”). If you do not agree, you must not use the Platform.
+
+## 1. Acceptance of Terms
+These Terms govern your use of the Platform, including uploading, viewing, sharing, or monetizing videos. We may update these Terms at any time, with changes effective upon posting. Your continued use of the Platform constitutes acceptance of the updated Terms.
+
+## 2. Eligibility
+You must be at least 18 years old or the age of majority in your jurisdiction to use the Platform. By using the Platform, you represent that you meet these requirements and have the legal capacity to enter into these Terms.
+
+## 3. User Accounts
+- **Registration**: You must create an account to upload or monetize videos. You agree to provide accurate, current, and complete information during registration and to update it as needed.
+- **Account Security**: You are responsible for maintaining the confidentiality of your account credentials and for all activities under your account. Notify us immediately of any unauthorized access at support@deeptube.co.
+- **Account Termination**: We may suspend or terminate your account for violations of these Terms, illegal activity, or at our sole discretion, with or without notice.
+
+## 4. Content Upload and Ownership
+- **User Content**: You may upload AI-generated or other videos (“User Content”) to the Platform, subject to these Terms and our Content Guidelines (Section 5).
+- **Ownership**: You retain ownership of your User Content, but you grant us a worldwide, non-exclusive, royalty-free, sublicensable, and transferable license to host, store, display, distribute, and use your User Content for the purpose of operating, promoting, and improving the Platform.
+- **Responsibility**: You are solely responsible for ensuring your User Content complies with all applicable laws, regulations, and these Terms. We do not endorse or guarantee the accuracy, quality, or legality of User Content.
+
+## 5. Content Guidelines and Strict Legal Compliance
+To maintain a safe and lawful Platform, you must adhere to the strictest content uploading laws and regulations, including but not limited to the U.S. Digital Millennium Copyright Act (DMCA), European Union Digital Services Act (DSA), General Data Protection Regulation (GDPR), and local laws in your jurisdiction. Prohibited User Content includes, but is not limited to:
+- **Illegal Content**: Material that violates any law, including content promoting terrorism, human trafficking, child sexual abuse, or illegal substances.
+- **Copyrighted Material**: Content that infringes intellectual property rights, including unauthorized use of music, images, or videos, unless you have explicit permission or a valid license.
+- **Deepfakes and Misrepresentation**: AI-generated videos that depict individuals without their explicit consent, misrepresent identities, or are intended to deceive (e.g., non-consensual deepfakes).
+- **Harmful or Offensive Content**: Material that incites violence, discrimination, or hatred based on race, ethnicity, religion, gender, sexual orientation, or other protected characteristics.
+- **Explicit Content**: Pornography, graphic violence, or other age-restricted material, unless clearly marked and compliant with applicable laws.
+- **Defamatory or Libelous Content**: False statements that harm the reputation of individuals or entities.
+- **Malware or Harmful Code**: Content containing viruses, spyware, or other malicious software.
+- **Spam or Misleading Content**: Videos with deceptive titles, thumbnails, or metadata intended to mislead users or manipulate Platform algorithms.
+
+You must:
+- Obtain explicit consent from any individual depicted in AI-generated videos, including for likeness, voice, or personal data, in compliance with privacy laws (e.g., GDPR, CCPA).
+- Verify that all elements of your User Content (e.g., music, stock footage, AI-generated assets) are either original, licensed, or in the public domain.
+- Label AI-generated videos clearly as synthetic to avoid misrepresentation, where required by law.
+- Comply with export control laws, sanctions, and restrictions (e.g., U.S. OFAC regulations) when uploading or sharing content.
+
+We reserve the right to remove, disable, or restrict any User Content that violates these Terms or applicable laws, without notice.
+
+## 6. Intellectual Property
+- **Platform Content**: All Platform features, designs, logos, and software are owned by or licensed to DeepTube LLC and are protected by copyright, trademark, and other laws.
+- **DMCA Compliance**: If you believe User Content infringes your copyright, submit a DMCA notice to dmca@deeptube.co with required details (per 17 U.S.C. § 512). We will promptly investigate and remove infringing content. False claims may result in liability.
+- **Counter-Notices**: If your content is removed due to a DMCA claim, you may submit a counter-notice, subject to legal review.
+
+## 7. Monetization and Payments
+- **Monetization**: If eligible, you may monetize User Content through subscriptions, pay-per-view, or ads, subject to our Monetization Policy.
+- **Payments**: You are responsible for taxes and compliance with payment laws. We are not liable for payment disputes or errors.
+- **Prohibited Practices**: Monetizing prohibited content or engaging in fraudulent activity (e.g., view inflation) will result in account termination and forfeiture of earnings.
+
+## 8. User Conduct
+You agree not to:
+- Use the Platform for illegal purposes or to promote harmful activities.
+- Interfere with Platform functionality, including through hacking, scraping, or DDoS attacks.
+- Impersonate others or misrepresent your affiliation.
+- Harvest or misuse user data without consent, in violation of privacy laws.
+
+## 9. Privacy
+Your use of the Platform is subject to our Privacy Policy, which outlines how we collect, use, and protect your data in compliance with GDPR, CCPA, and other privacy laws.
+
+## 10. Termination
+- **By You**: You may stop using the Platform at any time.
+- **By Us**: We may suspend or terminate your access for violations of these Terms, legal non-compliance, or at our discretion. Upon termination, your license to use the Platform ends, but our license to your User Content may persist for archival or legal purposes.
+
+## 11. Disclaimers and Limitation of Liability
+- **As-Is Basis**: The Platform is provided “as is” without warranties of any kind, express or implied.
+- **No Liability for User Content**: We are not liable for damages arising from User Content, including its accuracy, legality, or impact.
+- **Limitation**: To the fullest extent permitted by law, our liability for any claim is limited to $100 or the amount you paid us in the past 12 months, whichever is less. We are not liable for indirect, consequential, or punitive damages.
+
+## 12. Indemnification
+You agree to indemnify and hold DeepTube LLC, our affiliates, and our employees harmless from any claims, losses, or damages (including legal fees) arising from your User Content, use of the Platform, or violation of these Terms or applicable laws.
+
+## 13. Governing Law and Dispute Resolution
+- **Governing Law**: These Terms are governed by the laws of Delaware, USA, excluding conflict of law principles.
+- **Disputes**: Any disputes will be resolved through binding arbitration in Wilmington, Delaware, under the rules of the American Arbitration Association. You waive the right to class actions or jury trials.
+
+## 14. Miscellaneous
+- **Entire Agreement**: These Terms, along with our Privacy Policy and Content Guidelines, constitute the entire agreement between you and DeepTube LLC.
+- **Severability**: If any provision is deemed invalid, the remaining provisions remain enforceable.
+- **No Waiver**: Our failure to enforce any right does not waive that right.
+- **Assignment**: We may assign these Terms without your consent. You may not assign them without our written approval.
+
+## 15. Contact Us
+For questions or concerns, contact us at:  
+DeepTube LLC  
+[Your Address, e.g., 123 Main St, Wilmington, DE 19801]  
+Email: support@deeptube.co  
+Phone: [Your Phone Number, e.g., (800) 555-1234]
+
+By using DeepTube.co, you acknowledge that you have read, understood, and agree to these Terms of Use. Thank you for helping us maintain a safe, legal, and creative community.

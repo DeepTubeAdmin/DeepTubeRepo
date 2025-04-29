@@ -43,6 +43,9 @@ const registerSchema = z.object({
     }),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
+  termsAccepted: z.boolean().refine(value => value === true, {
+    message: "You must accept the Terms of Service to register"
+  }),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
