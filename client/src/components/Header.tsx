@@ -99,13 +99,13 @@ export default function Header() {
           
           {/* User Controls */}
           <div className="flex items-center space-x-4">
-            {/* Create Button */}
+            {/* Upload Button */}
             <Button
-              className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white font-medium py-1 px-4 rounded-full flex items-center hover:opacity-90 hover:transform hover:translate-y-[-2px] transition-all"
-              onClick={() => window.open('https://www.synthesia.io/?via=seth-glass', '_blank')}
+              className="bg-gradient-to-r from-orange-500 to-amber-600 text-white font-medium py-1 px-4 rounded-full flex items-center hover:opacity-90 hover:transform hover:translate-y-[-2px] transition-all"
+              onClick={handleUploadClick}
             >
-              <WandSparkles className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Create</span>
+              <Upload className="mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">Upload</span>
             </Button>
             
             {/* Forum Button */}
@@ -118,13 +118,13 @@ export default function Header() {
               </Button>
             </Link>
             
-            {/* Upload Button */}
+            {/* Create Button */}
             <Button
-              className="bg-gradient-to-r from-orange-500 to-amber-600 text-white font-medium py-1 px-4 rounded-full flex items-center hover:opacity-90 hover:transform hover:translate-y-[-2px] transition-all"
-              onClick={handleUploadClick}
+              className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white font-medium py-1 px-4 rounded-full flex items-center hover:opacity-90 hover:transform hover:translate-y-[-2px] transition-all"
+              onClick={() => window.open('https://www.synthesia.io/?via=seth-glass', '_blank')}
             >
-              <Upload className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Upload</span>
+              <WandSparkles className="mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">Create</span>
             </Button>
             
             {/* User Account */}

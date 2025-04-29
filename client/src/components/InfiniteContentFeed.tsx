@@ -177,7 +177,6 @@ export default function InfiniteContentFeed({
                             alt={item.title} 
                             className="thumbnail" 
                           />
-                          {item.contentType !== 'image' && <i className="fas fa-play-circle text-4xl text-gray-500 absolute"></i>}
                         </div>
                         
                         {/* Duration badge */}
