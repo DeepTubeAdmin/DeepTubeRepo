@@ -211,7 +211,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                 )}
                 
                 {video.contentType === 'embed' ? (
-                  isRedditEmbed(video.embedCode) ? (
+                  video.embedCode && isRedditEmbed(video.embedCode) ? (
                     <span className="text-sm text-muted-foreground bg-orange-50 text-orange-700 px-3 py-1 rounded-full">
                       Reddit Embed
                     </span>

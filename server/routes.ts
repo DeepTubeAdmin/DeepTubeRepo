@@ -535,18 +535,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isWishlisted = await storage.isWishlisted(req.user.id, videoId);
       }
       
-      // Modify YouTube embed code to include autoplay if needed
+      // Modify embed code for proper rendering
       if (video.contentType === 'embed' && video.embedCode) {
-        // Add autoplay parameters to YouTube embeds
-        video.embedCode = video.embedCode
-          // Add autoplay=1 parameter to YouTube URLs
-          .replace(/src="(https:\/\/www\.youtube\.com\/embed\/[^?"]+)"/g, 'src="$1?autoplay=1&mute=1"')
-          // If URL already has query parameters, append autoplay=1
-          .replace(/src="(https:\/\/www\.youtube\.com\/embed\/[^"]+)\?([^"]+)"/g, 'src="$1?autoplay=1&mute=1&$2"')
-          // Add allow="autoplay" to the iframe
-          .replace('allow="', 'allow="autoplay; ');
+        // Check if this is a YouTube embed and add autoplay
+        if (video.embedCode.includes('youtube.com/embed/')) {
+          // Add autoplay parameters to YouTube embeds
+          video.embedCode = video.embedCode
+            // Add autoplay=1 parameter to YouTube URLs
+            .replace(/src="(https:\/\/www\.youtube\.com\/embed\/[^?"]+)"/g, 'src="$1?autoplay=1&mute=1"')
+            // If URL already has query parameters, append autoplay=1
+            .replace(/src="(https:\/\/www\.youtube\.com\/embed\/[^"]+)\?([^"]+)"/g, 'src="$1?autoplay=1&mute=1&$2"')
+            // Add allow="autoplay" to the iframe
+            .replace('allow="', 'allow="autoplay; ');
+            
+          console.log("API: Modified YouTube embed to include autoplay");
+        } 
+        // Check if this is a Reddit embed and ensure it has the required script
+        else if (video.embedCode.includes('reddit-embed-bq')) {
+          // Make sure the Reddit embed has the script
+          if (!video.embedCode.includes('embed.reddit.com/widgets.js')) {
+            video.embedCode += '<script async src="https://embed.reddit.com/widgets.js" charset="UTF-8"></script>';
+          }
           
-        console.log("API: Modified YouTube embed to include autoplay");
+          console.log("API: Added Reddit embed script");
+        }
       }
       
       const responseData = {

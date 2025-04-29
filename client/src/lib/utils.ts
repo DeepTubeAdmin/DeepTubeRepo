@@ -117,7 +117,9 @@ export function extractRedditInfo(embedCode: string): { subreddit: string | null
 }
 
 // Check if a string is a Reddit embed
-export function isRedditEmbed(code: string): boolean {
+export function isRedditEmbed(code: string | undefined): boolean {
+  if (!code) return false;
+  
   return code.includes('reddit-embed-bq') || 
          code.includes('embed.reddit.com') || 
          (code.includes('reddit.com/r/') && code.includes('comments'));
