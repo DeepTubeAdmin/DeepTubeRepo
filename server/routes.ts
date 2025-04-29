@@ -184,6 +184,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const pageSize = parseInt(req.query.pageSize as string) || 5; // Default to 5 blocks per page
+      const categorySlug = req.query.category as string || '';
+      const sortBy = (req.query.sortBy as 'newest' | 'oldest') || 'newest';
+      
+      // Get categoryId if category slug is provided
+      let categoryId: number | undefined = undefined;
+      if (categorySlug && categorySlug !== 'trending' && categorySlug !== 'most-viewed') {
+        const category = await storage.getCategoryBySlug(categorySlug);
+        categoryId = category?.id;
+      }
+      
+      // Special handling for "trending" and "most-viewed" categories
+      const isTrending = categorySlug === 'trending';
+      const isMostViewed = categorySlug === 'most-viewed';
       
       // Create a response with mixed content blocks
       const response = {
@@ -206,8 +219,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const blockType = i < 3 ? 'videos' : 'images';
         
         if (blockType === 'videos') {
-          // Get video content
-          const videos = await storage.getVideos(5); // Get 5 random videos
+          // Get video content based on filters
+          let videos: Video[] = [];
+          
+          if (isTrending) {
+            // For trending, use featured videos
+            videos = await storage.getFeaturedVideos(5);
+          } else if (isMostViewed) {
+            // For most viewed, use random order
+            videos = await storage.getVideos(5, 'video', undefined, sortBy);
+          } else if (categoryId) {
+            // Filter by category if specified
+            videos = await storage.getVideosByCategory(categoryId, 'video', 5);
+          } else {
+            // No filter
+            videos = await storage.getVideos(5, 'video', undefined, sortBy);
+          }
           
           response.blocks.push({
             type: 'videos',
@@ -216,8 +243,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             items: videos
           });
         } else {
-          // Get image content
-          const images = await storage.getVideos(5, 'image'); // Get 5 random images
+          // Get image content based on filters
+          let images: Video[] = [];
+          
+          if (isTrending) {
+            // For trending, use newest images
+            images = await storage.getVideos(5, 'image', undefined, 'newest');
+          } else if (isMostViewed) {
+            // For most viewed, use random order
+            images = await storage.getVideos(5, 'image', undefined, sortBy);
+          } else if (categoryId) {
+            // Filter by category if specified
+            images = await storage.getVideosByCategory(categoryId, 'image', 5);
+          } else {
+            // No filter
+            images = await storage.getVideos(5, 'image', undefined, sortBy);
+          }
           
           response.blocks.push({
             type: 'images',

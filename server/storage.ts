@@ -7,7 +7,7 @@ import {
   type Comment, type InsertComment
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, asc, sql } from "drizzle-orm";
 import session from "express-session";
 import type { Store as SessionStore } from "express-session";
 import connectPg from "connect-pg-simple";
@@ -109,23 +109,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Video operations
-  async getVideos(limit: number = 50, contentType?: string): Promise<Video[]> {
-    let query = db.select().from(videos);
+  async getVideos(
+    limit: number = 50, 
+    contentType?: string, 
+    categoryId?: number, 
+    sortBy: 'newest' | 'oldest' = 'newest'
+  ): Promise<Video[]> {
+    // Start with base query
+    let queryBuilder = db.select().from(videos);
     
-    // Filter by content type if specified
+    // Add content type filter
     if (contentType) {
-      return db.select()
-        .from(videos)
-        .where(eq(videos.contentType, contentType))
-        .orderBy(desc(videos.createdAt)) // Order by newest first
-        .limit(limit);
+      queryBuilder = queryBuilder.where(eq(videos.contentType, contentType));
     }
     
-    // If no content type filter, use a simpler query but still order by newest
-    return db.select()
-      .from(videos)
-      .orderBy(desc(videos.createdAt)) // Order by newest first
-      .limit(limit);
+    // Add category filter if specified (must be after the first where condition)
+    if (categoryId && contentType) {
+      queryBuilder = queryBuilder.where(eq(videos.categoryId, categoryId));
+    } else if (categoryId) {
+      queryBuilder = queryBuilder.where(eq(videos.categoryId, categoryId));
+    }
+    
+    // Add ordering
+    if (sortBy === 'newest') {
+      queryBuilder = queryBuilder.orderBy(desc(videos.createdAt));
+    } else {
+      queryBuilder = queryBuilder.orderBy(asc(videos.createdAt));
+    }
+    
+    // Add limit and execute
+    return queryBuilder.limit(limit);
   }
   
   async getVideoById(id: number): Promise<Video | undefined> {
@@ -133,8 +146,20 @@ export class DatabaseStorage implements IStorage {
     return video;
   }
   
-  async getVideosByCategory(categoryId: number): Promise<Video[]> {
-    return db.select().from(videos).where(eq(videos.categoryId, categoryId));
+  async getVideosByCategory(categoryId: number, contentType?: string, limit: number = 50): Promise<Video[]> {
+    let builder = db.select().from(videos).where(eq(videos.categoryId, categoryId));
+    
+    if (contentType) {
+      // Create a new query with both conditions
+      builder = db.select()
+        .from(videos)
+        .where(and(
+          eq(videos.categoryId, categoryId),
+          eq(videos.contentType, contentType)
+        ));
+    }
+    
+    return builder.orderBy(desc(videos.createdAt)).limit(limit);
   }
   
   async getFeaturedVideos(limit: number = 10): Promise<Video[]> {
