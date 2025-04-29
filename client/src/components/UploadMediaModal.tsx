@@ -59,35 +59,61 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
     
     // Check for YouTube URL
     if ((value.includes('youtube.com') || value.includes('youtu.be')) && !value.includes('<iframe')) {
+      console.log("YouTube URL detected:", value);
       setOriginalYoutubeUrl(value);
       setOriginalRedditUrl("");
       
       // Auto-convert YouTube URLs to embedded format for better UX
-      const youtubeEmbed = youtubeUrlToEmbedCode(value);
-      if (youtubeEmbed) {
-        setEmbedCode(youtubeEmbed);
+      const videoId = extractYoutubeVideoId(value);
+      console.log("Extracted YouTube ID:", videoId);
+      
+      if (videoId) {
+        const youtubeEmbed = youtubeUrlToEmbedCode(value);
+        console.log("Generated YouTube embed code:", youtubeEmbed);
         
-        // Also set thumbnail URL if YouTube ID was found
-        const videoId = extractYoutubeVideoId(value);
-        if (videoId) {
-          setThumbnailUrl(getYoutubeThumbnailUrl(videoId));
+        if (youtubeEmbed) {
+          setEmbedCode(youtubeEmbed);
+          
+          // Also set thumbnail URL
+          const thumbnailUrl = getYoutubeThumbnailUrl(videoId);
+          console.log("Setting YouTube thumbnail URL:", thumbnailUrl);
+          setThumbnailUrl(thumbnailUrl);
+          
+          // Show success toast
+          toast({
+            title: "YouTube URL detected",
+            description: "URL has been automatically converted to embed format",
+          });
         }
       }
     }
     // Check for Reddit URL
     else if (value.includes('reddit.com/r/') && !value.includes('blockquote') && !value.includes('embed.reddit.com')) {
+      console.log("Reddit URL detected:", value);
       setOriginalRedditUrl(value);
       setOriginalYoutubeUrl("");
       
       // Auto-convert Reddit URLs to embedded format for better UX
       const redditEmbed = redditUrlToEmbedCode(value);
+      console.log("Generated Reddit embed code:", redditEmbed);
+      
       if (redditEmbed) {
         setEmbedCode(redditEmbed);
         
         // Try to set thumbnail URL for Reddit
         const info = extractRedditInfo(redditEmbed);
+        console.log("Extracted Reddit info:", info);
+        
         if (info.subreddit) {
-          setThumbnailUrl(getRedditThumbnailUrl(info.subreddit));
+          const thumbnailUrl = getRedditThumbnailUrl(info.subreddit);
+          console.log("Setting Reddit thumbnail URL:", thumbnailUrl);
+          setThumbnailUrl(thumbnailUrl);
+          
+          // Show success toast
+          toast({
+            title: "Reddit URL detected",
+            description: "URL has been automatically converted to embed format",
+          });
         }
       }
     }
@@ -585,14 +611,34 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                           // Use either the stored original URL or the current embed code
                           const url = originalYoutubeUrl || embedCode;
                           console.log("Converting YouTube URL:", url);
-                          const newEmbedCode = youtubeUrlToEmbedCode(url);
-                          if (newEmbedCode) {
-                            setEmbedCode(newEmbedCode);
-                            // Extract video ID for thumbnail
-                            const videoId = extractYoutubeVideoId(url);
-                            if (videoId) {
-                              setThumbnailUrl(getYoutubeThumbnailUrl(videoId));
+                          
+                          // First try to extract video ID
+                          const videoId = extractYoutubeVideoId(url);
+                          console.log("Extracted YouTube video ID:", videoId);
+                          
+                          if (videoId) {
+                            // Generate the proper embed code
+                            const newEmbedCode = youtubeUrlToEmbedCode(url);
+                            if (newEmbedCode) {
+                              console.log("Generated embed code:", newEmbedCode);
+                              setEmbedCode(newEmbedCode);
+                              // Update thumbnail
+                              const thumbnailUrl = getYoutubeThumbnailUrl(videoId);
+                              console.log("Setting thumbnail URL:", thumbnailUrl);
+                              setThumbnailUrl(thumbnailUrl);
+                              
+                              // Toast success notification
+                              toast({
+                                title: "YouTube URL converted",
+                                description: "URL has been converted to embed format",
+                              });
                             }
+                          } else {
+                            toast({
+                              title: "Invalid YouTube URL",
+                              description: "Could not extract video ID from the provided URL",
+                              variant: "destructive",
+                            });
                           }
                         }}
                       >
@@ -610,14 +656,34 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                           // Use either the stored original URL or the current embed code
                           const url = originalRedditUrl || embedCode;
                           console.log("Converting Reddit URL:", url);
+                          
+                          // Try to convert the URL to an embed code
                           const newEmbedCode = redditUrlToEmbedCode(url);
+                          console.log("Generated Reddit embed code:", newEmbedCode);
+                          
                           if (newEmbedCode) {
                             setEmbedCode(newEmbedCode);
-                            // Try to set thumbnail URL for Reddit
+                            // Try to set thumbnail URL
                             const info = extractRedditInfo(newEmbedCode);
+                            console.log("Extracted Reddit info:", info);
+                            
                             if (info.subreddit) {
-                              setThumbnailUrl(getRedditThumbnailUrl(info.subreddit));
+                              const thumbnailUrl = getRedditThumbnailUrl(info.subreddit);
+                              console.log("Setting Reddit thumbnail URL:", thumbnailUrl);
+                              setThumbnailUrl(thumbnailUrl);
+                              
+                              // Toast success notification
+                              toast({
+                                title: "Reddit URL converted",
+                                description: "URL has been converted to embed format",
+                              });
                             }
+                          } else {
+                            toast({
+                              title: "Invalid Reddit URL",
+                              description: "Could not convert URL to Reddit embed format",
+                              variant: "destructive",
+                            });
                           }
                         }}
                       >
