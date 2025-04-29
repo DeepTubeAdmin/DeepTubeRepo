@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Loader2, CreditCard, ChevronLeft } from "lucide-react";
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+// Footer is included in Layout
 
 // Make sure to call `loadStripe` outside of a component's render to avoid
 // recreating the `Stripe` object on every render.
