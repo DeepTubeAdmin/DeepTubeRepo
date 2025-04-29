@@ -27,8 +27,8 @@ export default function ImageGallery({
   viewAllUrl = '#',
 }: ImageGalleryProps) {
   return (
-    <section className="mb-2">
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+    <section className="mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {images.map((image) => (
           <ImageCard
             key={image.id}
@@ -79,7 +79,7 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
   return (
     <div 
       id={`video-preview-${image.id}`}
-      className="video-card bg-card overflow-hidden rounded-md shadow-sm hover:shadow-md transition-all"
+      className="video-card bg-card overflow-hidden rounded-md shadow-md hover:shadow-lg transition-all"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >

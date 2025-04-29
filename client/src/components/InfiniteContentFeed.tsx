@@ -27,11 +27,11 @@ export default function InfiniteContentFeed({ onPreview, onWishlist }: InfiniteC
   
   // Determine how many items should be shown per row based on screen size
   const getItemsPerRow = () => {
-    if (isMobile) return 2; // Mobile: 2 items per row
-    if (window.innerWidth < 768) return 3; // Small tablets: 3 items
-    if (window.innerWidth < 1024) return 4; // Tablets: 4 items
-    if (window.innerWidth < 1280) return 5; // Small desktop: 5 items
-    return 6; // Large desktop: 6 items
+    if (isMobile) return 1; // Mobile: 1 item per row
+    if (window.innerWidth < 768) return 2; // Small tablets: 2 items
+    if (window.innerWidth < 1024) return 2; // Tablets: 2 items
+    if (window.innerWidth < 1280) return 3; // Small desktop: 3 items
+    return 4; // Large desktop: 4 items
   };
   const loadingRef = useCallback(
     (node: HTMLDivElement | null) => {

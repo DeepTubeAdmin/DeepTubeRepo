@@ -63,7 +63,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
   return (
     <div 
       id={`video-preview-${video.id}`}
-      className="video-card bg-card overflow-hidden rounded-md shadow-sm hover:shadow-md transition-all cursor-pointer"
+      className="video-card bg-card overflow-hidden rounded-md shadow-md hover:shadow-lg transition-all cursor-pointer"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={handlePreview}
@@ -118,23 +118,23 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
 
       </div>
       
-      <div className="p-2">
-        <div className="flex justify-between items-center">
+      <div className="p-3">
+        <div className="flex justify-between items-start">
           <h3 
-            className="text-sm font-medium line-clamp-1 hover:text-primary transition-colors cursor-pointer"
+            className="text-base font-medium line-clamp-2 hover:text-primary transition-colors cursor-pointer mr-2"
             onClick={handlePreview}
           >
             {video.title}
           </h3>
-          <Link to={`/media/${video.id}`} className="text-muted-foreground hover:text-primary transition-colors">
-            <ExternalLink className="h-3.5 w-3.5 ml-1" />
+          <Link to={`/media/${video.id}`} className="text-muted-foreground hover:text-primary transition-colors mt-1">
+            <ExternalLink className="h-4 w-4 ml-1" />
           </Link>
         </div>
-        <div className="flex justify-between items-center mt-1.5">
-          <div className="flex items-center text-xs text-muted-foreground">
-            <span className="mr-3">{formatNumber(Math.floor(Math.random() * 10000) + 1000)} views</span>
+        <div className="flex justify-between items-center mt-2">
+          <div className="flex items-center text-sm text-muted-foreground">
+            <span className="mr-4">{formatNumber(Math.floor(Math.random() * 10000) + 1000)} views</span>
             <span className="flex items-center">
-              <Clock className="h-3 w-3 mr-1" />
+              <Clock className="h-4 w-4 mr-1" />
               {Math.floor(Math.random() * 30) + 1}d ago
             </span>
           </div>
@@ -143,7 +143,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
             onClick={handleWishlist}
             className="text-muted-foreground hover:text-primary transition-colors"
           >
-            <Heart className="h-4 w-4" fill={isWishlisted ? "currentColor" : "none"} />
+            <Heart className="h-5 w-5" fill={isWishlisted ? "currentColor" : "none"} />
           </button>
         </div>
       </div>
