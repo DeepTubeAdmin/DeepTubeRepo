@@ -1,8 +1,9 @@
-import { Heart, Play, Pause } from "lucide-react";
+import { Heart, Play } from "lucide-react";
 import { Video } from "@/types";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { formatNumber, extractYoutubeIdFromEmbed } from "@/lib/utils";
+import PreviewableVideo from "./PreviewableVideo";
 
 interface VideoCardProps {
   video: Video;
@@ -67,19 +68,51 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
       onClick={handlePreview}
     >
       <div className="thumbnail-container relative overflow-hidden aspect-video">
-        {/* Thumbnail Image */}
+        {/* Thumbnail Image - only shown when not hovering on video */}
         <img 
           src={video.thumbnail || "https://via.placeholder.com/640x360?text=No+Thumbnail"} 
           alt={video.title} 
           className="thumbnail w-full h-full object-cover" 
+          style={{ 
+            opacity: isHovered && video.contentType === 'video' && video.videoUrl ? 0 : 1,
+            transition: 'opacity 0.3s ease'
+          }}
         />
         
-        {/* Animated hover effect */}
+        {/* Video Preview - shown when hovering, using our specialized component */}
+        {video.contentType === 'video' && video.videoUrl && (
+          <div className="absolute inset-0 z-10">
+            <PreviewableVideo
+              src={video.videoUrl}
+              poster={video.thumbnail || undefined}
+              isPlaying={isHovered}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+        
+        {/* YouTube Preview for embed type */}
+        {video.contentType === 'embed' && youtubeId && isHovered && (
+          <div className="absolute inset-0 z-10 bg-black">
+            <iframe
+              src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0`}
+              width="100%"
+              height="100%"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title={video.title}
+            />
+          </div>
+        )}
+        
+        {/* Animated hover effect - place above video but lower z-index than controls */}
         <div 
-          className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10"
+          className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-20"
           style={{
             opacity: isHovered ? 1 : 0,
             transition: 'opacity 0.2s ease-in-out',
+            pointerEvents: 'none' // Allow clicks through to the video beneath
           }}
         ></div>
         
@@ -98,10 +131,11 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         
         {/* Play icon overlay - appears on hover */}
         <div 
-          className="absolute inset-0 flex items-center justify-center z-10"
+          className="absolute inset-0 flex items-center justify-center z-25"
           style={{ 
             opacity: isHovered ? 1 : 0.5,
-            transition: 'opacity 0.3s ease-in-out' 
+            transition: 'opacity 0.3s ease-in-out',
+            pointerEvents: 'none' // Make sure it doesn't block clicks
           }}
         >
           <div className="bg-black bg-opacity-50 rounded-full p-3">
