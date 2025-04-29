@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useLocation, useSearch } from 'wouter';
+import { useLocation } from 'wouter';
 import Layout from '@/components/Layout';
 import VideoCard from '@/components/VideoCard';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,8 @@ import { getQueryFn } from '@/lib/queryClient';
 
 export default function SearchResults() {
   const [location, setLocation] = useLocation();
-  const search = useSearch();
+  // Get the search params from the location
+  const search = location.split('?')[1] || '';
   const searchParams = new URLSearchParams(search);
   
   // Get query parameters
@@ -93,9 +94,14 @@ export default function SearchResults() {
   };
   
   // Fetch search results - only run when params in URL change
+  // Construct the backend API URL with query parameters
+  const searchApiUrl = `/api/search?q=${encodeURIComponent(initialQuery)}${initialContentType !== 'all' ? `&type=${initialContentType}` : ''}${categoryId ? `&categoryId=${categoryId}` : ''}`;
+  
   const { data: searchResults, isLoading: searchLoading } = useQuery<Video[]>({
-    queryKey: ['/api/search', initialQuery, initialContentType, categoryId],
-    queryFn: getQueryFn(),
+    queryKey: [searchApiUrl],
+    queryFn: getQueryFn({
+      on401: "returnNull"
+    }),
     enabled: !!initialQuery,
   });
   

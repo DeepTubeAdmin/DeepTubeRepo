@@ -28,44 +28,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const query = req.query.q as string || '';
       const categorySlug = req.query.category as string || '';
+      const contentType = req.query.type as string || 'all';
+      // We can receive categoryId directly from frontend or resolve from slug
+      let categoryId: number | undefined = req.query.categoryId ? 
+        parseInt(req.query.categoryId as string) : 
+        undefined;
       
       if (!query) {
         return res.status(400).json({ error: 'Search query is required' });
       }
 
-      // Get category ID if categorySlug is provided
-      let categoryId: number | undefined = undefined;
-      if (categorySlug) {
+      // Get category ID if categorySlug is provided and we don't have categoryId yet
+      if (categorySlug && !categoryId) {
         const category = await storage.getCategoryBySlug(categorySlug);
         if (category) {
           categoryId = category.id;
         }
       }
       
-      // Search for videos
-      const videos = await storage.searchVideos({
-        query,
-        categoryId,
-        contentType: 'video',
-        limit: 20,
-      });
+      // Determine what content to search based on type
+      let results: any[] = [];
       
-      // Search for images
-      const images = await storage.searchVideos({
-        query,
-        categoryId,
-        contentType: 'image',
-        limit: 20,
-      });
+      if (contentType === 'all') {
+        // Search for all content types
+        results = await storage.searchVideos({
+          query,
+          categoryId,
+          limit: 50,
+        });
+      } else {
+        // Search for specific content type (video, image, embed)
+        results = await storage.searchVideos({
+          query,
+          categoryId,
+          contentType,
+          limit: 30,
+        });
+      }
       
-      // Search for forum posts (we'll implement this later)
-      const forum = []; // Placeholder for forum posts
+      console.log(`Search for "${query}" returned ${results.length} results with contentType=${contentType}${categoryId ? ` and categoryId=${categoryId}` : ''}`);
       
-      res.json({
-        videos,
-        images,
-        forum,
-      });
+      res.json(results);
     } catch (error: any) {
       console.error('Search error:', error);
       res.status(500).json({ error: error.message || 'Error performing search' });
