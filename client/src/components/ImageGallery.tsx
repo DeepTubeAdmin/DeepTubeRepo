@@ -102,12 +102,6 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
         {/* Information overlay that only appears on hover */}
         {isHovering && (
           <>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="animate-pulse">
-                <Image className="h-12 w-12 text-white opacity-70" />
-              </div>
-            </div>
-            
             <div className="absolute bottom-0 left-0 right-0 bg-black/80 p-2 transition-all">
               <div className="flex justify-between items-center">
                 <h3 

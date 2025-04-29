@@ -1,4 +1,4 @@
-import { Heart, Play, ExternalLink, Clock } from "lucide-react";
+import { Heart, ExternalLink, Clock } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Video } from "@/types";
 import { useState, useEffect } from "react";
@@ -95,12 +95,8 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
                 onClick={handlePreview}
                 aria-label="Open full video player"
               >
-                {/* Show a play button overlay on hover */}
-                <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity">
-                  <div className="bg-primary p-3 rounded-full animate-pulse">
-                    <Play className="h-8 w-8 text-white" />
-                  </div>
-                </div>
+                {/* Show overlay on hover without play button */}
+                <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity"></div>
               </div>
               <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/30 to-transparent"></div>
             </div>
@@ -119,22 +115,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           </div>
         )}
         
-        {isHovering && video.contentType !== 'embed' && !video.vimeoId && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="animate-pulse">
-              <Play className="h-12 w-12 text-white opacity-70" />
-            </div>
-          </div>
-        )}
-        
-        {/* YouTube Play Button for YouTube videos when not hovering */}
-        {!isHovering && video.contentType === 'embed' && (
-          <div className="absolute inset-0 flex items-center justify-center group-hover:opacity-0 transition-opacity">
-            <div className="bg-primary/90 p-2 rounded-full">
-              <Play className="h-8 w-8 text-white" />
-            </div>
-          </div>
-        )}
+
       </div>
       
       <div className="p-2">
