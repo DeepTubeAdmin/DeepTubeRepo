@@ -30,7 +30,19 @@ export function extractVideoId(vimeoUrl: string | null): string | null {
 export function extractYoutubeVideoId(url: string): string | null {
   if (!url) return null;
   
-  // Handle various YouTube URL formats
+  console.log("YouTube URL detected:", url);
+  
+  // Handle YouTube Shorts format
+  if (url.includes('youtube.com/shorts/')) {
+    const shortsRegex = /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/;
+    const shortsMatch = url.match(shortsRegex);
+    if (shortsMatch) {
+      console.log("Extracted YouTube Shorts ID:", shortsMatch[1]);
+      return shortsMatch[1];
+    }
+  }
+  
+  // Handle various other YouTube URL formats
   // youtube.com/watch?v=VIDEOID
   // youtu.be/VIDEOID
   // youtube.com/embed/VIDEOID
@@ -38,6 +50,7 @@ export function extractYoutubeVideoId(url: string): string | null {
   const regex = /(?:youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=)|youtu\.be\/)([\w-]{11})/;
   const match = url.match(regex);
   
+  console.log("Extracted YouTube ID:", match ? match[1] : null);
   return match ? match[1] : null;
 }
 
