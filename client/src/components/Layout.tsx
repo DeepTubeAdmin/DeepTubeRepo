@@ -9,16 +9,14 @@ interface LayoutProps {
 
 export default function Layout({ children, showHeader = true }: LayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-black text-white">
       {showHeader && <Header />}
       
-      <div className="flex-grow">
+      <div className="flex-grow container mx-auto px-4 pt-4 pb-12">
         {children}
       </div>
       
-      <div className="sticky bottom-0 w-full z-10">
-        <Footer />
-      </div>
+      <Footer />
     </div>
   );
 }

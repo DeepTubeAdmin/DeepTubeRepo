@@ -55,15 +55,17 @@ export default function CategoryNavigation({
   };
   
   return (
-    <section className="mb-8">
+    <section className="mb-6">
       <ScrollArea className="w-full whitespace-nowrap">
-        <div className="flex space-x-2 pb-2">
+        <div className="flex space-x-1 pb-2">
           {categories.map(category => (
             <Button
               key={category.slug}
               variant="ghost"
-              className={`category-item flex-shrink-0 py-2 px-4 rounded-full ${
-                activeCategory === category.slug ? "bg-primary text-primary-foreground" : "bg-muted"
+              className={`flex-shrink-0 py-1.5 px-4 rounded-sm text-sm uppercase font-semibold transition-colors ${
+                activeCategory === category.slug 
+                  ? "bg-primary text-black hover:bg-primary/90" 
+                  : "bg-gray-800 hover:bg-gray-700 text-white"
               }`}
               onClick={() => onCategoryChange(category.slug)}
             >
@@ -72,7 +74,7 @@ export default function CategoryNavigation({
             </Button>
           ))}
         </div>
-        <ScrollBar orientation="horizontal" />
+        <ScrollBar orientation="horizontal" className="bg-gray-700" />
       </ScrollArea>
     </section>
   );

@@ -55,7 +55,18 @@ export default function ImageGallery({
   }, []);
   
   return (
-    <section className="mb-4">
+    <section className="mb-8">
+      {/* Pornhub-style heading with "view more" link */}
+      <div className="flex justify-between items-center mb-3">
+        <h2 className="text-lg font-bold uppercase">{title}</h2>
+        {showViewAll && images.length > 0 && (
+          <Link to={viewAllUrl} className="text-primary text-sm hover:text-primary/80 uppercase font-bold">
+            MORE <span className="ml-1 text-xs">▶</span>
+          </Link>
+        )}
+      </div>
+      
+      {/* Image grid */}
       <div className={`grid ${columnClass} gap-4 w-full`}>
         {images.map((image) => (
           <ImageCard
@@ -114,56 +125,62 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
   return (
     <div 
       id={`video-preview-${image.id}`}
-      className="video-card bg-card overflow-hidden rounded-md shadow-md hover:shadow-lg transition-all"
+      className="group transition-transform duration-200 overflow-hidden cursor-pointer"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
     >
-      <div className="relative group">
-        <AspectRatio ratio={16 / 9}>
+      <div className="relative">
+        {/* Thumbnail with hover effect */}
+        <AspectRatio ratio={16 / 9} className="bg-black">
           <img
             src={image.thumbnail}
             alt={image.title}
-            className={`w-full h-full object-cover transition-opacity duration-300 ${isHovering ? 'opacity-70' : 'opacity-100'}`}
+            className="object-cover w-full h-full transition-all duration-300 transform group-hover:scale-110"
           />
         </AspectRatio>
         
-        <div className="absolute top-3 right-3 bg-black/70 text-white text-sm px-2 py-1 rounded">
+        {/* Type badge */}
+        <div className="absolute top-2 right-2 bg-black text-primary text-xs font-semibold px-1 py-0.5 rounded-sm">
           <div className="flex items-center">
-            <Image className="w-4 h-4 mr-1" />
+            <Image className="w-3 h-3 mr-0.5" />
             <span>AI</span>
           </div>
         </div>
         
-        {/* Information overlay that only appears on hover */}
-        {isHovering && (
-          <>
-            <div className="absolute bottom-0 left-0 right-0 bg-black/80 p-3 transition-all">
-              <div className="flex justify-between items-start">
-                <h3 
-                  className="text-white text-base font-medium line-clamp-2 hover:text-primary-300 transition-colors cursor-pointer mr-2"
-                  onClick={handleClick}
-                >
-                  {image.title}
-                </h3>
-                <Link to={`/media/${image.id}`} className="text-white/80 hover:text-primary-300 transition-colors mt-1">
-                  <ExternalLink className="h-4 w-4" />
-                </Link>
-              </div>
-              <div className="flex justify-between items-center mt-2">
-                <span className="text-sm text-white/80">
-                  {(image as any).aiGenerator || "AI Generated"}
-                </span>
-                
-                <button 
-                  onClick={handleWishlist}
-                  className="text-white/80 hover:text-primary-300 transition-colors"
-                >
-                  <Heart className="h-5 w-5" fill={isWishlisted ? "currentColor" : "none"} />
-                </button>
-              </div>
-            </div>
-          </>
-        )}
+        {/* View/info overlay - only shows on hover */}
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+          <svg className="w-12 h-12 text-primary" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </div>
+      </div>
+      
+      {/* Image info */}
+      <div className="pt-2 pb-3 px-1">
+        <div className="flex justify-between items-start">
+          <h3 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors cursor-pointer mr-2">
+            {image.title}
+          </h3>
+          <Link to={`/media/${image.id}`} className="text-gray-400 hover:text-primary transition-colors">
+            <ExternalLink className="h-3.5 w-3.5 ml-1" />
+          </Link>
+        </div>
+        
+        <div className="flex justify-between items-center mt-1">
+          <div className="flex items-center space-x-2 text-xs text-gray-400">
+            <span>{(image as any).aiGenerator || "AI Generated"}</span>
+            <span>•</span>
+            <span>{Math.floor(Math.random() * 500) + 100} views</span>
+          </div>
+          
+          <button 
+            onClick={handleWishlist}
+            className="text-gray-400 hover:text-primary transition-colors"
+          >
+            <Heart className="h-4 w-4" fill={isWishlisted ? "currentColor" : "none"} />
+          </button>
+        </div>
       </div>
     </div>
   );
