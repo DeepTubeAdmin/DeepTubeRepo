@@ -68,152 +68,115 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
       embedLength: video.embedCode.length
     });
     
+    // Reference to prevent race conditions
+    const containerRef = youtubeContainerRef.current;
+    if (!containerRef) return;
+    
     // Clear previous content
-    if (youtubeContainerRef.current) {
-      youtubeContainerRef.current.innerHTML = '';
-    }
+    containerRef.innerHTML = '';
     
-    // Handle YouTube embeds
-    const ytSrcRegex = /src="https?:\/\/(?:www\.)?youtube\.com\/embed\/([\w-]{11})(?:\?.*)?"/;
-    const ytMatch = video.embedCode.match(ytSrcRegex);
-    const youtubeId = ytMatch ? ytMatch[1] : null;
-    
-    if (youtubeId) {
-      console.log("VideoPlayer: Creating YouTube iframe for video ID:", youtubeId);
+    // SIMPLIFY: Use a more direct approach for YouTube embeds
+    if (video.embedCode.includes('youtube.com/embed/')) {
+      // Extract the YouTube video ID using a simpler regex
+      const ytIdMatch = video.embedCode.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/);
+      const youtubeId = ytIdMatch ? ytIdMatch[1] : null;
       
-      if (youtubeContainerRef.current) {      
-        const iframe = document.createElement('iframe');
-        iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=0`;
-        iframe.width = '100%';
-        iframe.height = '100%';
-        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-        iframe.allowFullscreen = true;
-        iframe.title = video.title || 'YouTube video';
-        iframe.frameBorder = '0';
-        iframe.style.position = 'absolute';
-        iframe.style.top = '0';
-        iframe.style.left = '0';
-        iframe.style.width = '100%';
-        iframe.style.height = '100%';
-        iframe.style.borderRadius = '4px';
+      if (youtubeId) {
+        console.log("VideoPlayer: Found YouTube embed with ID:", youtubeId);
         
-        youtubeContainerRef.current.appendChild(iframe);
+        // Create a direct iframe with autoplay enabled
+        containerRef.innerHTML = `
+          <iframe 
+            src="https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=0&rel=0" 
+            width="100%" 
+            height="100%" 
+            style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:4px;" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+            allowfullscreen 
+            title="${video.title || 'YouTube video'}"
+          ></iframe>
+        `;
+      } else {
+        // Fallback to the original embed code
+        containerRef.innerHTML = video.embedCode;
       }
-    } 
-    // Handle Reddit embeds
-    else if (isRedditEmbed(video.embedCode)) {
-      console.log("VideoPlayer: Creating Reddit embed from code");
+    }
+    // Handle Reddit embeds with a direct approach
+    else if (video.embedCode.includes('reddit.com')) {
+      console.log("VideoPlayer: Creating Reddit embed");
       
-      if (youtubeContainerRef.current) {
-        // Clear the container first
-        youtubeContainerRef.current.innerHTML = '';
+      // Extract information using the most reliable method first - data attributes
+      const dataMatch = video.embedCode.match(/data-reddit-subreddit="([^"]+)"[^>]*data-reddit-postid="([^"]+)"/);
+      
+      // If we have the data attributes, use them
+      if (dataMatch) {
+        const subreddit = dataMatch[1];
+        const postId = dataMatch[2];
+        console.log("VideoPlayer: Using Reddit info from data attributes:", subreddit, postId);
         
-        // Extract Reddit information from the embed code
-        let subreddit = null;
-        let postId = null;
-        
-        // First check for data attributes in the embed code
-        const dataAttributeRegex = /data-reddit-subreddit="([^"]+)"[^>]*data-reddit-postid="([^"]+)"/;
-        const dataMatch = video.embedCode.match(dataAttributeRegex);
-        if (dataMatch) {
-          subreddit = dataMatch[1];
-          postId = dataMatch[2];
-          console.log("VideoPlayer: Extracted Reddit info from data attributes:", subreddit, postId);
-        } else {
-          // Try using the extractRedditInfo utility
-          const info = extractRedditInfo(video.embedCode);
-          subreddit = info.subreddit;
-          postId = info.postId;
+        // Create a simpler direct embed
+        containerRef.innerHTML = `
+          <div style="position:relative;height:0;padding-bottom:56.25%;">
+            <iframe 
+              src="https://www.reddit.com/r/${subreddit}/comments/${postId}/embed/" 
+              width="100%" 
+              height="100%" 
+              style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" 
+              allowfullscreen
+              title="${video.title || 'Reddit content'}"
+            ></iframe>
+            <div style="position:absolute;bottom:15px;right:15px;background:rgba(0,0,0,0.7);color:white;padding:8px 12px;border-radius:4px;font-size:14px;cursor:pointer;z-index:10;"
+                onclick="window.open('https://www.reddit.com/r/${subreddit}/comments/${postId}/', '_blank')">
+              View on Reddit
+            </div>
+          </div>
+        `;
+      } 
+      // Fallback to URL pattern extraction
+      else {
+        const urlMatch = video.embedCode.match(/reddit\.com\/r\/([^\/]+)\/comments\/([^\/]+)/);
+        if (urlMatch) {
+          const subreddit = urlMatch[1];
+          const postId = urlMatch[2];
+          console.log("VideoPlayer: Using Reddit info from URL pattern:", subreddit, postId);
           
-          // If that didn't work, try looking for an iframe src in the embed code
-          if (!subreddit || !postId) {
-            const iframeSrcRegex = /src="https:\/\/www\.reddit\.com\/r\/([^\/]+)\/comments\/([^\/]+)\/embed\/"/;
-            const iframeMatch = video.embedCode.match(iframeSrcRegex);
-            if (iframeMatch) {
-              subreddit = iframeMatch[1];
-              postId = iframeMatch[2];
-              console.log("VideoPlayer: Extracted Reddit info from iframe src:", subreddit, postId);
-            }
+          containerRef.innerHTML = `
+            <div style="position:relative;height:0;padding-bottom:56.25%;">
+              <iframe 
+                src="https://www.reddit.com/r/${subreddit}/comments/${postId}/embed/" 
+                width="100%" 
+                height="100%" 
+                style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" 
+                allowfullscreen
+                title="${video.title || 'Reddit content'}"
+              ></iframe>
+              <div style="position:absolute;bottom:15px;right:15px;background:rgba(0,0,0,0.7);color:white;padding:8px 12px;border-radius:4px;font-size:14px;cursor:pointer;z-index:10;"
+                  onclick="window.open('https://www.reddit.com/r/${subreddit}/comments/${postId}/', '_blank')">
+                View on Reddit
+              </div>
+            </div>
+          `;
+        } 
+        // Last resort - just use the original embed code
+        else {
+          console.log("VideoPlayer: Falling back to provided embed code for Reddit");
+          containerRef.innerHTML = video.embedCode;
+          
+          // Add the Reddit script if it's not already there
+          if (!video.embedCode.includes('embed.reddit.com/widgets.js')) {
+            const script = document.createElement('script');
+            script.src = 'https://embed.reddit.com/widgets.js';
+            script.async = true;
+            script.charset = 'UTF-8';
+            containerRef.appendChild(script);
           }
-          
-          // Try one more extraction method from URL patterns in the embed code
-          if (!subreddit || !postId) {
-            const urlPattern = /reddit\.com\/r\/([^\/]+)\/comments\/([^\/]+)/;
-            const match = video.embedCode.match(urlPattern);
-            if (match) {
-              subreddit = match[1];
-              postId = match[2];
-              console.log("VideoPlayer: Extracted Reddit info from URL pattern:", subreddit, postId);
-            }
-          }
-        }
-        
-        // If we have the Reddit information, create a direct iframe
-        if (subreddit && postId) {
-          // Create iframe for Reddit embed
-          const postUrl = `https://www.reddit.com/r/${subreddit}/comments/${postId}/embed/`;
-          console.log("VideoPlayer: Creating direct Reddit iframe with URL:", postUrl);
-          
-          const iframe = document.createElement('iframe');
-          iframe.src = postUrl;
-          iframe.width = '100%';
-          iframe.height = '100%';
-          iframe.style.border = 'none';
-          iframe.style.position = 'absolute';
-          iframe.style.top = '0';
-          iframe.style.left = '0';
-          iframe.style.width = '100%';
-          iframe.style.height = '100%';
-          iframe.allowFullscreen = true;
-          iframe.title = video.title || 'Reddit Post';
-          iframe.scrolling = 'no';
-          
-          // Add sandbox attribute to allow scripts but enhance security
-          iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups');
-          
-          // Create a container for the iframe
-          const iframeContainer = document.createElement('div');
-          iframeContainer.style.position = 'relative';
-          iframeContainer.style.width = '100%';
-          iframeContainer.style.height = '100%';
-          iframeContainer.appendChild(iframe);
-          
-          youtubeContainerRef.current.appendChild(iframeContainer);
-          
-          // Add a link to view on Reddit as fallback
-          const fallbackLink = document.createElement('div');
-          fallbackLink.style.position = 'absolute';
-          fallbackLink.style.bottom = '15px';
-          fallbackLink.style.right = '15px';
-          fallbackLink.style.background = 'rgba(0,0,0,0.7)';
-          fallbackLink.style.color = 'white';
-          fallbackLink.style.padding = '8px 12px';
-          fallbackLink.style.borderRadius = '4px';
-          fallbackLink.style.fontSize = '14px';
-          fallbackLink.style.cursor = 'pointer';
-          fallbackLink.style.zIndex = '10';
-          fallbackLink.textContent = 'View on Reddit';
-          fallbackLink.onclick = () => window.open(`https://www.reddit.com/r/${subreddit}/comments/${postId}/`, '_blank');
-          
-          youtubeContainerRef.current.appendChild(fallbackLink);
-        } else {
-          // Fallback to using the provided embed code
-          console.log("VideoPlayer: Falling back to provided embed code");
-          youtubeContainerRef.current.innerHTML = video.embedCode;
-          
-          // Force load the Reddit script
-          const script = document.createElement('script');
-          script.src = 'https://embed.reddit.com/widgets.js';
-          script.async = true;
-          script.charset = 'UTF-8';
-          youtubeContainerRef.current.appendChild(script);
         }
       }
     }
     // Generic embed code (for other platforms)
-    else if (youtubeContainerRef.current) {
+    else {
       // Just insert the embed code as-is for other platforms
-      youtubeContainerRef.current.innerHTML = video.embedCode;
+      containerRef.innerHTML = video.embedCode;
     }
   }, [isOpen, video]);
 
