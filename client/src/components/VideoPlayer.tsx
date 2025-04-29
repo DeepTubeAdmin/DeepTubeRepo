@@ -276,38 +276,204 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                 </div>
               ) : video.contentType === 'video' && video.videoUrl ? (
                 <div className="aspect-video bg-black flex items-center justify-center h-[70vh]">
-                  <video 
-                    controls 
-                    autoPlay 
-                    className="max-h-[70vh] max-w-full" 
-                    src={video.videoUrl}
-                    poster={video.thumbnail || undefined}
-                    onError={(e) => {
-                      console.error("Error playing video:", e);
-                      // If the video element is available, try to show error details
-                      const videoEl = e.currentTarget;
-                      if (videoEl.parentElement) {
-                        videoEl.style.display = 'none';
-                        const errorDiv = document.createElement('div');
-                        errorDiv.className = 'bg-red-600/20 border border-red-600 rounded-md p-4 text-center';
-                        errorDiv.innerHTML = `
-                          <h3 class="text-red-400 text-lg font-semibold mb-2">
-                            <i class="fas fa-exclamation-circle mr-2"></i>
-                            Video Playback Error
-                          </h3>
-                          <p class="text-gray-300 mb-2">
-                            The video could not be played. It may be in an unsupported format or corrupted.
-                          </p>
-                          <div class="text-xs text-gray-400 bg-black/50 p-2 rounded mt-2 text-left overflow-auto max-h-24">
-                            <p>Video URL: ${video.videoUrl || 'Not available'}</p>
-                            <p>Error code: ${videoEl.error ? videoEl.error.code : 'Unknown'}</p>
-                            <p>Error message: ${videoEl.error ? videoEl.error.message : 'Unknown error'}</p>
-                          </div>
-                        `;
-                        videoEl.parentElement.appendChild(errorDiv);
-                      }
-                    }}
-                  />
+                  {/* Debug information for troubleshooting */}
+                  <div className="absolute top-2 left-2 z-10 bg-black/80 text-xs text-white p-1 rounded opacity-50 hover:opacity-100">
+                    MP4 Debug: {video.videoUrl ? (video.videoUrl.length > 20 ? video.videoUrl.substring(0, 20) + '...' : video.videoUrl) : 'No URL'}
+                  </div>
+                  
+                  {/* Try different approach for mp4 videos */}
+                  {video.videoUrl.includes('.mp4') || video.videoUrl.includes('video/mp4') ? (
+                    // For MP4 videos, use a source element inside video instead of src attribute
+                    <video 
+                      controls 
+                      autoPlay 
+                      muted={false}
+                      playsInline
+                      preload="auto"
+                      className="max-h-[70vh] max-w-full" 
+                      poster={video.thumbnail || undefined}
+                      onError={(e) => {
+                        console.error("Error playing MP4 video:", e);
+                        const videoEl = e.currentTarget;
+                        console.log("Video element:", videoEl);
+                        if (videoEl.error) {
+                          console.log("Video error code:", videoEl.error.code);
+                          console.log("Video error message:", videoEl.error.message);
+                        }
+                        
+                        // Create fallback for data URLs that may be corrupted
+                        if (video.videoUrl && video.videoUrl.startsWith('data:') && videoEl.parentElement) {
+                          console.log("Attempting alternative playback method for data URL");
+                          
+                          // Hide the failed video element
+                          videoEl.style.display = 'none';
+                          
+                          // Create a blob from the data URL
+                          try {
+                            // Safe copy for TypeScript
+                            const videoUrl = video.videoUrl;
+                            // Try creating an object URL directly
+                            fetch(videoUrl)
+                              .then(res => res.blob())
+                              .then(blob => {
+                                // Create an object URL from the blob
+                                const url = URL.createObjectURL(blob);
+                                
+                                // Create a new video element with the object URL
+                                const newVideo = document.createElement('video');
+                                newVideo.src = url;
+                                newVideo.className = "max-h-[70vh] max-w-full";
+                                newVideo.controls = true;
+                                newVideo.autoplay = true;
+                                
+                                // Add the new video element to the DOM
+                                if (videoEl.parentElement) {
+                                  videoEl.parentElement.appendChild(newVideo);
+                                }
+                              })
+                              .catch(err => {
+                                console.error("Failed to create blob from data URL:", err);
+                                // Show error message
+                                if (videoEl.parentElement) {
+                                  const errorDiv = document.createElement('div');
+                                  errorDiv.className = 'bg-red-600/20 border border-red-600 rounded-md p-4 text-center';
+                                  errorDiv.innerHTML = `
+                                    <h3 class="text-red-400 text-lg font-semibold mb-2">
+                                      <i class="fas fa-exclamation-circle mr-2"></i>
+                                      Video Playback Error
+                                    </h3>
+                                    <p class="text-gray-300 mb-2">
+                                      The video could not be played. It may be corrupted or in an unsupported format.
+                                    </p>
+                                    <div class="text-xs text-gray-400 bg-black/50 p-2 rounded mt-2 text-left overflow-auto max-h-24">
+                                      <p>Error: Failed to create playable video from data URL</p>
+                                      <p>Error details: ${err.message}</p>
+                                      <p>Try downloading the video instead and playing it locally</p>
+                                    </div>
+                                  `;
+                                  videoEl.parentElement.appendChild(errorDiv);
+                                }
+                              });
+                          } catch (err) {
+                            console.error("Error processing data URL:", err);
+                          }
+                        }
+                      }}
+                    >
+                      <source src={video.videoUrl || ''} type="video/mp4" />
+                      Your browser does not support the video tag.
+                    </video>
+                  ) : (
+                    // For other video types, use the src attribute directly
+                    <video 
+                      controls 
+                      autoPlay 
+                      className="max-h-[70vh] max-w-full" 
+                      src={video.videoUrl}
+                      poster={video.thumbnail || undefined}
+                      onError={(e) => {
+                        console.error("Error playing video:", e);
+                        // If the video element is available, try to show error details
+                        const videoEl = e.currentTarget;
+                        
+                        // Helper function to show error message - define outside to avoid strict mode issues
+                        const showErrorMessage = () => {
+                          const errorDiv = document.createElement('div');
+                          errorDiv.className = 'bg-red-600/20 border border-red-600 rounded-md p-4 text-center';
+                          
+                          // Create safe local references to values
+                          const safeVideoUrl = video?.videoUrl || 'Not available';
+                          const displayUrl = safeVideoUrl.length > 100 ? safeVideoUrl.substring(0, 100) + '...' : safeVideoUrl;
+                          const errorCode = videoEl.error ? videoEl.error.code : 'Unknown';
+                          const errorMessage = videoEl.error ? videoEl.error.message : 'Unknown error';
+                          
+                          errorDiv.innerHTML = `
+                            <h3 class="text-red-400 text-lg font-semibold mb-2">
+                              <i class="fas fa-exclamation-circle mr-2"></i>
+                              Video Playback Error
+                            </h3>
+                            <p class="text-gray-300 mb-2">
+                              The video could not be played. It may be in an unsupported format or corrupted.
+                            </p>
+                            <div class="text-xs text-gray-400 bg-black/50 p-2 rounded mt-2 text-left overflow-auto max-h-24">
+                              <p>Video URL: ${displayUrl}</p>
+                              <p>Error code: ${errorCode}</p>
+                              <p>Error message: ${errorMessage}</p>
+                            </div>
+                            <div class="mt-4">
+                              <a href="${safeVideoUrl}" download target="_blank" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded inline-flex items-center mt-2">
+                                <i class="fas fa-download mr-2"></i>
+                                Download Video
+                              </a>
+                            </div>
+                          `;
+                          
+                          const parentElement = videoEl.parentElement;
+                          if (parentElement) {
+                            parentElement.appendChild(errorDiv);
+                          }
+                        };
+                        
+                        // Main error handling logic
+                        if (videoEl.parentElement) {
+                          videoEl.style.display = 'none';
+                          
+                          // Try creating a source element approach as a fallback
+                          if (video && video.videoUrl) {
+                            try {
+                              console.log("Trying alternative video playback method with source element");
+                              
+                              // Create a local reference to ensure videoUrl is not null
+                              const videoUrl = video.videoUrl;
+                              
+                              // Try to determine content type
+                              let contentType = "video/mp4"; // Default
+                              if (videoUrl.includes('webm')) {
+                                contentType = "video/webm";
+                              } else if (videoUrl.includes('ogg') || videoUrl.includes('ogv')) {
+                                contentType = "video/ogg";
+                              } else if (videoUrl.includes('mov') || videoUrl.includes('quicktime')) {
+                                contentType = "video/quicktime";
+                              }
+                              
+                              // Create new video element with source
+                              const newVideo = document.createElement('video');
+                              newVideo.controls = true;
+                              newVideo.autoplay = true;
+                              newVideo.className = "max-h-[70vh] max-w-full";
+                              
+                              // Set poster if available
+                              if (video.thumbnail) {
+                                newVideo.poster = video.thumbnail;
+                              }
+                              
+                              // Create and add source element
+                              const source = document.createElement('source');
+                              source.src = videoUrl;
+                              source.type = contentType;
+                              
+                              newVideo.appendChild(source);
+                              videoEl.parentElement.appendChild(newVideo);
+                              
+                              // Add error handler to the new video too
+                              newVideo.onerror = () => {
+                                console.error("Alternative video approach also failed");
+                                newVideo.style.display = 'none';
+                                showErrorMessage();
+                              };
+                              
+                              return; // Exit early if we're trying the alternative
+                            } catch (err) {
+                              console.error("Error in alternative video approach:", err);
+                              // Fall through to standard error display
+                            }
+                          }
+                          
+                          showErrorMessage();
+                        }
+                      }}
+                    />
+                  )}
                 </div>
               ) : video.contentType === 'image' ? (
                 <div className="flex flex-col items-center justify-center bg-black p-4 max-h-[70vh] overflow-auto">
