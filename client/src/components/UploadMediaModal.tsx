@@ -6,7 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, Loader2, Image as ImageIcon, Video as VideoIcon, Link as LinkIcon } from "lucide-react";
 import { SimpleDialog } from "@/components/ui/simple-dialog";
-import { youtubeUrlToEmbedCode, extractYoutubeVideoId, getYoutubeThumbnailUrl } from "@/lib/utils";
+import { 
+  youtubeUrlToEmbedCode, 
+  extractYoutubeVideoId, 
+  getYoutubeThumbnailUrl,
+  isRedditEmbed,
+  extractRedditInfo,
+  getRedditThumbnailUrl,
+  redditUrlToEmbedCode
+} from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -39,17 +47,24 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
   const [contentType, setContentType] = useState<"video" | "image" | "embed">("video");
   const [embedCode, setEmbedCode] = useState<string>("");
   
-  // Store original URL to allow toggling between URL and embed code
+  // Store original URLs to allow toggling between URL and embed code
   const [originalYoutubeUrl, setOriginalYoutubeUrl] = useState<string>("");
+  const [originalRedditUrl, setOriginalRedditUrl] = useState<string>("");
   
-  // Handle YouTube URL to embed code conversion
+  // Handle embed code changes - detect platform and store URLs
   const handleEmbedCodeChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setEmbedCode(value);
     
-    // Store YouTube URL for reference, but don't auto-convert immediately
+    // Check for YouTube URL
     if ((value.includes('youtube.com') || value.includes('youtu.be')) && !value.includes('<iframe')) {
       setOriginalYoutubeUrl(value);
+      setOriginalRedditUrl("");
+    }
+    // Check for Reddit URL
+    else if (value.includes('reddit.com/r/') && !value.includes('blockquote') && !value.includes('embed.reddit.com')) {
+      setOriginalRedditUrl(value);
+      setOriginalYoutubeUrl("");
     }
   }, []);
   
@@ -135,14 +150,40 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
     setIsUploading(true);
     
     try {
-      // Generate a proper thumbnail for YouTube embeds
+      // Generate a proper thumbnail for embedded content
       let thumbnailUrl = "https://placehold.co/400x225?text=" + encodeURIComponent(title);
       
       // If it's a YouTube embed, extract the video ID and get a thumbnail
       if (contentType === "embed") {
+        // Check for YouTube content
         const videoId = extractYoutubeVideoId(originalYoutubeUrl || embedCode);
         if (videoId) {
           thumbnailUrl = getYoutubeThumbnailUrl(videoId);
+        } 
+        // Check for Reddit content
+        else if (isRedditEmbed(embedCode)) {
+          const redditInfo = extractRedditInfo(embedCode);
+          // If we have subreddit info, use it for the thumbnail
+          if (redditInfo.subreddit) {
+            thumbnailUrl = getRedditThumbnailUrl(redditInfo.subreddit);
+            
+            // If we didn't extract a title from the form, try to use the post title from Reddit
+            if (!title || title.length < 3) {
+              // Extract title from Reddit embed
+              const titleMatch = embedCode.match(/reddit\.com\/r\/[^\/]+\/comments\/[^\/]+\/([^\/]+)/);
+              if (titleMatch && titleMatch[1]) {
+                // Convert URL slug to readable title
+                const extractedTitle = titleMatch[1]
+                  .replace(/_/g, ' ')
+                  .replace(/-/g, ' ')
+                  .split(' ')
+                  .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(' ');
+                  
+                setTitle(extractedTitle);
+              }
+            }
+          }
         }
       }
       
@@ -497,12 +538,12 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                   id="embed-code"
                   value={embedCode}
                   onChange={handleEmbedCodeChange}
-                  placeholder="Paste embed code or YouTube URL (e.g. https://youtu.be/abcdef or <iframe> code)"
+                  placeholder="Paste embed code from YouTube, Reddit, or other platforms"
                   className="resize-none min-h-[120px] font-mono text-sm"
                 />
                 <div className="flex justify-between items-center mt-1">
                   <p className="text-xs text-muted-foreground">
-                    You can paste a YouTube URL directly and click "Convert to Embed Code", or you can paste a regular embed code.
+                    Supports YouTube URLs/embeds, Reddit embeds (blockquote format), and other platform embed codes.
                   </p>
                   {originalYoutubeUrl && (
                     <Button 

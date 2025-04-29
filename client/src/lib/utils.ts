@@ -76,3 +76,83 @@ export function youtubeUrlToEmbedCode(url: string): string | null {
 export function getYoutubeThumbnailUrl(videoId: string): string {
   return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
 }
+
+// Extract Reddit embed information
+export function extractRedditInfo(embedCode: string): { subreddit: string | null, postId: string | null, user: string | null } {
+  if (!embedCode) return { subreddit: null, postId: null, user: null };
+  
+  // Handle blockquote Reddit embed format
+  // <blockquote class="reddit-embed-bq" data-embed-height="546">
+  // <a href="https://www.reddit.com/r/aivideo/comments/1k80go8/face_punching_iconic_characters/">Face Punching Iconic Characters</a>
+  // by<a href="https://www.reddit.com/user/Cloud_Reviews/">u/Cloud_Reviews</a>
+  // in<a href="https://www.reddit.com/r/aivideo/">aivideo</a>
+  // </blockquote><script async="" src="https://embed.reddit.com/widgets.js" charset="UTF-8"></script>
+  
+  let subreddit = null;
+  let postId = null;
+  let user = null;
+  
+  // Extract subreddit
+  const subredditRegex = /reddit\.com\/r\/([^\/]+)/;
+  const subredditMatch = embedCode.match(subredditRegex);
+  if (subredditMatch) {
+    subreddit = subredditMatch[1];
+  }
+  
+  // Extract post ID
+  const postIdRegex = /comments\/([^\/]+)/;
+  const postIdMatch = embedCode.match(postIdRegex);
+  if (postIdMatch) {
+    postId = postIdMatch[1];
+  }
+  
+  // Extract username
+  const userRegex = /user\/([^\/]+)/;
+  const userMatch = embedCode.match(userRegex);
+  if (userMatch) {
+    user = userMatch[1];
+  }
+  
+  return { subreddit, postId, user };
+}
+
+// Check if a string is a Reddit embed
+export function isRedditEmbed(code: string): boolean {
+  return code.includes('reddit-embed-bq') || 
+         code.includes('embed.reddit.com') || 
+         (code.includes('reddit.com/r/') && code.includes('comments'));
+}
+
+// Get a Reddit thumbnail URL (fallback)
+export function getRedditThumbnailUrl(subreddit: string): string {
+  return `https://placehold.co/400x225?text=r/${subreddit}`;
+}
+
+// Convert a Reddit URL to an embed code
+export function redditUrlToEmbedCode(url: string): string | null {
+  if (!url || !url.includes('reddit.com/r/')) return null;
+  
+  // Regular expression to extract subreddit, post ID, and title
+  const regex = /reddit\.com\/r\/([^\/]+)\/comments\/([^\/]+)(?:\/([^\/]+))?/;
+  const match = url.match(regex);
+  
+  if (!match) return null;
+  
+  const subreddit = match[1];
+  const postId = match[2];
+  let title = match[3] || '';
+  
+  // Format title for readability
+  title = title
+    .replace(/_/g, ' ')
+    .replace(/-/g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+    
+  return `<blockquote class="reddit-embed-bq" style="height:500px" data-embed-height="546">
+  <a href="${url}">${title || 'Reddit Post'}</a>
+  in <a href="https://www.reddit.com/r/${subreddit}/">r/${subreddit}</a>
+  </blockquote>
+  <script async src="https://embed.reddit.com/widgets.js" charset="UTF-8"></script>`;
+}
