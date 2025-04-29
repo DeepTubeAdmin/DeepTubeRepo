@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import VimeoEmbed from './VimeoEmbed';
-import { Video } from '@/types';
+import { Video } from '@shared/schema';
 import { apiRequest } from '@/lib/queryClient';
 import { Loader2 } from 'lucide-react';
 import { 
@@ -21,7 +21,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
   const [video, setVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const youtubeContainerRef = useRef<HTMLDivElement>(null);
+  const embedContainerRef = useRef<HTMLDivElement>(null);
   
   // This effect loads the video data
   useEffect(() => {
@@ -69,20 +69,39 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
     });
     
     // Reference to prevent race conditions
-    const containerRef = youtubeContainerRef.current;
+    const containerRef = embedContainerRef.current;
     if (!containerRef) return;
     
     // Clear previous content
     containerRef.innerHTML = '';
     
-    // SIMPLIFY: Use a more direct approach for YouTube embeds
-    if (video.embedCode.includes('youtube.com/embed/')) {
-      // Extract the YouTube video ID using a simpler regex
-      const ytIdMatch = video.embedCode.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/);
-      const youtubeId = ytIdMatch ? ytIdMatch[1] : null;
+    // First, determine if it's a YouTube video
+    if (video.embedCode.includes('youtube.com') || video.embedCode.includes('youtu.be')) {
+      // Try to extract YouTube ID using different methods
+      let youtubeId = null;
+      
+      // Method 1: Extract from iframe embed
+      const iframeMatch = video.embedCode.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/);
+      if (iframeMatch) {
+        youtubeId = iframeMatch[1];
+      } 
+      // Method 2: Extract from embed code
+      else {
+        const idFromEmbed = extractYoutubeIdFromEmbed(video.embedCode);
+        if (idFromEmbed) {
+          youtubeId = idFromEmbed;
+        } 
+        // Method 3: Extract directly from URL
+        else {
+          const idFromUrl = extractYoutubeVideoId(video.embedCode);
+          if (idFromUrl) {
+            youtubeId = idFromUrl;
+          }
+        }
+      }
       
       if (youtubeId) {
-        console.log("VideoPlayer: Found YouTube embed with ID:", youtubeId);
+        console.log("VideoPlayer: Creating YouTube embed with ID:", youtubeId);
         
         // Create a direct iframe with autoplay enabled
         containerRef.innerHTML = `
@@ -101,7 +120,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
         containerRef.innerHTML = video.embedCode;
       }
     }
-    // Handle Reddit embeds with a direct approach
+    // Next, check if it's a Reddit embed
     else if (video.embedCode.includes('reddit.com')) {
       console.log("VideoPlayer: Creating Reddit embed");
       
@@ -214,9 +233,9 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                     className="w-full h-full relative embed-container"
                     style={{ paddingBottom: '56.25%' }}
                   >
-                    {/* Dynamically created YouTube iframe will be inserted here */}
+                    {/* Dynamically created iframe will be inserted here */}
                     <div 
-                      ref={youtubeContainerRef}
+                      ref={embedContainerRef}
                       className="absolute inset-0"
                     />
                     <style dangerouslySetInnerHTML={{__html: `
