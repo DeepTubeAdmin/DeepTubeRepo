@@ -289,16 +289,25 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
         </p>
         
         <Tabs defaultValue="video" onValueChange={(value) => setContentType(value as "video" | "image" | "embed")}>
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="video" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-3 mb-6 bg-gray-900 p-1">
+            <TabsTrigger 
+              value="video" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:font-bold uppercase font-semibold"
+            >
               <VideoIcon className="w-4 h-4" />
               Video
             </TabsTrigger>
-            <TabsTrigger value="image" className="flex items-center gap-2">
+            <TabsTrigger 
+              value="image" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:font-bold uppercase font-semibold"
+            >
               <ImageIcon className="w-4 h-4" />
               Image
             </TabsTrigger>
-            <TabsTrigger value="embed" className="flex items-center gap-2">
+            <TabsTrigger 
+              value="embed" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:font-bold uppercase font-semibold"
+            >
               <LinkIcon className="w-4 h-4" />
               Embed
             </TabsTrigger>
@@ -417,12 +426,16 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                   type="button"
                   variant="outline"
                   onClick={onClose}
-                  className="mr-2"
+                  className="mr-2 border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
                   disabled={isUploading}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isUploading}>
+                <Button 
+                  type="submit" 
+                  disabled={isUploading}
+                  className="bg-primary text-black hover:bg-primary/90 font-bold uppercase"
+                >
                   {isUploading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -549,12 +562,16 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                   type="button"
                   variant="outline"
                   onClick={onClose}
-                  className="mr-2"
+                  className="mr-2 border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
                   disabled={isUploading}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isUploading}>
+                <Button 
+                  type="submit" 
+                  disabled={isUploading}
+                  className="bg-primary text-black hover:bg-primary/90 font-bold uppercase"
+                >
                   {isUploading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -726,12 +743,16 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                   type="button"
                   variant="outline"
                   onClick={onClose}
-                  className="mr-2"
+                  className="mr-2 border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
                   disabled={isUploading}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isUploading}>
+                <Button 
+                  type="submit" 
+                  disabled={isUploading}
+                  className="bg-primary text-black hover:bg-primary/90 font-bold uppercase"
+                >
                   {isUploading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
