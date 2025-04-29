@@ -68,10 +68,32 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
 
   const handleMouseEnter = () => {
     setIsHovering(true);
+    
+    // For MP4/direct videos
+    if (video.contentType === 'video') {
+      const videoElement = document.querySelector(`[data-video-id="${video.id}"]`) as HTMLVideoElement;
+      if (videoElement) {
+        videoElement.currentTime = 0;
+        videoElement.play().catch(e => console.error("Error playing preview:", e));
+      }
+    }
+    
+    // For YouTube embeds, we'll use iframe autoplay in the render method
   };
 
   const handleMouseLeave = () => {
     setIsHovering(false);
+    
+    // For MP4/direct videos
+    if (video.contentType === 'video') {
+      const videoElement = document.querySelector(`[data-video-id="${video.id}"]`) as HTMLVideoElement;
+      if (videoElement) {
+        videoElement.pause();
+        videoElement.currentTime = 0;
+      }
+    }
+    
+    // For YouTube embeds, we'll remove the iframe in the render method
   };
 
   const formatDuration = (seconds: number): string => {
@@ -108,6 +130,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
             poster={video.thumbnail || undefined}
             preload="auto"
             playsInline
+            data-video-id={video.id}
             ref={(el) => {
               if (el) {
                 if (isHovering) {
@@ -122,8 +145,8 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           />
         )}
         
-        {/* Play overlay for videos */}
-        {video.contentType === 'video' && (
+        {/* Play overlay for videos and embeds */}
+        {(video.contentType === 'video' || video.contentType === 'embed') && (
           <div className={`absolute inset-0 flex items-center justify-center ${isHovering ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}>
             <div className="bg-black bg-opacity-50 rounded-full p-3">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
