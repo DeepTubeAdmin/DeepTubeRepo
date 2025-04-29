@@ -96,7 +96,6 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
             alt={video.title} 
             className="thumbnail" 
           />
-          {video.contentType !== 'image' && <i className="fas fa-play-circle text-5xl text-gray-500 absolute"></i>}
         </div>
         
         {/* Video preview on hover */}

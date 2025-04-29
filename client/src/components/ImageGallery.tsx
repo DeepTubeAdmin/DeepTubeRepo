@@ -150,9 +150,6 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
         
         {/* View/info overlay - only shows on hover */}
         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-          <svg className="w-12 h-12 text-primary" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M8 5v14l11-7z" />
-          </svg>
         </div>
       </div>
       

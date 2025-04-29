@@ -40,9 +40,7 @@ function App() {
         <TooltipProvider>
           <div className="bg-background">
             <Toaster />
-            <Layout showHeader={false}>
-              <Router />
-            </Layout>
+            <Router />
           </div>
         </TooltipProvider>
       </AuthProvider>
