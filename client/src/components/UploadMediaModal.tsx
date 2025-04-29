@@ -578,12 +578,12 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                   id="embed-code"
                   value={embedCode}
                   onChange={handleEmbedCodeChange}
-                  placeholder="Paste embed code from YouTube, Reddit, or other platforms"
+                  placeholder="Paste embed code from YouTube or Vimeo only"
                   className="resize-none min-h-[120px] font-mono text-sm"
                 />
                 <div className="flex justify-between items-center mt-1">
                   <p className="text-xs text-muted-foreground">
-                    Supports YouTube URLs/embeds, Reddit embeds (blockquote format), and other platform embed codes.
+                    Only YouTube and Vimeo embed links are supported. Reddit embeds are not supported.
                   </p>
                   <div className="flex space-x-2">
                     {/* Always show YouTube conversion button if embed code has youtube.com */}
