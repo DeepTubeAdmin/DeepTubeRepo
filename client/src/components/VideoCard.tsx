@@ -35,9 +35,19 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         setRedditInfo(info);
         console.log(`Extracted Reddit info: Subreddit=${info.subreddit}, Post=${info.postId} for video ${video.id}`);
         
-        // If thumbnail is missing or generic, set a custom Reddit thumbnail
-        if (!video.thumbnail || video.thumbnail.includes('placehold.co')) {
-          // This is handled in the rendering part below
+        // If subreddit was not extracted but we know it's a Reddit embed,
+        // attempt to extract from URL pattern in the embed code
+        if (!info.subreddit && video.embedCode.includes('reddit.com/r/')) {
+          const urlPattern = /reddit\.com\/r\/([^\/]+)\/comments\/([^\/]+)/;
+          const match = video.embedCode.match(urlPattern);
+          if (match) {
+            setRedditInfo({
+              subreddit: match[1],
+              postId: match[2],
+              user: null
+            });
+            console.log(`Extracted Reddit info from URL: Subreddit=${match[1]}, Post=${match[2]} for video ${video.id}`);
+          }
         }
       }
     }
@@ -117,17 +127,38 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
               </div>
               <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/30 to-transparent"></div>
             </div>
-          ) : video.contentType === 'embed' && redditInfo?.subreddit ? (
-            // Custom Reddit thumbnail with badge
+          ) : video.contentType === 'embed' && video.embedCode && isRedditEmbed(video.embedCode) ? (
+            // Enhanced Reddit thumbnail with badge and clearer styling
             <div className="relative w-full h-full">
-              <img
-                src={`https://placehold.co/400x225/FF4500/FFFFFF?text=r/${redditInfo.subreddit}`}
-                alt={`Reddit: r/${redditInfo.subreddit}`}
-                className={`object-cover w-full h-full transition-opacity duration-300 ${isHovering ? 'opacity-70' : 'opacity-100'}`}
-              />
-              <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full shadow-md">
-                Reddit
-              </div>
+              {redditInfo?.subreddit ? (
+                // Use subreddit-specific styling
+                <div className="w-full h-full flex flex-col">
+                  <div className="bg-orange-600 text-white text-xs p-1 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" className="w-4 h-4 mr-1 fill-current">
+                      <path d="M10 0C4.478 0 0 4.478 0 10c0 5.523 4.478 10 10 10 5.523 0 10-4.477 10-10 0-5.522-4.477-10-10-10zm5.7 11.1c0 1.8-2.1 3.3-4.7 3.3s-4.7-1.5-4.7-3.3c0-.2 0-.3.1-.5-1-.5-1.7-1.5-1.7-2.6 0-1.7 1.3-3 3-3 .8 0 1.5.3 2 .8 1.1-.7 2.5-1.1 4-.9.5-.7 1.3-1.2 2.2-1.2 1.6 0 2.9 1.3 2.9 2.9 0 1.1-.6 2-1.5 2.5.1.2.1.3.1.5 0 1.8-2.1 3.3-4.7 3.3z"/>
+                    </svg>
+                    r/{redditInfo.subreddit}
+                  </div>
+                  <div className="flex-grow bg-zinc-100 flex items-center justify-center">
+                    <div className={`transition-opacity duration-300 ${isHovering ? 'opacity-80' : 'opacity-100'} text-center p-2`}>
+                      <div className="font-bold text-sm text-zinc-800 mb-1">Reddit Post</div>
+                      <div className="text-xs text-zinc-600">Click to view content</div>
+                    </div>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none"></div>
+                </div>
+              ) : (
+                // Generic Reddit styling
+                <div className="w-full h-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
+                  <div className={`text-center p-4 bg-white/90 rounded-md mx-3 transition-transform duration-300 ${isHovering ? 'scale-105' : ''}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" className="w-8 h-8 mx-auto mb-2 fill-orange-600">
+                      <path d="M10 0C4.478 0 0 4.478 0 10c0 5.523 4.478 10 10 10 5.523 0 10-4.477 10-10 0-5.522-4.477-10-10-10zm5.7 11.1c0 1.8-2.1 3.3-4.7 3.3s-4.7-1.5-4.7-3.3c0-.2 0-.3.1-.5-1-.5-1.7-1.5-1.7-2.6 0-1.7 1.3-3 3-3 .8 0 1.5.3 2 .8 1.1-.7 2.5-1.1 4-.9.5-.7 1.3-1.2 2.2-1.2 1.6 0 2.9 1.3 2.9 2.9 0 1.1-.6 2-1.5 2.5.1.2.1.3.1.5 0 1.8-2.1 3.3-4.7 3.3z"/>
+                    </svg>
+                    <div className="font-bold text-sm text-zinc-800">Reddit Content</div>
+                    <div className="text-xs text-zinc-600 mt-1">Click to view</div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <img

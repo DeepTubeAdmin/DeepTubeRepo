@@ -557,17 +557,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log("API: Modified YouTube embed to include autoplay");
         } 
         // Check if this is a Reddit embed and ensure it has the required script
-        else if (video.embedCode.includes('reddit-embed-bq')) {
+        else if (video.embedCode.includes('reddit-embed-bq') || 
+                 video.embedCode.includes('reddit.com/r/') && video.embedCode.includes('comments')) {
           // IMPORTANT: Reddit embeds need special handling to play correctly
           console.log("API: Found Reddit embed, adding special handling");
           
-          // Extract Reddit post ID and subreddit from the embed code
-          const redditRegex = /data-embed-id="([\w\d]+)" data-embed-live="false" data-embed-created="(\d+)" data-embed-subreddit="([\w\d-]+)"/;
-          const redditMatch = video.embedCode.match(redditRegex);
+          // Try multiple regex patterns to extract Reddit info
+          let postId = null;
+          let subreddit = null;
           
-          if (redditMatch) {
-            const postId = redditMatch[1];
-            const subreddit = redditMatch[3];
+          // Method 1: Try extracting from data-embed attributes
+          const redditRegex1 = /data-embed-id="([\w\d]+)" data-embed-live="false" data-embed-created="(\d+)" data-embed-subreddit="([\w\d-]+)"/;
+          const redditMatch1 = video.embedCode.match(redditRegex1);
+          
+          if (redditMatch1) {
+            postId = redditMatch1[1];
+            subreddit = redditMatch1[3];
+          }
+          
+          // Method 2: Try extracting from URL in the embed code
+          if (!postId || !subreddit) {
+            const redditRegex2 = /reddit\.com\/r\/([^\/]+)\/comments\/([^\/]+)/;
+            const redditMatch2 = video.embedCode.match(redditRegex2);
+            
+            if (redditMatch2) {
+              subreddit = redditMatch2[1];
+              postId = redditMatch2[2];
+            }
+          }
+          
+          // Method 3: Try extracting from href attributes
+          if (!postId || !subreddit) {
+            const hrefRegex = /href="https?:\/\/(?:www\.)?reddit\.com\/r\/([^\/]+)\/comments\/([^\/]+)/;
+            const hrefMatch = video.embedCode.match(hrefRegex);
+            
+            if (hrefMatch) {
+              subreddit = hrefMatch[1];
+              postId = hrefMatch[2];
+            }
+          }
+          
+          // If we found the Reddit info, create a custom embed with iframe
+          if (postId && subreddit) {
             console.log(`API: Extracted Reddit info - subreddit: ${subreddit}, postId: ${postId}`);
             
             // Create a custom embed that will load properly
@@ -596,6 +627,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 </script>
               </div>
             `;
+            
+            // Also set a custom thumbnail for Reddit embeds if none exists
+            if (!video.thumbnail || video.thumbnail.includes('placehold.co')) {
+              video.thumbnail = `https://placehold.co/400x225/FF4500/FFFFFF?text=r/${subreddit}`;
+            }
           } else {
             // If we can't extract the Reddit post info, add the script as before
             console.log("API: Could not extract Reddit post info, adding standard script");
