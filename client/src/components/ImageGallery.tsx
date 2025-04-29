@@ -27,6 +27,7 @@ export default function ImageGallery({
   viewAllUrl = '#',
 }: ImageGalleryProps) {
   // Create a function to get the optimal column count based on available width
+  // Increased column counts to match more items per row in the API
   const getColumnClass = () => {
     // Get window width
     if (typeof window === 'undefined') return 'grid-cols-1';
@@ -34,9 +35,10 @@ export default function ImageGallery({
     const width = window.innerWidth;
     if (width < 640) return 'grid-cols-1'; // Mobile
     if (width < 768) return 'grid-cols-2'; // Small tablets
-    if (width < 1024) return 'grid-cols-3'; // Large tablets/small desktop
-    if (width < 1280) return 'grid-cols-4'; // Medium desktop
-    return 'grid-cols-5'; // Large desktop
+    if (width < 1024) return 'grid-cols-4'; // Large tablets/small desktop
+    if (width < 1280) return 'grid-cols-6'; // Medium desktop
+    if (width < 1536) return 'grid-cols-7'; // Large desktop
+    return 'grid-cols-8'; // Extra large desktop
   };
 
   // Create a dynamic class that adjusts to screen width
