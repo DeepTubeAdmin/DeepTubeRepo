@@ -1,0 +1,101 @@
+# Privacy Policy
+
+**Effective Date**: April 28, 2025
+
+DeepTube.co (the “Platform”), operated by DeepTube LLC (“we,” “us,” or “our”), is a video hosting and marketplace service for AI-generated videos. We are committed to protecting your privacy and providing transparency about how we collect, use, share, and protect your personal information. This Privacy Policy explains our practices and your choices regarding your data when you use DeepTube.co, including browsing, uploading, viewing, or monetizing videos.
+
+By using the Platform, you agree to this Privacy Policy. If you do not agree, please do not use the Platform.
+
+## 1. Information We Collect
+We collect information to provide, improve, and personalize the Platform. The types of information we collect include:
+
+### a. Information You Provide
+- **Account Information**: When you create an account, we collect your name, email address, password, and optional details like phone number or profile picture. If you monetize content, we may collect payment information (e.g., bank account or PayPal details) and tax-related data (e.g., Taxpayer ID).
+- **User Content**: Videos, thumbnails, titles, descriptions, and comments you upload or post. For AI-generated videos, this may include metadata about the content (e.g., generation tool, settings).
+- **Communications**: Information you provide when contacting us (e.g., via support@deeptube.co), including feedback, inquiries, or DMCA notices.
+
+### b. Information We Collect Automatically
+- **Usage Data**: Details about how you interact with the Platform, such as pages visited, videos watched, search queries, clicks, and time spent. We collect device information (e.g., IP address, browser type, operating system) and cookies or similar technologies to track activity.
+- **Analytics**: Metrics like video performance (e.g., views, watch time, engagement) to help creators optimize content and improve the Platform.
+- **Location Data**: Approximate location based on IP address or device settings to tailor content or comply with regional laws. We do not collect precise geolocation without consent.
+
+### c. Information from Third Parties
+- **Social Media**: If you sign up or log in via third-party services (e.g., Google, Facebook), we collect information like your name, email, or profile picture, subject to their privacy policies.
+- **Partners**: Data from payment processors (e.g., Stripe) for monetization or analytics providers to improve Platform performance.
+- **Publicly Available Data**: Information from public sources (e.g., social media profiles) if you link them to your DeepTube.co account.
+
+## 2. How We Use Your Information
+We use your information to operate, enhance, and personalize the Platform, including:
+- **Providing Services**: Enable account creation, video uploads, playback, commenting, and monetization.
+- **Personalization**: Recommend videos, tailor search results, or display relevant ads based on your activity and preferences.
+- **Analytics and Improvement**: Analyze usage trends, video performance, and feedback to optimize Platform features and content discoverability.
+- **Security**: Detect and prevent fraud, abuse, or unauthorized access (e.g., monitoring for prohibited content like non-consensual deepfakes).
+- **Communication**: Send service-related notices (e.g., account updates, policy changes) or respond to your inquiries.
+- **Legal Compliance**: Comply with laws, such as GDPR, CCPA, or DMCA, including processing data for tax reporting or content removal requests.
+- **Advertising**: Deliver targeted ads (if applicable) based on your interests, unless you opt out.
+
+## 3. How We Share Your Information
+We do not sell your personal information. We may share information in the following cases:
+- **With Your Consent**: When you explicitly agree, such as sharing your profile with other users or linking content to social media.
+- **Service Providers**: With trusted third parties (e.g., hosting providers like Vimeo, payment processors like Stripe) who assist with Platform operations, bound by confidentiality agreements.
+- **Other Users**: Publicly visible information, like your username, profile picture, videos, or comments, unless you set them to private.
+- **Legal Obligations**: To comply with laws, court orders, or government requests (e.g., DMCA takedowns, tax audits).
+- **Safety and Rights**: To protect the Platform, users, or the public from harm, fraud, or illegal activity, such as investigating prohibited content.
+- **Business Transfers**: In the event of a merger, acquisition, or sale, your information may be transferred, with notice to you.
+
+## 4. Your Choices and Rights
+You have control over your information and can exercise the following rights, subject to applicable laws:
+- **Access and Update**: View or edit your account information via your profile settings.
+- **Delete**: Request deletion of your account or specific content by contacting support@deeptube.co. Note that some data may be retained for legal or archival purposes.
+- **Opt-Out**: Disable personalized ads or certain cookies via Platform settings or your browser. You can also opt out of marketing emails by clicking “unsubscribe.”
+- **Data Portability**: Request a copy of your personal data in a structured format (e.g., for GDPR compliance).
+- **Restrict Processing**: Limit how we use your data, where permitted by law (e.g., under GDPR).
+- **CCPA Rights**: If you’re a California resident, you can request disclosure of data collected, sold, or shared, and opt out of data sales (we do not sell data).
+- **GDPR Rights**: If in the EU/EEA, you have additional rights to object to processing or lodge a complaint with a supervisory authority.
+
+To exercise these rights, contact us at support@deeptube.co. We will respond within 30 days (or 45 for CCPA requests), subject to verification.
+
+## 5. Cookies and Tracking Technologies
+We use cookies, pixels, and similar technologies to enhance your experience, analyze usage, and deliver ads. Types include:
+- **Essential Cookies**: Required for Platform functionality (e.g., login, video playback).
+- **Analytics Cookies**: Track usage to improve features (e.g., Google Analytics).
+- **Advertising Cookies**: Enable personalized ads (optional, can be disabled).
+
+You can manage cookies via your browser settings or our cookie consent tool. Note that disabling cookies may affect Platform performance.
+
+## 6. Data Security
+We implement industry-standard measures to protect your data, including:
+- Encryption (e.g., HTTPS, TLS) for data in transit and at rest.
+- Access controls and authentication to prevent unauthorized access.
+- Regular security audits and monitoring for threats.
+
+Despite these efforts, no system is 100% secure. Notify us immediately at support@deeptube.co if you suspect a breach.
+
+## 7. Data Retention
+We retain your information as long as your account is active or as needed to provide services, comply with laws, or resolve disputes. For example:
+- Account data is kept until you delete your account, then anonymized or deleted within 90 days, unless required by law (e.g., tax records).
+- User Content (e.g., videos) is retained until removed by you or us, with backups deleted per our retention schedule.
+- Usage data is anonymized after 12 months unless needed for analytics or legal purposes.
+
+## 8. International Data Transfers
+DeepTube.co operates globally, and your data may be processed in the United States or other countries. We comply with GDPR and other laws for cross-border transfers, using Standard Contractual Clauses or equivalent safeguards. By using the Platform, you consent to such transfers.
+
+## 9. Children’s Privacy
+The Platform is not intended for users under 18. We do not knowingly collect data from children under 13 (or 16 in the EU). If you believe we have such data, contact us at support@deeptube.co, and we will delete it promptly.
+
+## 10. Third-Party Links and Services
+The Platform may include links to third-party sites (e.g., social media, payment processors) or integrate with services (e.g., Vimeo for hosting). These are governed by their own privacy policies, and we are not responsible for their practices. Review their terms before engaging.
+
+## 11. Updates to This Policy
+We may update this Privacy Policy to reflect changes in our practices or legal requirements. We will notify you via email or Platform notice at least 7 days before significant changes take effect. Your continued use of DeepTube.co constitutes acceptance of the updated policy.
+
+## 12. Contact Us
+For questions, concerns, or to exercise your rights, contact our Data Protection Officer at:  
+DeepTube LLC  
+123 Main St, Wilmington, DE 19801  
+Email: support@deeptube.co  
+Phone: (800) 555-1234
+
+If you’re in the EU, you can also contact our EU Representative at [EU Representative Contact, if applicable]. For unresolved concerns, you may contact your local data protection authority (e.g., under GDPR).
+
+Thank you for trusting DeepTube.co with your data. We are committed to keeping your information safe and respecting your privacy.

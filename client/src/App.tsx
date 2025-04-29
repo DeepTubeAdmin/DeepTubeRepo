@@ -9,6 +9,7 @@ import NotFound from "@/pages/not-found";
 import MediaDetail from "@/pages/media-detail";
 import ForumPage from "@/pages/forum-page";
 import TermsOfService from "@/pages/terms-of-service";
+import PrivacyPolicy from "@/pages/privacy-policy";
 import { AuthProvider } from "@/hooks/use-auth";
 import Layout from "@/components/Layout";
 
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/media/:id" component={MediaDetail} />
       <Route path="/forum" component={ForumPage} />
       <Route path="/terms-of-service" component={TermsOfService} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route component={NotFound} />
     </Switch>
   );

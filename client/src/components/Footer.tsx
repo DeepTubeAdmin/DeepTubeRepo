@@ -8,9 +8,14 @@ export default function Footer() {
           <p className="text-muted-foreground">
             &copy; 2025 <a href="https://deeptube.co" className="text-primary hover:underline">DeepTube.co</a>
           </p>
-          <Link href="/terms-of-service" className="text-muted-foreground hover:text-primary">
-            Terms of Service
-          </Link>
+          <div className="space-x-4">
+            <Link href="/terms-of-service" className="text-muted-foreground hover:text-primary">
+              Terms of Service
+            </Link>
+            <Link href="/privacy-policy" className="text-muted-foreground hover:text-primary">
+              Privacy Policy
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
