@@ -46,6 +46,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
   const [categoryId, setCategoryId] = useState<string>("");
   const [contentType, setContentType] = useState<"video" | "image" | "embed">("video");
   const [embedCode, setEmbedCode] = useState<string>("");
+  const [thumbnailUrl, setThumbnailUrl] = useState<string>("");
   
   // Store original URLs to allow toggling between URL and embed code
   const [originalYoutubeUrl, setOriginalYoutubeUrl] = useState<string>("");
@@ -60,11 +61,35 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
     if ((value.includes('youtube.com') || value.includes('youtu.be')) && !value.includes('<iframe')) {
       setOriginalYoutubeUrl(value);
       setOriginalRedditUrl("");
+      
+      // Auto-convert YouTube URLs to embedded format for better UX
+      const youtubeEmbed = youtubeUrlToEmbedCode(value);
+      if (youtubeEmbed) {
+        setEmbedCode(youtubeEmbed);
+        
+        // Also set thumbnail URL if YouTube ID was found
+        const videoId = extractYoutubeVideoId(value);
+        if (videoId) {
+          setThumbnailUrl(getYoutubeThumbnailUrl(videoId));
+        }
+      }
     }
     // Check for Reddit URL
     else if (value.includes('reddit.com/r/') && !value.includes('blockquote') && !value.includes('embed.reddit.com')) {
       setOriginalRedditUrl(value);
       setOriginalYoutubeUrl("");
+      
+      // Auto-convert Reddit URLs to embedded format for better UX
+      const redditEmbed = redditUrlToEmbedCode(value);
+      if (redditEmbed) {
+        setEmbedCode(redditEmbed);
+        
+        // Try to set thumbnail URL for Reddit
+        const info = extractRedditInfo(redditEmbed);
+        if (info.subreddit) {
+          setThumbnailUrl(getRedditThumbnailUrl(info.subreddit));
+        }
+      }
     }
   }, []);
   
