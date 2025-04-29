@@ -109,6 +109,9 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
       setPrompt("");
       setDescription("");
       setEmbedCode("");
+      setThumbnailUrl("");
+      setOriginalYoutubeUrl("");
+      setOriginalRedditUrl("");
     }
   }, [isOpen]);
 
@@ -175,22 +178,22 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
     setIsUploading(true);
     
     try {
-      // Generate a proper thumbnail for embedded content
-      let thumbnailUrl = "https://placehold.co/400x225?text=" + encodeURIComponent(title);
+      // Use the existing thumbnail if one was set, otherwise generate a default
+      let finalThumbnailUrl = thumbnailUrl || "https://placehold.co/400x225?text=" + encodeURIComponent(title);
       
-      // If it's a YouTube embed, extract the video ID and get a thumbnail
-      if (contentType === "embed") {
+      // If it's a YouTube embed and no thumbnail has been set, extract the video ID and get one
+      if (contentType === "embed" && !thumbnailUrl) {
         // Check for YouTube content
         const videoId = extractYoutubeVideoId(originalYoutubeUrl || embedCode);
         if (videoId) {
-          thumbnailUrl = getYoutubeThumbnailUrl(videoId);
+          finalThumbnailUrl = getYoutubeThumbnailUrl(videoId);
         } 
         // Check for Reddit content
         else if (isRedditEmbed(embedCode)) {
           const redditInfo = extractRedditInfo(embedCode);
           // If we have subreddit info, use it for the thumbnail
           if (redditInfo.subreddit) {
-            thumbnailUrl = getRedditThumbnailUrl(redditInfo.subreddit);
+            finalThumbnailUrl = getRedditThumbnailUrl(redditInfo.subreddit);
             
             // If we didn't extract a title from the form, try to use the post title from Reddit
             if (!title || title.length < 3) {
@@ -226,7 +229,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           categoryId,
           contentType,
           // Use YouTube thumbnail for embeds when available
-          thumbnail: thumbnailUrl,
+          thumbnail: finalThumbnailUrl,
           [contentType === "video" ? "videoUrl" : contentType === "image" ? "imageUrl" : "embedCode"]: 
             contentType === "embed" ? embedCode : "https://example.com/placeholder",
           resolution: contentType === "video" ? "HD" : undefined,
@@ -264,7 +267,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
     } finally {
       setIsUploading(false);
     }
-  }, [title, description, aiGenerator, prompt, categoryId, contentType, selectedFile, embedCode, toast, onClose]);
+  }, [title, description, aiGenerator, prompt, categoryId, contentType, selectedFile, embedCode, thumbnailUrl, originalYoutubeUrl, originalRedditUrl, toast, onClose]);
 
   return (
     <SimpleDialog isOpen={isOpen} onClose={onClose} title="Upload Media">
