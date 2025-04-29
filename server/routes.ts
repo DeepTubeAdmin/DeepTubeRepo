@@ -694,6 +694,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("API: Retrieved video:", video.id, video.title, "Content type:", video.contentType);
       
+      // Debug video URL for MP4 videos
+      if (video.contentType === 'video' && video.videoUrl) {
+        console.log("API: Video URL data:", {
+          urlLength: video.videoUrl.length,
+          urlPreview: video.videoUrl.substring(0, 50) + '...',
+          isMimeTypeIncluded: video.videoUrl.includes('data:video'),
+          isMP4: video.videoUrl.includes('mp4'),
+          urlStart: video.videoUrl.substring(0, 30)
+        });
+      }
+      
       // Get category info
       const category = video.categoryId 
         ? await storage.getCategoryById(video.categoryId) 
