@@ -170,7 +170,7 @@ export default function Header() {
                   <User className="mr-2 h-4 w-4" />
                   <span>My Profile</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem className="cursor-pointer" onClick={() => setLocation("/my-videos")}>
                   <Package className="mr-2 h-4 w-4" />
                   <span>My Videos</span>
                 </DropdownMenuItem>

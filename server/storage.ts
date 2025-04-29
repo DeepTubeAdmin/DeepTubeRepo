@@ -153,6 +153,19 @@ export class DatabaseStorage implements IStorage {
     const [result] = await db.insert(videos).values(video).returning();
     return result;
   }
+  
+  async getUserVideos(userId: number): Promise<Video[]> {
+    // For now, we don't have a userId field in videos table
+    // We'll get all videos for demo purposes
+    // In a real implementation, this would filter by userId
+    return db.select()
+      .from(videos)
+      .orderBy(desc(videos.createdAt));
+  }
+  
+  async deleteVideo(id: number): Promise<void> {
+    await db.delete(videos).where(eq(videos.id, id));
+  }
 
   // Wishlist operations
   async addToWishlist(item: InsertWishlistItem): Promise<WishlistItem> {

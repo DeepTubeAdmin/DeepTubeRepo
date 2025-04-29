@@ -310,6 +310,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User videos endpoints
+  app.get("/api/user/videos", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      const userVideos = await storage.getUserVideos(req.user.id);
+      
+      // Get category info for each video
+      const videosWithCategories = await Promise.all(userVideos.map(async (video) => {
+        const category = video.categoryId 
+          ? await storage.getCategoryById(video.categoryId) 
+          : null;
+        
+        return {
+          ...video,
+          category
+        };
+      }));
+      
+      res.json(videosWithCategories);
+    } catch (error) {
+      console.error("Error fetching user videos:", error);
+      res.status(500).json({ error: "Failed to fetch user videos" });
+    }
+  });
+  
+  app.delete("/api/videos/:id", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      const videoId = parseInt(req.params.id);
+      
+      // Check if video exists
+      const video = await storage.getVideoById(videoId);
+      if (!video) {
+        return res.status(404).json({ error: "Video not found" });
+      }
+      
+      // In a real implementation, we'd check if the user owns this video
+      // For this demo version, we'll allow any authenticated user to delete
+      await storage.deleteVideo(videoId);
+      
+      res.status(200).json({ message: "Video deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting video:", error);
+      res.status(500).json({ error: "Failed to delete video" });
+    }
+  });
+  
   // Wishlist endpoints
   app.get("/api/user/wishlist", isAuthenticated, async (req, res) => {
     try {
