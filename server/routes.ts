@@ -218,22 +218,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const blockId = baseIndex + i;
         const blockType = i < 3 ? 'videos' : 'images';
         
+        // Define our row size constant for reuse between blocks
+        const itemsPerRow = 8; // Increased from 5 to fill rows better
+        
         if (blockType === 'videos') {
           // Get video content based on filters
           let videos: Video[] = [];
           
           if (isTrending) {
             // For trending, use featured videos
-            videos = await storage.getFeaturedVideos(5);
+            videos = await storage.getFeaturedVideos(itemsPerRow);
           } else if (isMostViewed) {
             // For most viewed, use random order for now (will be replaced with actual view count)
-            videos = await storage.getVideos(5, 'video', undefined, 'viewed');
+            videos = await storage.getVideos(itemsPerRow, 'video', undefined, 'viewed');
           } else if (categoryId) {
             // Filter by category if specified
-            videos = await storage.getVideosByCategory(categoryId, 'video', 5);
+            videos = await storage.getVideosByCategory(categoryId, 'video', itemsPerRow);
           } else {
             // No filter - include all types (video, image, and embeds)
-            videos = await storage.getVideos(5, undefined, undefined, sortBy);
+            videos = await storage.getVideos(itemsPerRow, undefined, undefined, sortBy);
           }
           
           response.blocks.push({
@@ -246,18 +249,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Get image content based on filters
           let images: Video[] = [];
           
+          // Use the same number of images per row as videos
+          const imagesPerRow = itemsPerRow;
+          
           if (isTrending) {
             // For trending, use newest images
-            images = await storage.getVideos(5, 'image', undefined, 'newest');
+            images = await storage.getVideos(imagesPerRow, 'image', undefined, 'newest');
           } else if (isMostViewed) {
             // For most viewed, use "viewed" sort
-            images = await storage.getVideos(5, 'image', undefined, 'viewed');
+            images = await storage.getVideos(imagesPerRow, 'image', undefined, 'viewed');
           } else if (categoryId) {
             // Filter by category if specified
-            images = await storage.getVideosByCategory(categoryId, 'image', 5);
+            images = await storage.getVideosByCategory(categoryId, 'image', imagesPerRow);
           } else {
             // No filter - include all image types
-            images = await storage.getVideos(5, 'image', undefined, sortBy);
+            images = await storage.getVideos(imagesPerRow, 'image', undefined, sortBy);
           }
           
           response.blocks.push({
