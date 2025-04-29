@@ -1,410 +1,281 @@
 import { useState, useEffect } from 'react';
-import { useLocation, useRoute, Link } from 'wouter';
 import Layout from '@/components/Layout';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/hooks/use-auth';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, Trash2, Ban, Flag, CheckCircle, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { apiRequest } from '@/lib/queryClient';
+import { useLocation } from 'wouter';
 import { Video, User } from '@shared/schema';
+
+// Type augmentation for admin purposes
+type AdminUser = User & { banned: boolean };
+
+// Extended type for reported content
+type ReportedContent = Video & { 
+  reportReason: string;
+  reportedAt: string;
+  reportedBy: string;
+};
+import { apiRequest } from '@/lib/queryClient';
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function AdminPage() {
   const { user } = useAuth();
-  const [_, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("videos");
-  const [videos, setVideos] = useState<Video[]>([]);
-  // Add banned property to User type for admin page
-  type AdminUser = User & { banned: boolean };
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [reportedContent, setReportedContent] = useState<Video[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Check if user is admin (for demo, we'll consider users with ID 1 or 2 as admins)
-  const isAdmin = user && (user.id === 1 || user.id === 2);
-  
+  const [loading, setLoading] = useState(true);
+  const [reportedContent, setReportedContent] = useState<ReportedContent[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [activeTab, setActiveTab] = useState('content');
+
   useEffect(() => {
-    if (!user) {
-      setLocation('/auth');
-      return;
-    }
-    
-    if (!isAdmin) {
-      toast({
-        title: "Access Denied",
-        description: "You don't have permission to access the admin panel",
-        variant: "destructive"
-      });
+    // Only admin can access this page
+    if (user?.username !== 'Admin') {
       setLocation('/');
       return;
     }
-    
+
     const fetchData = async () => {
-      setIsLoading(true);
       try {
-        // Fetch videos
-        const videoResponse = await apiRequest('GET', '/api/content/all');
-        if (!videoResponse.ok) throw new Error('Failed to fetch videos');
-        const videoData = await videoResponse.json();
-        setVideos(videoData);
+        // In a real application, fetch reported content from an API
+        // For demo, we'll get some content from the regular API
+        const contentRes = await apiRequest('GET', '/api/content/featured');
+        const contentData = await contentRes.json();
         
-        // Fetch users
-        const userResponse = await apiRequest('GET', '/api/users');
-        if (!userResponse.ok) throw new Error('Failed to fetch users');
-        const userData = await userResponse.json();
-        setUsers(userData);
-        
-        // For demo purposes, we'll show some random videos as reported
-        // In a real app, you would have a separate API endpoint for reported content
-        const demoReported = videoData.slice(0, 3).map((video: Video) => ({
+        // Create some "reported" content for demonstration purposes
+        const demoReported = contentData.slice(0, 3).map((video: Video) => ({
           ...video,
-          reportReason: "Inappropriate content",
-          reportedBy: "user123"
+          reportReason: 'Content violates community guidelines',
+          reportedAt: new Date().toISOString(),
+          reportedBy: 'user123'
         }));
+        
         setReportedContent(demoReported);
         
+        // Fetch all users
+        const usersRes = await apiRequest('GET', '/api/admin/users');
+        const usersData = await usersRes.json();
+        setUsers(usersData);
+        
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching admin data:', error);
         toast({
-          title: "Error",
-          description: "Failed to load administrative data",
-          variant: "destructive"
+          title: 'Error',
+          description: 'Failed to load admin data',
+          variant: 'destructive'
         });
-      } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
-    
+
     fetchData();
-  }, [user, isAdmin, setLocation, toast]);
-  
-  const handleDeleteVideo = async (videoId: number) => {
-    if (!confirm("Are you sure you want to delete this content? This action cannot be undone.")) {
-      return;
-    }
-    
+  }, [user, setLocation, toast]);
+
+  const handleDeleteContent = async (videoId: number) => {
     try {
-      const response = await apiRequest('DELETE', `/api/videos/${videoId}`);
-      if (!response.ok) throw new Error('Failed to delete video');
-      
-      // Update the videos list
-      setVideos(videos.filter(item => item.id !== videoId));
-      // Also remove from reported content if it's there
-      setReportedContent(reportedContent.filter(item => item.id !== videoId));
-      
+      await apiRequest('DELETE', `/api/admin/content/${videoId}`);
+      setReportedContent(prev => prev.filter(item => item.id !== videoId));
       toast({
-        title: "Success",
-        description: "Content has been deleted successfully",
-        variant: "default"
+        title: 'Success',
+        description: 'Content deleted successfully',
+        variant: 'default'
       });
     } catch (error) {
-      console.error('Error deleting video:', error);
+      console.error('Error deleting content:', error);
       toast({
-        title: "Error",
-        description: "Failed to delete content",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to delete content',
+        variant: 'destructive'
       });
     }
   };
-  
-  const handleBanUser = async (userId: number) => {
-    if (!confirm("Are you sure you want to ban this user? They will no longer be able to upload content.")) {
-      return;
-    }
-    
+
+  const handleBanUser = async (userId: number, currentBanStatus: boolean) => {
     try {
-      const response = await apiRequest('PATCH', `/api/users/${userId}/ban`, { banned: true });
-      if (!response.ok) throw new Error('Failed to ban user');
+      await apiRequest('PUT', `/api/admin/users/${userId}`, {
+        banned: !currentBanStatus
+      });
       
-      // Update the users list to show banned status
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, banned: true } : user
-      ));
+      // Update the local state to reflect the change
+      setUsers(prev =>
+        prev.map(user =>
+          user.id === userId ? { ...user, banned: !currentBanStatus } : user
+        )
+      );
       
       toast({
-        title: "Success",
-        description: "User has been banned successfully",
-        variant: "default"
+        title: 'Success',
+        description: `User ${currentBanStatus ? 'unbanned' : 'banned'} successfully`,
+        variant: 'default'
       });
     } catch (error) {
-      console.error('Error banning user:', error);
+      console.error('Error updating user ban status:', error);
       toast({
-        title: "Error",
-        description: "Failed to ban user",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to update user status',
+        variant: 'destructive'
       });
     }
   };
-  
-  const handleUnbanUser = async (userId: number) => {
-    try {
-      const response = await apiRequest('PATCH', `/api/users/${userId}/ban`, { banned: false });
-      if (!response.ok) throw new Error('Failed to unban user');
-      
-      // Update the users list to show unbanned status
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, banned: false } : user
-      ));
-      
-      toast({
-        title: "Success",
-        description: "User has been unbanned successfully",
-        variant: "default"
-      });
-    } catch (error) {
-      console.error('Error unbanning user:', error);
-      toast({
-        title: "Error",
-        description: "Failed to unban user",
-        variant: "destructive"
-      });
-    }
-  };
-  
-  const handleApproveContent = async (videoId: number) => {
-    try {
-      // In a real app, you would have a proper API endpoint for this
-      // For now, we'll just remove it from the reported content
-      setReportedContent(reportedContent.filter(video => video.id !== videoId));
-      
-      toast({
-        title: "Success",
-        description: "Content has been approved and removed from reported items",
-        variant: "default"
-      });
-    } catch (error) {
-      console.error('Error approving content:', error);
-      toast({
-        title: "Error",
-        description: "Failed to approve content",
-        variant: "destructive"
-      });
-    }
-  };
-  
-  if (!user || !isAdmin) {
-    return null; // Don't render anything if not authorized
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-[calc(100vh-160px)]">
+          <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full"></div>
+        </div>
+      </Layout>
+    );
   }
-  
+
   return (
     <Layout>
       <div className="container mx-auto py-8">
-        <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
+        <h1 className="text-3xl font-bold mb-6 text-white">Admin Dashboard</h1>
         
-        <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-3 w-full max-w-md mb-6">
-            <TabsTrigger value="videos">Videos & Images</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="reported">Reported Content</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+          <TabsList className="w-full bg-gray-800">
+            <TabsTrigger value="content" className="flex-1">Reported Content</TabsTrigger>
+            <TabsTrigger value="users" className="flex-1">User Management</TabsTrigger>
           </TabsList>
           
-          {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            </div>
-          ) : (
-            <>
-              <TabsContent value="videos" className="w-full">
-                <div className="bg-gray-900 rounded-lg p-6">
-                  <h2 className="text-xl font-semibold mb-4">All Content ({videos.length})</h2>
-                  
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-gray-800 text-left">
-                          <th className="px-4 py-3 text-sm">ID</th>
-                          <th className="px-4 py-3 text-sm">Thumbnail</th>
-                          <th className="px-4 py-3 text-sm">Title</th>
-                          <th className="px-4 py-3 text-sm">Type</th>
-                          <th className="px-4 py-3 text-sm">Category</th>
-                          <th className="px-4 py-3 text-sm">Date Added</th>
-                          <th className="px-4 py-3 text-sm">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {videos.map((video) => (
-                          <tr key={video.id} className="border-t border-gray-700 hover:bg-gray-800">
-                            <td className="px-4 py-3 text-sm">{video.id}</td>
-                            <td className="px-4 py-3">
-                              <div className="w-16 h-10 bg-gray-800 overflow-hidden rounded">
-                                <img 
-                                  src={video.thumbnail || 'https://via.placeholder.com/160x90'} 
-                                  alt={video.title}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-sm">
-                              <Link to={`/media/${video.id}`} className="hover:text-primary text-white">
-                                {video.title}
-                              </Link>
-                            </td>
-                            <td className="px-4 py-3 text-sm capitalize">{video.contentType}</td>
-                            <td className="px-4 py-3 text-sm">
-                              {`Category ${video.categoryId}`}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-400">
-                              {new Date(video.createdAt).toLocaleDateString()}
-                            </td>
-                            <td className="px-4 py-3">
-                              <Button 
-                                variant="destructive" 
-                                size="sm"
-                                onClick={() => handleDeleteVideo(video.id)}
-                                className="w-full"
-                              >
-                                <Trash2 className="h-4 w-4 mr-1" />
-                                Delete
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="users" className="w-full">
-                <div className="bg-gray-900 rounded-lg p-6">
-                  <h2 className="text-xl font-semibold mb-4">All Users ({users.length})</h2>
-                  
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-gray-800 text-left">
-                          <th className="px-4 py-3 text-sm">ID</th>
-                          <th className="px-4 py-3 text-sm">Username</th>
-                          <th className="px-4 py-3 text-sm">Email</th>
-                          <th className="px-4 py-3 text-sm">Status</th>
-                          <th className="px-4 py-3 text-sm">Joined Date</th>
-                          <th className="px-4 py-3 text-sm">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {users.map((user) => (
-                          <tr key={user.id} className="border-t border-gray-700 hover:bg-gray-800">
-                            <td className="px-4 py-3 text-sm">{user.id}</td>
-                            <td className="px-4 py-3 text-sm">{user.username}</td>
-                            <td className="px-4 py-3 text-sm">{user.email || 'N/A'}</td>
-                            <td className="px-4 py-3 text-sm">
-                              <span className={`px-2 py-1 rounded text-xs ${user.banned ? 'bg-red-900 text-red-200' : 'bg-green-900 text-green-200'}`}>
-                                {user.banned ? 'Banned' : 'Active'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-400">
-                              {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
-                            </td>
-                            <td className="px-4 py-3">
-                              {user.banned ? (
+          <TabsContent value="content" className="py-4">
+            <Card className="bg-gray-900 border-gray-800">
+              <CardHeader>
+                <CardTitle>Reported Content</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Review and moderate content that has been reported by users
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[500px]">
+                  {reportedContent.length === 0 ? (
+                    <p className="text-center text-gray-400 py-8">No reported content to review</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-gray-800 hover:bg-gray-800">
+                          <TableHead className="text-gray-300">Title</TableHead>
+                          <TableHead className="text-gray-300">Report Reason</TableHead>
+                          <TableHead className="text-gray-300">Content Type</TableHead>
+                          <TableHead className="text-gray-300">Report Date</TableHead>
+                          <TableHead className="text-gray-300">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {reportedContent.map((content) => (
+                          <TableRow key={content.id} className="border-gray-800 hover:bg-gray-800">
+                            <TableCell className="text-white font-medium">{content.title}</TableCell>
+                            <TableCell className="text-gray-300">{content.reportReason}</TableCell>
+                            <TableCell className="text-gray-300 capitalize">{content.contentType}</TableCell>
+                            <TableCell className="text-gray-300">
+                              {new Date(content.reportedAt).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
                                 <Button 
                                   variant="outline" 
                                   size="sm"
-                                  onClick={() => handleUnbanUser(user.id)}
-                                  className="w-full text-green-500 border-green-800"
+                                  onClick={() => window.open(`/media/${content.id}`, '_blank')}
                                 >
-                                  <RefreshCw className="h-4 w-4 mr-1" />
-                                  Unban
+                                  View
                                 </Button>
-                              ) : (
                                 <Button 
                                   variant="destructive" 
                                   size="sm"
-                                  onClick={() => handleBanUser(user.id)}
-                                  className="w-full"
+                                  onClick={() => handleDeleteContent(content.id)}
                                 >
-                                  <Ban className="h-4 w-4 mr-1" />
-                                  Ban
-                                </Button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="reported" className="w-full">
-                <div className="bg-gray-900 rounded-lg p-6">
-                  <h2 className="text-xl font-semibold mb-4">Reported Content ({reportedContent.length})</h2>
-                  
-                  {reportedContent.length === 0 ? (
-                    <div className="text-center py-10 text-gray-400">
-                      <Flag className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                      <p>No reported content at this time</p>
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full border-collapse">
-                        <thead>
-                          <tr className="bg-gray-800 text-left">
-                            <th className="px-4 py-3 text-sm">ID</th>
-                            <th className="px-4 py-3 text-sm">Thumbnail</th>
-                            <th className="px-4 py-3 text-sm">Title</th>
-                            <th className="px-4 py-3 text-sm">Type</th>
-                            <th className="px-4 py-3 text-sm">Report Reason</th>
-                            <th className="px-4 py-3 text-sm">Reported By</th>
-                            <th className="px-4 py-3 text-sm">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {reportedContent.map((video) => (
-                            <tr key={video.id} className="border-t border-gray-700 hover:bg-gray-800">
-                              <td className="px-4 py-3 text-sm">{video.id}</td>
-                              <td className="px-4 py-3">
-                                <div className="w-16 h-10 bg-gray-800 overflow-hidden rounded">
-                                  <img 
-                                    src={video.thumbnail || 'https://via.placeholder.com/160x90'} 
-                                    alt={video.title}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                <Link to={`/media/${video.id}`} className="hover:text-primary text-white">
-                                  {video.title}
-                                </Link>
-                              </td>
-                              <td className="px-4 py-3 text-sm capitalize">{video.contentType}</td>
-                              <td className="px-4 py-3 text-sm text-red-400">
-                                {(video as any).reportReason || "Inappropriate content"}
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                {(video as any).reportedBy || "anonymous"}
-                              </td>
-                              <td className="px-4 py-3 flex items-center space-x-2">
-                                <Button 
-                                  variant="destructive" 
-                                  size="sm"
-                                  onClick={() => handleDeleteVideo(video.id)}
-                                  className="flex-1"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-1" />
                                   Delete
                                 </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleApproveContent(video.id)}
-                                  className="flex-1 text-green-500 border-green-800"
-                                >
-                                  <CheckCircle className="h-4 w-4 mr-1" />
-                                  Approve
-                                </Button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   )}
-                </div>
-              </TabsContent>
-            </>
-          )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="users" className="py-4">
+            <Card className="bg-gray-900 border-gray-800">
+              <CardHeader>
+                <CardTitle>User Management</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Manage user accounts, including banning problematic users
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[500px]">
+                  {users.length === 0 ? (
+                    <p className="text-center text-gray-400 py-8">No users found</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-gray-800 hover:bg-gray-800">
+                          <TableHead className="text-gray-300">Username</TableHead>
+                          <TableHead className="text-gray-300">Email</TableHead>
+                          <TableHead className="text-gray-300">Join Date</TableHead>
+                          <TableHead className="text-gray-300">Status</TableHead>
+                          <TableHead className="text-gray-300">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {users.map((user) => (
+                          <TableRow key={user.id} className="border-gray-800 hover:bg-gray-800">
+                            <TableCell className="text-white font-medium">{user.username}</TableCell>
+                            <TableCell className="text-gray-300">{user.email || 'N/A'}</TableCell>
+                            <TableCell className="text-gray-300">
+                              {new Date(user.createdAt).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <span 
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  (user as AdminUser).banned ? 
+                                  'bg-red-900 text-red-300' : 
+                                  'bg-green-900 text-green-300'
+                                }`}
+                              >
+                                {(user as AdminUser).banned ? 'Banned' : 'Active'}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <Button 
+                                variant={(user as AdminUser).banned ? "default" : "destructive"} 
+                                size="sm"
+                                onClick={() => handleBanUser(user.id, (user as AdminUser).banned)}
+                              >
+                                {(user as AdminUser).banned ? 'Unban User' : 'Ban User'}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
     </Layout>
