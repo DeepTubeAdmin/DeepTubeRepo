@@ -9,10 +9,10 @@ interface LayoutProps {
 
 export default function Layout({ children, showHeader = true }: LayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col bg-black text-white">
+    <div className="min-h-screen bg-[#0f0f0f] text-white font-['Roboto',sans-serif]">
       {showHeader && <Header />}
       
-      <div className="flex-grow container mx-auto px-4 pt-4 pb-12">
+      <div className="flex-grow">
         {children}
       </div>
       

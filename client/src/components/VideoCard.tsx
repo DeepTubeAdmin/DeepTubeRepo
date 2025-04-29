@@ -1,5 +1,4 @@
-import { Heart, ExternalLink, Clock } from "lucide-react";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Heart } from "lucide-react";
 import { Video } from "@/types";
 import { useState, useEffect } from "react";
 import VimeoEmbed from "./VimeoEmbed";
@@ -62,19 +61,13 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
   };
 
   const handlePreview = () => {
-    console.log("Preview clicked for video ID:", video.id);
     if (onPreview) {
-      console.log("Calling onPreview with video ID:", video.id);
       onPreview(video.id);
-    } else {
-      console.log("onPreview callback is not defined");
     }
   };
 
   const handleMouseEnter = () => {
     setIsHovering(true);
-    // We don't want to call onPreview here anymore as it triggers the popup
-    // Instead, the video preview is handled directly in this component
   };
 
   const handleMouseLeave = () => {
@@ -89,96 +82,69 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
 
   return (
     <div 
-      id={`video-preview-${video.id}`}
-      className="group transition-transform duration-200 overflow-hidden cursor-pointer"
+      className="video-card video-item"
+      data-id={video.id}
+      data-type={video.contentType}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={handlePreview}
     >
-      <div className="relative">
-        {/* Thumbnail with hover effect */}
-        <AspectRatio ratio={16/9} className="bg-black">
-          {isHovering && video.vimeoId ? (
-            <VimeoEmbed 
-              videoId={video.vimeoId} 
-              autoplay={true}
-              loop={true}
-              showTitle={false}
-              showByline={false}
-              showPortrait={false}
-            />
-          ) : isHovering && video.contentType === 'embed' && youtubeId ? (
-            // For YouTube embeds on hover, show the YouTube video preview with an overlay to catch clicks
-            <div className="w-full h-full relative">
-              <iframe 
-                className="absolute inset-0 w-full h-full border-0"
-                src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${youtubeId}`}
-                title={`${video.title} Preview`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-              {/* This transparent overlay prevents clicks from going to the iframe */}
-              <div 
-                className="absolute inset-0 bg-transparent z-10 cursor-pointer" 
-                onClick={handlePreview}
-                aria-label="Open full video player"
-              >
-                {/* Show overlay on hover without play button */}
-                <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity"></div>
-              </div>
-            </div>
-          ) : (
-            <img
-              src={video.thumbnail}
-              alt={video.title}
-              className="object-cover w-full h-full transition-all duration-300 transform group-hover:scale-110"
-            />
-          )}
-        </AspectRatio>
+      <div className="thumbnail-container">
+        <div className="bg-gray-800 thumbnail flex items-center justify-center">
+          <img 
+            src={video.thumbnail || "https://via.placeholder.com/640x360?text=No+Thumbnail"} 
+            alt={video.title} 
+            className="thumbnail" 
+          />
+          {video.contentType !== 'image' && <i className="fas fa-play-circle text-5xl text-gray-500 absolute"></i>}
+        </div>
         
-        {/* Duration badge */}
-        {video.duration > 0 && (
-          <div className="absolute bottom-2 right-2 bg-black text-white text-xs font-semibold px-1 py-0.5 rounded-sm">
-            {formatDuration(video.duration)}
-          </div>
+        {/* Video preview on hover */}
+        {video.contentType !== 'image' && (
+          <video muted loop className={`absolute top-0 left-0 w-full h-full object-cover ${isHovering ? 'opacity-100' : 'opacity-0'} transition-opacity`}>
+            {video.vimeoId && (
+              <source 
+                src={`https://player.vimeo.com/progressive_redirect/playback/${video.vimeoId}/rendition/720p/file.mp4?loc=external`} 
+                type="video/mp4" 
+              />
+            )}
+            {youtubeId && (
+              <source 
+                src={`https://www.youtube.com/embed/${youtubeId}`} 
+                type="video/mp4" 
+              />
+            )}
+          </video>
         )}
         
-        {/* Play overlay - only shows on hover */}
-        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-          <svg className="w-12 h-12 text-primary" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M8 5v14l11-7z" />
-          </svg>
-        </div>
+        {/* Duration badge */}
+        {video.duration > 0 && video.contentType !== 'image' && (
+          <div className="duration">{formatDuration(video.duration)}</div>
+        )}
       </div>
       
       {/* Video info */}
-      <div className="pt-2 pb-3 px-1">
-        <div className="flex justify-between items-start">
-          <h3 
-            className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors cursor-pointer mr-2"
-          >
-            {video.title}
-          </h3>
-          <Link to={`/media/${video.id}`} className="text-gray-400 hover:text-primary transition-colors">
-            <ExternalLink className="h-3.5 w-3.5 ml-1" />
-          </Link>
-        </div>
-        
-        <div className="flex justify-between items-center mt-1">
-          <div className="flex items-center space-x-2 text-xs text-gray-400">
-            <span>{formatNumber(Math.floor(Math.random() * 10000) + 1000)} views</span>
-            <span>•</span>
-            <span>{Math.floor(Math.random() * 30) + 1}d ago</span>
+      <div className="p-3">
+        <h3 className="font-medium truncate">{video.title}</h3>
+        <div className="flex justify-between text-sm text-gray-400 mt-1">
+          <span>{"AI Artist"}</span>
+          <div>
+            <span className="mr-2">
+              <i className="fas fa-eye mr-1"></i>
+              {formatNumber(Math.floor(Math.random() * 10000) + 1000)}
+            </span>
+            <span>
+              <i className="fas fa-thumbs-up mr-1"></i>
+              {Math.floor(Math.random() * 10) + 90}%
+            </span>
           </div>
-          
-          <button 
-            onClick={handleWishlist}
-            className="text-gray-400 hover:text-primary transition-colors"
-          >
-            <Heart className="h-4 w-4" fill={isWishlisted ? "currentColor" : "none"} />
-          </button>
         </div>
       </div>
+      
+      {/* Link to detail page */}
+      <Link to={`/media/${video.id}`} className="absolute inset-0 z-10 opacity-0">
+        View details
+      </Link>
     </div>
   );
 }
