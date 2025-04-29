@@ -51,7 +51,13 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
         }
         
         const data = await response.json();
-        console.log("VideoPlayer: Received video data:", data);
+        console.log("VideoPlayer: Received video data:", {
+          ...data,
+          videoUrl: data.videoUrl ? `${data.videoUrl.substring(0, 100)}${data.videoUrl.length > 100 ? '...' : ''}` : null,
+          imageUrl: data.imageUrl ? `${data.imageUrl.substring(0, 100)}${data.imageUrl.length > 100 ? '...' : ''}` : null,
+          contentType: data.contentType,
+          hasVideoUrl: !!data.videoUrl,
+        });
         
         if (!data) {
           throw new Error("No video data returned from server");
@@ -267,6 +273,41 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                       }
                     `}} />
                   </div>
+                </div>
+              ) : video.contentType === 'video' && video.videoUrl ? (
+                <div className="aspect-video bg-black flex items-center justify-center h-[70vh]">
+                  <video 
+                    controls 
+                    autoPlay 
+                    className="max-h-[70vh] max-w-full" 
+                    src={video.videoUrl}
+                    poster={video.thumbnail || undefined}
+                    onError={(e) => {
+                      console.error("Error playing video:", e);
+                      // If the video element is available, try to show error details
+                      const videoEl = e.currentTarget;
+                      if (videoEl.parentElement) {
+                        videoEl.style.display = 'none';
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'bg-red-600/20 border border-red-600 rounded-md p-4 text-center';
+                        errorDiv.innerHTML = `
+                          <h3 class="text-red-400 text-lg font-semibold mb-2">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            Video Playback Error
+                          </h3>
+                          <p class="text-gray-300 mb-2">
+                            The video could not be played. It may be in an unsupported format or corrupted.
+                          </p>
+                          <div class="text-xs text-gray-400 bg-black/50 p-2 rounded mt-2 text-left overflow-auto max-h-24">
+                            <p>Video URL: ${video.videoUrl || 'Not available'}</p>
+                            <p>Error code: ${videoEl.error ? videoEl.error.code : 'Unknown'}</p>
+                            <p>Error message: ${videoEl.error ? videoEl.error.message : 'Unknown error'}</p>
+                          </div>
+                        `;
+                        videoEl.parentElement.appendChild(errorDiv);
+                      }
+                    }}
+                  />
                 </div>
               ) : video.contentType === 'image' ? (
                 <div className="flex flex-col items-center justify-center bg-black p-4 max-h-[70vh] overflow-auto">
