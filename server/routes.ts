@@ -605,31 +605,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             video.embedCode = `
               <div 
                 class="reddit-embed-container" 
-                style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;"
+                style="position:relative;padding-bottom:120%;height:0;overflow:hidden;"
                 data-reddit-subreddit="${subreddit}" 
                 data-reddit-postid="${postId}"
               >
                 <iframe
                   style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
-                  src="https://www.reddit.com/r/${subreddit}/comments/${postId}/embed/"
+                  src="https://www.redditmedia.com/r/${subreddit}/comments/${postId}/?embed=true&amp;showmedia=true&amp;showedits=true&amp;created=true"
                   allowfullscreen="true"
-                  sandbox="allow-scripts allow-same-origin allow-popups"
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
                   scrolling="no"
                 ></iframe>
-                <div id="reddit-embed-overlay-${postId}" 
-                     style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.1);cursor:pointer;"
-                     onclick="window.open('https://www.reddit.com/r/${subreddit}/comments/${postId}/', '_blank')">
-                  <div style="background:rgba(0,0,0,0.7);color:white;padding:10px 20px;border-radius:4px;">
-                    Click to view on Reddit
-                  </div>
-                </div>
-                <script>
-                  // Remove overlay after 3 seconds to allow interaction with the iframe
-                  setTimeout(function() {
-                    const overlay = document.getElementById('reddit-embed-overlay-${postId}');
-                    if (overlay) overlay.style.display = 'none';
-                  }, 3000);
-                </script>
               </div>
             `;
             
