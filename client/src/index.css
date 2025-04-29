@@ -3,59 +3,59 @@
 @tailwind utilities;
 
 :root {
-  --background: 220 20% 10%;
-  --foreground: 0 0% 100%;
-  --muted: 220 15% 15%;
-  --muted-foreground: 220 10% 70%;
-  --popover: 220 25% 5%;
+  --background: 0 0% 0%;  /* Pure black background */
+  --foreground: 0 0% 100%;  /* White text */
+  --muted: 0 0% 13%;
+  --muted-foreground: 0 0% 70%;
+  --popover: 0 0% 8%;
   --popover-foreground: 0 0% 98%;
-  --card: 220 20% 14%;
+  --card: 0 0% 12%;  /* Slightly lighter black for cards */
   --card-foreground: 0 0% 98%;
-  --border: 220 15% 18%;
-  --input: 220 15% 18%;
-  --primary: 200 100% 50%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 220 25% 5%;
+  --border: 0 0% 20%;
+  --input: 0 0% 15%;
+  --primary: 38 80% 55%;  /* Pornhub yellow-orange */
+  --primary-foreground: 0 0% 0%;
+  --secondary: 0 0% 15%;
   --secondary-foreground: 0 0% 98%;
-  --accent: 220 15% 18%;
+  --accent: 0 0% 15%;
   --accent-foreground: 0 0% 98%;
-  --destructive: 0 62.8% 30.6%;
+  --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
-  --ring: 200 100% 50%;
-  --radius: 0.5rem;
+  --ring: 38 80% 55%;
+  --radius: 0.25rem;
   
   /* Custom colors for the AI marketplace */
-  --surface: 220 20% 14%;
-  --surface-light: 220 15% 20%;
+  --surface: 0 0% 12%;
+  --surface-light: 0 0% 18%;
   --text-primary: 0 0% 98%;
   --text-secondary: 0 0% 80%;
-  --chart-1: 200 100% 50%;
-  --chart-2: 200 100% 40%;
-  --chart-3: 200 95% 60%;
-  --chart-4: 200 90% 70%;
-  --chart-5: 200 100% 35%;
+  --chart-1: 38 80% 55%;
+  --chart-2: 38 80% 45%;
+  --chart-3: 38 75% 65%;
+  --chart-4: 38 70% 75%;
+  --chart-5: 38 80% 35%;
 }
 
 .dark {
-  --background: 220 20% 10%;
+  --background: 0 0% 0%;
   --foreground: 0 0% 98%;
-  --muted: 220 15% 15%;
-  --muted-foreground: 220 10% 70%;
-  --popover: 220 25% 5%;
+  --muted: 0 0% 13%;
+  --muted-foreground: 0 0% 70%;
+  --popover: 0 0% 8%;
   --popover-foreground: 0 0% 98%;
-  --card: 220 20% 14%;
+  --card: 0 0% 12%;
   --card-foreground: 0 0% 98%;
-  --border: 220 15% 18%;
-  --input: 220 15% 18%;
-  --primary: 200 100% 50%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 220 25% 5%;
+  --border: 0 0% 20%;
+  --input: 0 0% 15%;
+  --primary: 38 80% 55%; /* Pornhub yellow-orange */
+  --primary-foreground: 0 0% 0%;
+  --secondary: 0 0% 15%;
   --secondary-foreground: 0 0% 98%;
-  --accent: 220 15% 18%;
+  --accent: 0 0% 15%;
   --accent-foreground: 0 0% 98%;
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
-  --ring: 200 100% 50%;
+  --ring: 38 80% 55%;
 }
 
 @layer base {

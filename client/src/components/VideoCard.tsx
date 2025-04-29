@@ -90,13 +90,14 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
   return (
     <div 
       id={`video-preview-${video.id}`}
-      className="video-card bg-card overflow-hidden rounded-md shadow-md hover:shadow-lg transition-all cursor-pointer"
+      className="group transition-transform duration-200 overflow-hidden cursor-pointer"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={handlePreview}
     >
-      <div className="relative group">
-        <AspectRatio ratio={16/9}>
+      <div className="relative">
+        {/* Thumbnail with hover effect */}
+        <AspectRatio ratio={16/9} className="bg-black">
           {isHovering && video.vimeoId ? (
             <VimeoEmbed 
               videoId={video.vimeoId} 
@@ -125,52 +126,56 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
                 {/* Show overlay on hover without play button */}
                 <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity"></div>
               </div>
-              <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/30 to-transparent"></div>
             </div>
           ) : (
             <img
               src={video.thumbnail}
               alt={video.title}
-              className={`object-cover w-full h-full transition-opacity duration-300 ${isHovering ? 'opacity-70' : 'opacity-100'}`}
+              className="object-cover w-full h-full transition-all duration-300 transform group-hover:scale-110"
             />
           )}
         </AspectRatio>
         
+        {/* Duration badge */}
         {video.duration > 0 && (
-          <div className="absolute bottom-3 right-3 bg-black/70 text-white text-sm px-2 py-1 rounded">
+          <div className="absolute bottom-2 right-2 bg-black text-white text-xs font-semibold px-1 py-0.5 rounded-sm">
             {formatDuration(video.duration)}
           </div>
         )}
         
-
+        {/* Play overlay - only shows on hover */}
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+          <svg className="w-12 h-12 text-primary" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </div>
       </div>
       
-      <div className="p-3">
+      {/* Video info */}
+      <div className="pt-2 pb-3 px-1">
         <div className="flex justify-between items-start">
           <h3 
-            className="text-base font-medium line-clamp-2 hover:text-primary transition-colors cursor-pointer mr-2"
-            onClick={handlePreview}
+            className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors cursor-pointer mr-2"
           >
             {video.title}
           </h3>
-          <Link to={`/media/${video.id}`} className="text-muted-foreground hover:text-primary transition-colors mt-1">
-            <ExternalLink className="h-4 w-4 ml-1" />
+          <Link to={`/media/${video.id}`} className="text-gray-400 hover:text-primary transition-colors">
+            <ExternalLink className="h-3.5 w-3.5 ml-1" />
           </Link>
         </div>
-        <div className="flex justify-between items-center mt-2">
-          <div className="flex items-center text-sm text-muted-foreground">
-            <span className="mr-4">{formatNumber(Math.floor(Math.random() * 10000) + 1000)} views</span>
-            <span className="flex items-center">
-              <Clock className="h-4 w-4 mr-1" />
-              {Math.floor(Math.random() * 30) + 1}d ago
-            </span>
+        
+        <div className="flex justify-between items-center mt-1">
+          <div className="flex items-center space-x-2 text-xs text-gray-400">
+            <span>{formatNumber(Math.floor(Math.random() * 10000) + 1000)} views</span>
+            <span>•</span>
+            <span>{Math.floor(Math.random() * 30) + 1}d ago</span>
           </div>
           
           <button 
             onClick={handleWishlist}
-            className="text-muted-foreground hover:text-primary transition-colors"
+            className="text-gray-400 hover:text-primary transition-colors"
           >
-            <Heart className="h-5 w-5" fill={isWishlisted ? "currentColor" : "none"} />
+            <Heart className="h-4 w-4" fill={isWishlisted ? "currentColor" : "none"} />
           </button>
         </div>
       </div>

@@ -52,7 +52,18 @@ export default function VideoGrid({
   }, []);
   
   return (
-    <section className="mb-4">
+    <section className="mb-8">
+      {/* Pornhub-style heading with "view more" link */}
+      <div className="flex justify-between items-center mb-3">
+        <h2 className="text-lg font-bold uppercase">{title}</h2>
+        {showViewAll && filteredVideos.length > 0 && (
+          <Link to={viewAllUrl} className="text-primary text-sm hover:text-primary/80 uppercase font-bold">
+            MORE <span className="ml-1 text-xs">▶</span>
+          </Link>
+        )}
+      </div>
+      
+      {/* Video grid */}
       <div className={`grid ${columnClass} gap-4 w-full`}>
         {filteredVideos.map((video) => (
           <VideoCard
