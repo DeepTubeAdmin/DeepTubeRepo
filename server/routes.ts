@@ -273,6 +273,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const baseIndex = (page - 1) * pageSize;
       
+      // Track IDs of videos/images already added to prevent duplicates
+      const usedContentIds = new Set<number>();
+      
       // Create pattern of 3 video blocks followed by 2 image blocks
       for (let i = 0; i < pageSize; i++) {
         const blockId = baseIndex + i;
@@ -280,6 +283,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Define our row size constant for reuse between blocks
         const itemsPerRow = 8; // Increased from 5 to fill rows better
+        // Request more items than needed to allow for filtering out duplicates
+        const fetchLimit = itemsPerRow * 2;
         
         if (blockType === 'videos') {
           // Get video content based on filters
@@ -287,50 +292,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (isTrending) {
             // For trending, use featured videos
-            videos = await storage.getFeaturedVideos(itemsPerRow);
+            videos = await storage.getFeaturedVideos(fetchLimit);
+            console.log(`Category trending videos (video): first few IDs: [ ${videos.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else if (isMostViewed) {
             // For most viewed, use random order for now (will be replaced with actual view count)
-            videos = await storage.getVideos(itemsPerRow, 'video', undefined, 'viewed');
+            videos = await storage.getVideos(fetchLimit, 'video', undefined, 'viewed');
+            console.log(`Category most-viewed videos (video): first few IDs: [ ${videos.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else if (categoryId) {
             // Filter by category if specified
-            videos = await storage.getVideosByCategory(categoryId, 'video', itemsPerRow);
+            videos = await storage.getVideosByCategory(categoryId, 'video', fetchLimit);
+            console.log(`Category ${categoryId} videos (video): first few IDs: [ ${videos.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else {
             // No filter - include all types (video, image, and embeds)
-            videos = await storage.getVideos(itemsPerRow, undefined, undefined, sortBy);
+            videos = await storage.getVideos(fetchLimit, 'video', undefined, sortBy);
+            console.log(`General videos (video): first few IDs: [ ${videos.slice(0, 3).map(v => v.id).join(', ')} ]`);
           }
+          
+          // Filter out videos that have already been used
+          const uniqueVideos = videos.filter(video => !usedContentIds.has(video.id));
+          
+          // Add these video IDs to the used set
+          uniqueVideos.forEach(video => usedContentIds.add(video.id));
+          
+          // Only take the number needed for the row
+          const selectedVideos = uniqueVideos.slice(0, itemsPerRow);
           
           response.blocks.push({
             type: 'videos',
             id: blockId,
             title: '',
-            items: videos
+            items: selectedVideos
           });
         } else {
           // Get image content based on filters
           let images: Video[] = [];
           
-          // Use the same number of images per row as videos
+          // Use the same number of images per row as videos but fetch more to allow for filtering
           const imagesPerRow = itemsPerRow;
           
           if (isTrending) {
             // For trending, use newest images
-            images = await storage.getVideos(imagesPerRow, 'image', undefined, 'newest');
+            images = await storage.getVideos(fetchLimit, 'image', undefined, 'newest');
+            console.log(`Category trending videos (image): first few IDs: [ ${images.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else if (isMostViewed) {
             // For most viewed, use "viewed" sort
-            images = await storage.getVideos(imagesPerRow, 'image', undefined, 'viewed');
+            images = await storage.getVideos(fetchLimit, 'image', undefined, 'viewed');
+            console.log(`Category most-viewed videos (image): first few IDs: [ ${images.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else if (categoryId) {
             // Filter by category if specified
-            images = await storage.getVideosByCategory(categoryId, 'image', imagesPerRow);
+            images = await storage.getVideosByCategory(categoryId, 'image', fetchLimit);
+            console.log(`Category ${categoryId} videos (image): first few IDs: [ ${images.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else {
             // No filter - include all image types
-            images = await storage.getVideos(imagesPerRow, 'image', undefined, sortBy);
+            images = await storage.getVideos(fetchLimit, 'image', undefined, sortBy);
+            console.log(`General videos (image): first few IDs: [ ${images.slice(0, 3).map(v => v.id).join(', ')} ]`);
           }
+          
+          // Filter out images that have already been used
+          const uniqueImages = images.filter(image => !usedContentIds.has(image.id));
+          
+          // Add these image IDs to the used set
+          uniqueImages.forEach(image => usedContentIds.add(image.id));
+          
+          // Only take the number needed for the row
+          const selectedImages = uniqueImages.slice(0, imagesPerRow);
           
           response.blocks.push({
             type: 'images',
             id: blockId,
             title: '',
-            items: images
+            items: selectedImages
           });
         }
       }
