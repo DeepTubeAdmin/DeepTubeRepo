@@ -275,7 +275,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                   </div>
                 </div>
               ) : video.contentType === 'video' && video.videoUrl ? (
-                <div className="bg-black flex items-center justify-center w-full h-full max-h-[80vh]">
+                <div className="bg-black flex items-center justify-center aspect-video w-full">
                   {/* Remove debug info in production */}
                   {/* <div className="absolute top-2 left-2 z-10 bg-black/80 text-xs text-white p-1 rounded opacity-50 hover:opacity-100">
                     MP4 Debug: {video.videoUrl ? (video.videoUrl.length > 20 ? video.videoUrl.substring(0, 20) + '...' : video.videoUrl) : 'No URL'}
@@ -291,7 +291,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                       muted={false}
                       playsInline
                       preload="auto"
-                      className="w-full h-full object-contain" 
+                      className="w-full h-full" 
                       poster={video.thumbnail || undefined}
                       onError={(e) => {
                         console.error("Error playing MP4 video:", e);
@@ -369,7 +369,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                     <video 
                       controls 
                       autoPlay 
-                      className="max-h-[70vh] max-w-full" 
+                      className="w-full h-full" 
                       src={video.videoUrl}
                       poster={video.thumbnail || undefined}
                       onError={(e) => {
@@ -567,7 +567,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                   )}
                 </div>
               ) : (
-                <div className="aspect-video bg-gray-900 flex items-center justify-center text-gray-400 h-[70vh]">
+                <div className="aspect-video bg-gray-900 flex items-center justify-center text-gray-400 w-full">
                   No media available
                 </div>
               )}
