@@ -1,8 +1,8 @@
 import { Heart } from "lucide-react";
 import { Video } from "@/types";
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
-import { formatNumber, extractYoutubeIdFromEmbed, isRedditEmbed, extractRedditInfo } from "@/lib/utils";
+import { formatNumber, extractYoutubeIdFromEmbed } from "@/lib/utils";
 
 interface VideoCardProps {
   video: Video;
@@ -12,9 +12,12 @@ interface VideoCardProps {
 
 export default function VideoCard({ video, onPreview, onWishlist }: VideoCardProps) {
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
   const [youtubeId, setYoutubeId] = useState<string | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const iframeRef = useRef<HTMLDivElement>(null);
   
+  // Extract YouTube ID from embed code when the component loads
   useEffect(() => {
     if (video.contentType === 'embed' && video.embedCode) {
       const ytId = extractYoutubeIdFromEmbed(video.embedCode);
@@ -23,85 +26,94 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
       }
     }
   }, [video.embedCode, video.contentType]);
-
-  useEffect(() => {
-    // This is important - we need to directly interact with the DOM for videos to play on hover
-    const videoElement = document.querySelector(`#video-preview-${video.id}`) as HTMLVideoElement;
-    const cardElement = document.querySelector(`#video-card-${video.id}`);
-    
-    if (!cardElement) return;
-    
-    // Using the old-school event listener approach for maximum compatibility
-    const handleMouseEnter = () => {
-      console.log(`Mouse over video card ${video.id}`);
-      if (videoElement && video.contentType === 'video') {
-        try {
-          videoElement.currentTime = 0;
-          videoElement.play().catch(e => console.error("Failed to play video:", e));
-        } catch (err) {
-          console.error("Error playing video:", err);
-        }
+  
+  // Super simple mouseenter/mouseleave handler with pure DOM
+  const handleMouseEnter = () => {
+    console.log(`Mouse entered card ${video.id}`);
+    try {
+      // For MP4 videos - basic autoplay using DOM
+      if (video.contentType === 'video' && videoRef.current) {
+        videoRef.current.style.opacity = '1';
+        videoRef.current.style.pointerEvents = 'auto'; // Enable interaction
+        // Manually setting these attributes for maximum compatibility
+        videoRef.current.setAttribute('autoplay', '');
+        videoRef.current.setAttribute('muted', '');
+        videoRef.current.setAttribute('playsinline', '');
+        videoRef.current.muted = true; // Extra muted setting to ensure it works
+        videoRef.current.play().catch(e => console.error('Error playing video:', e));
       }
       
-      // For YouTube/Vimeo embeds
-      const container = document.querySelector(`#iframe-container-${video.id}`);
-      if (container && video.contentType === 'embed') {
-        try {
-          // Clear any existing content
+      // For embedded videos (YouTube/Vimeo)
+      if (video.contentType === 'embed' && iframeRef.current) {
+        const container = iframeRef.current;
+        container.style.opacity = '1';
+        container.style.pointerEvents = 'auto'; // Enable interaction
+        
+        // Create a new iframe element when hovering - use modern autoplay approach
+        if (youtubeId) {
+          // YouTube specific embed with autoplay forced
           container.innerHTML = '';
-          
-          if (youtubeId) {
-            const iframe = document.createElement('iframe');
-            iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0`;
-            iframe.width = "100%";
-            iframe.height = "100%";
-            iframe.frameBorder = "0";
-            iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
-            iframe.allowFullscreen = true;
-            container.appendChild(iframe);
-          } else if (video.vimeoId) {
-            const iframe = document.createElement('iframe');
-            iframe.src = `https://player.vimeo.com/video/${video.vimeoId}?autoplay=1&muted=1`;
-            iframe.width = "100%";
-            iframe.height = "100%";
-            iframe.frameBorder = "0";
-            iframe.allow = "autoplay; fullscreen; picture-in-picture";
-            iframe.allowFullscreen = true;
-            container.appendChild(iframe);
-          }
-        } catch (err) {
-          console.error("Error creating iframe:", err);
-        }
-      }
-    };
-    
-    const handleMouseLeave = () => {
-      console.log(`Mouse out of video card ${video.id}`);
-      if (videoElement && video.contentType === 'video') {
-        try {
-          videoElement.pause();
-          videoElement.currentTime = 0;
-        } catch (err) {
-          console.error("Error pausing video:", err);
+          const iframe = document.createElement('iframe');
+          iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0`;
+          iframe.width = '100%';
+          iframe.height = '100%';
+          iframe.frameBorder = '0';
+          iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+          iframe.allowFullscreen = true;
+          container.appendChild(iframe);
+        } else if (video.vimeoId) {
+          // Vimeo specific embed with autoplay forced
+          container.innerHTML = '';
+          const iframe = document.createElement('iframe');
+          iframe.src = `https://player.vimeo.com/video/${video.vimeoId}?autoplay=1&muted=1`;
+          iframe.width = '100%';
+          iframe.height = '100%';
+          iframe.frameBorder = '0';
+          iframe.allow = 'autoplay; fullscreen; picture-in-picture';
+          iframe.allowFullscreen = true;
+          container.appendChild(iframe);
         }
       }
       
-      // For YouTube/Vimeo embeds - clear the iframe
-      const container = document.querySelector(`#iframe-container-${video.id}`);
-      if (container) {
-        container.innerHTML = '';
+      // Hide play overlay
+      if (cardRef.current) {
+        const playOverlay = cardRef.current.querySelector('.play-overlay');
+        if (playOverlay) {
+          (playOverlay as HTMLElement).style.opacity = '0';
+        }
       }
-    };
-    
-    cardElement.addEventListener('mouseenter', handleMouseEnter);
-    cardElement.addEventListener('mouseleave', handleMouseLeave);
-    
-    // Clean up
-    return () => {
-      cardElement.removeEventListener('mouseenter', handleMouseEnter);
-      cardElement.removeEventListener('mouseleave', handleMouseLeave);
-    };
-  }, [video.id, video.contentType, youtubeId, video.vimeoId]);
+    } catch (err) {
+      console.error('Error handling mouse enter:', err);
+    }
+  };
+  
+  const handleMouseLeave = () => {
+    console.log(`Mouse left card ${video.id}`);
+    try {
+      // For MP4 videos
+      if (video.contentType === 'video' && videoRef.current) {
+        videoRef.current.style.opacity = '0';
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0;
+      }
+      
+      // For embedded videos
+      if (video.contentType === 'embed' && iframeRef.current) {
+        iframeRef.current.style.opacity = '0';
+        iframeRef.current.innerHTML = ''; // Remove iframe
+      }
+      
+      // Show play overlay again
+      if (cardRef.current) {
+        const playOverlay = cardRef.current.querySelector('.play-overlay');
+        if (playOverlay) {
+          (playOverlay as HTMLElement).style.opacity = '1';
+        }
+      }
+    } catch (err) {
+      console.error('Error handling mouse leave:', err);
+    }
+  };
 
   const handleWishlist = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -125,10 +137,12 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
 
   return (
     <div 
-      id={`video-card-${video.id}`}
-      className="video-card video-item relative"
+      ref={cardRef}
+      className="video-card video-item relative rounded overflow-hidden"
       data-id={video.id}
       data-type={video.contentType}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       onClick={handlePreview}
     >
       <div className="thumbnail-container relative overflow-hidden aspect-video">
@@ -142,11 +156,12 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         {/* Video Preview (for MP4 videos) */}
         {video.contentType === 'video' && video.videoUrl && (
           <video 
-            id={`video-preview-${video.id}`}
+            ref={videoRef}
             muted 
             loop 
             playsInline
-            className="absolute top-0 left-0 w-full h-full object-cover opacity-0 hover:opacity-100 transition-opacity duration-300 z-20"
+            style={{ opacity: 0, transition: 'opacity 0.3s', zIndex: 20, pointerEvents: 'none' }}
+            className="absolute top-0 left-0 w-full h-full object-cover"
             src={video.videoUrl}
             poster={video.thumbnail || undefined}
             preload="metadata"
@@ -156,13 +171,15 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         {/* Iframe Container (for YouTube/Vimeo) */}
         {video.contentType === 'embed' && (
           <div 
-            id={`iframe-container-${video.id}`}
-            className="iframe-container absolute top-0 left-0 w-full h-full opacity-0 hover:opacity-100 transition-opacity duration-300 bg-black z-20"
+            ref={iframeRef}
+            style={{ opacity: 0, transition: 'opacity 0.3s', zIndex: 20, pointerEvents: 'none' }}
+            className="absolute top-0 left-0 w-full h-full bg-black"
           ></div>
         )}
         
         {/* Play overlay */}
-        <div className="play-overlay absolute inset-0 flex items-center justify-center opacity-100 hover:opacity-0 transition-opacity duration-300 z-10">
+        <div className="play-overlay absolute inset-0 flex items-center justify-center z-10"
+             style={{ transition: 'opacity 0.3s' }}>
           <div className="bg-black bg-opacity-50 rounded-full p-3">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="5 3 19 12 5 21 5 3"></polygon>
@@ -172,14 +189,14 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         
         {/* Duration badge */}
         {video.duration > 0 && video.contentType !== 'image' && (
-          <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1 py-0.5 rounded">
+          <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1 py-0.5 rounded z-30">
             {formatDuration(video.duration)}
           </div>
         )}
       </div>
       
       {/* Video info */}
-      <div className="p-3">
+      <div className="p-3 bg-gray-900">
         <h3 className="font-medium truncate">{video.title}</h3>
         <div className="flex justify-between text-sm text-gray-400 mt-1">
           <span>{"AI Artist"}</span>
@@ -197,7 +214,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
       </div>
       
       {/* Link to detail page */}
-      <Link to={`/media/${video.id}`} className="absolute inset-0 z-10 opacity-0">
+      <Link to={`/media/${video.id}`} className="absolute inset-0 z-5 opacity-0">
         View details
       </Link>
     </div>
