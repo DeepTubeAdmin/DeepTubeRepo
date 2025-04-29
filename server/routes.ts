@@ -85,6 +85,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(401).json({ error: "Authentication required" });
   };
   
+  // Middleware to check if user is an admin
+  const isAdmin = (req: Request, res: Response, next: Function) => {
+    if (req.isAuthenticated() && req.user && (req.user.id === 1 || req.user.id === 2)) {
+      return next();
+    }
+    res.status(403).json({ error: "Admin access required" });
+  };
+  
   // Type guard function to ensure req.user is defined
   function ensureUser(req: Request): asserts req is Request & { user: Express.User } {
     if (!req.user) {
@@ -453,8 +461,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Video not found" });
       }
       
-      // In a real implementation, we'd check if the user owns this video
-      // For this demo version, we'll allow any authenticated user to delete
+      // Check if the user is an admin or the owner of the video
+      const isAdmin = req.user.id === 1 || req.user.id === 2;
+      if (!isAdmin && video.userId && video.userId !== req.user.id) {
+        return res.status(403).json({ error: "You don't have permission to delete this content" });
+      }
+      
       await storage.deleteVideo(videoId);
       
       res.status(200).json({ message: "Video deleted successfully" });
@@ -849,6 +861,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error uploading to Vimeo:", error);
       res.status(500).json({ error: "Failed to upload video" });
+    }
+  });
+  
+  // Admin endpoints
+  // Get all content for admin dashboard
+  app.get("/api/content/all", isAdmin, async (req, res) => {
+    try {
+      const videos = await storage.getVideos(200); // Get up to 200 items
+      res.json(videos);
+    } catch (error) {
+      console.error("Error fetching all content:", error);
+      res.status(500).json({ error: "Failed to fetch content" });
+    }
+  });
+  
+  // Get all users for admin dashboard
+  app.get("/api/users", isAdmin, async (req, res) => {
+    try {
+      // Since we don't have an explicit getAllUsers method, we'll simulate it
+      // This is a simplified implementation
+      const users = await Promise.all([1, 2, 3, 4, 5].map(async (id) => {
+        const user = await storage.getUser(id);
+        return user;
+      })).then(users => users.filter(Boolean));
+      
+      // Don't return password hashes
+      const safeUsers = users.map(user => {
+        const { password, ...safeUser } = user;
+        return {
+          ...safeUser,
+          banned: false // Adding a placeholder banned property
+        };
+      });
+      
+      res.json(safeUsers);
+    } catch (error) {
+      console.error("Error fetching all users:", error);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+  
+  // Ban/unban user endpoint
+  app.patch("/api/users/:id/ban", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { banned } = req.body;
+      
+      if (typeof banned !== 'boolean') {
+        return res.status(400).json({ error: "Banned status must be a boolean" });
+      }
+      
+      // Check if user exists
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // In a real implementation, we would update a 'banned' field
+      // For this demo, we'll simply return the user with the banned status
+      const { password, ...safeUser } = user;
+      
+      res.json({
+        ...safeUser,
+        banned
+      });
+    } catch (error) {
+      console.error("Error updating user ban status:", error);
+      res.status(500).json({ error: "Failed to update user ban status" });
     }
   });
   
