@@ -226,14 +226,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // For trending, use featured videos
             videos = await storage.getFeaturedVideos(5);
           } else if (isMostViewed) {
-            // For most viewed, use random order
-            videos = await storage.getVideos(5, 'video', undefined, sortBy);
+            // For most viewed, use random order for now (will be replaced with actual view count)
+            videos = await storage.getVideos(5, 'video', undefined, 'viewed');
           } else if (categoryId) {
             // Filter by category if specified
             videos = await storage.getVideosByCategory(categoryId, 'video', 5);
           } else {
-            // No filter
-            videos = await storage.getVideos(5, 'video', undefined, sortBy);
+            // No filter - include all types (video, image, and embeds)
+            videos = await storage.getVideos(5, undefined, undefined, sortBy);
           }
           
           response.blocks.push({
@@ -250,13 +250,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // For trending, use newest images
             images = await storage.getVideos(5, 'image', undefined, 'newest');
           } else if (isMostViewed) {
-            // For most viewed, use random order
-            images = await storage.getVideos(5, 'image', undefined, sortBy);
+            // For most viewed, use "viewed" sort
+            images = await storage.getVideos(5, 'image', undefined, 'viewed');
           } else if (categoryId) {
             // Filter by category if specified
             images = await storage.getVideosByCategory(categoryId, 'image', 5);
           } else {
-            // No filter
+            // No filter - include all image types
             images = await storage.getVideos(5, 'image', undefined, sortBy);
           }
           

@@ -105,48 +105,62 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
       console.log("VideoPlayer: Creating Reddit embed from code");
       
       if (youtubeContainerRef.current) {
-        // We need to properly render the Reddit embed
-        // First, create a container for the embed
-        const redditContainer = document.createElement('div');
-        redditContainer.className = 'reddit-embed-container';
-        redditContainer.style.width = '100%';
-        redditContainer.style.height = '100%';
-        redditContainer.style.position = 'absolute';
-        redditContainer.style.top = '0';
-        redditContainer.style.left = '0';
-        redditContainer.style.overflow = 'hidden';
+        // Clear the container first
+        youtubeContainerRef.current.innerHTML = '';
         
-        // Insert the embed code
-        redditContainer.innerHTML = video.embedCode;
+        // Extract the Reddit post URL
+        const info = extractRedditInfo(video.embedCode);
+        const subreddit = info.subreddit;
+        const postId = info.postId;
         
-        // Append to our container
-        youtubeContainerRef.current.appendChild(redditContainer);
-        
-        // Force set height on blockquote to ensure it displays
-        const blockquote = redditContainer.querySelector('blockquote');
-        if (blockquote) {
-          blockquote.style.height = '100%';
-          blockquote.style.minHeight = '500px';
-          blockquote.setAttribute('data-embed-height', '100%');
-        }
-        
-        // Load the Reddit widget script
-        setTimeout(() => {
-          // Remove any existing Reddit scripts to avoid duplicates
-          const existingScript = document.querySelector('script[src="https://embed.reddit.com/widgets.js"]');
-          if (existingScript) {
-            existingScript.remove();
-          }
+        if (subreddit && postId) {
+          const postUrl = `https://www.reddit.com/r/${subreddit}/comments/${postId}/`;
+          console.log("VideoPlayer: Extracted Reddit URL:", postUrl);
           
-          // Create and add a new script
+          // Create an iframe that directly loads the Reddit post
+          const iframe = document.createElement('iframe');
+          iframe.src = postUrl;
+          iframe.width = '100%';
+          iframe.height = '100%';
+          iframe.style.border = 'none';
+          iframe.style.position = 'absolute';
+          iframe.style.top = '0';
+          iframe.style.left = '0';
+          iframe.style.width = '100%';
+          iframe.style.height = '100%';
+          iframe.allowFullscreen = true;
+          iframe.title = video.title || 'Reddit Post';
+          
+          youtubeContainerRef.current.appendChild(iframe);
+          
+          // Add fallback text in case iframe doesn't load
+          const fallbackDiv = document.createElement('div');
+          fallbackDiv.innerText = `Reddit post from r/${subreddit} - Click to open`;
+          fallbackDiv.style.position = 'absolute';
+          fallbackDiv.style.top = '50%';
+          fallbackDiv.style.left = '50%';
+          fallbackDiv.style.transform = 'translate(-50%, -50%)';
+          fallbackDiv.style.textAlign = 'center';
+          fallbackDiv.style.display = 'none';
+          fallbackDiv.onclick = () => window.open(postUrl, '_blank');
+          
+          youtubeContainerRef.current.appendChild(fallbackDiv);
+          
+          // Show fallback after timeout if iframe isn't loading properly
+          setTimeout(() => {
+            fallbackDiv.style.display = 'block';
+          }, 3000);
+        } else {
+          // Fallback to direct embed code
+          youtubeContainerRef.current.innerHTML = video.embedCode;
+          
+          // Force load the Reddit script
           const script = document.createElement('script');
           script.src = 'https://embed.reddit.com/widgets.js';
           script.async = true;
           script.charset = 'UTF-8';
-          document.body.appendChild(script);
-          
-          console.log("VideoPlayer: Added new Reddit embed script");
-        }, 100);
+          youtubeContainerRef.current.appendChild(script);
+        }
       }
     }
     // Generic embed code (for other platforms)

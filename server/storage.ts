@@ -113,7 +113,7 @@ export class DatabaseStorage implements IStorage {
     limit: number = 50, 
     contentType?: string, 
     categoryId?: number, 
-    sortBy: 'newest' | 'oldest' = 'newest'
+    sortBy: 'newest' | 'oldest' | 'viewed' = 'newest'
   ): Promise<Video[]> {
     // Start with base query
     let queryBuilder = db.select().from(videos);
@@ -133,8 +133,12 @@ export class DatabaseStorage implements IStorage {
     // Add ordering
     if (sortBy === 'newest') {
       queryBuilder = queryBuilder.orderBy(desc(videos.createdAt));
-    } else {
+    } else if (sortBy === 'oldest') {
       queryBuilder = queryBuilder.orderBy(asc(videos.createdAt));
+    } else if (sortBy === 'viewed') {
+      // For "most viewed" we'll add a random order since we don't track actual views yet
+      // In a real application, this would order by a viewCount column
+      queryBuilder = queryBuilder.orderBy(sql`RANDOM()`);
     }
     
     // Add limit and execute
