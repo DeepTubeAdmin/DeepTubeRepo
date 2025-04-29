@@ -191,10 +191,11 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
             e.stopPropagation();
             playPreview();
           }}
-          className="absolute top-2 left-2 z-30 bg-orange-500 hover:bg-orange-600 text-white p-1 rounded-full flex items-center justify-center"
+          className="absolute top-2 left-2 z-30 bg-orange-500 hover:bg-orange-600 text-white p-2 rounded-full flex items-center justify-center shadow-lg"
           title="Play preview"
+          style={{ width: '40px', height: '40px' }}
         >
-          <Play size={16} />
+          <Play size={24} strokeWidth={3} />
         </button>
         
         {/* Play overlay */}
