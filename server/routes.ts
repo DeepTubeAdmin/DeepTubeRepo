@@ -552,12 +552,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } 
         // Check if this is a Reddit embed and ensure it has the required script
         else if (video.embedCode.includes('reddit-embed-bq')) {
-          // Make sure the Reddit embed has the script
-          if (!video.embedCode.includes('embed.reddit.com/widgets.js')) {
-            video.embedCode += '<script async src="https://embed.reddit.com/widgets.js" charset="UTF-8"></script>';
-          }
+          // IMPORTANT: Reddit embeds need special handling to play correctly
+          console.log("API: Found Reddit embed, adding special handling");
           
-          console.log("API: Added Reddit embed script");
+          // Extract Reddit post ID and subreddit from the embed code
+          const redditRegex = /data-embed-id="([\w\d]+)" data-embed-live="false" data-embed-created="(\d+)" data-embed-subreddit="([\w\d-]+)"/;
+          const redditMatch = video.embedCode.match(redditRegex);
+          
+          if (redditMatch) {
+            const postId = redditMatch[1];
+            const subreddit = redditMatch[3];
+            console.log(`API: Extracted Reddit info - subreddit: ${subreddit}, postId: ${postId}`);
+            
+            // Create a custom embed that will load properly
+            video.embedCode = `
+              <div class="reddit-embed-container" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;">
+                <iframe
+                  style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
+                  src="https://www.reddit.com/r/${subreddit}/comments/${postId}/embed/"
+                  allowfullscreen="true"
+                  sandbox="allow-scripts allow-same-origin allow-popups"
+                  scrolling="no"
+                ></iframe>
+                <div id="reddit-embed-overlay-${postId}" 
+                     style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.1);cursor:pointer;"
+                     onclick="window.open('https://www.reddit.com/r/${subreddit}/comments/${postId}/', '_blank')">
+                  <div style="background:rgba(0,0,0,0.7);color:white;padding:10px 20px;border-radius:4px;">
+                    Click to view on Reddit
+                  </div>
+                </div>
+                <script>
+                  // Remove overlay after 3 seconds to allow interaction with the iframe
+                  setTimeout(function() {
+                    const overlay = document.getElementById('reddit-embed-overlay-${postId}');
+                    if (overlay) overlay.style.display = 'none';
+                  }, 3000);
+                </script>
+              </div>
+            `;
+          } else {
+            // If we can't extract the Reddit post info, add the script as before
+            console.log("API: Could not extract Reddit post info, adding standard script");
+            if (!video.embedCode.includes('embed.reddit.com/widgets.js')) {
+              video.embedCode += '<script async src="https://embed.reddit.com/widgets.js" charset="UTF-8"></script>';
+            }
+          }
         }
       }
       

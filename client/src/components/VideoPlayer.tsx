@@ -108,58 +108,68 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
         // Clear the container first
         youtubeContainerRef.current.innerHTML = '';
         
-        // Extract the Reddit post URL
-        const info = extractRedditInfo(video.embedCode);
-        const subreddit = info.subreddit;
-        const postId = info.postId;
-        
-        if (subreddit && postId) {
-          const postUrl = `https://www.reddit.com/r/${subreddit}/comments/${postId}/`;
-          console.log("VideoPlayer: Extracted Reddit URL:", postUrl);
+        // For Reddit embeds, we now have a special iframe approach from the server
+        // If the iframe is not in the embedCode yet, extract the info from the original embed code
+        if (!video.embedCode.includes('<iframe')) {
+          const info = extractRedditInfo(video.embedCode);
+          const subreddit = info.subreddit;
+          const postId = info.postId;
           
-          // Create an iframe that directly loads the Reddit post
-          const iframe = document.createElement('iframe');
-          iframe.src = postUrl;
-          iframe.width = '100%';
-          iframe.height = '100%';
-          iframe.style.border = 'none';
-          iframe.style.position = 'absolute';
-          iframe.style.top = '0';
-          iframe.style.left = '0';
-          iframe.style.width = '100%';
-          iframe.style.height = '100%';
-          iframe.allowFullscreen = true;
-          iframe.title = video.title || 'Reddit Post';
-          
-          youtubeContainerRef.current.appendChild(iframe);
-          
-          // Add fallback text in case iframe doesn't load
-          const fallbackDiv = document.createElement('div');
-          fallbackDiv.innerText = `Reddit post from r/${subreddit} - Click to open`;
-          fallbackDiv.style.position = 'absolute';
-          fallbackDiv.style.top = '50%';
-          fallbackDiv.style.left = '50%';
-          fallbackDiv.style.transform = 'translate(-50%, -50%)';
-          fallbackDiv.style.textAlign = 'center';
-          fallbackDiv.style.display = 'none';
-          fallbackDiv.onclick = () => window.open(postUrl, '_blank');
-          
-          youtubeContainerRef.current.appendChild(fallbackDiv);
-          
-          // Show fallback after timeout if iframe isn't loading properly
-          setTimeout(() => {
-            fallbackDiv.style.display = 'block';
-          }, 3000);
+          if (subreddit && postId) {
+            // Create iframe for Reddit embed
+            const postUrl = `https://www.reddit.com/r/${subreddit}/comments/${postId}/embed/`;
+            console.log("VideoPlayer: Creating direct Reddit iframe with URL:", postUrl);
+            
+            const iframe = document.createElement('iframe');
+            iframe.src = postUrl;
+            iframe.width = '100%';
+            iframe.height = '100%';
+            iframe.style.border = 'none';
+            iframe.style.position = 'absolute';
+            iframe.style.top = '0';
+            iframe.style.left = '0';
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.allowFullscreen = true;
+            iframe.title = video.title || 'Reddit Post';
+            
+            // Add sandbox attribute to allow scripts but enhance security
+            iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups');
+            
+            youtubeContainerRef.current.appendChild(iframe);
+            
+            // Add a link to view on Reddit as fallback
+            const fallbackLink = document.createElement('div');
+            fallbackLink.style.position = 'absolute';
+            fallbackLink.style.bottom = '15px';
+            fallbackLink.style.right = '15px';
+            fallbackLink.style.background = 'rgba(0,0,0,0.7)';
+            fallbackLink.style.color = 'white';
+            fallbackLink.style.padding = '8px 12px';
+            fallbackLink.style.borderRadius = '4px';
+            fallbackLink.style.fontSize = '14px';
+            fallbackLink.style.cursor = 'pointer';
+            fallbackLink.style.zIndex = '10';
+            fallbackLink.textContent = 'View on Reddit';
+            fallbackLink.onclick = () => window.open(`https://www.reddit.com/r/${subreddit}/comments/${postId}/`, '_blank');
+            
+            youtubeContainerRef.current.appendChild(fallbackLink);
+          } else {
+            // Fallback to using the provided embed code
+            console.log("VideoPlayer: Falling back to provided embed code");
+            youtubeContainerRef.current.innerHTML = video.embedCode;
+            
+            // Force load the Reddit script
+            const script = document.createElement('script');
+            script.src = 'https://embed.reddit.com/widgets.js';
+            script.async = true;
+            script.charset = 'UTF-8';
+            youtubeContainerRef.current.appendChild(script);
+          }
         } else {
-          // Fallback to direct embed code
+          // The server already provided the improved embed code with iframe
+          console.log("VideoPlayer: Using server-provided Reddit iframe embed");
           youtubeContainerRef.current.innerHTML = video.embedCode;
-          
-          // Force load the Reddit script
-          const script = document.createElement('script');
-          script.src = 'https://embed.reddit.com/widgets.js';
-          script.async = true;
-          script.charset = 'UTF-8';
-          youtubeContainerRef.current.appendChild(script);
         }
       }
     }
@@ -172,7 +182,10 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-5xl md:max-w-6xl lg:max-w-7xl max-h-[95vh] overflow-y-auto w-[95vw]" aria-labelledby="video-title" aria-describedby="video-details">
+      <DialogContent className="sm:max-w-5xl md:max-w-6xl lg:max-w-7xl max-h-[95vh] overflow-y-auto w-[95vw]">
+        <DialogTitle className="sr-only" id="video-player-title">
+          {video?.title || "Video Player"}
+        </DialogTitle>
         {loading ? (
           <div className="flex items-center justify-center py-12" aria-live="polite">
             <Loader2 className="h-10 w-10 animate-spin text-border" aria-label="Loading video" />
