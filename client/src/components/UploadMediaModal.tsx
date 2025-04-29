@@ -574,29 +574,51 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                     Supports YouTube URLs/embeds, Reddit embeds (blockquote format), and other platform embed codes.
                   </p>
                   <div className="flex space-x-2">
-                    {originalYoutubeUrl && (
+                    {/* Always show YouTube conversion button if embed code has youtube.com */}
+                    {(originalYoutubeUrl || embedCode.includes('youtube.com') || embedCode.includes('youtu.be')) && (
                       <Button 
                         type="button" 
                         size="sm" 
                         variant="outline"
                         className="text-xs" 
                         onClick={() => {
-                          const embedCode = youtubeUrlToEmbedCode(originalYoutubeUrl);
-                          if (embedCode) setEmbedCode(embedCode);
+                          // Use either the stored original URL or the current embed code
+                          const url = originalYoutubeUrl || embedCode;
+                          console.log("Converting YouTube URL:", url);
+                          const newEmbedCode = youtubeUrlToEmbedCode(url);
+                          if (newEmbedCode) {
+                            setEmbedCode(newEmbedCode);
+                            // Extract video ID for thumbnail
+                            const videoId = extractYoutubeVideoId(url);
+                            if (videoId) {
+                              setThumbnailUrl(getYoutubeThumbnailUrl(videoId));
+                            }
+                          }
                         }}
                       >
                         Convert YouTube URL
                       </Button>
                     )}
-                    {originalRedditUrl && (
+                    {/* Always show Reddit conversion button if embed code has reddit.com */}
+                    {(originalRedditUrl || embedCode.includes('reddit.com/r/')) && (
                       <Button 
                         type="button" 
                         size="sm" 
                         variant="outline"
                         className="text-xs" 
                         onClick={() => {
-                          const embedCode = redditUrlToEmbedCode(originalRedditUrl);
-                          if (embedCode) setEmbedCode(embedCode);
+                          // Use either the stored original URL or the current embed code
+                          const url = originalRedditUrl || embedCode;
+                          console.log("Converting Reddit URL:", url);
+                          const newEmbedCode = redditUrlToEmbedCode(url);
+                          if (newEmbedCode) {
+                            setEmbedCode(newEmbedCode);
+                            // Try to set thumbnail URL for Reddit
+                            const info = extractRedditInfo(newEmbedCode);
+                            if (info.subreddit) {
+                              setThumbnailUrl(getRedditThumbnailUrl(info.subreddit));
+                            }
+                          }
                         }}
                       >
                         Convert Reddit URL

@@ -255,7 +255,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
               ) : video.contentType === 'image' ? (
                 <div className="flex justify-center bg-black/10 py-4">
                   <img 
-                    src={video.thumbnail || video.imageUrl} 
+                    src={video.thumbnail || video.imageUrl || ''} 
                     alt={video.title} 
                     className="max-h-[70vh] object-contain rounded-md shadow-lg"
                   />
@@ -275,10 +275,11 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                   {video.resolution}
                 </span>
                 
-                {video.category && (
+                {video.categoryId && (
                   <span className="bg-secondary text-primary text-sm px-3 py-1 rounded-full flex items-center">
                     <span className="mr-1">Category:</span>
-                    {video.category.name}
+                    {/* Just show the Category ID since we don't have relations loaded */}
+                    {`Category ${video.categoryId}`}
                   </span>
                 )}
                 
