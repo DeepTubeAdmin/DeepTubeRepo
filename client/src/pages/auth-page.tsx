@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,8 +12,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Video, CreditCard, Search, Calendar as CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
@@ -77,6 +79,7 @@ export default function AuthPage() {
       dateOfBirth: new Date(2000, 0, 1), // Default date for better UX
       password: "",
       confirmPassword: "",
+      termsAccepted: false,
     },
   });
 
@@ -305,6 +308,27 @@ export default function AuthPage() {
                           <Input type="password" placeholder="Confirm your password" {...field} />
                         </FormControl>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={registerForm.control}
+                    name="termsAccepted"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-2 bg-muted/40 rounded-md">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="text-sm font-normal">
+                            I accept the <Link href="/terms-of-service" className="text-primary hover:underline" target="_blank">Terms of Service</Link>
+                          </FormLabel>
+                          <FormMessage />
+                        </div>
                       </FormItem>
                     )}
                   />
