@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Video as SchemaVideo } from "@shared/schema";
 import { Video as TypeVideo } from "@/types";
 import { Badge } from "@/components/ui/badge";
@@ -26,9 +26,35 @@ export default function ImageGallery({
   showViewAll = false,
   viewAllUrl = '#',
 }: ImageGalleryProps) {
+  // Create a function to get the optimal column count based on available width
+  const getColumnClass = () => {
+    // Get window width
+    if (typeof window === 'undefined') return 'grid-cols-1';
+    
+    const width = window.innerWidth;
+    if (width < 640) return 'grid-cols-1'; // Mobile
+    if (width < 768) return 'grid-cols-2'; // Small tablets
+    if (width < 1024) return 'grid-cols-3'; // Large tablets/small desktop
+    if (width < 1280) return 'grid-cols-4'; // Medium desktop
+    return 'grid-cols-5'; // Large desktop
+  };
+
+  // Create a dynamic class that adjusts to screen width
+  const [columnClass, setColumnClass] = useState(getColumnClass());
+  
+  // Update column class when window is resized
+  useEffect(() => {
+    const handleResize = () => {
+      setColumnClass(getColumnClass());
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
   return (
     <section className="mb-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className={`grid ${columnClass} gap-4 w-full`}>
         {images.map((image) => (
           <ImageCard
             key={image.id}
@@ -37,6 +63,13 @@ export default function ImageGallery({
             onWishlist={onWishlist}
           />
         ))}
+        
+        {/* Add empty placeholder items to fill the last row completely */}
+        {images.length > 0 && images.length % (parseInt(columnClass.split('-')[2]) || 1) !== 0 && 
+          Array.from({ length: parseInt(columnClass.split('-')[2]) - (images.length % parseInt(columnClass.split('-')[2])) }).map((_, i) => (
+            <div key={`placeholder-${i}`} className="h-0 invisible"></div>
+          ))
+        }
       </div>
     </section>
   );

@@ -36,9 +36,9 @@ export default function InfiniteContentFeed({
   const getItemsPerRow = () => {
     if (isMobile) return 1; // Mobile: 1 item per row
     if (window.innerWidth < 768) return 2; // Small tablets: 2 items
-    if (window.innerWidth < 1024) return 2; // Tablets: 2 items
-    if (window.innerWidth < 1280) return 3; // Small desktop: 3 items
-    return 4; // Large desktop: 4 items
+    if (window.innerWidth < 1024) return 3; // Tablets: 3 items
+    if (window.innerWidth < 1280) return 4; // Small desktop: 4 items
+    return 5; // Large desktop: 5 items
   };
   const loadingRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -125,9 +125,15 @@ export default function InfiniteContentFeed({
     return () => window.removeEventListener('resize', handleResize);
   }, [isMobile]);
   
-  // Function to limit items to single row
+  // Function to determine how many items should be displayed
+  // This now provides enough items to fill the grid while accounting
+  // for the responsive design that handles actually showing the items
   const limitToSingleRow = (items: Video[]) => {
-    return items.slice(0, itemsPerRow);
+    // For smaller screens (<768px), we want to show 2-3 items
+    // For medium screens (768px-1280px), we want to show 3-4 items
+    // For larger screens (>1280px), we want to show 5 items
+    const itemCount = Math.min(items.length, itemsPerRow);
+    return items.slice(0, itemCount);
   };
   
   return (
