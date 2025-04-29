@@ -70,6 +70,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                   videoId={video.vimeoId}
                   title={video.title}
                   autoplay={true}
+                  loop={false}
                   responsive={true}
                   showTitle={false}
                   showByline={false}
@@ -89,7 +90,17 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                           .replace('height="315"', 'height="100%"')
                           .replace('title="YouTube video player"', `title="${video.title || 'YouTube video'}"`)
                           .replace('frameborder="0"', 'frameborder="0" role="presentation"')
-                          .replace('allow="', 'allow="fullscreen; ')
+                          .replace('allow="', 'allow="fullscreen; autoplay; ')
+                          // Process the embed URL to add autoplay=1
+                          .replace(/src="(https:\/\/www\.youtube\.com\/embed\/[^?]+)(\?[^"]*)?"/g, 
+                            function(match, url, params) {
+                              if (!params) {
+                                return `src="${url}?autoplay=1&mute=0"`;
+                              } else {
+                                return `src="${url}${params}&autoplay=1&mute=0"`;
+                              }
+                            }
+                          )
                           + `<style>
                               .embed-container iframe,
                               .embed-container object,
