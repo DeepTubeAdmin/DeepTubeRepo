@@ -1,6 +1,6 @@
 import { Heart } from "lucide-react";
 import { Video } from "@/types";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import VimeoEmbed from "./VimeoEmbed";
 import { Link } from "wouter";
 import { formatNumber, extractYoutubeIdFromEmbed, isRedditEmbed, extractRedditInfo } from "@/lib/utils";
@@ -16,6 +16,8 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
   const [isHovering, setIsHovering] = useState(false);
   const [youtubeId, setYoutubeId] = useState<string | null>(null);
   const [redditInfo, setRedditInfo] = useState<{subreddit: string | null, postId: string | null, user: string | null} | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const iframeContainerRef = useRef<HTMLDivElement>(null);
   
   // Extract embed info from code if applicable
   useEffect(() => {
@@ -52,6 +54,67 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
     }
   }, [video.id, video.embedCode, video.contentType, video.thumbnail]);
   
+  // Handle MP4 video hover preview
+  useEffect(() => {
+    if (!videoRef.current) return;
+    
+    if (isHovering && video.contentType === 'video') {
+      console.log(`Playing preview for video ${video.id}`);
+      videoRef.current.currentTime = 0;
+      const playPromise = videoRef.current.play();
+      
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.error(`Error playing preview for video ${video.id}:`, error);
+        });
+      }
+    } else if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+  }, [isHovering, video.id, video.contentType]);
+  
+  // Handle YouTube/iframe preview
+  useEffect(() => {
+    if (!iframeContainerRef.current) return;
+    
+    if (isHovering && video.contentType === 'embed') {
+      const container = iframeContainerRef.current;
+      if (youtubeId) {
+        console.log(`Creating YouTube preview iframe for ${youtubeId}`);
+        // Create iframe for YouTube preview
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0`;
+        iframe.className = 'w-full h-full';
+        iframe.frameBorder = '0';
+        iframe.allow = 'autoplay; picture-in-picture';
+        iframe.allowFullscreen = true;
+        iframe.title = video.title;
+        
+        // Clear container and append iframe
+        container.innerHTML = '';
+        container.appendChild(iframe);
+      } else if (video.vimeoId) {
+        console.log(`Creating Vimeo preview iframe for ${video.vimeoId}`);
+        // Create iframe for Vimeo preview
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://player.vimeo.com/video/${video.vimeoId}?autoplay=1&loop=1&title=0&byline=0&portrait=0&muted=1`;
+        iframe.className = 'w-full h-full';
+        iframe.frameBorder = '0';
+        iframe.allow = 'autoplay; fullscreen; picture-in-picture';
+        iframe.allowFullscreen = true;
+        iframe.title = video.title;
+        
+        // Clear container and append iframe
+        container.innerHTML = '';
+        container.appendChild(iframe);
+      }
+    } else if (iframeContainerRef.current && !isHovering) {
+      // Clear iframe container when not hovering
+      iframeContainerRef.current.innerHTML = '';
+    }
+  }, [isHovering, youtubeId, video.vimeoId, video.contentType, video.title]);
+  
   const handleWishlist = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsWishlisted(!isWishlisted);
@@ -67,33 +130,13 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
   };
 
   const handleMouseEnter = () => {
+    console.log(`Mouse enter for video ${video.id}, type: ${video.contentType}`);
     setIsHovering(true);
-    
-    // For MP4/direct videos
-    if (video.contentType === 'video') {
-      const videoElement = document.querySelector(`[data-video-id="${video.id}"]`) as HTMLVideoElement;
-      if (videoElement) {
-        videoElement.currentTime = 0;
-        videoElement.play().catch(e => console.error("Error playing preview:", e));
-      }
-    }
-    
-    // For YouTube embeds, we'll use iframe autoplay in the render method
   };
 
   const handleMouseLeave = () => {
+    console.log(`Mouse leave for video ${video.id}`);
     setIsHovering(false);
-    
-    // For MP4/direct videos
-    if (video.contentType === 'video') {
-      const videoElement = document.querySelector(`[data-video-id="${video.id}"]`) as HTMLVideoElement;
-      if (videoElement) {
-        videoElement.pause();
-        videoElement.currentTime = 0;
-      }
-    }
-    
-    // For YouTube embeds, we'll remove the iframe in the render method
   };
 
   const formatDuration = (seconds: number): string => {
@@ -120,69 +163,36 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           />
         </div>
         
-        {/* Video preview on hover */}
-        {video.contentType === 'video' && (
+        {/* Video preview on hover for MP4 videos */}
+        {video.contentType === 'video' && video.videoUrl && (
           <video 
+            ref={videoRef}
             muted 
             loop 
             className={`absolute top-0 left-0 w-full h-full object-cover ${isHovering ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}
-            src={video.videoUrl || undefined}
+            src={video.videoUrl}
             poster={video.thumbnail || undefined}
-            preload="auto"
+            preload="metadata"
             playsInline
-            data-video-id={video.id}
-            ref={(el) => {
-              if (el) {
-                if (isHovering) {
-                  el.play().catch(e => console.error("Error playing preview:", e));
-                } else {
-                  el.pause();
-                  // Reset to beginning for next hover
-                  el.currentTime = 0;
-                }
-              }
-            }}
           />
+        )}
+        
+        {/* YouTube/Vimeo preview container */}
+        {video.contentType === 'embed' && (
+          <div 
+            ref={iframeContainerRef}
+            className={`iframe-container absolute top-0 left-0 w-full h-full ${isHovering ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300 bg-black z-10`}
+          ></div>
         )}
         
         {/* Play overlay for videos and embeds */}
         {(video.contentType === 'video' || video.contentType === 'embed') && (
-          <div className={`absolute inset-0 flex items-center justify-center ${isHovering ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}>
+          <div className={`play-overlay absolute inset-0 flex items-center justify-center ${isHovering ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}>
             <div className="bg-black bg-opacity-50 rounded-full p-3">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="5 3 19 12 5 21 5 3"></polygon>
               </svg>
             </div>
-          </div>
-        )}
-        
-        {/* YouTube/Vimeo Preview on hover */}
-        {video.contentType === 'embed' && isHovering && (
-          <div className={`absolute top-0 left-0 w-full h-full ${isHovering ? 'opacity-100' : 'opacity-0'} transition-opacity bg-black z-10`}>
-            {video.vimeoId && (
-              <div className="relative w-full h-full">
-                <iframe
-                  src={`https://player.vimeo.com/video/${video.vimeoId}?autoplay=1&loop=1&title=0&byline=0&portrait=0&muted=1`}
-                  className="w-full h-full"
-                  frameBorder="0"
-                  allow="autoplay; fullscreen; picture-in-picture"
-                  allowFullScreen
-                  title={video.title}
-                />
-              </div>
-            )}
-            {youtubeId && (
-              <div className="relative w-full h-full">
-                <iframe 
-                  src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0`}
-                  className="w-full h-full"
-                  frameBorder="0"
-                  allow="autoplay; picture-in-picture"
-                  allowFullScreen
-                  title={video.title}
-                />
-              </div>
-            )}
           </div>
         )}
         

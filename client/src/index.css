@@ -320,6 +320,16 @@
   @apply text-primary;
 }
 
+/* Video hover effects */
+.video-card:hover video,
+.video-card:hover .iframe-container {
+  opacity: 1 !important;
+}
+
+.video-card:hover .play-overlay {
+  opacity: 0 !important;
+}
+
 .credit-button {
   @apply bg-primary text-primary-foreground font-bold;
 }
