@@ -145,35 +145,70 @@ export default function InfiniteContentFeed({
       ) : (
         <>
           {contentBlocks.map((block, index) => {
-            // Limit items to what fits in a single row based on screen size
-            const limitedItems = limitToSingleRow(block.items);
-            
             // Determine if this is a transition between content types
             const isContentTypeTransition = index > 0 && 
               contentBlocks[index-1] && 
               contentBlocks[index-1].type !== block.type;
             
+            // For section titles based on block types
+            const sectionTitle = block.type === 'videos' 
+              ? (index === 0 ? "Trending Now" : "Recently Uploaded Videos") 
+              : "AI-Generated Images";
+            
             return (
-              <div 
+              <section 
                 key={`${block.type}-${block.id}`} 
-                className={isContentTypeTransition ? "mt-12 mb-4" : "mb-6"}
+                className={isContentTypeTransition ? "mt-12 mb-8" : "mb-8"}
               >
-                {block.type === 'videos' ? (
-                  <VideoGrid
-                    title={block.title}
-                    videos={limitedItems}
-                    onPreview={onPreview}
-                    onWishlist={onWishlist}
-                  />
-                ) : (
-                  <ImageGallery
-                    title={block.title}
-                    images={limitedItems}
-                    onPreview={onPreview}
-                    onWishlist={onWishlist}
-                  />
-                )}
-              </div>
+                <h3 className="text-xl font-bold mb-4">{sectionTitle}</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {block.items.map(item => (
+                    <div 
+                      key={item.id}
+                      className="video-card video-item cursor-pointer"
+                      data-id={item.id}
+                      data-type={item.contentType}
+                      onClick={() => onPreview && onPreview(item.id)}
+                    >
+                      <div className="thumbnail-container">
+                        <div className="bg-gray-800 thumbnail flex items-center justify-center">
+                          <img 
+                            src={item.thumbnail} 
+                            alt={item.title} 
+                            className="thumbnail" 
+                          />
+                          {item.contentType !== 'image' && <i className="fas fa-play-circle text-4xl text-gray-500 absolute"></i>}
+                        </div>
+                        
+                        {/* Duration badge */}
+                        {item.duration > 0 && item.contentType !== 'image' && (
+                          <div className="duration">
+                            {Math.floor(item.duration / 60)}:{(item.duration % 60).toString().padStart(2, '0')}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Video info */}
+                      <div className="p-3">
+                        <h3 className="font-medium truncate">{item.title}</h3>
+                        <div className="flex justify-between text-sm text-gray-400 mt-1">
+                          <span>AI Creator</span>
+                          <div>
+                            <span className="mr-2">
+                              <i className="fas fa-eye mr-1"></i>
+                              {Math.floor(Math.random() * 10000) + 1000}
+                            </span>
+                            <span>
+                              <i className="fas fa-thumbs-up mr-1"></i>
+                              {Math.floor(Math.random() * 10) + 90}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
             );
           })}
           
