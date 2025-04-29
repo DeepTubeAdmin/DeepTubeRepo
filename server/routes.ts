@@ -312,6 +312,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Category selection is required" });
       }
       
+      // Block Reddit embeds at the server level
+      if (contentType === "embed" && embedCode &&
+          (embedCode.includes('reddit.com/r/') || 
+           embedCode.includes('reddit-embed-bq') || 
+           embedCode.includes('embed.reddit.com'))) {
+        console.log("API: Blocking Reddit embed attempt");
+        return res.status(400).json({ error: "Reddit embeds are not supported. Please use YouTube or Vimeo links instead." });
+      }
+      
       // Verify category exists
       if (categoryId) {
         const category = await storage.getCategoryById(parseInt(categoryId));

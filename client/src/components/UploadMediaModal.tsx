@@ -87,35 +87,21 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
         }
       }
     }
-    // Check for Reddit URL
-    else if (value.includes('reddit.com/r/') && !value.includes('blockquote') && !value.includes('embed.reddit.com')) {
-      console.log("Reddit URL detected:", value);
-      setOriginalRedditUrl(value);
-      setOriginalYoutubeUrl("");
+    // Check for Reddit URL - reject it
+    else if (value.includes('reddit.com/r/') || value.includes('reddit-embed-bq') || value.includes('embed.reddit.com')) {
+      console.log("Reddit URL detected - rejecting:", value);
       
-      // Auto-convert Reddit URLs to embedded format for better UX
-      const redditEmbed = redditUrlToEmbedCode(value);
-      console.log("Generated Reddit embed code:", redditEmbed);
+      // Clear the embed code to prevent submission
+      e.target.value = '';
+      setEmbedCode('');
+      setOriginalRedditUrl('');
       
-      if (redditEmbed) {
-        setEmbedCode(redditEmbed);
-        
-        // Try to set thumbnail URL for Reddit
-        const info = extractRedditInfo(redditEmbed);
-        console.log("Extracted Reddit info:", info);
-        
-        if (info.subreddit) {
-          const thumbnailUrl = getRedditThumbnailUrl(info.subreddit);
-          console.log("Setting Reddit thumbnail URL:", thumbnailUrl);
-          setThumbnailUrl(thumbnailUrl);
-          
-          // Show success toast
-          toast({
-            title: "Reddit URL detected",
-            description: "URL has been automatically converted to embed format",
-          });
-        }
-      }
+      // Show error toast
+      toast({
+        title: "Reddit content not supported",
+        description: "Reddit embeds are not supported. Please use YouTube or Vimeo links instead.",
+        variant: "destructive",
+      });
     }
   }, []);
   
@@ -645,51 +631,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                         Convert YouTube URL
                       </Button>
                     )}
-                    {/* Always show Reddit conversion button if embed code has reddit.com */}
-                    {(originalRedditUrl || embedCode.includes('reddit.com/r/')) && (
-                      <Button 
-                        type="button" 
-                        size="sm" 
-                        variant="outline"
-                        className="text-xs" 
-                        onClick={() => {
-                          // Use either the stored original URL or the current embed code
-                          const url = originalRedditUrl || embedCode;
-                          console.log("Converting Reddit URL:", url);
-                          
-                          // Try to convert the URL to an embed code
-                          const newEmbedCode = redditUrlToEmbedCode(url);
-                          console.log("Generated Reddit embed code:", newEmbedCode);
-                          
-                          if (newEmbedCode) {
-                            setEmbedCode(newEmbedCode);
-                            // Try to set thumbnail URL
-                            const info = extractRedditInfo(newEmbedCode);
-                            console.log("Extracted Reddit info:", info);
-                            
-                            if (info.subreddit) {
-                              const thumbnailUrl = getRedditThumbnailUrl(info.subreddit);
-                              console.log("Setting Reddit thumbnail URL:", thumbnailUrl);
-                              setThumbnailUrl(thumbnailUrl);
-                              
-                              // Toast success notification
-                              toast({
-                                title: "Reddit URL converted",
-                                description: "URL has been converted to embed format",
-                              });
-                            }
-                          } else {
-                            toast({
-                              title: "Invalid Reddit URL",
-                              description: "Could not convert URL to Reddit embed format",
-                              variant: "destructive",
-                            });
-                          }
-                        }}
-                      >
-                        Convert Reddit URL
-                      </Button>
-                    )}
+                    {/* Reddit embeds are no longer supported */}
                   </div>
                 </div>
               </div>
