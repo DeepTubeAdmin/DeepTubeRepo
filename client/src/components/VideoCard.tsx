@@ -1,4 +1,4 @@
-import { Heart, Play } from "lucide-react";
+import { Heart, Play, Pause } from "lucide-react";
 import { Video } from "@/types";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
@@ -37,10 +37,42 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
     try {
       // For MP4 videos
       if (video.contentType === 'video' && videoRef.current) {
+        // Add special debugging
+        console.log('Playing MP4 video:', video.videoUrl);
+        console.log('Video element state:', {
+          isPaused: videoRef.current.paused,
+          currentSrc: videoRef.current.currentSrc,
+          readyState: videoRef.current.readyState,
+          networkState: videoRef.current.networkState,
+          error: videoRef.current.error
+        });
+        
+        // Reset video completely first
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0;
+        
+        // Make visible and enable
         videoRef.current.style.opacity = '1';
         videoRef.current.style.pointerEvents = 'auto';
+        
+        // Set all attributes directly
         videoRef.current.muted = true;
-        videoRef.current.play().catch(e => console.error('Error playing video:', e));
+        videoRef.current.loop = true;
+        videoRef.current.playsInline = true;
+        videoRef.current.autoplay = true;
+        
+        // Force play with a slight delay
+        setTimeout(() => {
+          if (videoRef.current) {
+            const playPromise = videoRef.current.play();
+            if (playPromise) {
+              playPromise.catch(e => {
+                console.error('Error playing video:', e);
+                alert('Browser blocked autoplay. Please check your browser settings.');
+              });
+            }
+          }
+        }, 100);
       }
       
       // For embedded videos (YouTube/Vimeo)
@@ -168,11 +200,18 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
             muted 
             loop 
             playsInline
-            style={{ opacity: 0, transition: 'opacity 0.3s', zIndex: 20, pointerEvents: 'none' }}
+            autoPlay={isPreviewShown}
+            controls={isPreviewShown}
+            style={{ 
+              opacity: isPreviewShown ? 1 : 0, 
+              transition: 'opacity 0.3s', 
+              zIndex: 20, 
+              pointerEvents: isPreviewShown ? 'auto' : 'none' 
+            }}
             className="absolute top-0 left-0 w-full h-full object-cover"
             src={video.videoUrl}
             poster={video.thumbnail || undefined}
-            preload="metadata"
+            preload="auto"
           />
         )}
         
@@ -180,7 +219,12 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         {video.contentType === 'embed' && (
           <div 
             ref={iframeRef}
-            style={{ opacity: 0, transition: 'opacity 0.3s', zIndex: 20, pointerEvents: 'none' }}
+            style={{ 
+              opacity: isPreviewShown ? 1 : 0, 
+              transition: 'opacity 0.3s', 
+              zIndex: 20, 
+              pointerEvents: isPreviewShown ? 'auto' : 'none' 
+            }}
             className="absolute top-0 left-0 w-full h-full bg-black"
           ></div>
         )}
@@ -189,13 +233,23 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         <button 
           onClick={(e) => {
             e.stopPropagation();
-            playPreview();
+            if (isPreviewShown) {
+              // Stop preview
+              handleMouseLeave();
+            } else {
+              // Start preview
+              playPreview();
+            }
           }}
-          className="absolute top-2 left-2 z-30 bg-orange-500 hover:bg-orange-600 text-white p-2 rounded-full flex items-center justify-center shadow-lg"
-          title="Play preview"
+          className={`absolute top-2 left-2 z-30 ${isPreviewShown ? 'bg-orange-600' : 'bg-orange-500'} hover:bg-orange-600 text-white p-2 rounded-full flex items-center justify-center shadow-lg`}
+          title={isPreviewShown ? "Stop preview" : "Play preview"}
           style={{ width: '40px', height: '40px' }}
         >
-          <Play size={24} strokeWidth={3} />
+          {isPreviewShown ? (
+            <Pause size={24} strokeWidth={3} />
+          ) : (
+            <Play size={24} strokeWidth={3} />
+          )}
         </button>
         
         {/* Play overlay */}
