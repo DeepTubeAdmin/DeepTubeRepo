@@ -800,6 +800,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to upload video" });
     }
   });
+  
+  // Profile management endpoints
+  app.patch("/api/user", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      const { username, email } = req.body;
+      
+      // If changing username, check if it's already taken
+      if (username && username !== req.user.username) {
+        const existingUser = await storage.getUserByUsername(username);
+        if (existingUser && existingUser.id !== req.user.id) {
+          return res.status(400).json({ error: "Username already exists" });
+        }
+      }
+      
+      // Update the user
+      const updatedUser = await storage.updateUser(req.user.id, { 
+        username, 
+        email 
+      });
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+  
+  // API route for changing password
+  app.post("/api/user/change-password", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      const { currentPassword, newPassword } = req.body;
+      
+      // Validate that current password is correct
+      const user = await storage.getUser(req.user.id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Import password utilities from auth.ts
+      const { comparePasswords, hashPassword } = await import('./auth');
+      
+      // Check if the current password is correct
+      const isPasswordValid = await comparePasswords(currentPassword, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: "Current password is incorrect" });
+      }
+      
+      // Hash the new password
+      const hashedPassword = await hashPassword(newPassword);
+      
+      // Update the user's password
+      await storage.updateUser(req.user.id, { password: hashedPassword });
+      
+      res.status(200).json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.error("Error changing password:", error);
+      res.status(500).json({ error: "Failed to change password" });
+    }
+  });
+  
+  // API route for deleting user account
+  app.delete("/api/user", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      
+      // Delete the user's content (videos, comments, etc.)
+      // This would be more complex in a real system to handle all user data
+      const userVideos = await storage.getUserVideos(req.user.id);
+      for (const video of userVideos) {
+        await storage.deleteVideo(video.id);
+      }
+      
+      // Delete the user
+      await storage.deleteUser(req.user.id);
+      
+      // Log the user out
+      req.logout((err) => {
+        if (err) {
+          console.error("Error logging out after account deletion:", err);
+          return res.status(500).json({ error: "Failed to delete account" });
+        }
+        
+        res.status(200).json({ message: "Account deleted successfully" });
+      });
+    } catch (error) {
+      console.error("Error deleting user account:", error);
+      res.status(500).json({ error: "Failed to delete account" });
+    }
+  });
 
 
   const httpServer = createServer(app);
