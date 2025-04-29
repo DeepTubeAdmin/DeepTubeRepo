@@ -14,9 +14,47 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Set up multer for file uploads
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, '../uploads/');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Specific directory for videos
+const videosDir = path.join(uploadsDir, 'videos');
+if (!fs.existsSync(videosDir)) {
+  fs.mkdirSync(videosDir, { recursive: true });
+}
+
+// Specific directory for images
+const imagesDir = path.join(uploadsDir, 'images');
+if (!fs.existsSync(imagesDir)) {
+  fs.mkdirSync(imagesDir, { recursive: true });
+}
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    // Determine where to store the file based on mimetype
+    if (file.mimetype.startsWith('video/')) {
+      cb(null, videosDir);
+    } else if (file.mimetype.startsWith('image/')) {
+      cb(null, imagesDir);
+    } else {
+      cb(null, uploadsDir);
+    }
+  },
+  filename: function (req, file, cb) {
+    // Create a unique filename
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+  }
+});
+
+// Set up multer with the storage configuration
 const upload = multer({
-  dest: path.join(__dirname, '../uploads/'),
+  storage: storage,
   limits: {
     fileSize: 100 * 1024 * 1024, // 100MB limit
   }
@@ -428,7 +466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Video upload endpoint
+  // Video/Media upload endpoint (JSON data)
   app.post("/api/videos/upload", isAuthenticated, async (req, res) => {
     try {
       ensureUser(req);
@@ -502,7 +540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         aiGenerator,
         prompt,
         thumbnail: thumbnail || "https://placehold.co/400x225?text=AI+Video", // Placeholder
-        videoUrl: vimeoId ? `https://vimeo.com/${vimeoId}` : null,
+        videoUrl: vimeoId ? `https://vimeo.com/${vimeoId}` : videoUrl,
         preview: null,
         resolution,
         duration: vimeoDetails?.duration || duration,
@@ -518,6 +556,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error uploading video:", error);
       res.status(500).json({ error: "Failed to upload video" });
+    }
+  });
+  
+  // File upload endpoint for videos and images
+  app.post("/api/upload/file", isAuthenticated, upload.single('file'), async (req, res) => {
+    try {
+      ensureUser(req);
+      
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      
+      const file = req.file;
+      const isVideo = file.mimetype.startsWith('video/');
+      const isImage = file.mimetype.startsWith('image/');
+      
+      if (!isVideo && !isImage) {
+        // Clean up the file if it's not a supported type
+        if (fs.existsSync(file.path)) {
+          fs.unlinkSync(file.path);
+        }
+        return res.status(400).json({ 
+          error: "Unsupported file type. Please upload video or image files only." 
+        });
+      }
+      
+      // Generate a path that can be accessed via the /uploads static route
+      const relativePath = file.path.split('uploads/')[1]; // Gets "videos/video-123456.mp4" or "images/image-123456.jpg"
+      const publicUrl = `/uploads/${relativePath}`;
+      
+      console.log(`File uploaded: ${file.originalname} (${file.mimetype}) - Size: ${file.size}b`);
+      console.log(`Stored at: ${file.path}`);
+      console.log(`Public URL: ${publicUrl}`);
+      
+      // Return the file info including the public accessible URL
+      res.status(201).json({
+        fileName: file.originalname,
+        fileType: file.mimetype,
+        fileSize: file.size,
+        filePath: file.path,
+        url: publicUrl,
+        contentType: isVideo ? 'video' : 'image'
+      });
+      
+    } catch (error) {
+      console.error("Error handling file upload:", error);
+      
+      // Clean up the file on error
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      
+      res.status(500).json({ error: "Failed to process file upload" });
     }
   });
 

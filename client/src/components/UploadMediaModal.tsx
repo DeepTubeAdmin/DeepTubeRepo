@@ -209,43 +209,101 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
     try {
       // Use the existing thumbnail if one was set, otherwise generate a default
       let finalThumbnailUrl = thumbnailUrl || "https://placehold.co/400x225?text=" + encodeURIComponent(title);
-      let fileContentData = null;
+      let videoUrl = null;
+      let imageUrl = null;
       
-      // For images and videos, we need to read the actual file data
+      // Handle different file upload approaches based on content type
       if (contentType !== "embed" && selectedFile) {
-        try {
-          // Read file as data URL
-          fileContentData = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              const result = e.target?.result as string;
-              resolve(result);
-            };
-            reader.onerror = reject;
-            
-            // Determine how to read the file based on content type
-            if (contentType === "image") {
-              reader.readAsDataURL(selectedFile);
-            } else {
-              // For videos we're still going to use URL uploads for now
-              reader.readAsText(selectedFile);
-            }
+        if (contentType === "video" && selectedFile.type.includes('mp4')) {
+          console.log("Using direct file upload for MP4 video");
+          
+          // Create a FormData object for the file upload
+          const formData = new FormData();
+          formData.append('file', selectedFile);
+          
+          // Upload the file first
+          const fileUploadResponse = await fetch('/api/upload/file', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include',
           });
           
-          // For images, use the data URL as the thumbnail as well
-          if (contentType === "image" && fileContentData && typeof fileContentData === 'string') {
-            // Only update thumbnail if we successfully got image data
-            finalThumbnailUrl = fileContentData;
+          if (!fileUploadResponse.ok) {
+            const errorData = await fileUploadResponse.json();
+            throw new Error(errorData.error || `Failed to upload ${contentType} file`);
           }
-        } catch (error) {
-          console.error("Error reading file:", error);
-          toast({
-            title: "File read error",
-            description: "There was an error processing your file. Please try a different file.",
-            variant: "destructive",
-          });
-          setIsUploading(false);
-          return;
+          
+          // Get the file URL from the response
+          const fileData = await fileUploadResponse.json();
+          console.log("File upload successful:", fileData);
+          
+          // Store the URL for the video
+          videoUrl = fileData.url;
+          
+          // Proceed with metadata upload in the next step
+        } else if (contentType === "image") {
+          // For images, we'll continue using the Data URL approach
+          try {
+            // Read image as data URL
+            imageUrl = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                const result = e.target?.result as string;
+                resolve(result);
+              };
+              reader.onerror = reject;
+              reader.readAsDataURL(selectedFile);
+            });
+            
+            // Use the image data URL as the thumbnail as well
+            if (imageUrl && typeof imageUrl === 'string') {
+              finalThumbnailUrl = imageUrl;
+            }
+          } catch (error) {
+            console.error("Error reading image file:", error);
+            toast({
+              title: "File read error",
+              description: "There was an error processing your image file. Please try a different file.",
+              variant: "destructive",
+            });
+            setIsUploading(false);
+            return;
+          }
+        } else {
+          // For all other video types, upload via FormData
+          try {
+            // Create a FormData object for the file upload
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            
+            // Upload the file first
+            const fileUploadResponse = await fetch('/api/upload/file', {
+              method: 'POST',
+              body: formData,
+              credentials: 'include',
+            });
+            
+            if (!fileUploadResponse.ok) {
+              const errorData = await fileUploadResponse.json();
+              throw new Error(errorData.error || `Failed to upload ${contentType} file`);
+            }
+            
+            // Get the file URL from the response
+            const fileData = await fileUploadResponse.json();
+            console.log("File upload successful:", fileData);
+            
+            // Store the URL for the video
+            videoUrl = fileData.url;
+          } catch (error) {
+            console.error("Error uploading video file:", error);
+            toast({
+              title: "Video upload error",
+              description: "There was an error uploading your video file. Please try a different file.",
+              variant: "destructive",
+            });
+            setIsUploading(false);
+            return;
+          }
         }
       }
       
@@ -298,10 +356,9 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           contentType,
           // Use YouTube thumbnail for embeds when available
           thumbnail: finalThumbnailUrl,
-          [contentType === "video" ? "videoUrl" : contentType === "image" ? "imageUrl" : "embedCode"]: 
-            contentType === "embed" ? embedCode : 
-            (contentType === "image" && fileContentData) ? fileContentData : 
-            "https://example.com/placeholder",
+          videoUrl: videoUrl, // This will now be a server path for MP4s
+          imageUrl: imageUrl, // This will still be a data URL for images
+          embedCode: contentType === "embed" ? embedCode : null,
           resolution: contentType === "video" ? "HD" : undefined,
           duration: 0, // This would come from analyzing the video file
           credits: 0, // Default to 0 credits for free content
