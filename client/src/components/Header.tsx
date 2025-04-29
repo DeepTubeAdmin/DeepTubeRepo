@@ -176,6 +176,18 @@ export default function Header() {
                       >
                         My Videos
                       </a>
+                      {/* Show Admin Dashboard link only for admin users */}
+                      {user && (user.id === 1 || user.id === 2) && (
+                        <a 
+                          onClick={() => {
+                            setLocation("/admin");
+                            setShowUserDropdown(false);
+                          }} 
+                          className="block px-4 py-2 text-sm text-red-300 hover:bg-gray-800 cursor-pointer"
+                        >
+                          Admin Dashboard
+                        </a>
+                      )}
                       <a 
                         onClick={handleLogout} 
                         className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"

@@ -46,10 +46,21 @@ export default function AdminPage() {
 
   useEffect(() => {
     // Only admin can access this page (user with ID 1 or 2 as defined in server/routes.ts)
-    if (!user || (user.id !== 1 && user.id !== 2)) {
+    console.log("AdminPage: Current user:", user);
+    
+    if (!user) {
+      console.log("AdminPage: No user logged in, redirecting to home");
       setLocation('/');
       return;
     }
+    
+    if (user.id !== 1 && user.id !== 2) {
+      console.log("AdminPage: User is not an admin (ID not 1 or 2), redirecting to home");
+      setLocation('/');
+      return;
+    }
+    
+    console.log("AdminPage: User is an admin, allowing access");
 
     const fetchData = async () => {
       try {
