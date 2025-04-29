@@ -23,6 +23,54 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Search API endpoint
+  app.get('/api/search', async (req, res) => {
+    try {
+      const query = req.query.q as string || '';
+      const categorySlug = req.query.category as string || '';
+      
+      if (!query) {
+        return res.status(400).json({ error: 'Search query is required' });
+      }
+
+      // Get category ID if categorySlug is provided
+      let categoryId: number | undefined = undefined;
+      if (categorySlug) {
+        const category = await storage.getCategoryBySlug(categorySlug);
+        if (category) {
+          categoryId = category.id;
+        }
+      }
+      
+      // Search for videos
+      const videos = await storage.searchVideos({
+        query,
+        categoryId,
+        contentType: 'video',
+        limit: 20,
+      });
+      
+      // Search for images
+      const images = await storage.searchVideos({
+        query,
+        categoryId,
+        contentType: 'image',
+        limit: 20,
+      });
+      
+      // Search for forum posts (we'll implement this later)
+      const forum = []; // Placeholder for forum posts
+      
+      res.json({
+        videos,
+        images,
+        forum,
+      });
+    } catch (error: any) {
+      console.error('Search error:', error);
+      res.status(500).json({ error: error.message || 'Error performing search' });
+    }
+  });
   // Set up authentication
   setupAuth(app);
   

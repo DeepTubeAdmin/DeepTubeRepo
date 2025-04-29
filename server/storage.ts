@@ -29,12 +29,21 @@ export interface IStorage {
   createCategory(category: InsertCategory): Promise<Category>;
   
   // Video operations
-  getVideos(limit?: number): Promise<Video[]>;
+  getVideos(limit?: number, contentType?: string, offset?: number, sortBy?: string): Promise<Video[]>;
   getVideoById(id: number): Promise<Video | undefined>;
-  getVideosByCategory(categoryId: number): Promise<Video[]>;
+  getVideosByCategory(categoryId: number, contentType?: string, limit?: number): Promise<Video[]>;
   getFeaturedVideos(limit?: number): Promise<Video[]>;
   getNewVideos(limit?: number): Promise<Video[]>;
   createVideo(video: InsertVideo): Promise<Video>;
+  
+  // Search operations
+  searchVideos(options: {
+    query: string;
+    categoryId?: number;
+    contentType?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<Video[]>;
   
   // Wishlist operations
   addToWishlist(item: InsertWishlistItem): Promise<WishlistItem>;
@@ -302,6 +311,48 @@ export class DatabaseStorage implements IStorage {
       .from(comments)
       .where(eq(comments.videoId, videoId))
       .orderBy(desc(comments.createdAt));
+  }
+
+  // Search operations
+  async searchVideos(options: {
+    query: string;
+    categoryId?: number;
+    contentType?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<Video[]> {
+    const { query, categoryId, contentType, limit = 20, offset = 0 } = options;
+    
+    // Start with base query
+    let queryBuilder = db.select().from(videos);
+    
+    // Search in title and description with ILIKE for case-insensitive search
+    queryBuilder = queryBuilder.where(
+      or(
+        ilike(videos.title, `%${query}%`),
+        ilike(videos.description || '', `%${query}%`),
+        ilike(videos.prompt || '', `%${query}%`)
+      )
+    );
+    
+    // Add content type filter if specified
+    if (contentType) {
+      queryBuilder = queryBuilder.where(eq(videos.contentType, contentType));
+    }
+    
+    // Add category filter if specified
+    if (categoryId) {
+      queryBuilder = queryBuilder.where(eq(videos.categoryId, categoryId));
+    }
+    
+    // Add ordering (newest first)
+    queryBuilder = queryBuilder.orderBy(desc(videos.id));
+    
+    // Add pagination
+    queryBuilder = queryBuilder.limit(limit).offset(offset);
+    
+    // Execute the query
+    return queryBuilder;
   }
 
   // End of implementation

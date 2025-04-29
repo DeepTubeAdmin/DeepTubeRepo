@@ -414,7 +414,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="Enter the prompt you used to generate this video"
-                  className="resize-none min-h-[80px]"
+                  className="resize-none min-h-[50px]"
                 />
               </div>
               
@@ -462,7 +462,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           <TabsContent value="image" className="mt-0">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid w-full items-center gap-1.5">
-                <label htmlFor="image-media" className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-700 rounded-lg cursor-pointer bg-[#111] hover:bg-[#181818] transition-colors">
+                <label htmlFor="image-media" className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-700 rounded-lg cursor-pointer bg-[#111] hover:bg-[#181818] transition-colors">
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <i className="fas fa-cloud-upload-alt text-3xl mb-3 text-primary"></i>
                     <p className="mb-2 text-sm text-center text-gray-300">
@@ -606,7 +606,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                   value={embedCode}
                   onChange={handleEmbedCodeChange}
                   placeholder="Paste embed code from YouTube or Vimeo only"
-                  className="resize-none min-h-[120px] font-mono text-sm"
+                  className="resize-none min-h-[80px] font-mono text-sm"
                 />
                 <div className="flex justify-between items-center mt-1">
                   <p className="text-xs text-muted-foreground">
