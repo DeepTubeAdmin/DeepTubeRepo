@@ -11,6 +11,7 @@ export const users = pgTable("users", {
   email: text("email"),
   dateOfBirth: timestamp("date_of_birth"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  banned: boolean("banned").default(false),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -47,6 +48,7 @@ export const videos = pgTable("videos", {
   duration: integer("duration").default(0), // in seconds
   categoryId: integer("category_id").references(() => categories.id),
   vimeoId: text("vimeo_id"), // Store Vimeo video ID
+  userId: integer("user_id").references(() => users.id), // Added userId for tracking ownership
   createdAt: timestamp("created_at").defaultNow().notNull(),
   credits: integer("credits").notNull().default(0), // Number of credits required to purchase
 });
@@ -55,6 +57,10 @@ export const videosRelations = relations(videos, ({ one, many }) => ({
   category: one(categories, {
     fields: [videos.categoryId],
     references: [categories.id],
+  }),
+  user: one(users, {
+    fields: [videos.userId],
+    references: [users.id],
   }),
   wishlistItems: many(wishlistItems),
 }));

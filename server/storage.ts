@@ -19,8 +19,9 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, data: Partial<InsertUser>): Promise<User>;
+  updateUser(id: number, data: Partial<InsertUser> & { banned?: boolean }): Promise<User>;
   deleteUser(id: number): Promise<void>;
+  getAllUsers(): Promise<User[]>;
   
   // Category operations
   getCategories(): Promise<Category[]>;
@@ -88,12 +89,17 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
   
-  async updateUser(id: number, data: Partial<InsertUser>): Promise<User> {
+  async updateUser(id: number, data: Partial<InsertUser> & { banned?: boolean }): Promise<User> {
     const [user] = await db.update(users)
       .set(data)
       .where(eq(users.id, id))
       .returning();
     return user;
+  }
+  
+  // Get all users for admin purposes
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
   }
   
   async deleteUser(id: number): Promise<void> {
@@ -255,11 +261,10 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUserVideos(userId: number): Promise<Video[]> {
-    // For now, we don't have a userId field in videos table
-    // We'll get all videos for demo purposes
-    // In a real implementation, this would filter by userId
+    // Get videos uploaded by this user
     const results = await db.select()
       .from(videos)
+      .where(eq(videos.userId, userId))
       .orderBy(desc(videos.id));
       
     if (results.length > 0) {
