@@ -6,7 +6,7 @@
   --background: 0 0% 0%;  /* Pure black background */
   --foreground: 0 0% 100%;  /* White text */
   --muted: 0 0% 13%;
-  --muted-foreground: 0 0% 70%;
+  --muted-foreground: A0A0A0;
   --popover: 0 0% 8%;
   --popover-foreground: 0 0% 98%;
   --card: 0 0% 12%;  /* Slightly lighter black for cards */
@@ -34,6 +34,12 @@
   --chart-3: 38 75% 65%;
   --chart-4: 38 70% 75%;
   --chart-5: 38 80% 35%;
+  
+  /* New variables that match the HTML design */
+  --dark-gray: #1a1a1a;
+  --medium-gray: #272727;
+  --light-gray: #383838;
+  --very-light-gray: #525252;
 }
 
 .dark {
@@ -94,16 +100,207 @@
   }
 }
 
-.category-item:hover {
-  @apply bg-primary text-primary-foreground transition-colors;
+/* Navigation tabs from HTML design */
+.nav-tabs {
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+  padding: 10px 0;
 }
 
+.nav-tabs::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.nav-tab {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  margin: 0 4px;
+  border-radius: 16px;
+  background-color: #272727;
+  white-space: nowrap;
+  transition: background-color 0.3s;
+}
+
+.nav-tab:hover, .nav-tab.active {
+  background-color: #525252;
+}
+
+/* Video cards */
 .video-card {
-  @apply transition-transform duration-200;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.2s;
 }
 
 .video-card:hover {
-  @apply transform scale-[1.03];
+  transform: scale(1.03);
+}
+
+.thumbnail-container {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%;
+}
+
+.thumbnail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.duration {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* Button and form styles */
+.upload-btn {
+  background: linear-gradient(45deg, #FF5722, #FF9800);
+  transition: all 0.3s;
+}
+
+.upload-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.create-btn {
+  background: linear-gradient(45deg, #8E24AA, #673AB7);
+  transition: all 0.3s;
+}
+
+.create-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.forum-btn {
+  background: linear-gradient(45deg, #1976D2, #2196F3);
+  transition: all 0.3s;
+}
+
+.forum-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.search-input {
+  background-color: #121212;
+  border: 1px solid #303030;
+}
+
+.search-input:focus {
+  border-color: #1976D2;
+}
+
+/* Modal styles */
+.modal-content {
+  background-color: #1a1a1a;
+  margin: 60px auto;
+  max-width: 500px;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+/* Affiliate banner */
+.affiliate-banner {
+  background: linear-gradient(90deg, rgba(41, 121, 255, 0.1), rgba(65, 88, 208, 0.2));
+  border-radius: 8px;
+  border: 1px solid rgba(65, 88, 208, 0.3);
+  margin: 20px 0;
+}
+
+/* Social buttons */
+.btn-social {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  color: white;
+  font-weight: 500;
+}
+
+.btn-facebook {
+  background-color: #3b5998;
+}
+
+.btn-google {
+  background-color: #db4437;
+}
+
+.btn-apple {
+  background-color: #000000;
+}
+
+/* Forum styles */
+.forum-category {
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.forum-category-header {
+  background-color: #1e1e1e;
+  padding: 12px 16px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.forum-topic {
+  padding: 12px 16px;
+  border-bottom: 1px solid #2a2a2a;
+  transition: background-color 0.2s;
+}
+
+.forum-topic:last-child {
+  border-bottom: none;
+}
+
+.forum-topic:hover {
+  background-color: #222222;
+}
+
+/* Loading indicator */
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border-top: 4px solid #1976D2;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Additional existing utility classes */
+.category-item:hover {
+  @apply bg-primary text-primary-foreground transition-colors;
 }
 
 .video-card:hover .video-title {

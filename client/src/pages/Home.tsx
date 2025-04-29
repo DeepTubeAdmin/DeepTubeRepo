@@ -39,7 +39,6 @@ export default function Home() {
     setActiveCategory(slug);
   };
   
-  // Reference for filter menu for click outside handler
   const filterMenuRef = useRef<HTMLDivElement>(null);
   const filterButtonRef = useRef<HTMLButtonElement>(null);
   
@@ -73,10 +72,7 @@ export default function Home() {
   }, [showFilterMenu]);
 
   const handlePreview = (videoId: number) => {
-    // Only open the modal player when explicitly clicked, not on hover
-    console.log("Home: handlePreview called with videoId:", videoId);
     setSelectedVideoId(videoId);
-    console.log("Home: Setting isPlayerOpen to true");
     setIsPlayerOpen(true);
   };
 
@@ -102,134 +98,93 @@ export default function Home() {
     }
   };
 
-  // Custom header for non-authenticated users
-  const renderGuestHeader = () => {
-    return (
-      <div className="bg-secondary px-4 py-3 shadow-md">
-        <div className="container mx-auto flex items-center justify-between">
-          <h1 className="text-primary font-bold text-2xl">DeepTube<span className="text-xs align-top">.co</span></h1>
-          <div className="flex items-center space-x-3">
-            <Button 
-              variant="outline" 
-              className="border-primary text-primary hover:bg-primary/10"
-              onClick={handleUploadClick}
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Media
-            </Button>
-            <Button 
-              variant="outline" 
-              className="border-primary text-primary hover:bg-primary/10"
-              onClick={() => window.open('https://www.synthesia.io/?via=seth-glass', '_blank')}
-            >
-              <WandSparkles className="mr-2 h-4 w-4" />
-              Create
-            </Button>
-            <Button onClick={navigateToAuth} className="bg-primary">
-              <LogIn className="mr-2 h-4 w-4" /> Sign In
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <Layout showHeader={user ? true : false}>
-      {!user && renderGuestHeader()}
-      
-      {/* AI Video Creation Banner */}
-      <div className="bg-primary/5 border-y border-primary/20">
-        <div className="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between">
-          <div className="flex items-center mb-4 md:mb-0">
-            <Video className="h-8 w-8 text-primary mr-3" />
-            <div>
-              <h3 className="font-bold text-lg text-primary">Create AI Videos with Synthesia</h3>
-              <p className="text-sm text-muted-foreground">Generate professional AI videos in minutes without cameras or actors</p>
-            </div>
-          </div>
-          <Button 
-            className="bg-primary hover:bg-primary/90"
-            onClick={() => window.open('https://www.synthesia.io/?via=seth-glass', '_blank')}
-          >
-            <WandSparkles className="mr-2 h-4 w-4" />
-            Try Synthesia
-          </Button>
-        </div>
-      </div>
-      
-      <main className="container mx-auto px-4 py-5">
-        <div className="flex flex-col mb-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl font-semibold">Explore Content</h2>
-            
-            <div className="relative flex-shrink-0">
-              <Button
-                ref={filterButtonRef}
-                variant="secondary"
-                size="sm"
-                className="flex items-center bg-secondary/80 hover:bg-secondary border border-zinc-300 dark:border-zinc-700"
-                onClick={toggleFilterMenu}
-              >
-                <Filter className="h-4 w-4 mr-1" />
-                Sort
-              </Button>
-            </div>
-          </div>
-          
-          <div className="overflow-x-auto">
-            {!isCategoriesLoading && (
-              <CategoryNavigation 
-                categories={allCategories} 
-                activeCategory={activeCategory}
-                onCategoryChange={handleCategoryChange} 
-              />
-            )}
-          </div>
-          
-          {/* Sort dropdown menu */}
-          {showFilterMenu && (
-            <div 
-              ref={filterMenuRef}
-              className="absolute right-4 top-24 mt-1 bg-zinc-100 dark:bg-zinc-800 rounded-md shadow-lg p-2 z-50 w-48 border dark:border-zinc-700"
-            >
-              <div className="text-sm font-medium mb-2 px-2">Sort by</div>
-              <Button
-                variant={sortBy === 'newest' ? "default" : "ghost"}
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => handleSortChange('newest')}
-              >
-                Newest First
-              </Button>
-              <Button
-                variant={sortBy === 'oldest' ? "default" : "ghost"}
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => handleSortChange('oldest')}
-              >
-                Oldest First
-              </Button>
-              <Button
-                variant={sortBy === 'viewed' ? "default" : "ghost"}
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => handleSortChange('viewed')}
-              >
-                Most Viewed
-              </Button>
-            </div>
-          )}
-        </div>
-        
-        {/* Infinite Content Feed with Video-Image alternating pattern */}
-        <InfiniteContentFeed 
-          onPreview={handlePreview}
-          onWishlist={handleWishlist}
-          category={activeCategory}
-          sortBy={sortBy}
+    <Layout showHeader={true}>
+      {!isCategoriesLoading && (
+        <CategoryNavigation 
+          categories={allCategories} 
+          activeCategory={activeCategory}
+          onCategoryChange={handleCategoryChange} 
         />
-      </main>
+      )}
+
+      <div id="homePage" className="page active">
+        <main className="container mx-auto px-4 py-4">
+          {/* Featured Section */}
+          <section className="mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="col-span-full lg:col-span-2 video-card video-item" data-id="featured-1" data-type="video" onClick={() => handlePreview(49)}>
+                <div className="thumbnail-container">
+                  <div className="bg-gray-800 thumbnail flex items-center justify-center">
+                    <img src="https://i.vimeocdn.com/video/1729347065-e1ed63828a4185f9f8f381e05199a18b80053c935f292a4b?mw=1000&mh=562" alt="Featured Video" className="thumbnail" />
+                  </div>
+                  <video muted loop className="absolute top-0 left-0 w-full h-full object-cover opacity-0 hover:opacity-100 transition-opacity">
+                    <source src="https://player.vimeo.com/progressive_redirect/playback/916033253/rendition/720p/file.mp4?loc=external" type="video/mp4" />
+                  </video>
+                  <div className="duration">2:18</div>
+                </div>
+                <div className="p-3">
+                  <h3 className="font-medium text-lg truncate">AI Generated Nature Documentary with David Attenborough Voice</h3>
+                  <div className="flex justify-between text-sm text-gray-400 mt-1">
+                    <span>DeepLearning Studio</span>
+                    <div>
+                      <span className="mr-2"><i className="fas fa-eye mr-1"></i>1.2M</span>
+                      <span><i className="fas fa-thumbs-up mr-1"></i>95%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="video-card video-item" data-id="featured-2" data-type="video" onClick={() => handlePreview(48)}>
+                <div className="thumbnail-container">
+                  <div className="bg-gray-800 thumbnail flex items-center justify-center">
+                    <img src="https://img.youtube.com/vi/t_Qn2B40zsM/mqdefault.jpg" alt="Featured Video" className="thumbnail" />
+                  </div>
+                  <video muted loop className="absolute top-0 left-0 w-full h-full object-cover opacity-0 hover:opacity-100 transition-opacity">
+                    <source src="https://www.youtube.com/embed/t_Qn2B40zsM" type="video/mp4" />
+                  </video>
+                  <div className="duration">5:30</div>
+                </div>
+                <div className="p-3">
+                  <h3 className="font-medium truncate">Photorealistic AI Portrait Creation Tutorial</h3>
+                  <div className="flex justify-between text-sm text-gray-400 mt-1">
+                    <span>AI Artist</span>
+                    <div>
+                      <span className="mr-2"><i className="fas fa-eye mr-1"></i>845K</span>
+                      <span><i className="fas fa-thumbs-up mr-1"></i>98%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Affiliate Banner */}
+          <section className="affiliate-banner p-4 mb-8">
+            <div className="flex flex-col md:flex-row items-center justify-between">
+              <div className="mb-4 md:mb-0">
+                <h3 className="text-lg font-bold mb-1">Create Your Own AI Content</h3>
+                <p className="text-gray-300">Generate professional videos with AI avatars - no camera or microphone needed</p>
+              </div>
+              <Button
+                className="upload-btn py-2 px-6 rounded-full text-white font-medium"
+                onClick={() => window.open('https://www.synthesia.io/?via=seth-glass', '_blank')}
+              >
+                <WandSparkles className="mr-2 h-4 w-4" />
+                Try Synthesia
+              </Button>
+            </div>
+          </section>
+          
+          {/* Infinite Content Feed with Video-Image alternating pattern */}
+          <InfiniteContentFeed 
+            onPreview={handlePreview}
+            onWishlist={handleWishlist}
+            category={activeCategory}
+            sortBy={sortBy}
+          />
+        </main>
+      </div>
       
       {/* Video Player Modal */}
       <VideoPlayer 

@@ -1,5 +1,3 @@
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
 import { Category } from "@/types";
 import * as Icons from "lucide-react";
 
@@ -22,8 +20,6 @@ export default function CategoryNavigation({
     }
     
     // Map common icon names to Lucide icon components
-    let iconComponent;
-    
     switch (iconName.toLowerCase()) {
       case 'rocket':
         return <Icons.Rocket className="h-4 w-4 mr-1" />;
@@ -55,27 +51,21 @@ export default function CategoryNavigation({
   };
   
   return (
-    <section className="mb-6">
-      <ScrollArea className="w-full whitespace-nowrap">
-        <div className="flex space-x-1 pb-2">
+    <div className="bg-black sticky top-14 z-40 shadow-md">
+      <div className="container mx-auto">
+        <div className="nav-tabs px-4">
           {categories.map(category => (
-            <Button
+            <div 
               key={category.slug}
-              variant="ghost"
-              className={`flex-shrink-0 py-1.5 px-4 rounded-sm text-sm uppercase font-semibold transition-colors ${
-                activeCategory === category.slug 
-                  ? "bg-primary text-black hover:bg-primary/90" 
-                  : "bg-gray-800 hover:bg-gray-700 text-white"
-              }`}
+              className={`nav-tab cursor-pointer ${activeCategory === category.slug ? 'active' : ''}`}
               onClick={() => onCategoryChange(category.slug)}
             >
               {renderIcon(category.icon)}
               {category.name}
-            </Button>
+            </div>
           ))}
         </div>
-        <ScrollBar orientation="horizontal" className="bg-gray-700" />
-      </ScrollArea>
-    </section>
+      </div>
+    </div>
   );
 }
