@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage as dbStorage } from "./storage";
 import { setupAuth, comparePasswords, hashPassword } from "./auth";
 import { z } from "zod";
 import { insertCategorySchema, insertVideoSchema, type Video } from "@shared/schema";
@@ -33,7 +33,7 @@ if (!fs.existsSync(imagesDir)) {
 }
 
 // Configure multer for file uploads
-const storage = multer.diskStorage({
+const multerStorage = multer.diskStorage({
   destination: function (req, file, cb) {
     // Determine where to store the file based on mimetype
     if (file.mimetype.startsWith('video/')) {
@@ -54,7 +54,7 @@ const storage = multer.diskStorage({
 
 // Set up multer with the storage configuration
 const upload = multer({
-  storage: storage,
+  storage: multerStorage,
   limits: {
     fileSize: 100 * 1024 * 1024, // 100MB limit
   }
@@ -79,7 +79,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get category ID if categorySlug is provided and we don't have categoryId yet
       if (categorySlug && !categoryId) {
-        const category = await storage.getCategoryBySlug(categorySlug);
+        const category = await dbStorage.getCategoryBySlug(categorySlug);
         if (category) {
           categoryId = category.id;
         }
@@ -90,14 +90,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (contentType === 'all') {
         // Search for all content types
-        results = await storage.searchVideos({
+        results = await dbStorage.searchVideos({
           query,
           categoryId,
           limit: 50,
         });
       } else {
         // Search for specific content type (video, image, embed)
-        results = await storage.searchVideos({
+        results = await dbStorage.searchVideos({
           query,
           categoryId,
           contentType,
@@ -143,7 +143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/categories/seed", async (req, res) => {
     try {
       // Get existing categories
-      const existingCategories = await storage.getCategories();
+      const existingCategories = await dbStorage.getCategories();
       
       // Define all required categories
       const requiredCategories = [
@@ -169,7 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create missing categories
       const newCategories = [];
       for (const category of categoriesToCreate) {
-        const newCategory = await storage.createCategory(category);
+        const newCategory = await dbStorage.createCategory(category);
         newCategories.push(newCategory);
       }
       
@@ -186,7 +186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Categories endpoints
   app.get("/api/categories", async (req, res) => {
     try {
-      const categories = await storage.getCategories();
+      const categories = await dbStorage.getCategories();
       res.json(categories);
     } catch (error) {
       console.error("Error fetching categories:", error);
@@ -197,7 +197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Define specific routes before parameterized routes
   app.get("/api/categories/by-slug/:slug", async (req, res) => {
     try {
-      const category = await storage.getCategoryBySlug(req.params.slug);
+      const category = await dbStorage.getCategoryBySlug(req.params.slug);
       if (!category) {
         return res.status(404).json({ error: "Category not found" });
       }
@@ -211,7 +211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/categories", isAuthenticated, async (req, res) => {
     try {
       const categoryData = insertCategorySchema.parse(req.body);
-      const category = await storage.createCategory(categoryData);
+      const category = await dbStorage.createCategory(categoryData);
       res.status(201).json(category);
     } catch (error) {
       console.error("Error creating category:", error);
@@ -223,7 +223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/videos", async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
-      const videos = await storage.getVideos(limit);
+      const videos = await dbStorage.getVideos(limit);
       res.json(videos);
     } catch (error) {
       console.error("Error fetching videos:", error);
@@ -234,7 +234,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/videos/featured", async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
-      const videos = await storage.getFeaturedVideos(limit);
+      const videos = await dbStorage.getFeaturedVideos(limit);
       res.json(videos);
     } catch (error) {
       console.error("Error fetching featured videos:", error);
@@ -245,7 +245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/videos/new", async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
-      const videos = await storage.getNewVideos(limit);
+      const videos = await dbStorage.getNewVideos(limit);
       res.json(videos);
     } catch (error) {
       console.error("Error fetching new videos:", error);
@@ -258,7 +258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/videos", isAuthenticated, async (req, res) => {
     try {
       const videoData = insertVideoSchema.parse(req.body);
-      const video = await storage.createVideo(videoData);
+      const video = await dbStorage.createVideo(videoData);
       res.status(201).json(video);
     } catch (error) {
       console.error("Error creating video:", error);
@@ -269,7 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/categories/:id/videos", async (req, res) => {
     try {
       const categoryId = parseInt(req.params.id);
-      const videos = await storage.getVideosByCategory(categoryId);
+      const videos = await dbStorage.getVideosByCategory(categoryId);
       res.json(videos);
     } catch (error) {
       console.error("Error fetching videos by category:", error);
@@ -306,7 +306,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get categoryId if category slug is provided
       let categoryId: number | undefined = undefined;
       if (categorySlug && categorySlug !== 'trending' && categorySlug !== 'most-viewed') {
-        const category = await storage.getCategoryBySlug(categorySlug);
+        const category = await dbStorage.getCategoryBySlug(categorySlug);
         categoryId = category?.id;
       }
       
@@ -359,19 +359,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (isTrending) {
             // For trending, use featured videos
-            videos = await storage.getFeaturedVideos(fetchLimit);
+            videos = await dbStorage.getFeaturedVideos(fetchLimit);
             console.log(`Category trending videos (video): first few IDs: [ ${videos.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else if (isMostViewed) {
             // For most viewed, use random order for now (will be replaced with actual view count)
-            videos = await storage.getVideos(fetchLimit, 'video', undefined, 'viewed');
+            videos = await dbStorage.getVideos(fetchLimit, 'video', undefined, 'viewed');
             console.log(`Category most-viewed videos (video): first few IDs: [ ${videos.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else if (categoryId) {
             // Filter by category if specified
-            videos = await storage.getVideosByCategory(categoryId, 'video', fetchLimit);
+            videos = await dbStorage.getVideosByCategory(categoryId, 'video', fetchLimit);
             console.log(`Category ${categoryId} videos (video): first few IDs: [ ${videos.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else {
             // No filter - include all types (video, image, and embeds)
-            videos = await storage.getVideos(fetchLimit, 'video', undefined, sortBy);
+            videos = await dbStorage.getVideos(fetchLimit, 'video', undefined, sortBy);
             console.log(`General videos (video): first few IDs: [ ${videos.slice(0, 3).map(v => v.id).join(', ')} ]`);
           }
           
@@ -404,19 +404,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (isTrending) {
             // For trending, use newest images
-            images = await storage.getVideos(fetchLimit, 'image', undefined, 'newest');
+            images = await dbStorage.getVideos(fetchLimit, 'image', undefined, 'newest');
             console.log(`Category trending videos (image): first few IDs: [ ${images.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else if (isMostViewed) {
             // For most viewed, use "viewed" sort
-            images = await storage.getVideos(fetchLimit, 'image', undefined, 'viewed');
+            images = await dbStorage.getVideos(fetchLimit, 'image', undefined, 'viewed');
             console.log(`Category most-viewed videos (image): first few IDs: [ ${images.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else if (categoryId) {
             // Filter by category if specified
-            images = await storage.getVideosByCategory(categoryId, 'image', fetchLimit);
+            images = await dbStorage.getVideosByCategory(categoryId, 'image', fetchLimit);
             console.log(`Category ${categoryId} videos (image): first few IDs: [ ${images.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else {
             // No filter - include all image types
-            images = await storage.getVideos(fetchLimit, 'image', undefined, sortBy);
+            images = await dbStorage.getVideos(fetchLimit, 'image', undefined, sortBy);
             console.log(`General videos (image): first few IDs: [ ${images.slice(0, 3).map(v => v.id).join(', ')} ]`);
           }
           
@@ -516,7 +516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify category exists
       if (categoryId) {
-        const category = await storage.getCategoryById(parseInt(categoryId));
+        const category = await dbStorage.getCategoryById(parseInt(categoryId));
         if (!category) {
           return res.status(400).json({ error: "Selected category does not exist" });
         }
@@ -534,7 +534,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Create video record
-      const video = await storage.createVideo({
+      const video = await dbStorage.createVideo({
         title,
         description: description || "",
         aiGenerator,
@@ -616,12 +616,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/user/videos", isAuthenticated, async (req, res) => {
     try {
       ensureUser(req);
-      const userVideos = await storage.getUserVideos(req.user.id);
+      const userVideos = await dbStorage.getUserVideos(req.user.id);
       
       // Get category info for each video
       const videosWithCategories = await Promise.all(userVideos.map(async (video) => {
         const category = video.categoryId 
-          ? await storage.getCategoryById(video.categoryId) 
+          ? await dbStorage.getCategoryById(video.categoryId) 
           : null;
         
         return {
@@ -643,7 +643,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const videoId = parseInt(req.params.id);
       
       // Check if video exists
-      const video = await storage.getVideoById(videoId);
+      const video = await dbStorage.getVideoById(videoId);
       if (!video) {
         return res.status(404).json({ error: "Video not found" });
       }
@@ -654,7 +654,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "You don't have permission to delete this content" });
       }
       
-      await storage.deleteVideo(videoId);
+      await dbStorage.deleteVideo(videoId);
       
       res.status(200).json({ message: "Video deleted successfully" });
     } catch (error) {
@@ -667,7 +667,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/user/wishlist", isAuthenticated, async (req, res) => {
     try {
       ensureUser(req);
-      const wishlist = await storage.getUserWishlist(req.user.id);
+      const wishlist = await dbStorage.getUserWishlist(req.user.id);
       res.json(wishlist);
     } catch (error) {
       console.error("Error fetching user wishlist:", error);
@@ -681,18 +681,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const videoId = parseInt(req.params.id);
       
       // Check if video exists
-      const video = await storage.getVideoById(videoId);
+      const video = await dbStorage.getVideoById(videoId);
       if (!video) {
         return res.status(404).json({ error: "Video not found" });
       }
       
       // Check if already in wishlist
-      const isWishlisted = await storage.isWishlisted(req.user.id, videoId);
+      const isWishlisted = await dbStorage.isWishlisted(req.user.id, videoId);
       if (isWishlisted) {
         return res.status(400).json({ error: "Video already in wishlist" });
       }
       
-      const wishlistItem = await storage.addToWishlist({
+      const wishlistItem = await dbStorage.addToWishlist({
         userId: req.user.id,
         videoId,
       });
@@ -709,7 +709,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ensureUser(req);
       const videoId = parseInt(req.params.id);
       
-      await storage.removeFromWishlist(req.user.id, videoId);
+      await dbStorage.removeFromWishlist(req.user.id, videoId);
       res.sendStatus(204);
     } catch (error) {
       console.error("Error removing from wishlist:", error);
@@ -776,7 +776,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get video details
-      const video = await storage.getVideoById(videoId);
+      const video = await dbStorage.getVideoById(videoId);
       
       if (!video) {
         console.error("Video not found with ID:", videoId);
@@ -798,17 +798,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get category info
       const category = video.categoryId 
-        ? await storage.getCategoryById(video.categoryId) 
+        ? await dbStorage.getCategoryById(video.categoryId) 
         : null;
       
       // Get comments
-      const comments = await storage.getCommentsByVideoId(videoId);
+      const comments = await dbStorage.getCommentsByVideoId(videoId);
       console.log("API: Retrieved", comments.length, "comments for video", videoId);
       
       // Check if item is wishlisted by current user (if authenticated)
       let isWishlisted = false;
       if (req.isAuthenticated() && req.user) {
-        isWishlisted = await storage.isWishlisted(req.user.id, videoId);
+        isWishlisted = await dbStorage.isWishlisted(req.user.id, videoId);
       }
       
       // Modify embed code for proper rendering
@@ -926,7 +926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/videos/:id/comments", async (req, res) => {
     try {
       const videoId = parseInt(req.params.id);
-      const comments = await storage.getCommentsByVideoId(videoId);
+      const comments = await dbStorage.getCommentsByVideoId(videoId);
       res.json(comments);
     } catch (error) {
       console.error("Error fetching comments:", error);
@@ -939,7 +939,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const videoId = parseInt(req.params.id);
       
       // Check if video exists
-      const video = await storage.getVideoById(videoId);
+      const video = await dbStorage.getVideoById(videoId);
       if (!video) {
         return res.status(404).json({ error: "Video not found" });
       }
@@ -967,7 +967,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         commentData.userId = req.user.id;
       }
       
-      const comment = await storage.addComment(commentData);
+      const comment = await dbStorage.addComment(commentData);
       res.status(201).json(comment);
       
     } catch (error) {
@@ -1017,7 +1017,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const duration = vimeoVideo.duration || 0;
             
             // Create a video record
-            const video = await storage.createVideo({
+            const video = await dbStorage.createVideo({
               title: name,
               description: description || "",
               aiGenerator: aiGenerator || null,
@@ -1066,7 +1066,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all content for admin dashboard
   app.get("/api/content/all", isAdmin, async (req, res) => {
     try {
-      const videos = await storage.getVideos(200); // Get up to 200 items
+      const videos = await dbStorage.getVideos(200); // Get up to 200 items
       res.json(videos);
     } catch (error) {
       console.error("Error fetching all content:", error);
@@ -1077,7 +1077,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all users for admin dashboard
   app.get("/api/admin/users", isAuthenticated, isAdmin, async (req, res) => {
     try {
-      const users = await storage.getAllUsers();
+      const users = await dbStorage.getAllUsers();
       
       // Don't return password hashes
       const safeUsers = users.map(user => {
@@ -1104,7 +1104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user exists and update them
-      const updatedUser = await storage.updateUser(userId, { banned });
+      const updatedUser = await dbStorage.updateUser(userId, { banned });
       
       if (!updatedUser) {
         return res.status(404).json({ error: "User not found" });
@@ -1125,12 +1125,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const contentId = parseInt(req.params.contentId);
       
       // Get the content to verify it exists
-      const content = await storage.getVideoById(contentId);
+      const content = await dbStorage.getVideoById(contentId);
       if (!content) {
         return res.status(404).json({ error: "Content not found" });
       }
       
-      await storage.deleteVideo(contentId);
+      await dbStorage.deleteVideo(contentId);
       res.json({ success: true, message: "Content deleted successfully" });
     } catch (error) {
       console.error("Error deleting content:", error);
@@ -1146,14 +1146,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If changing username, check if it's already taken
       if (username && username !== req.user.username) {
-        const existingUser = await storage.getUserByUsername(username);
+        const existingUser = await dbStorage.getUserByUsername(username);
         if (existingUser && existingUser.id !== req.user.id) {
           return res.status(400).json({ error: "Username already exists" });
         }
       }
       
       // Update the user
-      const updatedUser = await storage.updateUser(req.user.id, { 
+      const updatedUser = await dbStorage.updateUser(req.user.id, { 
         username, 
         email 
       });
@@ -1172,7 +1172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { currentPassword, newPassword } = req.body;
       
       // Validate that current password is correct
-      const user = await storage.getUser(req.user.id);
+      const user = await dbStorage.getUser(req.user.id);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -1189,7 +1189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hashedPassword = await hashPassword(newPassword);
       
       // Update the user's password
-      await storage.updateUser(req.user.id, { password: hashedPassword });
+      await dbStorage.updateUser(req.user.id, { password: hashedPassword });
       
       res.status(200).json({ message: "Password changed successfully" });
     } catch (error) {
@@ -1205,13 +1205,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Delete the user's content (videos, comments, etc.)
       // This would be more complex in a real system to handle all user data
-      const userVideos = await storage.getUserVideos(req.user.id);
+      const userVideos = await dbStorage.getUserVideos(req.user.id);
       for (const video of userVideos) {
-        await storage.deleteVideo(video.id);
+        await dbStorage.deleteVideo(video.id);
       }
       
       // Delete the user
-      await storage.deleteUser(req.user.id);
+      await dbStorage.deleteUser(req.user.id);
       
       // Log the user out
       req.logout((err) => {

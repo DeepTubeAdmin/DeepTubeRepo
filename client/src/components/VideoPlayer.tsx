@@ -282,9 +282,10 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                   </div>
                   
                   {/* Try different approach for mp4 videos */}
-                  {video.videoUrl.includes('.mp4') || video.videoUrl.includes('video/mp4') ? (
-                    // For MP4 videos, use a source element inside video instead of src attribute
+                  {video.videoUrl.includes('.mp4') || video.videoUrl.includes('video/mp4') || video.videoUrl.startsWith('/uploads/') ? (
+                    // For MP4 videos and server-hosted files, use a source element inside video instead of src attribute
                     <video 
+                      src={video.videoUrl}
                       controls 
                       autoPlay 
                       muted={false}
