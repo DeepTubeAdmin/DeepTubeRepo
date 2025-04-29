@@ -159,8 +159,25 @@ export default function Home() {
       </div>
       
       <main className="container mx-auto px-4 py-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex-grow overflow-x-auto">
+        <div className="flex flex-col mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-semibold">Explore Content</h2>
+            
+            <div className="relative flex-shrink-0">
+              <Button
+                ref={filterButtonRef}
+                variant="secondary"
+                size="sm"
+                className="flex items-center bg-secondary/80 hover:bg-secondary border border-zinc-300 dark:border-zinc-700"
+                onClick={toggleFilterMenu}
+              >
+                <Filter className="h-4 w-4 mr-1" />
+                Sort
+              </Button>
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto">
             {!isCategoriesLoading && (
               <CategoryNavigation 
                 categories={allCategories} 
@@ -170,51 +187,39 @@ export default function Home() {
             )}
           </div>
           
-          <div className="relative ml-2 flex-shrink-0">
-            <Button
-              ref={filterButtonRef}
-              variant="outline"
-              size="sm"
-              className="flex items-center"
-              onClick={toggleFilterMenu}
+          {/* Sort dropdown menu */}
+          {showFilterMenu && (
+            <div 
+              ref={filterMenuRef}
+              className="absolute right-4 top-24 mt-1 bg-zinc-100 dark:bg-zinc-800 rounded-md shadow-lg p-2 z-50 w-48 border dark:border-zinc-700"
             >
-              <Filter className="h-4 w-4 mr-1" />
-              Filter
-            </Button>
-            
-            {showFilterMenu && (
-              <div 
-                ref={filterMenuRef}
-                className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-900 rounded-md shadow-lg p-2 z-50 w-48 border dark:border-gray-800"
+              <div className="text-sm font-medium mb-2 px-2">Sort by</div>
+              <Button
+                variant={sortBy === 'newest' ? "default" : "ghost"}
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => handleSortChange('newest')}
               >
-                <div className="text-sm font-medium mb-2 px-2">Sort by</div>
-                <Button
-                  variant={sortBy === 'newest' ? "default" : "ghost"}
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => handleSortChange('newest')}
-                >
-                  Newest First
-                </Button>
-                <Button
-                  variant={sortBy === 'oldest' ? "default" : "ghost"}
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => handleSortChange('oldest')}
-                >
-                  Oldest First
-                </Button>
-                <Button
-                  variant={sortBy === 'viewed' ? "default" : "ghost"}
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => handleSortChange('viewed')}
-                >
-                  Most Viewed
-                </Button>
-              </div>
-            )}
-          </div>
+                Newest First
+              </Button>
+              <Button
+                variant={sortBy === 'oldest' ? "default" : "ghost"}
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => handleSortChange('oldest')}
+              >
+                Oldest First
+              </Button>
+              <Button
+                variant={sortBy === 'viewed' ? "default" : "ghost"}
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => handleSortChange('viewed')}
+              >
+                Most Viewed
+              </Button>
+            </div>
+          )}
         </div>
         
         {/* Infinite Content Feed with Video-Image alternating pattern */}
