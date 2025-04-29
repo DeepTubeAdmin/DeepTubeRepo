@@ -4,7 +4,12 @@ import VimeoEmbed from './VimeoEmbed';
 import { Video } from '@/types';
 import { apiRequest } from '@/lib/queryClient';
 import { Loader2 } from 'lucide-react';
-import { extractYoutubeVideoId, extractYoutubeIdFromEmbed } from '@/lib/utils';
+import { 
+  extractYoutubeVideoId, 
+  extractYoutubeIdFromEmbed,
+  isRedditEmbed,
+  extractRedditInfo 
+} from '@/lib/utils';
 
 interface VideoPlayerProps {
   videoId?: number;
@@ -54,40 +59,74 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
     fetchVideo();
   }, [videoId, isOpen]);
   
-  // This effect handles creating the YouTube iframe when the video is a YouTube embed
+  // This effect handles creating the embed iframes when the video is an embed
   useEffect(() => {
     if (!isOpen || !video || video.contentType !== 'embed' || !video.embedCode) return;
     
-    // Extract YouTube video ID from embed code directly
-    const srcRegex = /src="https?:\/\/(?:www\.)?youtube\.com\/embed\/([\w-]{11})(?:\?.*)?"/;
-    const match = video.embedCode.match(srcRegex);
-    const youtubeId = match ? match[1] : null;
-    
-    console.log("Extracted YouTube ID from embed code:", youtubeId);
-    if (!youtubeId) return;
-    
-    console.log("VideoPlayer: Creating YouTube iframe for video ID:", youtubeId);
-    
-    // Create a new iframe with autoplay enabled
+    // Clear previous content
     if (youtubeContainerRef.current) {
-      youtubeContainerRef.current.innerHTML = ''; // Clear previous content
+      youtubeContainerRef.current.innerHTML = '';
+    }
+    
+    // Handle YouTube embeds
+    const ytSrcRegex = /src="https?:\/\/(?:www\.)?youtube\.com\/embed\/([\w-]{11})(?:\?.*)?"/;
+    const ytMatch = video.embedCode.match(ytSrcRegex);
+    const youtubeId = ytMatch ? ytMatch[1] : null;
+    
+    if (youtubeId) {
+      console.log("VideoPlayer: Creating YouTube iframe for video ID:", youtubeId);
       
-      const iframe = document.createElement('iframe');
-      iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=0`;
-      iframe.width = '100%';
-      iframe.height = '100%';
-      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-      iframe.allowFullscreen = true;
-      iframe.title = video.title || 'YouTube video';
-      iframe.frameBorder = '0';
-      iframe.style.position = 'absolute';
-      iframe.style.top = '0';
-      iframe.style.left = '0';
-      iframe.style.width = '100%';
-      iframe.style.height = '100%';
-      iframe.style.borderRadius = '4px';
+      if (youtubeContainerRef.current) {      
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=0`;
+        iframe.width = '100%';
+        iframe.height = '100%';
+        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        iframe.allowFullscreen = true;
+        iframe.title = video.title || 'YouTube video';
+        iframe.frameBorder = '0';
+        iframe.style.position = 'absolute';
+        iframe.style.top = '0';
+        iframe.style.left = '0';
+        iframe.style.width = '100%';
+        iframe.style.height = '100%';
+        iframe.style.borderRadius = '4px';
+        
+        youtubeContainerRef.current.appendChild(iframe);
+      }
+    } 
+    // Handle Reddit embeds
+    else if (isRedditEmbed(video.embedCode)) {
+      console.log("VideoPlayer: Creating Reddit embed from code");
       
-      youtubeContainerRef.current.appendChild(iframe);
+      if (youtubeContainerRef.current) {
+        // We need to render the Reddit embed and its script
+        youtubeContainerRef.current.innerHTML = video.embedCode;
+        
+        // Load the Reddit widget script
+        if (!document.querySelector('script[src="https://embed.reddit.com/widgets.js"]')) {
+          const script = document.createElement('script');
+          script.src = 'https://embed.reddit.com/widgets.js';
+          script.async = true;
+          script.charset = 'UTF-8';
+          document.body.appendChild(script);
+        } else {
+          // If the script is already loaded, manually trigger a redditEmbedsInit
+          // to ensure the embed renders properly
+          try {
+            if ((window as any).redditEmbedsInit) {
+              (window as any).redditEmbedsInit();
+            }
+          } catch (e) {
+            console.error('Failed to initialize Reddit embed:', e);
+          }
+        }
+      }
+    }
+    // Generic embed code (for other platforms)
+    else if (youtubeContainerRef.current) {
+      // Just insert the embed code as-is for other platforms
+      youtubeContainerRef.current.innerHTML = video.embedCode;
     }
   }, [isOpen, video]);
 
@@ -172,9 +211,15 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                 )}
                 
                 {video.contentType === 'embed' ? (
-                  <span className="text-sm text-muted-foreground bg-yellow-50 text-yellow-700 px-3 py-1 rounded-full">
-                    YouTube Embed
-                  </span>
+                  isRedditEmbed(video.embedCode) ? (
+                    <span className="text-sm text-muted-foreground bg-orange-50 text-orange-700 px-3 py-1 rounded-full">
+                      Reddit Embed
+                    </span>
+                  ) : (
+                    <span className="text-sm text-muted-foreground bg-yellow-50 text-yellow-700 px-3 py-1 rounded-full">
+                      YouTube Embed
+                    </span>
+                  )
                 ) : (
                   <span className="text-sm text-muted-foreground bg-primary/5 px-3 py-1 rounded-full">
                     AI Generated

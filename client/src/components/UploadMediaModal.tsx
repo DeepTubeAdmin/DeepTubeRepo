@@ -545,20 +545,36 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                   <p className="text-xs text-muted-foreground">
                     Supports YouTube URLs/embeds, Reddit embeds (blockquote format), and other platform embed codes.
                   </p>
-                  {originalYoutubeUrl && (
-                    <Button 
-                      type="button" 
-                      size="sm" 
-                      variant="outline"
-                      className="ml-2 text-xs" 
-                      onClick={() => {
-                        const embedCode = youtubeUrlToEmbedCode(originalYoutubeUrl);
-                        if (embedCode) setEmbedCode(embedCode);
-                      }}
-                    >
-                      Convert to Embed Code
-                    </Button>
-                  )}
+                  <div className="flex space-x-2">
+                    {originalYoutubeUrl && (
+                      <Button 
+                        type="button" 
+                        size="sm" 
+                        variant="outline"
+                        className="text-xs" 
+                        onClick={() => {
+                          const embedCode = youtubeUrlToEmbedCode(originalYoutubeUrl);
+                          if (embedCode) setEmbedCode(embedCode);
+                        }}
+                      >
+                        Convert YouTube URL
+                      </Button>
+                    )}
+                    {originalRedditUrl && (
+                      <Button 
+                        type="button" 
+                        size="sm" 
+                        variant="outline"
+                        className="text-xs" 
+                        onClick={() => {
+                          const embedCode = redditUrlToEmbedCode(originalRedditUrl);
+                          if (embedCode) setEmbedCode(embedCode);
+                        }}
+                      >
+                        Convert Reddit URL
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
               
