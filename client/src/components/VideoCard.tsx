@@ -82,43 +82,79 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
 
   return (
     <div 
-      className="video-card video-item"
+      className="video-card video-item relative"
       data-id={video.id}
       data-type={video.contentType}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={handlePreview}
     >
-      <div className="thumbnail-container">
-        <div className="bg-gray-800 thumbnail flex items-center justify-center">
+      <div className="thumbnail-container relative overflow-hidden aspect-video">
+        <div className="bg-gray-800 thumbnail flex items-center justify-center relative h-full">
           <img 
             src={video.thumbnail || "https://via.placeholder.com/640x360?text=No+Thumbnail"} 
             alt={video.title} 
-            className="thumbnail" 
+            className="thumbnail w-full h-full object-cover" 
           />
         </div>
         
         {/* Video preview on hover */}
-        {video.contentType !== 'image' && (
-          <video muted loop className={`absolute top-0 left-0 w-full h-full object-cover ${isHovering ? 'opacity-100' : 'opacity-0'} transition-opacity`}>
+        {video.contentType !== 'image' && video.contentType !== 'embed' && (
+          <video 
+            muted 
+            loop 
+            className={`absolute top-0 left-0 w-full h-full object-cover ${isHovering ? 'opacity-100' : 'opacity-0'} transition-opacity`}
+            src={video.videoUrl || undefined}
+            poster={video.thumbnail || undefined}
+            autoPlay={isHovering}
+            playsInline
+            ref={(el) => {
+              if (el) {
+                if (isHovering) {
+                  el.play().catch(e => console.error("Error playing preview:", e));
+                } else {
+                  el.pause();
+                }
+              }
+            }}
+          />
+        )}
+        
+        {/* YouTube/Vimeo Preview on hover */}
+        {video.contentType === 'embed' && isHovering && (
+          <div className={`absolute top-0 left-0 w-full h-full ${isHovering ? 'opacity-100' : 'opacity-0'} transition-opacity bg-black z-10`}>
             {video.vimeoId && (
-              <source 
-                src={`https://player.vimeo.com/progressive_redirect/playback/${video.vimeoId}/rendition/720p/file.mp4?loc=external`} 
-                type="video/mp4" 
-              />
+              <div className="relative w-full h-full">
+                <iframe
+                  src={`https://player.vimeo.com/video/${video.vimeoId}?autoplay=1&loop=1&title=0&byline=0&portrait=0&muted=1`}
+                  className="w-full h-full"
+                  frameBorder="0"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                  title={video.title}
+                />
+              </div>
             )}
             {youtubeId && (
-              <source 
-                src={`https://www.youtube.com/embed/${youtubeId}`} 
-                type="video/mp4" 
-              />
+              <div className="relative w-full h-full">
+                <iframe 
+                  src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0`}
+                  className="w-full h-full"
+                  frameBorder="0"
+                  allow="autoplay; picture-in-picture"
+                  allowFullScreen
+                  title={video.title}
+                />
+              </div>
             )}
-          </video>
+          </div>
         )}
         
         {/* Duration badge */}
         {video.duration > 0 && video.contentType !== 'image' && (
-          <div className="duration">{formatDuration(video.duration)}</div>
+          <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1 py-0.5 rounded">
+            {formatDuration(video.duration)}
+          </div>
         )}
       </div>
       
