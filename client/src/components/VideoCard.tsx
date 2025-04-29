@@ -99,14 +99,14 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         </div>
         
         {/* Video preview on hover */}
-        {video.contentType !== 'image' && video.contentType !== 'embed' && (
+        {video.contentType === 'video' && (
           <video 
             muted 
             loop 
-            className={`absolute top-0 left-0 w-full h-full object-cover ${isHovering ? 'opacity-100' : 'opacity-0'} transition-opacity`}
+            className={`absolute top-0 left-0 w-full h-full object-cover ${isHovering ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}
             src={video.videoUrl || undefined}
             poster={video.thumbnail || undefined}
-            autoPlay={isHovering}
+            preload="auto"
             playsInline
             ref={(el) => {
               if (el) {
@@ -114,10 +114,23 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
                   el.play().catch(e => console.error("Error playing preview:", e));
                 } else {
                   el.pause();
+                  // Reset to beginning for next hover
+                  el.currentTime = 0;
                 }
               }
             }}
           />
+        )}
+        
+        {/* Play overlay for videos */}
+        {video.contentType === 'video' && (
+          <div className={`absolute inset-0 flex items-center justify-center ${isHovering ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}>
+            <div className="bg-black bg-opacity-50 rounded-full p-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+            </div>
+          </div>
         )}
         
         {/* YouTube/Vimeo Preview on hover */}

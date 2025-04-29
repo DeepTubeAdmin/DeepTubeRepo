@@ -217,7 +217,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-5xl md:max-w-6xl lg:max-w-7xl max-h-[95vh] overflow-y-auto w-[95vw] bg-[#1a1a1a] border-gray-800 p-0">
+      <DialogContent className="sm:max-w-5xl md:max-w-6xl lg:max-w-7xl max-h-[95vh] overflow-hidden w-[95vw] bg-[#1a1a1a] border-gray-800 p-0">
         <div className="absolute top-4 right-4 z-10">
           <button 
             onClick={onClose}
@@ -275,11 +275,11 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                   </div>
                 </div>
               ) : video.contentType === 'video' && video.videoUrl ? (
-                <div className="aspect-video bg-black flex items-center justify-center h-[70vh]">
-                  {/* Debug information for troubleshooting */}
-                  <div className="absolute top-2 left-2 z-10 bg-black/80 text-xs text-white p-1 rounded opacity-50 hover:opacity-100">
+                <div className="bg-black flex items-center justify-center w-full h-full max-h-[80vh]">
+                  {/* Remove debug info in production */}
+                  {/* <div className="absolute top-2 left-2 z-10 bg-black/80 text-xs text-white p-1 rounded opacity-50 hover:opacity-100">
                     MP4 Debug: {video.videoUrl ? (video.videoUrl.length > 20 ? video.videoUrl.substring(0, 20) + '...' : video.videoUrl) : 'No URL'}
-                  </div>
+                  </div> */}
                   
                   {/* Try different approach for mp4 videos */}
                   {video.videoUrl.includes('.mp4') || video.videoUrl.includes('video/mp4') || video.videoUrl.startsWith('/uploads/') ? (
@@ -291,7 +291,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                       muted={false}
                       playsInline
                       preload="auto"
-                      className="max-h-[70vh] max-w-full" 
+                      className="w-full h-full object-contain" 
                       poster={video.thumbnail || undefined}
                       onError={(e) => {
                         console.error("Error playing MP4 video:", e);
