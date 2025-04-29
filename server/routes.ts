@@ -240,6 +240,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get paginated content with alternating pattern (3 rows videos, 2 rows images)
+  // Track used content IDs for the infinite scroll feature
+  // Use a Map with category+sortBy as keys to store used IDs for different views
+  const infiniteScrollCache = new Map<string, Set<number>>();
+  
+  // Helper to get or create a cache key
+  function getCacheKey(categorySlug: string, sortBy: string): string {
+    return `${categorySlug || 'all'}_${sortBy}`;
+  }
+  
+  // Helper to reset cache when needed
+  function resetContentCache(key?: string) {
+    if (key) {
+      infiniteScrollCache.delete(key);
+    } else {
+      infiniteScrollCache.clear();
+    }
+  }
+  
   app.get("/api/content/infinite", async (req, res) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
@@ -273,8 +291,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const baseIndex = (page - 1) * pageSize;
       
-      // Track IDs of videos/images already added to prevent duplicates
-      const usedContentIds = new Set<number>();
+      // Reset cache if we're starting a new page (page 1) or changing categories/filters
+      const cacheKey = getCacheKey(categorySlug, sortBy);
+      
+      // If page 1, reset the cache for this category/sort combo
+      if (page === 1) {
+        resetContentCache(cacheKey);
+      }
+      
+      // Get or create the set of used content IDs for this view
+      if (!infiniteScrollCache.has(cacheKey)) {
+        infiniteScrollCache.set(cacheKey, new Set<number>());
+      }
+      const usedContentIds = infiniteScrollCache.get(cacheKey)!;
       
       // Create pattern of 3 video blocks followed by 2 image blocks
       for (let i = 0; i < pageSize; i++) {
@@ -284,7 +313,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Define our row size constant for reuse between blocks
         const itemsPerRow = 8; // Increased from 5 to fill rows better
         // Request more items than needed to allow for filtering out duplicates
-        const fetchLimit = itemsPerRow * 2;
+        const fetchLimit = itemsPerRow * 3; // Request even more to account for used IDs across pages
         
         if (blockType === 'videos') {
           // Get video content based on filters
@@ -308,14 +337,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`General videos (video): first few IDs: [ ${videos.slice(0, 3).map(v => v.id).join(', ')} ]`);
           }
           
-          // Filter out videos that have already been used
+          // Filter out videos that have already been used in previous pages
           const uniqueVideos = videos.filter(video => !usedContentIds.has(video.id));
-          
-          // Add these video IDs to the used set
-          uniqueVideos.forEach(video => usedContentIds.add(video.id));
           
           // Only take the number needed for the row
           const selectedVideos = uniqueVideos.slice(0, itemsPerRow);
+          
+          // Log if we're running out of unique content
+          if (selectedVideos.length < itemsPerRow) {
+            console.log(`Warning: Running low on unique video content. Only found ${selectedVideos.length} videos for block ${blockId}`);
+          }
+          
+          // Add these video IDs to the used set for persistent tracking across page loads
+          selectedVideos.forEach(video => usedContentIds.add(video.id));
           
           response.blocks.push({
             type: 'videos',
@@ -348,14 +382,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`General videos (image): first few IDs: [ ${images.slice(0, 3).map(v => v.id).join(', ')} ]`);
           }
           
-          // Filter out images that have already been used
+          // Filter out images that have already been used in previous pages
           const uniqueImages = images.filter(image => !usedContentIds.has(image.id));
-          
-          // Add these image IDs to the used set
-          uniqueImages.forEach(image => usedContentIds.add(image.id));
           
           // Only take the number needed for the row
           const selectedImages = uniqueImages.slice(0, imagesPerRow);
+          
+          // Log if we're running out of unique content
+          if (selectedImages.length < imagesPerRow) {
+            console.log(`Warning: Running low on unique image content. Only found ${selectedImages.length} images for block ${blockId}`);
+          }
+          
+          // Add these image IDs to the used set for persistent tracking across page loads
+          selectedImages.forEach(image => usedContentIds.add(image.id));
           
           response.blocks.push({
             type: 'images',
@@ -365,6 +404,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       }
+      
+      // If we have a 'reset=true' query param, clear the cache
+      if (req.query.reset === 'true') {
+        resetContentCache(cacheKey);
+      }
+      
+      // Also reset cache if we have no more content to show
+      const hasEmptyBlock = response.blocks.some(block => block.items.length === 0);
+      if (hasEmptyBlock) {
+        console.log(`Some blocks are empty, resetting cache for ${cacheKey}`);
+        resetContentCache(cacheKey);
+        response.hasMore = false;
+      }
+      
+      // Log the current state of the cache
+      console.log(`Used content IDs for ${cacheKey}: ${infiniteScrollCache.get(cacheKey)?.size} items`);
       
       res.json(response);
     } catch (error) {
