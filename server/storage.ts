@@ -130,9 +130,10 @@ export class DatabaseStorage implements IStorage {
       queryBuilder = queryBuilder.where(eq(videos.categoryId, categoryId));
     }
     
-    // Add ordering
+    // Add ordering - always prioritize newest videos by ID first
     if (sortBy === 'newest') {
-      queryBuilder = queryBuilder.orderBy(desc(videos.createdAt));
+      // Order by ID desc ensures newest uploads appear first
+      queryBuilder = queryBuilder.orderBy(desc(videos.id));
     } else if (sortBy === 'oldest') {
       queryBuilder = queryBuilder.orderBy(asc(videos.createdAt));
     } else if (sortBy === 'viewed') {
@@ -141,8 +142,19 @@ export class DatabaseStorage implements IStorage {
       queryBuilder = queryBuilder.orderBy(sql`RANDOM()`);
     }
     
+    // Log query info for debugging
+    console.log(`Getting videos with sortBy: ${sortBy}, contentType: ${contentType || 'all'}`);
+    
     // Add limit and execute
-    return queryBuilder.limit(limit);
+    const results = await queryBuilder.limit(limit);
+    
+    // Log result IDs for debugging
+    if (results.length > 0) {
+      console.log(`Retrieved ${results.length} videos. First few IDs:`, 
+        results.slice(0, 3).map(v => v.id));
+    }
+    
+    return results;
   }
   
   async getVideoById(id: number): Promise<Video | undefined> {
@@ -163,23 +175,46 @@ export class DatabaseStorage implements IStorage {
         ));
     }
     
-    return builder.orderBy(desc(videos.createdAt)).limit(limit);
+    // Order by ID to get newest videos first
+    const results = await builder.orderBy(desc(videos.id)).limit(limit);
+    
+    // Log for debugging
+    if (results.length > 0) {
+      console.log(`Category ${categoryId} videos (${contentType || 'all types'}): first few IDs:`, 
+        results.slice(0, 3).map(v => v.id));
+    }
+    
+    return results;
   }
   
   async getFeaturedVideos(limit: number = 10): Promise<Video[]> {
     // Featured videos could be based on criteria like number of purchases
-    return db.select().from(videos).limit(limit);
+    // For now, return newest videos
+    const results = await db.select().from(videos).orderBy(desc(videos.id)).limit(limit);
+    
+    if (results.length > 0) {
+      console.log(`Featured videos: first few IDs:`, results.slice(0, 3).map(v => v.id));
+    }
+    
+    return results;
   }
   
   async getNewVideos(limit: number = 10): Promise<Video[]> {
-    return db.select()
+    const results = await db.select()
       .from(videos)
-      .orderBy(desc(videos.createdAt))
+      .orderBy(desc(videos.id))
       .limit(limit);
+      
+    if (results.length > 0) {
+      console.log(`New videos: first few IDs:`, results.slice(0, 3).map(v => v.id));
+    }
+    
+    return results;
   }
   
   async createVideo(video: InsertVideo): Promise<Video> {
     const [result] = await db.insert(videos).values(video).returning();
+    console.log(`Created new video with ID: ${result.id}`, result.title);
     return result;
   }
   
@@ -187,9 +222,15 @@ export class DatabaseStorage implements IStorage {
     // For now, we don't have a userId field in videos table
     // We'll get all videos for demo purposes
     // In a real implementation, this would filter by userId
-    return db.select()
+    const results = await db.select()
       .from(videos)
-      .orderBy(desc(videos.createdAt));
+      .orderBy(desc(videos.id));
+      
+    if (results.length > 0) {
+      console.log(`User videos: first few IDs:`, results.slice(0, 3).map(v => v.id));
+    }
+    
+    return results;
   }
   
   async deleteVideo(id: number): Promise<void> {
