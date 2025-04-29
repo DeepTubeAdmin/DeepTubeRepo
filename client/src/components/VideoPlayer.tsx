@@ -297,29 +297,32 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                     />
                   ) : (video.imageUrl?.includes('<!DOCTYPE html>') || 
                      video.imageUrl?.includes('<html') || 
-                     video.imageUrl?.startsWith('data:text/html;')) ? (
+                     video.imageUrl?.startsWith('data:text/html;') ||
+                     video.imageUrl?.startsWith('data:text/plain;') ||
+                     video.imageUrl?.startsWith('data:application/') ||
+                     /^data:text\/(?!image)/.test(video.imageUrl || '')) ? (
                     <div className="text-center p-4">
                       <div className="bg-yellow-600/20 border border-yellow-600 rounded-md p-4 mb-4">
                         <h3 className="text-yellow-400 text-lg font-semibold mb-2">
                           <i className="fas fa-exclamation-triangle mr-2"></i>
-                          HTML Content Detected
+                          Document or Text File Detected
                         </h3>
                         <p className="text-gray-300 mb-4">
-                          This content appears to be HTML rather than an image file. It cannot be displayed directly in the viewer.
+                          This content appears to be a document, HTML file, or text-based format rather than an image. It cannot be displayed directly in the image viewer.
                         </p>
                         <a 
-                          href={video.imageUrl} 
+                          href={video.imageUrl || '#'} 
                           target="_blank" 
                           rel="noopener noreferrer" 
                           className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded inline-flex items-center"
                         >
                           <i className="fas fa-external-link-alt mr-2"></i>
-                          Open HTML Content
+                          Open Document
                         </a>
                       </div>
                       
                       <div className="mt-4 text-gray-400 text-sm">
-                        <p>For best results, please upload image files (JPEG, PNG, GIF, etc.) rather than HTML content.</p>
+                        <p>For best results, please upload image files (JPEG, PNG, GIF, WebP, etc.) rather than text or document files.</p>
                       </div>
                     </div>
                   ) : (

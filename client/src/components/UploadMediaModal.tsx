@@ -130,20 +130,37 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Check file type
       const isValidType = contentType === "video" 
         ? file.type.startsWith("video/")
         : file.type.startsWith("image/");
       
-      if (isValidType) {
-        setSelectedFile(file);
-      } else {
+      // Check file size (10MB limit for images, 50MB for videos)
+      const maxSize = contentType === "video" ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+      const isValidSize = file.size <= maxSize;
+      
+      if (!isValidType) {
         toast({
           title: "Invalid file type",
           description: `Please select a ${contentType} file`,
           variant: "destructive",
         });
         e.target.value = ""; // Reset input
+        return;
       }
+      
+      if (!isValidSize) {
+        toast({
+          title: "File too large",
+          description: `${contentType === "video" ? "Video" : "Image"} must be less than ${contentType === "video" ? "50MB" : "10MB"}`,
+          variant: "destructive",
+        });
+        e.target.value = ""; // Reset input
+        return;
+      }
+      
+      // All checks passed, set the file
+      setSelectedFile(file);
     }
   }, [toast, contentType]);
 
