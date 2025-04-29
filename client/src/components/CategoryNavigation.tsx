@@ -1,6 +1,7 @@
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Category } from "@/types";
+import * as Icons from "lucide-react";
 
 interface CategoryNavigationProps {
   categories: Category[];

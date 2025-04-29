@@ -8,9 +8,16 @@ import { useIsMobile } from '@/hooks/use-mobile';
 interface InfiniteContentFeedProps {
   onPreview?: (videoId: number) => void;
   onWishlist?: (videoId: number) => void;
+  category?: string;
+  sortBy?: 'newest' | 'oldest';
 }
 
-export default function InfiniteContentFeed({ onPreview, onWishlist }: InfiniteContentFeedProps) {
+export default function InfiniteContentFeed({ 
+  onPreview, 
+  onWishlist,
+  category = '',
+  sortBy = 'newest'
+}: InfiniteContentFeedProps) {
   const [contentBlocks, setContentBlocks] = useState<Array<{
     type: 'videos' | 'images';
     items: Video[];
@@ -54,7 +61,19 @@ export default function InfiniteContentFeed({ onPreview, onWishlist }: InfiniteC
     setIsLoading(true);
     
     try {
-      const response = await fetch(`/api/content/infinite?page=${currentPage}&pageSize=5`);
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        pageSize: '5',
+        sortBy: sortBy
+      });
+      
+      // Add category parameter if it exists and is not empty
+      if (category) {
+        params.append('category', category);
+      }
+      
+      const response = await fetch(`/api/content/infinite?${params.toString()}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch content');
@@ -77,11 +96,21 @@ export default function InfiniteContentFeed({ onPreview, onWishlist }: InfiniteC
       setIsLoading(false);
       setIsInitialLoad(false);
     }
-  }, []);
+  }, [category, sortBy]);
 
-  // Initial load and pagination
+  // Reset page and reload content when category or sortBy changes
   useEffect(() => {
-    fetchContentBlocks(page);
+    setPage(1);
+    setContentBlocks([]);
+    setIsInitialLoad(true);
+    fetchContentBlocks(1);
+  }, [category, sortBy, fetchContentBlocks]);
+  
+  // Load more content when scrolling
+  useEffect(() => {
+    if (page > 1) {
+      fetchContentBlocks(page);
+    }
   }, [page, fetchContentBlocks]);
 
   // Use effect to handle window resize and update items per row
