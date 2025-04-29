@@ -150,7 +150,13 @@ export default function Header() {
                     </>
                   ) : (
                     <>
-                      <a className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer">
+                      <a 
+                        onClick={() => {
+                          setLocation("/profile");
+                          setShowUserDropdown(false);
+                        }}
+                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"
+                      >
                         Profile
                       </a>
                       <a 

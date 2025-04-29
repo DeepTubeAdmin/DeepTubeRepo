@@ -87,7 +87,17 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
   
-  // User methods implementations
+  async deleteUser(id: number): Promise<void> {
+    // First delete related data
+    // Delete wishlist items
+    await db.delete(wishlistItems).where(eq(wishlistItems.userId, id));
+    
+    // Delete comments by this user (if they have a userId field)
+    await db.delete(comments).where(eq(comments.userId, id));
+    
+    // Finally delete the user
+    await db.delete(users).where(eq(users.id, id));
+  }
 
   // Category operations
   async getCategories(): Promise<Category[]> {

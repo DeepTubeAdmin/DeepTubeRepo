@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth } from "./auth";
+import { setupAuth, comparePasswords, hashPassword } from "./auth";
 import { z } from "zod";
 import { insertCategorySchema, insertVideoSchema, type Video } from "@shared/schema";
 import * as vimeoService from "./vimeo";
@@ -840,8 +840,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
       
-      // Import password utilities from auth.ts
-      const { comparePasswords, hashPassword } = await import('./auth');
+      // Password utilities imported at the top of the file
       
       // Check if the current password is correct
       const isPasswordValid = await comparePasswords(currentPassword, user.password);
