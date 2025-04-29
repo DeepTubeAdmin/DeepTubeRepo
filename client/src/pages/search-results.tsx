@@ -1,189 +1,232 @@
-import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { Video } from "@shared/schema";
-import Layout from "@/components/Layout";
-import VideoGrid from "@/components/VideoGrid";
-import ImageGallery from "@/components/ImageGallery";
-import CategoryNavigation from "@/components/CategoryNavigation";
-import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useLocation, useSearch } from 'wouter';
+import Layout from '@/components/Layout';
+import VideoCard from '@/components/VideoCard';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import CategoryNavigation from '@/components/CategoryNavigation';
+import { Video, Category } from '@shared/schema';
+import { Loader2 } from 'lucide-react';
+import { getQueryFn } from '@/lib/queryClient';
 
 export default function SearchResults() {
-  const [location] = useLocation();
-  const query = new URLSearchParams(location.split("?")[1]).get("q") || "";
-  const [activeTab, setActiveTab] = useState<"all" | "videos" | "images" | "forum">("all");
-  const [activeCategory, setActiveCategory] = useState<string>("");
-
-  const { data: categories = [] } = useQuery({
+  const [location, setLocation] = useLocation();
+  const search = useSearch();
+  const searchParams = new URLSearchParams(search);
+  
+  // Get query parameters
+  const initialQuery = searchParams.get('q') || '';
+  const initialContentType = (searchParams.get('type') || 'all') as 'all' | 'video' | 'image' | 'embed';
+  const initialCategorySlug = searchParams.get('category') || '';
+  
+  // State for search filters
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
+  const [contentType, setContentType] = useState<'all' | 'video' | 'image' | 'embed'>(initialContentType);
+  const [categorySlug, setCategorySlug] = useState(initialCategorySlug);
+  const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
+  const [previewVideoId, setPreviewVideoId] = useState<number | null>(null);
+  
+  // Fetch categories
+  const { data: categories, isLoading: categoriesLoading } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
   });
-
-  const { data: searchResults, isLoading: resultsLoading } = useQuery<{
-    videos: Video[],
-    images: Video[],
-    forum: any[] // We'll type this better when we have forum post types
-  }>({
-    queryKey: ['/api/search', query, activeCategory],
-    enabled: !!query,
-  });
-
+  
+  // Update categoryId when slug or categories change
+  useEffect(() => {
+    if (categories && categorySlug) {
+      const category = categories.find(c => c.slug === categorySlug);
+      setCategoryId(category?.id);
+    } else {
+      setCategoryId(undefined);
+    }
+  }, [categorySlug, categories]);
+  
   // Handle category change
   const handleCategoryChange = (slug: string) => {
-    setActiveCategory(slug === activeCategory ? "" : slug);
+    setCategorySlug(slug);
+    
+    // Update URL query parameters
+    const params = new URLSearchParams(search);
+    if (slug) {
+      params.set('category', slug);
+    } else {
+      params.delete('category');
+    }
+    
+    // Update the URL without reloading the page
+    setLocation(`/search?${params.toString()}`, { replace: true });
   };
-
-  // Handle preview redirects to detail pages
-  const handleVideoPreview = (videoId: number) => {
-    window.location.href = `/media/${videoId}`;
+  
+  // Handle search form submission
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Update URL query parameters
+    const params = new URLSearchParams(search);
+    if (searchQuery) {
+      params.set('q', searchQuery);
+    } else {
+      params.delete('q');
+    }
+    
+    // Update the URL without reloading the page
+    setLocation(`/search?${params.toString()}`, { replace: true });
   };
-
+  
+  // Handle content type change
+  const handleContentTypeChange = (value: string) => {
+    const type = value as 'all' | 'video' | 'image' | 'embed';
+    setContentType(type);
+    
+    // Update URL query parameters
+    const params = new URLSearchParams(search);
+    if (type !== 'all') {
+      params.set('type', type);
+    } else {
+      params.delete('type');
+    }
+    
+    // Update the URL without reloading the page
+    setLocation(`/search?${params.toString()}`, { replace: true });
+  };
+  
+  // Fetch search results - only run when params in URL change
+  const { data: searchResults, isLoading: searchLoading } = useQuery<Video[]>({
+    queryKey: ['/api/search', initialQuery, initialContentType, categoryId],
+    queryFn: getQueryFn(),
+    enabled: !!initialQuery,
+  });
+  
+  // Handle preview click
+  const handlePreview = (videoId: number) => {
+    setPreviewVideoId(videoId);
+  };
+  
+  // Handle wishlist click
+  const handleWishlist = (videoId: number) => {
+    // Implementation to add/remove from wishlist
+    console.log('Add to wishlist:', videoId);
+  };
+  
+  // Determine if we have any results to show
+  const hasResults = !searchLoading && searchResults && searchResults.length > 0;
+  const noResults = !searchLoading && initialQuery && (!searchResults || searchResults.length === 0);
+  
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center mb-6">
-          <h1 className="text-2xl font-bold mr-4">
-            Search Results for: <span className="text-primary">{query}</span>
-          </h1>
-          <div className="relative flex-1 max-w-md ml-auto">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
+      <div className="container mx-auto py-6 px-4">
+        {/* Search form */}
+        <form onSubmit={handleSearch} className="mb-6">
+          <div className="flex flex-col md:flex-row gap-3">
+            <Input
+              type="text"
+              placeholder="Search videos, images, and embedded content..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 bg-[#1a1a1a] border-[#333]"
+            />
+            <Button 
+              type="submit" 
+              className="bg-primary hover:bg-primary/90 text-black font-bold"
+            >
+              Search
+            </Button>
+          </div>
+        </form>
+        
+        {/* Filters */}
+        <div className="mb-6">
+          {/* Content type tabs */}
+          <Tabs
+            value={contentType}
+            onValueChange={handleContentTypeChange}
+            className="mb-4"
+          >
+            <TabsList className="bg-[#1a1a1a] border border-[#333]">
+              <TabsTrigger 
+                value="all"
+                className="data-[state=active]:bg-primary data-[state=active]:text-black"
+              >
+                All Content
+              </TabsTrigger>
+              <TabsTrigger 
+                value="video"
+                className="data-[state=active]:bg-primary data-[state=active]:text-black"
+              >
+                Videos
+              </TabsTrigger>
+              <TabsTrigger 
+                value="image"
+                className="data-[state=active]:bg-primary data-[state=active]:text-black"
+              >
+                Images
+              </TabsTrigger>
+              <TabsTrigger 
+                value="embed"
+                className="data-[state=active]:bg-primary data-[state=active]:text-black"
+              >
+                Embeds
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          
+          {/* Category navigation */}
+          {categoriesLoading ? (
+            <div className="flex justify-center p-4">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
-            <form action="/search" method="get">
-              <input
-                type="text"
-                name="q"
-                defaultValue={query}
-                placeholder="Search videos, images, or forum posts..."
-                className="pl-10 pr-4 py-2 w-full bg-[#121212] border border-[#303030] rounded-full focus:outline-none focus:border-primary"
-              />
-            </form>
-          </div>
+          ) : (
+            <CategoryNavigation
+              categories={categories || []}
+              activeCategory={categorySlug}
+              onCategoryChange={handleCategoryChange}
+            />
+          )}
         </div>
-
-        <CategoryNavigation 
-          categories={categories} 
-          activeCategory={activeCategory} 
-          onCategoryChange={handleCategoryChange} 
-        />
-
-        <div className="mb-6 mt-4 flex space-x-2 overflow-x-auto scrollbar-none">
-          <Button 
-            variant={activeTab === "all" ? "default" : "outline"} 
-            onClick={() => setActiveTab("all")}
-            className={activeTab === "all" ? "bg-primary text-black font-bold" : "bg-[#272727] border-none text-white"}
-          >
-            All Results
-          </Button>
-          <Button 
-            variant={activeTab === "videos" ? "default" : "outline"} 
-            onClick={() => setActiveTab("videos")}
-            className={activeTab === "videos" ? "bg-primary text-black font-bold" : "bg-[#272727] border-none text-white"}
-          >
-            Videos
-          </Button>
-          <Button 
-            variant={activeTab === "images" ? "default" : "outline"} 
-            onClick={() => setActiveTab("images")}
-            className={activeTab === "images" ? "bg-primary text-black font-bold" : "bg-[#272727] border-none text-white"}
-          >
-            Images
-          </Button>
-          <Button 
-            variant={activeTab === "forum" ? "default" : "outline"} 
-            onClick={() => setActiveTab("forum")}
-            className={activeTab === "forum" ? "bg-primary text-black font-bold" : "bg-[#272727] border-none text-white"}
-          >
-            Forum Posts
-          </Button>
+        
+        {/* Search results */}
+        <div>
+          {searchLoading ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+              <p className="text-gray-400">Searching...</p>
+            </div>
+          ) : noResults ? (
+            <div className="text-center py-12 bg-[#1a1a1a] rounded-md">
+              <h2 className="text-2xl font-bold mb-2">No results found</h2>
+              <p className="text-gray-400 mb-4">
+                We couldn't find any matches for "{initialQuery}"
+              </p>
+              <div className="mb-6">
+                <h3 className="font-semibold mb-2">Suggestions:</h3>
+                <ul className="text-gray-400 list-disc list-inside">
+                  <li>Check your spelling</li>
+                  <li>Try more general keywords</li>
+                  <li>Try different keywords</li>
+                  <li>Try fewer filters</li>
+                </ul>
+              </div>
+            </div>
+          ) : hasResults ? (
+            <div>
+              <h2 className="text-2xl font-bold mb-4">
+                Search results for "{initialQuery}"
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {searchResults.map(video => (
+                  <VideoCard
+                    key={video.id}
+                    video={video}
+                    onPreview={() => handlePreview(video.id)}
+                    onWishlist={() => handleWishlist(video.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
-
-        {resultsLoading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="loading-spinner"></div>
-          </div>
-        ) : !searchResults ? (
-          <div className="text-center py-12 bg-[#1a1a1a] rounded-lg">
-            <h3 className="text-xl font-semibold mb-2">No results found</h3>
-            <p className="text-gray-400">Try a different search term or browse content by category</p>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {/* All results or Videos tab */}
-            {(activeTab === "all" || activeTab === "videos") && searchResults.videos.length > 0 && (
-              <VideoGrid 
-                title="Videos" 
-                videos={searchResults.videos}
-                onPreview={handleVideoPreview}
-                showViewAll={false}
-              />
-            )}
-
-            {/* All results or Images tab */}
-            {(activeTab === "all" || activeTab === "images") && searchResults.images.length > 0 && (
-              <ImageGallery 
-                title="Images" 
-                images={searchResults.images}
-                onPreview={handleVideoPreview}
-                showViewAll={false}
-              />
-            )}
-
-            {/* All results or Forum tab */}
-            {(activeTab === "all" || activeTab === "forum") && searchResults.forum && searchResults.forum.length > 0 && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Forum Posts</h2>
-                <div className="forum-category">
-                  <div className="forum-category-header flex justify-between items-center">
-                    <h3 className="text-lg font-semibold">Discussions</h3>
-                    <span className="text-sm text-gray-400">{searchResults.forum.length} results</span>
-                  </div>
-                  
-                  {searchResults.forum.map((post: any) => (
-                    <div key={post.id} className="forum-topic">
-                      <div className="flex justify-between">
-                        <div>
-                          <h4 className="font-semibold hover:text-primary">
-                            <a href={`/forum/post/${post.id}`}>{post.title}</a>
-                          </h4>
-                          <div className="text-sm text-gray-400 mt-1">
-                            Posted by {post.author.username || 'Anonymous'} • {new Date(post.createdAt).toLocaleDateString()}
-                          </div>
-                        </div>
-                        <div className="text-sm text-gray-400">
-                          <span className="mr-3">{post.replies || 0} replies</span>
-                          <span>{post.views || 0} views</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* No results for specific sections */}
-            {activeTab === "videos" && (!searchResults.videos || searchResults.videos.length === 0) && (
-              <div className="text-center py-8 bg-[#1a1a1a] rounded-lg">
-                <h3 className="text-lg font-semibold mb-2">No videos found</h3>
-                <p className="text-gray-400">Try a different search term or browse videos by category</p>
-              </div>
-            )}
-
-            {activeTab === "images" && (!searchResults.images || searchResults.images.length === 0) && (
-              <div className="text-center py-8 bg-[#1a1a1a] rounded-lg">
-                <h3 className="text-lg font-semibold mb-2">No images found</h3>
-                <p className="text-gray-400">Try a different search term or browse images by category</p>
-              </div>
-            )}
-
-            {activeTab === "forum" && (!searchResults.forum || searchResults.forum.length === 0) && (
-              <div className="text-center py-8 bg-[#1a1a1a] rounded-lg">
-                <h3 className="text-lg font-semibold mb-2">No forum posts found</h3>
-                <p className="text-gray-400">Try a different search term or browse discussions in the forum</p>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </Layout>
   );

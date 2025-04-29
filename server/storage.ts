@@ -7,7 +7,7 @@ import {
   type Comment, type InsertComment
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, asc, sql } from "drizzle-orm";
+import { eq, and, desc, asc, sql, or, ilike } from "drizzle-orm";
 import session from "express-session";
 import type { Store as SessionStore } from "express-session";
 import connectPg from "connect-pg-simple";
@@ -352,7 +352,12 @@ export class DatabaseStorage implements IStorage {
     queryBuilder = queryBuilder.limit(limit).offset(offset);
     
     // Execute the query
-    return queryBuilder;
+    const results = await queryBuilder;
+    
+    // Log search results
+    console.log(`Search for "${query}" found ${results.length} results`);
+    
+    return results;
   }
 
   // End of implementation

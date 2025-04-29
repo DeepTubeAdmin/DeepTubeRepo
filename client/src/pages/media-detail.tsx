@@ -1,477 +1,374 @@
-import { useState } from 'react';
-import { useRoute } from 'wouter';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
-import { formatDistance } from 'date-fns';
-import VimeoEmbed from '@/components/VimeoEmbed';
-import { apiRequest, queryClient } from '@/lib/queryClient';
-import { extractVideoId } from '@/lib/utils';
-import Layout from '@/components/Layout';
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Heart, Clock, Info, MessageSquare, Image as ImageIcon, Link as LinkIcon, Video as VideoIcon } from 'lucide-react';
-
-// Define the structure of media item and comment
-type DetailedMedia = {
-  id: number;
-  title: string;
-  description?: string;
-  thumbnail: string;
-  credits: number;
-  resolution: "HD" | "4K";
-  duration: number;
-  contentType?: "video" | "image" | "embed";
-  categoryId?: number;
-  category?: { id: number; name: string; slug: string };
-  vimeoId?: string;
-  videoUrl?: string;
-  imageUrl?: string;
-  embedCode?: string;
-  aiGenerator?: string;
-  prompt?: string;
-  createdAt: string;
-  comments: Comment[];
-  isWishlisted?: boolean;
-};
-
-type Comment = {
-  id: number;
-  videoId: number;
-  username: string;
-  userId?: number;
-  content: string;
-  createdAt: string;
-};
+import { useState } from "react";
+import { useParams, useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Video, Comment } from "@shared/schema";
+import Layout from "@/components/Layout";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { Heart, Flag, Share, MessageSquare, ThumbsUp, Flag as FlagIcon } from "lucide-react";
+import VimeoEmbed from "@/components/VimeoEmbed";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export default function MediaDetail() {
-  const [, params] = useRoute<{ id: string }>('/media/:id');
-  const id = params?.id ? parseInt(params.id) : null;
-  
-  const [commentText, setCommentText] = useState('');
-  const [username, setUsername] = useState('');
-  const { user } = useAuth();
+  const { id } = useParams<{ id: string }>();
+  const [location, setLocation] = useLocation();
+  const [commentText, setCommentText] = useState("");
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportReason, setReportReason] = useState<string>("");
   const { toast } = useToast();
+  const { user } = useAuth();
   
-  // Query for media details
-  const { data: media, isLoading, error } = useQuery<DetailedMedia>({
+  // Fetch media details
+  const { data: media, isLoading: mediaLoading } = useQuery<Video>({
     queryKey: [`/api/videos/${id}`],
     enabled: !!id,
   });
   
-  // Mutation for posting comments
-  const commentMutation = useMutation({
-    mutationFn: async ({ videoId, username, content }: { videoId: number; username: string; content: string }) => {
-      const response = await apiRequest('POST', `/api/videos/${videoId}/comments`, { username, content });
-      return response.json();
-    },
-    onSuccess: () => {
-      // Reset form
-      setCommentText('');
-      if (!user) setUsername('');
-      
-      // Show success toast
-      toast({
-        title: 'Comment posted',
-        description: 'Your comment has been posted successfully.',
-      });
-      
-      // Invalidate queries to reload comments
-      queryClient.invalidateQueries({ queryKey: [`/api/videos/${id}`] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to post comment.',
-        variant: 'destructive',
-      });
-    },
+  // Fetch comments for this media
+  const { data: comments = [], isLoading: commentsLoading } = useQuery<Comment[]>({
+    queryKey: [`/api/videos/${id}/comments`],
+    enabled: !!id,
   });
   
-  // Wishlist mutation
-  const wishlistMutation = useMutation({
-    mutationFn: async (videoId: number) => {
-      const method = media?.isWishlisted ? 'DELETE' : 'POST';
-      await apiRequest(method, `/api/videos/${videoId}/wishlist`);
+  // Add comment mutation
+  const addCommentMutation = useMutation({
+    mutationFn: async (comment: { videoId: number; text: string; userId?: number; username?: string }) => {
+      const res = await apiRequest("POST", "/api/comments", comment);
+      return res.json();
     },
     onSuccess: () => {
-      // Invalidate media data to refetch
-      queryClient.invalidateQueries({ queryKey: [`/api/videos/${id}`] });
-      
+      setCommentText("");
+      queryClient.invalidateQueries({ queryKey: [`/api/videos/${id}/comments`] });
       toast({
-        title: media?.isWishlisted ? 'Removed from wishlist' : 'Added to wishlist',
-        description: media?.isWishlisted 
-          ? 'The item has been removed from your wishlist.' 
-          : 'The item has been added to your wishlist.',
+        title: "Comment added",
+        description: "Your comment has been added successfully",
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to update wishlist.',
-        variant: 'destructive',
+        title: "Error adding comment",
+        description: error.message || "Could not add your comment. Please try again.",
+        variant: "destructive",
       });
     },
   });
   
-  const handleCommentSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    
-    if (!id) return;
-    
-    // Make sure we have comment text
-    if (!commentText.trim()) {
+  // Report content mutation
+  const reportMutation = useMutation({
+    mutationFn: async (report: { videoId: number; reason: string; userId?: number }) => {
+      const res = await apiRequest("POST", "/api/reports", report);
+      return res.json();
+    },
+    onSuccess: () => {
+      setReportDialogOpen(false);
+      setReportReason("");
       toast({
-        title: 'Error',
-        description: 'Please enter a comment.',
-        variant: 'destructive',
+        title: "Content reported",
+        description: "Thank you for your report. Our team will review it.",
       });
-      return;
-    }
-    
-    // For anonymous users, make sure they entered a username
-    if (!user && !username.trim()) {
+    },
+    onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: 'Please enter a username.',
-        variant: 'destructive',
+        title: "Error reporting content",
+        description: error.message || "Could not submit your report. Please try again.",
+        variant: "destructive",
       });
-      return;
-    }
+    },
+  });
+  
+  // Handle comment submission
+  const handleCommentSubmit = () => {
+    if (!commentText.trim()) return;
     
-    // Submit comment
-    commentMutation.mutate({
-      videoId: id,
-      username: user ? user.username : username,
-      content: commentText
+    addCommentMutation.mutate({
+      videoId: parseInt(id),
+      text: commentText,
+      // If user is authenticated, include user ID
+      ...(user ? { userId: user.id } : { username: "Anonymous" }),
     });
   };
   
-  const handleWishlistToggle = () => {
-    if (!id || !user) {
-      toast({
-        title: 'Login required',
-        description: 'Please log in to add items to your wishlist.',
-        variant: 'destructive',
-      });
-      return;
-    }
+  // Handle report submission
+  const handleReportSubmit = () => {
+    if (!reportReason.trim()) return;
     
-    wishlistMutation.mutate(id);
+    reportMutation.mutate({
+      videoId: parseInt(id),
+      reason: reportReason,
+      // Include user ID if authenticated
+      ...(user ? { userId: user.id } : {}),
+    });
   };
   
-  if (isLoading) {
+  if (mediaLoading) {
     return (
       <Layout>
-        <div className="flex justify-center items-center min-h-[60vh]">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
+        <div className="container mx-auto py-8 flex justify-center">
+          <div className="loading-spinner w-12 h-12"></div>
         </div>
       </Layout>
     );
   }
   
-  if (error || !media) {
+  if (!media) {
     return (
       <Layout>
-        <div className="container mx-auto py-12 px-4 text-center">
-          <h1 className="text-2xl font-bold mb-4">Error</h1>
-          <p>Sorry, we couldn't load this content. It may not exist or has been removed.</p>
-          <Button className="mt-4" onClick={() => window.history.back()}>Go Back</Button>
+        <div className="container mx-auto py-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold mb-4">Content Not Found</h1>
+            <p className="text-gray-400 mb-6">The content you're looking for doesn't exist or has been removed.</p>
+            <Button onClick={() => setLocation('/')}>
+              Return to Homepage
+            </Button>
+          </div>
         </div>
       </Layout>
     );
   }
-  
-  // Extract Vimeo ID if available
-  const vimeoId = media.vimeoId || 
-    (media.videoUrl ? extractVideoId(media.videoUrl) : null);
   
   return (
     <Layout>
-      <div className="container mx-auto py-6 px-4">
+      <div className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main content */}
+          {/* Main content column */}
           <div className="lg:col-span-2">
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">{media.title}</h1>
-            
-            {/* Media display */}
-            <div className="mb-6 bg-black rounded-lg overflow-hidden">
-              {media.contentType === 'image' ? (
-                <AspectRatio ratio={16/9}>
-                  <img 
-                    src={media.thumbnail} 
-                    alt={media.title} 
-                    className="w-full h-full object-contain" 
-                  />
-                </AspectRatio>
-              ) : media.contentType === 'embed' && media.embedCode ? (
-                <div className="relative w-full aspect-video">
-                  <div 
-                    className="absolute inset-0 w-full h-full"
-                    dangerouslySetInnerHTML={{ __html: media.embedCode }} 
+            {/* Media display section */}
+            <div className="bg-[#121212] rounded-md overflow-hidden mb-4">
+              {media.contentType === 'video' && media.vimeoId && (
+                <div className="aspect-video">
+                  <VimeoEmbed 
+                    videoId={media.vimeoId}
+                    responsive={true}
+                    autoplay={true}
                   />
                 </div>
-              ) : (
-                vimeoId ? (
-                  <VimeoEmbed 
-                    videoId={vimeoId} 
-                    title={media.title} 
-                    responsive 
-                    autoplay
+              )}
+              
+              {media.contentType === 'video' && media.videoUrl && !media.vimeoId && (
+                <div className="aspect-video flex items-center justify-center">
+                  <video 
+                    src={media.videoUrl} 
+                    controls 
+                    className="w-full h-full" 
+                    autoPlay
                   />
-                ) : (
-                  <AspectRatio ratio={16/9}>
-                    <img 
-                      src={media.thumbnail} 
-                      alt={media.title} 
-                      className="w-full h-full object-cover" 
-                    />
-                  </AspectRatio>
-                )
+                </div>
+              )}
+              
+              {media.contentType === 'image' && media.imageUrl && (
+                <div className="flex items-center justify-center bg-black">
+                  <img 
+                    src={media.imageUrl} 
+                    alt={media.title} 
+                    className="max-w-full max-h-[70vh]" 
+                  />
+                </div>
+              )}
+              
+              {media.contentType === 'embed' && media.embedCode && (
+                <div 
+                  className="aspect-video" 
+                  dangerouslySetInnerHTML={{ __html: media.embedCode }} 
+                />
+              )}
+              
+              {!media.vimeoId && !media.videoUrl && !media.imageUrl && !media.embedCode && (
+                <div className="aspect-video flex items-center justify-center bg-[#0a0a0a]">
+                  <div className="text-gray-500">No media available</div>
+                </div>
               )}
             </div>
             
-            {/* Media info */}
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex gap-4">
-                {media.category && (
-                  <Badge variant="outline" className="text-xs">
-                    {media.category.name}
-                  </Badge>
-                )}
+            {/* Media info section */}
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold mb-2">{media.title}</h1>
+              
+              <div className="flex justify-between items-center mb-4">
+                <div className="text-sm text-gray-400">
+                  {media.views || 0} views • Added {new Date(media.createdAt).toLocaleDateString()}
+                </div>
                 
-                {media.contentType && (
-                  <Badge variant="outline" className="text-xs flex gap-1 items-center">
-                    {media.contentType === 'image' ? <ImageIcon className="h-3 w-3" /> : 
-                     media.contentType === 'embed' ? <LinkIcon className="h-3 w-3" /> :
-                     <VideoIcon className="h-3 w-3" />}
-                    {media.contentType === 'image' 
-                      ? 'Image' 
-                      : media.contentType === 'embed' 
-                        ? 'Embed' 
-                        : 'Video'}
-                  </Badge>
-                )}
-                
-                {media.resolution && (
-                  <Badge variant="outline" className="text-xs">
-                    {media.resolution}
-                  </Badge>
-                )}
-                
-                {media.duration > 0 && (
-                  <span className="text-xs flex items-center gap-1 text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    {Math.floor(media.duration / 60)}:{(media.duration % 60).toString().padStart(2, '0')}
-                  </span>
-                )}
+                <div className="flex space-x-3">
+                  <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                    <ThumbsUp className="w-5 h-5 mr-1" />
+                    <span>Like</span>
+                  </Button>
+                  
+                  <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                    <Share className="w-5 h-5 mr-1" />
+                    <span>Share</span>
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-gray-400 hover:text-red-500" 
+                    onClick={() => setReportDialogOpen(true)}
+                  >
+                    <FlagIcon className="w-5 h-5 mr-1" />
+                    <span>Report</span>
+                  </Button>
+                </div>
               </div>
               
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleWishlistToggle}
-                disabled={wishlistMutation.isPending}
-                className={`${media.isWishlisted ? 'text-red-500' : ''}`}
-              >
-                <Heart className="h-4 w-4 mr-1" fill={media.isWishlisted ? "currentColor" : "none"} />
-                {media.isWishlisted ? 'Saved' : 'Save'}
-              </Button>
-            </div>
-            
-            {/* Description */}
-            {media.description && (
-              <Card className="mb-6">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Description</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm whitespace-pre-line">{media.description}</p>
-                </CardContent>
-              </Card>
-            )}
-            
-            {/* AI Info Section */}
-            {(media.aiGenerator || media.prompt) && (
-              <Card className="mb-6">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Info className="h-4 w-4" />
-                    AI Generation Info
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {media.aiGenerator && (
-                    <div className="mb-2">
-                      <h4 className="text-sm font-semibold mb-1">AI Generator</h4>
-                      <p className="text-sm">{media.aiGenerator}</p>
-                    </div>
-                  )}
-                  
-                  {media.prompt && (
-                    <div>
-                      <h4 className="text-sm font-semibold mb-1">Prompt Used</h4>
-                      <p className="text-sm bg-muted p-2 rounded whitespace-pre-line">{media.prompt}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-            
-            {/* Comments Section */}
-            <div className="mt-8">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Comments
-                {media.comments?.length > 0 && (
-                  <span className="text-sm font-normal text-muted-foreground">
-                    ({media.comments.length})
-                  </span>
+              <div className="bg-[#1a1a1a] p-4 rounded-md">
+                {media.description && (
+                  <p className="text-gray-300 mb-3">{media.description}</p>
                 )}
-              </h2>
-              
-              {/* Comment form */}
-              <Card className="mb-6">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Add a comment</CardTitle>
-                  <CardDescription>
-                    {user ? `Commenting as ${user.username}` : 'Comment anonymously'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleCommentSubmit}>
-                    {!user && (
-                      <div className="mb-4">
-                        <Input
-                          placeholder="Your name"
-                          value={username}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
-                          className="w-full"
-                        />
+                
+                {(media.aiGenerator || media.prompt) && (
+                  <div className="border-t border-[#333] pt-3 mt-3">
+                    {media.aiGenerator && (
+                      <div className="mb-2">
+                        <span className="text-sm font-semibold text-gray-400">AI Generator:</span>{" "}
+                        <span className="text-gray-300">{media.aiGenerator}</span>
                       </div>
                     )}
                     
-                    <Textarea
-                      placeholder="Write your comment here..."
-                      value={commentText}
-                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCommentText(e.target.value)}
-                      className="w-full min-h-[100px]"
-                    />
-                    
+                    {media.prompt && (
+                      <div>
+                        <span className="text-sm font-semibold text-gray-400">Prompt:</span>{" "}
+                        <span className="text-gray-300">{media.prompt}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Comments section */}
+            <div>
+              <h2 className="text-xl font-bold mb-4">
+                {comments.length} {comments.length === 1 ? 'Comment' : 'Comments'}
+              </h2>
+              
+              {/* Comment form */}
+              <div className="mb-6 flex gap-3">
+                <Avatar className="w-10 h-10">
+                  <AvatarImage src={user?.avatar || undefined} />
+                  <AvatarFallback>{user?.username?.[0] || 'A'}</AvatarFallback>
+                </Avatar>
+                
+                <div className="flex-1 flex flex-col">
+                  <Textarea
+                    placeholder="Add a comment..."
+                    className="mb-2 bg-[#1a1a1a] border-[#333] resize-none"
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                  />
+                  <div className="flex justify-end">
                     <Button 
-                      type="submit" 
-                      className="mt-4"
-                      disabled={commentMutation.isPending}
+                      variant="default" 
+                      className="bg-primary text-black hover:bg-primary/90 font-bold"
+                      onClick={handleCommentSubmit}
+                      disabled={!commentText.trim() || addCommentMutation.isPending}
                     >
-                      {commentMutation.isPending ? 'Posting...' : 'Post Comment'}
+                      {addCommentMutation.isPending ? "Posting..." : "Post Comment"}
                     </Button>
-                  </form>
-                </CardContent>
-              </Card>
+                  </div>
+                </div>
+              </div>
               
               {/* Comments list */}
-              {media.comments && media.comments.length > 0 ? (
-                <div className="space-y-4">
-                  {media.comments.map((comment) => (
-                    <Card key={comment.id}>
-                      <CardHeader className="pb-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6">
-                              <AvatarFallback>{comment.username.charAt(0).toUpperCase()}</AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium">{comment.username}</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {comment.createdAt && formatDistance(new Date(comment.createdAt), new Date(), { addSuffix: true })}
+              <div className="space-y-4">
+                {commentsLoading ? (
+                  <div className="flex justify-center py-6">
+                    <div className="loading-spinner"></div>
+                  </div>
+                ) : comments.length > 0 ? (
+                  comments.map((comment) => (
+                    <div key={comment.id} className="flex gap-3">
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={comment.userId ? `/api/users/${comment.userId}/avatar` : undefined} />
+                        <AvatarFallback>
+                          {comment.username ? comment.username[0] : 'A'}
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      <div className="flex-1">
+                        <div className="flex items-center mb-1">
+                          <span className="font-semibold mr-2">
+                            {comment.username || 'Anonymous'}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {new Date(comment.createdAt).toLocaleDateString()}
                           </span>
                         </div>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm whitespace-pre-line">{comment.content}</p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-center py-8">
-                  No comments yet. Be the first to comment!
-                </p>
-              )}
+                        
+                        <p className="text-gray-300">{comment.text}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-6 bg-[#1a1a1a] rounded-md">
+                    <MessageSquare className="mx-auto h-10 w-10 text-gray-500 mb-2" />
+                    <p className="text-gray-400">No comments yet. Be the first to comment!</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">About This Media</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {media.createdAt && (
-                  <div>
-                    <h3 className="text-sm font-semibold">Added</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {formatDistance(new Date(media.createdAt), new Date(), { addSuffix: true })}
-                    </p>
-                  </div>
-                )}
-                
-                {media.credits !== undefined && (
-                  <div>
-                    <h3 className="text-sm font-semibold">Credits</h3>
-                    <p className="text-sm text-muted-foreground">{media.credits}</p>
-                  </div>
-                )}
-                
-                {media.category && (
-                  <div>
-                    <h3 className="text-sm font-semibold">Category</h3>
-                    <p className="text-sm text-muted-foreground">{media.category.name}</p>
-                  </div>
-                )}
-                
-                {media.resolution && (
-                  <div>
-                    <h3 className="text-sm font-semibold">Resolution</h3>
-                    <p className="text-sm text-muted-foreground">{media.resolution}</p>
-                  </div>
-                )}
-                
-                {media.contentType && (
-                  <div>
-                    <h3 className="text-sm font-semibold">Type</h3>
-                    <p className="text-sm text-muted-foreground capitalize">{media.contentType}</p>
-                  </div>
-                )}
-                
-                {media.duration > 0 && (
-                  <div>
-                    <h3 className="text-sm font-semibold">Duration</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {Math.floor(media.duration / 60)}m {media.duration % 60}s
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          {/* Sidebar column */}
+          <div>
+            <h2 className="text-lg font-bold mb-4">Related Content</h2>
+            {/* Related content would go here - we'll implement this in another task */}
+            <div className="text-center py-6 bg-[#1a1a1a] rounded-md">
+              <p className="text-gray-400">Related content coming soon</p>
+            </div>
           </div>
         </div>
       </div>
+      
+      {/* Report dialog */}
+      <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+        <DialogContent className="bg-[#1a1a1a] border-[#333]">
+          <DialogHeader>
+            <DialogTitle>Report Content</DialogTitle>
+            <DialogDescription>
+              Please provide details about why you're reporting this content. Our team will review your report.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <Textarea
+              placeholder="Reason for reporting this content..."
+              className="bg-[#121212] border-[#333] resize-none min-h-[150px]"
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+            />
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setReportDialogOpen(false)}
+              className="border-[#444] text-gray-300 hover:bg-[#222] hover:text-white"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleReportSubmit}
+              disabled={!reportReason.trim() || reportMutation.isPending}
+              className="bg-primary text-black hover:bg-primary/90 font-bold"
+            >
+              {reportMutation.isPending ? "Submitting..." : "Submit Report"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

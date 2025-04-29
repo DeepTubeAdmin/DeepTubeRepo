@@ -12,6 +12,7 @@ import TermsOfService from "@/pages/terms-of-service";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import MyVideosPage from "@/pages/my-videos";
 import ProfilePage from "@/pages/profile-page";
+import SearchResults from "@/pages/search-results";
 import { AuthProvider } from "@/hooks/use-auth";
 import Layout from "@/components/Layout";
 
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/media/:id" component={MediaDetail} />
+      <Route path="/search" component={SearchResults} />
       <Route path="/forum" component={ForumPage} />
       <Route path="/terms-of-service" component={TermsOfService} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
