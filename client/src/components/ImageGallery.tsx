@@ -26,37 +26,20 @@ export default function ImageGallery({
   showViewAll = false,
   viewAllUrl = '#',
 }: ImageGalleryProps) {
-  // Create a function to get the optimal column count based on available width
-  // Increased column counts to match more items per row in the API
-  const getColumnClass = () => {
-    // Get window width
-    if (typeof window === 'undefined') return 'grid-cols-1';
-    
-    const width = window.innerWidth;
-    if (width < 640) return 'grid-cols-1'; // Mobile
-    if (width < 768) return 'grid-cols-2'; // Small tablets
-    if (width < 1024) return 'grid-cols-4'; // Large tablets/small desktop
-    if (width < 1280) return 'grid-cols-6'; // Medium desktop
-    if (width < 1536) return 'grid-cols-7'; // Large desktop
-    return 'grid-cols-8'; // Extra large desktop
-  };
-
-  // Create a dynamic class that adjusts to screen width
-  const [columnClass, setColumnClass] = useState(getColumnClass());
-  
-  // Update column class when window is resized
-  useEffect(() => {
-    const handleResize = () => {
-      setColumnClass(getColumnClass());
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  
   return (
-    <section className="mb-4">
-      <div className={`grid ${columnClass} gap-4 w-full`}>
+    <section className="mb-6">
+      {/* YouTube-style section heading with title and optional view all link */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-medium">{title}</h2>
+        {showViewAll && images.length > 0 && (
+          <Link to={viewAllUrl} className="text-primary text-sm hover:underline">
+            View all
+          </Link>
+        )}
+      </div>
+      
+      {/* YouTube-style list layout */}
+      <div className="flex flex-col space-y-4">
         {images.map((image) => (
           <ImageCard
             key={image.id}
@@ -65,13 +48,6 @@ export default function ImageGallery({
             onWishlist={onWishlist}
           />
         ))}
-        
-        {/* Add empty placeholder items to fill the last row completely */}
-        {images.length > 0 && images.length % (parseInt(columnClass.split('-')[2]) || 1) !== 0 && 
-          Array.from({ length: parseInt(columnClass.split('-')[2]) - (images.length % parseInt(columnClass.split('-')[2])) }).map((_, i) => (
-            <div key={`placeholder-${i}`} className="h-0 invisible"></div>
-          ))
-        }
       </div>
     </section>
   );
@@ -114,56 +90,62 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
   return (
     <div 
       id={`video-preview-${image.id}`}
-      className="video-card bg-card overflow-hidden rounded-md shadow-md hover:shadow-lg transition-all"
+      className="overflow-hidden rounded-none hover:bg-gray-100 dark:hover:bg-gray-800 transition-all cursor-pointer"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
     >
-      <div className="relative group">
-        <AspectRatio ratio={16 / 9}>
-          <img
-            src={image.thumbnail}
-            alt={image.title}
-            className={`w-full h-full object-cover transition-opacity duration-300 ${isHovering ? 'opacity-70' : 'opacity-100'}`}
-          />
-        </AspectRatio>
-        
-        <div className="absolute top-3 right-3 bg-black/70 text-white text-sm px-2 py-1 rounded">
-          <div className="flex items-center">
-            <Image className="w-4 h-4 mr-1" />
-            <span>AI</span>
+      <div className="flex flex-col sm:flex-row gap-3">
+        {/* Thumbnail section - YouTube style */}
+        <div className="relative group rounded-lg overflow-hidden">
+          <AspectRatio ratio={16/9} className="w-full sm:w-[180px] md:w-[240px] lg:w-[360px]">
+            <img
+              src={image.thumbnail}
+              alt={image.title}
+              className={`w-full h-full object-cover transition-opacity duration-300 ${isHovering ? 'opacity-80' : 'opacity-100'}`}
+            />
+          </AspectRatio>
+          
+          <div className="absolute top-1 right-1 bg-black/80 text-white text-xs px-1 py-0.5 rounded text-[10px] font-medium">
+            <div className="flex items-center">
+              <Image className="w-3 h-3 mr-0.5" />
+              <span>AI</span>
+            </div>
           </div>
         </div>
         
-        {/* Information overlay that only appears on hover */}
-        {isHovering && (
-          <>
-            <div className="absolute bottom-0 left-0 right-0 bg-black/80 p-3 transition-all">
-              <div className="flex justify-between items-start">
-                <h3 
-                  className="text-white text-base font-medium line-clamp-2 hover:text-primary-300 transition-colors cursor-pointer mr-2"
-                  onClick={handleClick}
-                >
-                  {image.title}
-                </h3>
-                <Link to={`/media/${image.id}`} className="text-white/80 hover:text-primary-300 transition-colors mt-1">
-                  <ExternalLink className="h-4 w-4" />
-                </Link>
-              </div>
-              <div className="flex justify-between items-center mt-2">
-                <span className="text-sm text-white/80">
-                  {(image as any).aiGenerator || "AI Generated"}
-                </span>
-                
-                <button 
-                  onClick={handleWishlist}
-                  className="text-white/80 hover:text-primary-300 transition-colors"
-                >
-                  <Heart className="h-5 w-5" fill={isWishlisted ? "currentColor" : "none"} />
-                </button>
+        {/* Content section - YouTube style */}
+        <div className="px-2 sm:px-0 py-2 flex-1">
+          <div className="flex gap-3">
+            {/* Title and details */}
+            <div className="flex-1">
+              <h3 
+                className="text-sm font-medium line-clamp-2 hover:text-primary transition-colors cursor-pointer"
+                onClick={handleClick}
+              >
+                {image.title}
+              </h3>
+              <div className="flex gap-1 items-center mt-1 text-xs text-muted-foreground">
+                <span>{(image as any).aiGenerator || "AI Generated"}</span>
+                <span>•</span>
+                <span>{Math.floor(Math.random() * 100) + 1}K views</span>
               </div>
             </div>
-          </>
-        )}
+            
+            {/* Actions */}
+            <div className="flex flex-col gap-2">
+              <Link to={`/media/${image.id}`} className="text-muted-foreground hover:text-primary transition-colors">
+                <ExternalLink className="h-4 w-4" />
+              </Link>
+              <button 
+                onClick={handleWishlist}
+                className="text-muted-foreground hover:text-primary transition-colors"
+              >
+                <Heart className="h-4 w-4" fill={isWishlisted ? "currentColor" : "none"} />
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

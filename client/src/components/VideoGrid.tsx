@@ -23,37 +23,20 @@ export default function VideoGrid({
   // Filter out image content
   const filteredVideos = videos.filter(video => video.contentType !== "image");
   
-  // Create a function to get the optimal column count based on available width
-  // Increased column counts to match our increased items per row in the API
-  const getColumnClass = () => {
-    // Get window width
-    if (typeof window === 'undefined') return 'grid-cols-1';
-    
-    const width = window.innerWidth;
-    if (width < 640) return 'grid-cols-1'; // Mobile
-    if (width < 768) return 'grid-cols-2'; // Small tablets
-    if (width < 1024) return 'grid-cols-4'; // Large tablets/small desktop
-    if (width < 1280) return 'grid-cols-6'; // Medium desktop
-    if (width < 1536) return 'grid-cols-7'; // Large desktop
-    return 'grid-cols-8'; // Extra large desktop
-  };
-
-  // Create a dynamic class that adjusts to screen width
-  const [columnClass, setColumnClass] = useState(getColumnClass());
-  
-  // Update column class when window is resized
-  useEffect(() => {
-    const handleResize = () => {
-      setColumnClass(getColumnClass());
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  
   return (
-    <section className="mb-4">
-      <div className={`grid ${columnClass} gap-4 w-full`}>
+    <section className="mb-6">
+      {/* YouTube-style section heading with title and optional view all link */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-medium">{title}</h2>
+        {showViewAll && filteredVideos.length > 0 && (
+          <Link to={viewAllUrl} className="text-primary text-sm hover:underline">
+            View all
+          </Link>
+        )}
+      </div>
+      
+      {/* YouTube-style list layout */}
+      <div className="flex flex-col space-y-4">
         {filteredVideos.map((video) => (
           <VideoCard
             key={video.id}
@@ -62,13 +45,6 @@ export default function VideoGrid({
             onWishlist={onWishlist}
           />
         ))}
-        
-        {/* Add empty placeholder items to fill the last row completely */}
-        {filteredVideos.length > 0 && filteredVideos.length % (parseInt(columnClass.split('-')[2]) || 1) !== 0 && 
-          Array.from({ length: parseInt(columnClass.split('-')[2]) - (filteredVideos.length % parseInt(columnClass.split('-')[2])) }).map((_, i) => (
-            <div key={`placeholder-${i}`} className="h-0 invisible"></div>
-          ))
-        }
       </div>
     </section>
   );

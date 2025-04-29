@@ -90,121 +90,95 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
   return (
     <div 
       id={`video-preview-${video.id}`}
-      className="video-card bg-card overflow-hidden rounded-md shadow-md hover:shadow-lg transition-all cursor-pointer"
+      className="video-card overflow-hidden rounded-none hover:bg-gray-100 dark:hover:bg-gray-800 transition-all cursor-pointer"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={handlePreview}
     >
-      <div className="relative group">
-        <AspectRatio ratio={16/9}>
-          {isHovering && video.vimeoId ? (
-            <VimeoEmbed 
-              videoId={video.vimeoId} 
-              autoplay={true}
-              loop={true}
-              showTitle={false}
-              showByline={false}
-              showPortrait={false}
-            />
-          ) : isHovering && video.contentType === 'embed' && youtubeId ? (
-            // For YouTube embeds on hover, show the YouTube video preview with an overlay to catch clicks
-            <div className="w-full h-full relative">
-              <iframe 
-                className="absolute inset-0 w-full h-full border-0"
-                src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${youtubeId}`}
-                title={`${video.title} Preview`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-              {/* This transparent overlay prevents clicks from going to the iframe */}
-              <div 
-                className="absolute inset-0 bg-transparent z-10 cursor-pointer" 
-                onClick={handlePreview}
-                aria-label="Open full video player"
-              >
-                {/* Show overlay on hover without play button */}
-                <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity"></div>
+      <div className="flex flex-col sm:flex-row gap-3">
+        {/* Thumbnail section - YouTube style with rounded corners */}
+        <div className="relative group rounded-lg overflow-hidden">
+          <AspectRatio ratio={16/9} className="w-full sm:w-[180px] md:w-[240px] lg:w-[360px]">
+            {isHovering && video.vimeoId ? (
+              <VimeoEmbed 
+                videoId={video.vimeoId} 
+                autoplay={true}
+                loop={true}
+                showTitle={false}
+                showByline={false}
+                showPortrait={false}
+              />
+            ) : isHovering && video.contentType === 'embed' && youtubeId ? (
+              // For YouTube embeds on hover, show the YouTube video preview with an overlay to catch clicks
+              <div className="w-full h-full relative">
+                <iframe 
+                  className="absolute inset-0 w-full h-full border-0"
+                  src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${youtubeId}`}
+                  title={`${video.title} Preview`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+                {/* This transparent overlay prevents clicks from going to the iframe */}
+                <div 
+                  className="absolute inset-0 bg-transparent z-10 cursor-pointer" 
+                  onClick={handlePreview}
+                  aria-label="Open full video player"
+                >
+                  {/* Show overlay on hover without play button */}
+                  <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity"></div>
+                </div>
+                <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/30 to-transparent"></div>
               </div>
-              <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/30 to-transparent"></div>
-            </div>
-          ) : video.contentType === 'embed' && video.embedCode && isRedditEmbed(video.embedCode) ? (
-            // Enhanced Reddit thumbnail with badge and clearer styling
-            <div className="relative w-full h-full">
-              {redditInfo?.subreddit ? (
-                // Use subreddit-specific styling
-                <div className="w-full h-full flex flex-col">
-                  <div className="bg-orange-600 text-white text-xs p-1 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" className="w-4 h-4 mr-1 fill-current">
-                      <path d="M10 0C4.478 0 0 4.478 0 10c0 5.523 4.478 10 10 10 5.523 0 10-4.477 10-10 0-5.522-4.477-10-10-10zm5.7 11.1c0 1.8-2.1 3.3-4.7 3.3s-4.7-1.5-4.7-3.3c0-.2 0-.3.1-.5-1-.5-1.7-1.5-1.7-2.6 0-1.7 1.3-3 3-3 .8 0 1.5.3 2 .8 1.1-.7 2.5-1.1 4-.9.5-.7 1.3-1.2 2.2-1.2 1.6 0 2.9 1.3 2.9 2.9 0 1.1-.6 2-1.5 2.5.1.2.1.3.1.5 0 1.8-2.1 3.3-4.7 3.3z"/>
-                    </svg>
-                    r/{redditInfo.subreddit}
-                  </div>
-                  <div className="flex-grow bg-zinc-100 flex items-center justify-center">
-                    <div className={`transition-opacity duration-300 ${isHovering ? 'opacity-80' : 'opacity-100'} text-center p-2`}>
-                      <div className="font-bold text-sm text-zinc-800 mb-1">Reddit Post</div>
-                      <div className="text-xs text-zinc-600">Click to view content</div>
-                    </div>
-                  </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none"></div>
-                </div>
-              ) : (
-                // Generic Reddit styling
-                <div className="w-full h-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
-                  <div className={`text-center p-4 bg-white/90 rounded-md mx-3 transition-transform duration-300 ${isHovering ? 'scale-105' : ''}`}>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" className="w-8 h-8 mx-auto mb-2 fill-orange-600">
-                      <path d="M10 0C4.478 0 0 4.478 0 10c0 5.523 4.478 10 10 10 5.523 0 10-4.477 10-10 0-5.522-4.477-10-10-10zm5.7 11.1c0 1.8-2.1 3.3-4.7 3.3s-4.7-1.5-4.7-3.3c0-.2 0-.3.1-.5-1-.5-1.7-1.5-1.7-2.6 0-1.7 1.3-3 3-3 .8 0 1.5.3 2 .8 1.1-.7 2.5-1.1 4-.9.5-.7 1.3-1.2 2.2-1.2 1.6 0 2.9 1.3 2.9 2.9 0 1.1-.6 2-1.5 2.5.1.2.1.3.1.5 0 1.8-2.1 3.3-4.7 3.3z"/>
-                    </svg>
-                    <div className="font-bold text-sm text-zinc-800">Reddit Content</div>
-                    <div className="text-xs text-zinc-600 mt-1">Click to view</div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <img
-              src={video.thumbnail}
-              alt={video.title}
-              className={`object-cover w-full h-full transition-opacity duration-300 ${isHovering ? 'opacity-70' : 'opacity-100'}`}
-            />
-          )}
-        </AspectRatio>
-        
-        {video.duration > 0 && (
-          <div className="absolute bottom-3 right-3 bg-black/70 text-white text-sm px-2 py-1 rounded">
-            {formatDuration(video.duration)}
-          </div>
-        )}
-        
-
-      </div>
-      
-      <div className="p-3">
-        <div className="flex justify-between items-start">
-          <h3 
-            className="text-base font-medium line-clamp-2 hover:text-primary transition-colors cursor-pointer mr-2"
-            onClick={handlePreview}
-          >
-            {video.title}
-          </h3>
-          <Link to={`/media/${video.id}`} className="text-muted-foreground hover:text-primary transition-colors mt-1">
-            <ExternalLink className="h-4 w-4 ml-1" />
-          </Link>
+            ) : (
+              <img
+                src={video.thumbnail}
+                alt={video.title}
+                className={`object-cover w-full h-full transition-opacity duration-300 ${isHovering ? 'opacity-70' : 'opacity-100'}`}
+              />
+            )}
+            
+            {video.duration > 0 && (
+              <div className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 py-0.5 rounded text-[10px] font-semibold">
+                {formatDuration(video.duration)}
+              </div>
+            )}
+          </AspectRatio>
         </div>
-        <div className="flex justify-between items-center mt-2">
-          <div className="flex items-center text-sm text-muted-foreground">
-            <span className="mr-4">{formatNumber(Math.floor(Math.random() * 10000) + 1000)} views</span>
-            <span className="flex items-center">
-              <Clock className="h-4 w-4 mr-1" />
-              {Math.floor(Math.random() * 30) + 1}d ago
-            </span>
+        
+        {/* Content section - YouTube style */}
+        <div className="px-2 sm:px-0 py-2 flex-1">
+          <div className="flex gap-3">
+            {/* Title and details */}
+            <div className="flex-1">
+              <h3 
+                className="text-sm font-medium line-clamp-2 hover:text-primary transition-colors cursor-pointer"
+                onClick={handlePreview}
+              >
+                {video.title}
+              </h3>
+              <div className="flex flex-col sm:flex-row gap-1 sm:items-center mt-1">
+                <span className="text-xs text-muted-foreground">{formatNumber(Math.floor(Math.random() * 10000) + 1000)} views</span>
+                <span className="hidden sm:inline text-xs text-muted-foreground">•</span>
+                <span className="text-xs text-muted-foreground flex items-center">
+                  <span className="sr-only">Posted</span>
+                  {Math.floor(Math.random() * 30) + 1}d ago
+                </span>
+              </div>
+            </div>
+            
+            {/* Actions */}
+            <div className="flex flex-col gap-2">
+              <Link to={`/media/${video.id}`} className="text-muted-foreground hover:text-primary transition-colors">
+                <ExternalLink className="h-4 w-4" />
+              </Link>
+              <button 
+                onClick={handleWishlist}
+                className="text-muted-foreground hover:text-primary transition-colors"
+              >
+                <Heart className="h-4 w-4" fill={isWishlisted ? "currentColor" : "none"} />
+              </button>
+            </div>
           </div>
-          
-          <button 
-            onClick={handleWishlist}
-            className="text-muted-foreground hover:text-primary transition-colors"
-          >
-            <Heart className="h-5 w-5" fill={isWishlisted ? "currentColor" : "none"} />
-          </button>
         </div>
       </div>
     </div>

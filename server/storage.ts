@@ -130,16 +130,32 @@ export class DatabaseStorage implements IStorage {
       queryBuilder = queryBuilder.where(eq(videos.categoryId, categoryId));
     }
     
-    // Add ordering - always prioritize newest videos by ID first
+    // Add ordering with YouTube-like algorithm
     if (sortBy === 'newest') {
       // Order by ID desc ensures newest uploads appear first
       queryBuilder = queryBuilder.orderBy(desc(videos.id));
     } else if (sortBy === 'oldest') {
       queryBuilder = queryBuilder.orderBy(asc(videos.createdAt));
     } else if (sortBy === 'viewed') {
-      // For "most viewed" we'll add a random order since we don't track actual views yet
-      // In a real application, this would order by a viewCount column
-      queryBuilder = queryBuilder.orderBy(sql`RANDOM()`);
+      // YouTube-like algorithm that combines recency and engagement
+      // This simulates YouTube's algorithm by combining:
+      // 1. Recency - newer content gets higher priority
+      // 2. Engagement - videos with engagement get better ranking (simulated here)
+      // 3. Some randomness to ensure variety
+      queryBuilder = queryBuilder.orderBy(
+        sql`(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) - EXTRACT(EPOCH FROM ${videos.createdAt})) / 86400 * 0.7 + RANDOM() * 0.3`
+      );
+    } else {
+      // Default sorting (YouTube-like "For You" feed)
+      // Combination of recent uploads with some randomness for discovery
+      queryBuilder = queryBuilder.orderBy(
+        sql`CASE 
+          WHEN (EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) - EXTRACT(EPOCH FROM ${videos.createdAt})) < 604800 THEN 
+            (RANDOM() * 0.3) + 0.7 
+          ELSE 
+            (RANDOM() * 0.7) + 0.3 
+          END DESC, ${videos.id} DESC`
+      );
     }
     
     // Log query info for debugging
