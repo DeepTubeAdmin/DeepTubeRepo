@@ -59,7 +59,7 @@ export default function AdminPage() {
         const contentData = await contentRes.json();
         
         // Create some "reported" content for demonstration purposes
-        const demoReported = contentData.slice(0, 3).map((video: Video) => ({
+        const demoReported = contentData.slice(0, 3).map((video: Video): ReportedContent => ({
           ...video,
           reportReason: 'Content violates community guidelines',
           reportedAt: new Date().toISOString(),
