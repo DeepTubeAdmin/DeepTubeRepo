@@ -282,33 +282,43 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
   }, [title, description, aiGenerator, prompt, categoryId, contentType, selectedFile, embedCode, thumbnailUrl, originalYoutubeUrl, originalRedditUrl, toast, onClose]);
 
   return (
-    <SimpleDialog isOpen={isOpen} onClose={onClose} title="Upload Media">
+    <SimpleDialog isOpen={isOpen} onClose={onClose} title="Upload New Media" className="bg-[#1a1a1a] border-gray-800 max-w-xl">
       <div>
-        <p className="text-sm text-muted-foreground mb-4">
-          Share your AI-generated content with the DeepTube community
-        </p>
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-sm text-gray-400">
+            Share your AI-generated content with the DeepTube community
+          </p>
+          <a 
+            href="https://www.synthesia.io/?via=seth-glass" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-xs bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1 rounded flex items-center"
+          >
+            <i className="fas fa-magic mr-1"></i> Create AI Video
+          </a>
+        </div>
         
         <Tabs defaultValue="video" onValueChange={(value) => setContentType(value as "video" | "image" | "embed")}>
-          <TabsList className="grid w-full grid-cols-3 mb-6 bg-gray-900 p-1">
+          <TabsList className="grid w-full grid-cols-3 mb-6 bg-[#272727] p-1 rounded-lg">
             <TabsTrigger 
               value="video" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:font-bold uppercase font-semibold"
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:font-bold uppercase font-semibold rounded"
             >
-              <VideoIcon className="w-4 h-4" />
+              <i className="fas fa-video"></i>
               Video
             </TabsTrigger>
             <TabsTrigger 
               value="image" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:font-bold uppercase font-semibold"
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:font-bold uppercase font-semibold rounded"
             >
-              <ImageIcon className="w-4 h-4" />
+              <i className="fas fa-image"></i>
               Image
             </TabsTrigger>
             <TabsTrigger 
               value="embed" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:font-bold uppercase font-semibold"
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:font-bold uppercase font-semibold rounded"
             >
-              <LinkIcon className="w-4 h-4" />
+              <i className="fas fa-link"></i>
               Embed
             </TabsTrigger>
           </TabsList>
@@ -316,13 +326,13 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           <TabsContent value="video" className="mt-0">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid w-full items-center gap-1.5">
-                <label htmlFor="video-media" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/30 hover:bg-muted/50 transition-colors">
+                <label htmlFor="video-media" className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-700 rounded-lg cursor-pointer bg-[#111] hover:bg-[#181818] transition-colors">
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <VideoIcon className="w-8 h-8 mb-2 text-primary" />
-                    <p className="mb-2 text-sm text-center">
-                      <span className="font-semibold">Click to upload</span> or drag and drop
+                    <i className="fas fa-cloud-upload-alt text-3xl mb-3 text-primary"></i>
+                    <p className="mb-2 text-sm text-center text-gray-300">
+                      <span className="font-semibold text-white">Click to upload</span> or drag and drop
                     </p>
-                    <p className="text-xs text-muted-foreground text-center">
+                    <p className="text-xs text-gray-500 text-center">
                       {selectedFile ? selectedFile.name : "MP4, WebM, or MOV (max. 500MB)"}
                     </p>
                   </div>
@@ -452,13 +462,13 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           <TabsContent value="image" className="mt-0">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid w-full items-center gap-1.5">
-                <label htmlFor="image-media" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/30 hover:bg-muted/50 transition-colors">
+                <label htmlFor="image-media" className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-700 rounded-lg cursor-pointer bg-[#111] hover:bg-[#181818] transition-colors">
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <ImageIcon className="w-8 h-8 mb-2 text-primary" />
-                    <p className="mb-2 text-sm text-center">
-                      <span className="font-semibold">Click to upload</span> or drag and drop
+                    <i className="fas fa-cloud-upload-alt text-3xl mb-3 text-primary"></i>
+                    <p className="mb-2 text-sm text-center text-gray-300">
+                      <span className="font-semibold text-white">Click to upload</span> or drag and drop
                     </p>
-                    <p className="text-xs text-muted-foreground text-center">
+                    <p className="text-xs text-gray-500 text-center">
                       {selectedFile ? selectedFile.name : "JPG, PNG, GIF, or WebP (max. 10MB)"}
                     </p>
                   </div>

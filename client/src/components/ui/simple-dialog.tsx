@@ -11,12 +11,13 @@ interface SimpleDialogProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  className?: string;
 }
 
-export function SimpleDialog({ isOpen, onClose, title, children }: SimpleDialogProps) {
+export function SimpleDialog({ isOpen, onClose, title, children, className }: SimpleDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md bg-black border border-gray-800 text-white">
+      <DialogContent className={`sm:max-w-md bg-black border border-gray-800 text-white ${className || ""}`}>
         <DialogHeader className="border-b border-gray-800 pb-4">
           <DialogTitle className="text-white font-bold uppercase text-lg">{title}</DialogTitle>
         </DialogHeader>
