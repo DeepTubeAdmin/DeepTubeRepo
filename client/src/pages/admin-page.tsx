@@ -15,7 +15,9 @@ export default function AdminPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("videos");
   const [videos, setVideos] = useState<Video[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  // Add banned property to User type for admin page
+  type AdminUser = User & { banned: boolean };
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [reportedContent, setReportedContent] = useState<Video[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -55,7 +57,7 @@ export default function AdminPage() {
         
         // For demo purposes, we'll show some random videos as reported
         // In a real app, you would have a separate API endpoint for reported content
-        const demoReported = videoData.slice(0, 3).map(video => ({
+        const demoReported = videoData.slice(0, 3).map((video: Video) => ({
           ...video,
           reportReason: "Inappropriate content",
           reportedBy: "user123"
@@ -87,9 +89,9 @@ export default function AdminPage() {
       if (!response.ok) throw new Error('Failed to delete video');
       
       // Update the videos list
-      setVideos(videos.filter(video => video.id !== videoId));
+      setVideos(videos.filter(item => item.id !== videoId));
       // Also remove from reported content if it's there
-      setReportedContent(reportedContent.filter(video => video.id !== videoId));
+      setReportedContent(reportedContent.filter(item => item.id !== videoId));
       
       toast({
         title: "Success",
@@ -240,7 +242,7 @@ export default function AdminPage() {
                             </td>
                             <td className="px-4 py-3 text-sm capitalize">{video.contentType}</td>
                             <td className="px-4 py-3 text-sm">
-                              {video.category?.name || `Category ${video.categoryId}`}
+                              {`Category ${video.categoryId}`}
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-400">
                               {new Date(video.createdAt).toLocaleDateString()}

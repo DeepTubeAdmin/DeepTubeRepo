@@ -23,6 +23,7 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // These middleware declarations will be used and the duplicates below will be removed
   // Search API endpoint
   app.get('/api/search', async (req, res) => {
     try {
