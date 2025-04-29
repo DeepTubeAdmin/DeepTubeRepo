@@ -13,6 +13,7 @@ import PrivacyPolicy from "@/pages/privacy-policy";
 import MyVideosPage from "@/pages/my-videos";
 import ProfilePage from "@/pages/profile-page";
 import SearchResults from "@/pages/search-results";
+import AdminPage from "@/pages/admin-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import Layout from "@/components/Layout";
 
@@ -28,6 +29,7 @@ function Router() {
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/my-videos" component={MyVideosPage} />
       <Route path="/profile" component={ProfilePage} />
+      <Route path="/admin" component={AdminPage} />
       <Route component={NotFound} />
     </Switch>
   );

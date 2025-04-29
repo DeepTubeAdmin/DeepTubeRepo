@@ -300,6 +300,10 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                     <i className="fas fa-download mr-2"></i>
                     <span>Download</span>
                   </button>
+                  <button className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded flex items-center" onClick={() => window.confirm("Are you sure you want to report this content for violating our Terms of Service?")}>
+                    <i className="fas fa-flag mr-2"></i>
+                    <span>Report</span>
+                  </button>
                 </div>
               </div>
               
