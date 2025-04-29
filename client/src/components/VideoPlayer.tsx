@@ -269,12 +269,64 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                   </div>
                 </div>
               ) : video.contentType === 'image' ? (
-                <div className="flex justify-center bg-black p-4">
-                  <img 
-                    src={video.thumbnail || video.imageUrl || ''} 
-                    alt={video.title} 
-                    className="max-h-[70vh] object-contain"
-                  />
+                <div className="flex flex-col items-center justify-center bg-black p-4 max-h-[70vh] overflow-auto">
+                  {/* If the image URL is a HTML document, show a warning and provide link to open it */}
+                  {(video.imageUrl?.includes('<!DOCTYPE html>') || video.imageUrl?.includes('<html')) ? (
+                    <div className="text-center p-4">
+                      <div className="bg-yellow-600/20 border border-yellow-600 rounded-md p-4 mb-4">
+                        <h3 className="text-yellow-400 text-lg font-semibold mb-2">
+                          <i className="fas fa-exclamation-triangle mr-2"></i>
+                          HTML Content Detected
+                        </h3>
+                        <p className="text-gray-300 mb-4">
+                          This content appears to be HTML rather than an image file. It cannot be displayed directly in the viewer.
+                        </p>
+                        <a 
+                          href={video.imageUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded inline-flex items-center"
+                        >
+                          <i className="fas fa-external-link-alt mr-2"></i>
+                          Open HTML Content
+                        </a>
+                      </div>
+                      
+                      <div className="mt-4 text-gray-400 text-sm">
+                        <p>For best results, please upload image files (JPEG, PNG, GIF, etc.) rather than HTML content.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <img 
+                      src={video.thumbnail || video.imageUrl || ''} 
+                      alt={video.title} 
+                      className="max-h-[70vh] object-contain"
+                      onError={(e) => {
+                        // If image fails to load, show a fallback message
+                        e.currentTarget.style.display = 'none';
+                        if (e.currentTarget.parentElement) {
+                          const errorDiv = document.createElement('div');
+                          errorDiv.className = 'bg-red-600/20 border border-red-600 rounded-md p-4 text-center';
+                          errorDiv.innerHTML = `
+                            <h3 class="text-red-400 text-lg font-semibold mb-2">
+                              <i class="fas fa-exclamation-circle mr-2"></i>
+                              Image Failed to Load
+                            </h3>
+                            <p class="text-gray-300">
+                              The image could not be displayed. It may be in an unsupported format or the URL might be invalid.
+                            </p>
+                            <div class="mt-4">
+                              <a href="${video.imageUrl}" target="_blank" rel="noopener noreferrer" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded inline-flex items-center mt-2">
+                                <i class="fas fa-external-link-alt mr-2"></i>
+                                Try Opening Directly
+                              </a>
+                            </div>
+                          `;
+                          e.currentTarget.parentElement.appendChild(errorDiv);
+                        }
+                      }}
+                    />
+                  )}
                 </div>
               ) : (
                 <div className="aspect-video bg-gray-900 flex items-center justify-center text-gray-400 h-[70vh]">

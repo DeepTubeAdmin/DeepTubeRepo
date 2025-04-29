@@ -467,6 +467,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Reddit embeds are not supported. Please use YouTube or Vimeo links instead." });
       }
       
+      // Check if image content is actually HTML (basic check)
+      if (contentType === "image" && imageUrl && 
+          (imageUrl.includes('<!DOCTYPE html>') || 
+           imageUrl.includes('<html') || 
+           imageUrl.includes('<body'))) {
+        console.log("API: Detected HTML content in image upload");
+        // We'll allow it but warn the user in the frontend
+      }
+      
       // Verify category exists
       if (categoryId) {
         const category = await storage.getCategoryById(parseInt(categoryId));
