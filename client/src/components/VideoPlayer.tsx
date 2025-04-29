@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import VimeoEmbed from './VimeoEmbed';
 import { Video } from '@/types';
 import { apiRequest } from '@/lib/queryClient';
 import { Loader2 } from 'lucide-react';
+import { extractYoutubeVideoId, extractYoutubeIdFromEmbed } from '@/lib/utils';
 
 interface VideoPlayerProps {
   videoId?: number;
@@ -15,7 +16,9 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
   const [video, setVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  const youtubeContainerRef = useRef<HTMLDivElement>(null);
+  
+  // This effect loads the video data
   useEffect(() => {
     console.log("VideoPlayer: Effect triggered with videoId:", videoId, "isOpen:", isOpen);
     if (!isOpen || !videoId) return;
@@ -50,6 +53,43 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
 
     fetchVideo();
   }, [videoId, isOpen]);
+  
+  // This effect handles creating the YouTube iframe when the video is a YouTube embed
+  useEffect(() => {
+    if (!isOpen || !video || video.contentType !== 'embed' || !video.embedCode) return;
+    
+    // Extract YouTube video ID from embed code directly
+    const srcRegex = /src="https?:\/\/(?:www\.)?youtube\.com\/embed\/([\w-]{11})(?:\?.*)?"/;
+    const match = video.embedCode.match(srcRegex);
+    const youtubeId = match ? match[1] : null;
+    
+    console.log("Extracted YouTube ID from embed code:", youtubeId);
+    if (!youtubeId) return;
+    
+    console.log("VideoPlayer: Creating YouTube iframe for video ID:", youtubeId);
+    
+    // Create a new iframe with autoplay enabled
+    if (youtubeContainerRef.current) {
+      youtubeContainerRef.current.innerHTML = ''; // Clear previous content
+      
+      const iframe = document.createElement('iframe');
+      iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=0`;
+      iframe.width = '100%';
+      iframe.height = '100%';
+      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+      iframe.allowFullscreen = true;
+      iframe.title = video.title || 'YouTube video';
+      iframe.frameBorder = '0';
+      iframe.style.position = 'absolute';
+      iframe.style.top = '0';
+      iframe.style.left = '0';
+      iframe.style.width = '100%';
+      iframe.style.height = '100%';
+      iframe.style.borderRadius = '4px';
+      
+      youtubeContainerRef.current.appendChild(iframe);
+    }
+  }, [isOpen, video]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -82,39 +122,23 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                     className="w-full h-full relative embed-container"
                     style={{ paddingBottom: '56.25%' }}
                   >
+                    {/* Dynamically created YouTube iframe will be inserted here */}
                     <div 
+                      ref={youtubeContainerRef}
                       className="absolute inset-0"
-                      dangerouslySetInnerHTML={{ 
-                        __html: video.embedCode
-                          .replace('width="560"', 'width="100%"')
-                          .replace('height="315"', 'height="100%"')
-                          .replace('title="YouTube video player"', `title="${video.title || 'YouTube video'}"`)
-                          .replace('frameborder="0"', 'frameborder="0" role="presentation"')
-                          .replace('allow="', 'allow="fullscreen; autoplay; ')
-                          // Process the embed URL to add autoplay=1
-                          .replace(/src="(https:\/\/www\.youtube\.com\/embed\/[^?]+)(\?[^"]*)?"/g, 
-                            function(match, url, params) {
-                              if (!params) {
-                                return `src="${url}?autoplay=1&mute=0"`;
-                              } else {
-                                return `src="${url}${params}&autoplay=1&mute=0"`;
-                              }
-                            }
-                          )
-                          + `<style>
-                              .embed-container iframe,
-                              .embed-container object,
-                              .embed-container embed {
-                                position: absolute;
-                                top: 0;
-                                left: 0;
-                                width: 100%;
-                                height: 100%;
-                                border-radius: 4px;
-                              }
-                            </style>`
-                      }} 
                     />
+                    <style dangerouslySetInnerHTML={{__html: `
+                      .embed-container iframe,
+                      .embed-container object,
+                      .embed-container embed {
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        border-radius: 4px;
+                      }
+                    `}} />
                   </div>
                 </div>
               ) : video.contentType === 'image' ? (
