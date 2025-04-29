@@ -447,6 +447,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isWishlisted = await storage.isWishlisted(req.user.id, videoId);
       }
       
+      // Modify YouTube embed code to include autoplay if needed
+      if (video.contentType === 'embed' && video.embedCode) {
+        // Add autoplay parameters to YouTube embeds
+        video.embedCode = video.embedCode
+          // Add autoplay=1 parameter to YouTube URLs
+          .replace(/src="(https:\/\/www\.youtube\.com\/embed\/[^?"]+)"/g, 'src="$1?autoplay=1&mute=1"')
+          // If URL already has query parameters, append autoplay=1
+          .replace(/src="(https:\/\/www\.youtube\.com\/embed\/[^"]+)\?([^"]+)"/g, 'src="$1?autoplay=1&mute=1&$2"')
+          // Add allow="autoplay" to the iframe
+          .replace('allow="', 'allow="autoplay; ');
+          
+        console.log("API: Modified YouTube embed to include autoplay");
+      }
+      
       const responseData = {
         ...video,
         category,
