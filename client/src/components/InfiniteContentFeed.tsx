@@ -121,7 +121,7 @@ export default function InfiniteContentFeed({ onPreview, onWishlist }: InfiniteC
             return (
               <div 
                 key={`${block.type}-${block.id}`} 
-                className={isContentTypeTransition ? "mt-10 mb-2" : "mb-2"}
+                className={isContentTypeTransition ? "mt-12 mb-4" : "mb-6"}
               >
                 {block.type === 'videos' ? (
                   <VideoGrid

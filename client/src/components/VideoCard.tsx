@@ -110,7 +110,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         </AspectRatio>
         
         {video.duration > 0 && (
-          <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+          <div className="absolute bottom-3 right-3 bg-black/70 text-white text-sm px-2 py-1 rounded">
             {formatDuration(video.duration)}
           </div>
         )}

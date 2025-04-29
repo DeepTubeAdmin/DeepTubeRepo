@@ -92,9 +92,9 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
           />
         </AspectRatio>
         
-        <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+        <div className="absolute top-3 right-3 bg-black/70 text-white text-sm px-2 py-1 rounded">
           <div className="flex items-center">
-            <Image className="w-3 h-3 mr-1" />
+            <Image className="w-4 h-4 mr-1" />
             <span>AI</span>
           </div>
         </div>
@@ -102,20 +102,20 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
         {/* Information overlay that only appears on hover */}
         {isHovering && (
           <>
-            <div className="absolute bottom-0 left-0 right-0 bg-black/80 p-2 transition-all">
-              <div className="flex justify-between items-center">
+            <div className="absolute bottom-0 left-0 right-0 bg-black/80 p-3 transition-all">
+              <div className="flex justify-between items-start">
                 <h3 
-                  className="text-white text-sm font-medium line-clamp-1 hover:text-primary-300 transition-colors cursor-pointer"
+                  className="text-white text-base font-medium line-clamp-2 hover:text-primary-300 transition-colors cursor-pointer mr-2"
                   onClick={handleClick}
                 >
                   {image.title}
                 </h3>
-                <Link to={`/media/${image.id}`} className="text-white/80 hover:text-primary-300 transition-colors ml-2">
-                  <ExternalLink className="h-3.5 w-3.5" />
+                <Link to={`/media/${image.id}`} className="text-white/80 hover:text-primary-300 transition-colors mt-1">
+                  <ExternalLink className="h-4 w-4" />
                 </Link>
               </div>
-              <div className="flex justify-between items-center mt-1">
-                <span className="text-xs text-white/80">
+              <div className="flex justify-between items-center mt-2">
+                <span className="text-sm text-white/80">
                   {(image as any).aiGenerator || "AI Generated"}
                 </span>
                 
@@ -123,7 +123,7 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
                   onClick={handleWishlist}
                   className="text-white/80 hover:text-primary-300 transition-colors"
                 >
-                  <Heart className="h-4 w-4" fill={isWishlisted ? "currentColor" : "none"} />
+                  <Heart className="h-5 w-5" fill={isWishlisted ? "currentColor" : "none"} />
                 </button>
               </div>
             </div>
