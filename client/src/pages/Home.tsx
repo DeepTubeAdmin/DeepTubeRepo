@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import CategoryNavigation from "@/components/CategoryNavigation";
 import VideoPlayer from "@/components/VideoPlayer";
@@ -39,6 +39,10 @@ export default function Home() {
     setActiveCategory(slug);
   };
   
+  // Reference for filter menu for click outside handler
+  const filterMenuRef = useRef<HTMLDivElement>(null);
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
+  
   const toggleFilterMenu = () => {
     setShowFilterMenu(!showFilterMenu);
   };
@@ -47,6 +51,26 @@ export default function Home() {
     setSortBy(sortOption);
     setShowFilterMenu(false);
   };
+  
+  // Handle clicks outside of the filter menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showFilterMenu && 
+        filterMenuRef.current && 
+        filterButtonRef.current && 
+        !filterMenuRef.current.contains(event.target as Node) &&
+        !filterButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowFilterMenu(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showFilterMenu]);
 
   const handlePreview = (videoId: number) => {
     // Only open the modal player when explicitly clicked, not on hover
@@ -148,6 +172,7 @@ export default function Home() {
           
           <div className="relative ml-2 flex-shrink-0">
             <Button
+              ref={filterButtonRef}
               variant="outline"
               size="sm"
               className="flex items-center"
@@ -158,7 +183,10 @@ export default function Home() {
             </Button>
             
             {showFilterMenu && (
-              <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-900 rounded-md shadow-lg p-2 z-50 w-48 border dark:border-gray-800">
+              <div 
+                ref={filterMenuRef}
+                className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-900 rounded-md shadow-lg p-2 z-50 w-48 border dark:border-gray-800"
+              >
                 <div className="text-sm font-medium mb-2 px-2">Sort by</div>
                 <Button
                   variant={sortBy === 'newest' ? "default" : "ghost"}
