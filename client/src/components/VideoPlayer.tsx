@@ -112,30 +112,39 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
         let subreddit = null;
         let postId = null;
         
-        // First try using the extractRedditInfo utility
-        const info = extractRedditInfo(video.embedCode);
-        subreddit = info.subreddit;
-        postId = info.postId;
-        
-        // If that didn't work, try looking for an iframe src in the embed code
-        if (!subreddit || !postId) {
-          const iframeSrcRegex = /src="https:\/\/www\.reddit\.com\/r\/([^\/]+)\/comments\/([^\/]+)\/embed\/"/;
-          const iframeMatch = video.embedCode.match(iframeSrcRegex);
-          if (iframeMatch) {
-            subreddit = iframeMatch[1];
-            postId = iframeMatch[2];
-            console.log("VideoPlayer: Extracted Reddit info from iframe src:", subreddit, postId);
+        // First check for data attributes in the embed code
+        const dataAttributeRegex = /data-reddit-subreddit="([^"]+)"[^>]*data-reddit-postid="([^"]+)"/;
+        const dataMatch = video.embedCode.match(dataAttributeRegex);
+        if (dataMatch) {
+          subreddit = dataMatch[1];
+          postId = dataMatch[2];
+          console.log("VideoPlayer: Extracted Reddit info from data attributes:", subreddit, postId);
+        } else {
+          // Try using the extractRedditInfo utility
+          const info = extractRedditInfo(video.embedCode);
+          subreddit = info.subreddit;
+          postId = info.postId;
+          
+          // If that didn't work, try looking for an iframe src in the embed code
+          if (!subreddit || !postId) {
+            const iframeSrcRegex = /src="https:\/\/www\.reddit\.com\/r\/([^\/]+)\/comments\/([^\/]+)\/embed\/"/;
+            const iframeMatch = video.embedCode.match(iframeSrcRegex);
+            if (iframeMatch) {
+              subreddit = iframeMatch[1];
+              postId = iframeMatch[2];
+              console.log("VideoPlayer: Extracted Reddit info from iframe src:", subreddit, postId);
+            }
           }
-        }
-        
-        // Try one more extraction method from URL patterns in the embed code
-        if (!subreddit || !postId) {
-          const urlPattern = /reddit\.com\/r\/([^\/]+)\/comments\/([^\/]+)/;
-          const match = video.embedCode.match(urlPattern);
-          if (match) {
-            subreddit = match[1];
-            postId = match[2];
-            console.log("VideoPlayer: Extracted Reddit info from URL pattern:", subreddit, postId);
+          
+          // Try one more extraction method from URL patterns in the embed code
+          if (!subreddit || !postId) {
+            const urlPattern = /reddit\.com\/r\/([^\/]+)\/comments\/([^\/]+)/;
+            const match = video.embedCode.match(urlPattern);
+            if (match) {
+              subreddit = match[1];
+              postId = match[2];
+              console.log("VideoPlayer: Extracted Reddit info from URL pattern:", subreddit, postId);
+            }
           }
         }
         

@@ -601,9 +601,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (postId && subreddit) {
             console.log(`API: Extracted Reddit info - subreddit: ${subreddit}, postId: ${postId}`);
             
-            // Create a custom embed that will load properly
+            // Store the Reddit info in a data attribute for easier client-side access
             video.embedCode = `
-              <div class="reddit-embed-container" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;">
+              <div 
+                class="reddit-embed-container" 
+                style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;"
+                data-reddit-subreddit="${subreddit}" 
+                data-reddit-postid="${postId}"
+              >
                 <iframe
                   style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
                   src="https://www.reddit.com/r/${subreddit}/comments/${postId}/embed/"
