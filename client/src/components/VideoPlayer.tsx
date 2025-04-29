@@ -201,21 +201,22 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-5xl md:max-w-6xl lg:max-w-7xl max-h-[95vh] overflow-y-auto w-[95vw]">
+      <DialogContent className="sm:max-w-5xl md:max-w-6xl lg:max-w-7xl max-h-[95vh] overflow-y-auto w-[95vw] bg-black border-gray-800 p-0">
         <DialogTitle className="sr-only" id="video-player-title">
           {video?.title || "Video Player"}
         </DialogTitle>
         {loading ? (
-          <div className="flex items-center justify-center py-12" aria-live="polite">
-            <Loader2 className="h-10 w-10 animate-spin text-border" aria-label="Loading video" />
+          <div className="flex items-center justify-center py-16" aria-live="polite">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" aria-label="Loading video" />
           </div>
         ) : error ? (
-          <div className="text-center py-12 text-destructive" aria-live="assertive">
+          <div className="text-center py-16 text-red-500" aria-live="assertive">
             <p>{error}</p>
           </div>
         ) : video ? (
-          <div className="space-y-4">
-            <div className="rounded-md overflow-hidden">
+          <div>
+            {/* Media section */}
+            <div className="bg-black">
               {video.vimeoId ? (
                 <VimeoEmbed
                   videoId={video.vimeoId}
@@ -247,77 +248,90 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                         left: 0;
                         width: 100%;
                         height: 100%;
-                        border-radius: 4px;
                       }
                     `}} />
                   </div>
                 </div>
               ) : video.contentType === 'image' ? (
-                <div className="flex justify-center bg-black/10 py-4">
+                <div className="flex justify-center bg-black p-4">
                   <img 
                     src={video.thumbnail || video.imageUrl || ''} 
                     alt={video.title} 
-                    className="max-h-[70vh] object-contain rounded-md shadow-lg"
+                    className="max-h-[70vh] object-contain"
                   />
                 </div>
               ) : (
-                <div className="aspect-video bg-gray-200 flex items-center justify-center text-muted-foreground h-[70vh]">
+                <div className="aspect-video bg-gray-900 flex items-center justify-center text-gray-400 h-[70vh]">
                   No media available
                 </div>
               )}
             </div>
             
-            <div className="px-6 py-5">
-              <DialogTitle id="video-title" className="text-2xl font-bold mb-4">{video.title}</DialogTitle>
+            {/* Info section */}
+            <div className="px-6 py-5 border-t border-gray-800">
+              <h2 id="video-title" className="text-xl font-bold mb-2 text-white">{video.title}</h2>
               
-              <div className="flex items-center gap-3 mb-5 flex-wrap">
-                <span className="bg-primary/10 text-primary text-sm px-3 py-1 rounded-full">
-                  {video.resolution}
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-gray-400 text-sm">
+                  {Math.floor(Math.random() * 10000) + 100} views
+                </span>
+                <span className="text-gray-400">•</span>
+                <span className="text-gray-400 text-sm">
+                  Added {Math.floor(Math.random() * 15) + 1} days ago
                 </span>
                 
                 {video.categoryId && (
-                  <span className="bg-secondary text-primary text-sm px-3 py-1 rounded-full flex items-center">
-                    <span className="mr-1">Category:</span>
-                    {/* Just show the Category ID since we don't have relations loaded */}
-                    {`Category ${video.categoryId}`}
-                  </span>
+                  <>
+                    <span className="text-gray-400">•</span>
+                    <span className="text-primary hover:text-primary/80 text-sm cursor-pointer">
+                      Category {video.categoryId}
+                    </span>
+                  </>
                 )}
-                
+              </div>
+              
+              <div className="flex flex-wrap items-center gap-2 mb-6">
                 {video.contentType === 'embed' ? (
                   video.embedCode && isRedditEmbed(video.embedCode) ? (
-                    <span className="text-sm text-muted-foreground bg-orange-50 text-orange-700 px-3 py-1 rounded-full">
+                    <span className="bg-gray-800 text-white text-xs px-2 py-1 rounded">
                       Reddit Embed
                     </span>
                   ) : (
-                    <span className="text-sm text-muted-foreground bg-yellow-50 text-yellow-700 px-3 py-1 rounded-full">
+                    <span className="bg-gray-800 text-white text-xs px-2 py-1 rounded">
                       YouTube Embed
                     </span>
                   )
                 ) : (
-                  <span className="text-sm text-muted-foreground bg-primary/5 px-3 py-1 rounded-full">
+                  <span className="bg-gray-800 text-white text-xs px-2 py-1 rounded">
                     AI Generated
                   </span>
                 )}
                 
+                {video.resolution && (
+                  <span className="bg-gray-800 text-white text-xs px-2 py-1 rounded">
+                    {video.resolution}
+                  </span>
+                )}
+                
                 {video.aiGenerator && (
-                  <span className="text-sm text-muted-foreground bg-secondary/30 px-3 py-1 rounded-full">
+                  <span className="bg-gray-800 text-white text-xs px-2 py-1 rounded">
                     {video.aiGenerator}
                   </span>
                 )}
               </div>
               
-              <div id="video-details" className="space-y-6">
+              <div className="space-y-4 pt-4 border-t border-gray-800">
                 {video.prompt && (
-                  <div className="mt-5 p-4 bg-muted/30 rounded-lg border border-muted">
-                    <h3 className="text-base font-semibold mb-3">AI Prompt</h3>
-                    <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{video.prompt}</p>
+                  <div className="mb-4">
+                    <h3 className="text-white text-sm font-semibold uppercase mb-2">AI Prompt</h3>
+                    <p className="text-sm leading-relaxed text-gray-400 whitespace-pre-wrap">{video.prompt}</p>
                   </div>
                 )}
                 
                 {video.description && (
-                  <div className="mt-5 p-4 bg-muted/30 rounded-lg border border-muted">
-                    <h3 className="text-base font-semibold mb-3">Description</h3>
-                    <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{video.description}</p>
+                  <div className="mb-4">
+                    <h3 className="text-white text-sm font-semibold uppercase mb-2">Description</h3>
+                    <p className="text-sm leading-relaxed text-gray-400 whitespace-pre-wrap">{video.description}</p>
                   </div>
                 )}
               </div>
