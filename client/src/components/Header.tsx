@@ -35,9 +35,15 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const [searchQuery, setSearchQuery] = useState('');
+  
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Search functionality will be implemented later
+    if (searchQuery.trim()) {
+      const searchPath = `/search?q=${encodeURIComponent(searchQuery.trim())}`;
+      setLocation(searchPath);
+      setSearchQuery(''); // Reset the search field after search
+    }
   };
   
   const handleLogout = () => {
@@ -81,6 +87,8 @@ export default function Header() {
                   type="text" 
                   placeholder="Search AI-generated content..." 
                   className="w-full py-2 px-4 rounded-full bg-[#121212] border border-[#303030] text-white focus:border-[#1976D2] focus:outline-none"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <button type="submit" className="absolute right-0 top-0 h-full px-4 text-gray-400">
                   <Search size={18} />
@@ -190,6 +198,8 @@ export default function Header() {
             type="text" 
             placeholder="Search AI-generated content..." 
             className="w-full py-2 px-4 rounded-full bg-[#121212] border border-[#303030] text-white focus:border-[#1976D2] focus:outline-none"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
           <button type="submit" className="absolute right-0 top-0 h-full px-4 text-gray-400">
             <Search size={18} />
