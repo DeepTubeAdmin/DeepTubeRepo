@@ -270,8 +270,34 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                 </div>
               ) : video.contentType === 'image' ? (
                 <div className="flex flex-col items-center justify-center bg-black p-4 max-h-[70vh] overflow-auto">
-                  {/* If the image URL is a HTML document, show a warning and provide link to open it */}
-                  {(video.imageUrl?.includes('<!DOCTYPE html>') || video.imageUrl?.includes('<html')) ? (
+                  {/* Check for data URLs which are usually properly formatted images */}
+                  {video.imageUrl?.startsWith('data:image/') ? (
+                    <img 
+                      src={video.imageUrl} 
+                      alt={video.title} 
+                      className="max-h-[70vh] object-contain"
+                      onError={(e) => {
+                        console.error("Error loading image data URL");
+                        e.currentTarget.style.display = 'none';
+                        if (e.currentTarget.parentElement) {
+                          const errorDiv = document.createElement('div');
+                          errorDiv.className = 'bg-red-600/20 border border-red-600 rounded-md p-4 text-center';
+                          errorDiv.innerHTML = `
+                            <h3 class="text-red-400 text-lg font-semibold mb-2">
+                              <i class="fas fa-exclamation-circle mr-2"></i>
+                              Image Data Failed to Load
+                            </h3>
+                            <p class="text-gray-300">
+                              The image data could not be displayed. It may be corrupted or in an unsupported format.
+                            </p>
+                          `;
+                          e.currentTarget.parentElement.appendChild(errorDiv);
+                        }
+                      }}
+                    />
+                  ) : (video.imageUrl?.includes('<!DOCTYPE html>') || 
+                     video.imageUrl?.includes('<html') || 
+                     video.imageUrl?.startsWith('data:text/html;')) ? (
                     <div className="text-center p-4">
                       <div className="bg-yellow-600/20 border border-yellow-600 rounded-md p-4 mb-4">
                         <h3 className="text-yellow-400 text-lg font-semibold mb-2">
@@ -303,6 +329,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                       className="max-h-[70vh] object-contain"
                       onError={(e) => {
                         // If image fails to load, show a fallback message
+                        console.error("Error loading image from URL:", video.imageUrl);
                         e.currentTarget.style.display = 'none';
                         if (e.currentTarget.parentElement) {
                           const errorDiv = document.createElement('div');

@@ -192,6 +192,45 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
     try {
       // Use the existing thumbnail if one was set, otherwise generate a default
       let finalThumbnailUrl = thumbnailUrl || "https://placehold.co/400x225?text=" + encodeURIComponent(title);
+      let fileContentData = null;
+      
+      // For images and videos, we need to read the actual file data
+      if (contentType !== "embed" && selectedFile) {
+        try {
+          // Read file as data URL
+          fileContentData = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const result = e.target?.result as string;
+              resolve(result);
+            };
+            reader.onerror = reject;
+            
+            // Determine how to read the file based on content type
+            if (contentType === "image") {
+              reader.readAsDataURL(selectedFile);
+            } else {
+              // For videos we're still going to use URL uploads for now
+              reader.readAsText(selectedFile);
+            }
+          });
+          
+          // For images, use the data URL as the thumbnail as well
+          if (contentType === "image" && fileContentData && typeof fileContentData === 'string') {
+            // Only update thumbnail if we successfully got image data
+            finalThumbnailUrl = fileContentData;
+          }
+        } catch (error) {
+          console.error("Error reading file:", error);
+          toast({
+            title: "File read error",
+            description: "There was an error processing your file. Please try a different file.",
+            variant: "destructive",
+          });
+          setIsUploading(false);
+          return;
+        }
+      }
       
       // If it's a YouTube embed and no thumbnail has been set, extract the video ID and get one
       if (contentType === "embed" && !thumbnailUrl) {
@@ -243,7 +282,9 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           // Use YouTube thumbnail for embeds when available
           thumbnail: finalThumbnailUrl,
           [contentType === "video" ? "videoUrl" : contentType === "image" ? "imageUrl" : "embedCode"]: 
-            contentType === "embed" ? embedCode : "https://example.com/placeholder",
+            contentType === "embed" ? embedCode : 
+            (contentType === "image" && fileContentData) ? fileContentData : 
+            "https://example.com/placeholder",
           resolution: contentType === "video" ? "HD" : undefined,
           duration: 0, // This would come from analyzing the video file
           credits: 0, // Default to 0 credits for free content
