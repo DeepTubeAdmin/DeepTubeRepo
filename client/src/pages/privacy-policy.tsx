@@ -1,9 +1,17 @@
 import Layout from "@/components/Layout";
 import MiniFooter from "@/components/MiniFooter";
+import SEO from "@/components/SEO";
 
 export default function PrivacyPolicy() {
   return (
     <Layout>
+      <SEO 
+        title="Privacy Policy | DeepTube.co"
+        description="Learn how DeepTube.co collects, uses, and protects your personal information. Review our privacy policy to understand your rights and choices."
+        canonicalUrl="https://deeptube.co/privacy-policy"
+        ogType="article"
+        keywords="privacy policy, data protection, GDPR, CCPA, cookies, user rights, DeepTube.co"
+      />
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <div className="bg-card rounded-lg shadow-lg p-8">
           <h1 className="text-3xl font-bold mb-6">Privacy Policy</h1>

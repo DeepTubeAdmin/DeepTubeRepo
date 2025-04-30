@@ -103,7 +103,7 @@ export default function Home() {
 
   return (
     <Layout showHeader={true}>
-      <SEO />
+      <SEO isHome={true} />
       {!isCategoriesLoading && (
         <CategoryNavigation 
           categories={allCategories} 

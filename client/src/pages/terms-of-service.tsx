@@ -1,9 +1,17 @@
 import Layout from "@/components/Layout";
 import MiniFooter from "@/components/MiniFooter";
+import SEO from "@/components/SEO";
 
 export default function TermsOfService() {
   return (
     <Layout>
+      <SEO 
+        title="Terms of Service | DeepTube.co"
+        description="Read the Terms of Service for DeepTube.co. Understand our rules for content upload, user conduct, and legal requirements for using our AI video sharing platform."
+        canonicalUrl="https://deeptube.co/terms-of-service"
+        ogType="article"
+        keywords="terms of service, terms of use, user agreement, content guidelines, legal, DeepTube.co"
+      />
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <div className="bg-card rounded-lg shadow-lg p-8">
           <h1 className="text-3xl font-bold mb-6">Terms of Use</h1>
