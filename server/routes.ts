@@ -547,6 +547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contentType,
         categoryId: parseInt(categoryId),
         vimeoId,
+        userId: req.user.id, // Associate with the current user
         credits: 0, // Default to 0 credits for free content
         embedCode: contentType === "embed" ? embedCode : null,
         imageUrl: contentType === "image" ? imageUrl : null,
