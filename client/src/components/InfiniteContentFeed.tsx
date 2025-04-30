@@ -209,13 +209,7 @@ export default function InfiniteContentFeed({
             />
           </AspectRatio>
           
-          {/* Type badge */}
-          <div className="absolute top-2 right-2 bg-black text-primary text-xs font-semibold px-1 py-0.5 rounded-sm">
-            <div className="flex items-center">
-              <Image className="w-3 h-3 mr-0.5" />
-              <span>AI</span>
-            </div>
-          </div>
+          {/* Remove AI watermark from thumbnails */}
           
           {/* View/info overlay - only shows on hover */}
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
