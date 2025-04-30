@@ -217,7 +217,8 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-5xl md:max-w-6xl lg:max-w-7xl max-h-[95vh] overflow-hidden w-[95vw] bg-[#1a1a1a] border-gray-800 p-0">
+      <DialogTitle className="sr-only">Media viewer</DialogTitle>
+      <DialogContent className="sm:max-w-5xl md:max-w-6xl lg:max-w-7xl max-h-[95vh] overflow-y-auto w-[95vw] bg-[#1a1a1a] border-gray-800 p-0">
         <div className="absolute top-4 right-4 z-10">
           <button 
             onClick={onClose}
