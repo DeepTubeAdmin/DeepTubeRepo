@@ -57,6 +57,9 @@ export default function ProfilePage() {
         <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
+        
+        {/* Add MiniFooter */}
+        <MiniFooter />
       </Layout>
     );
   }
@@ -379,6 +382,9 @@ export default function ProfilePage() {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Add MiniFooter */}
+      <MiniFooter />
     </Layout>
   );
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import Layout from '@/components/Layout';
+import MiniFooter from '@/components/MiniFooter';
 import VideoCard from '@/components/VideoCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -303,6 +304,9 @@ export default function SearchResults() {
           ) : null}
         </div>
       </div>
+      
+      {/* Add MiniFooter */}
+      <MiniFooter />
     </Layout>
   );
 }
