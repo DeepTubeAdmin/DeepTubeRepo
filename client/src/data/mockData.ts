@@ -2,18 +2,6 @@ import { Video, Category, PopularCategory } from "@/types";
 
 export const Categories: Category[] = [
   {
-    id: 1,
-    name: "Trending",
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>',
-    slug: "trending"
-  },
-  {
-    id: 2,
-    name: "Most Viewed",
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>',
-    slug: "most-viewed"
-  },
-  {
     id: 3,
     name: "Entertainment",
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>',
@@ -89,7 +77,13 @@ export const FeaturedVideos: Video[] = [
     credits: 500,
     resolution: "4K",
     duration: 15,
-    category: "urban",
+    categoryId: 3,
+    category: {
+      id: 3,
+      name: "Entertainment",
+      slug: "entertainment",
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>'
+    },
     contentType: "video"
   },
   {
@@ -99,7 +93,13 @@ export const FeaturedVideos: Video[] = [
     credits: 750,
     resolution: "4K",
     duration: 30,
-    category: "entertainment",
+    categoryId: 3,
+    category: {
+      id: 3,
+      name: "Entertainment",
+      slug: "entertainment",
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>'
+    },
     contentType: "video"
   },
   {
@@ -109,7 +109,13 @@ export const FeaturedVideos: Video[] = [
     credits: 350,
     resolution: "HD",
     duration: 10,
-    category: "art",
+    categoryId: 7,
+    category: {
+      id: 7,
+      name: "Art",
+      slug: "art",
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5"></circle><circle cx="17.5" cy="10.5" r=".5"></circle><circle cx="8.5" cy="7.5" r=".5"></circle><circle cx="6.5" cy="12.5" r=".5"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg>'
+    },
     contentType: "video"
   },
   {
@@ -119,7 +125,13 @@ export const FeaturedVideos: Video[] = [
     credits: 1200,
     resolution: "4K",
     duration: 45,
-    category: "characters",
+    categoryId: 5,
+    category: {
+      id: 5,
+      name: "Characters",
+      slug: "characters",
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>'
+    },
     contentType: "video"
   }
 ];
@@ -132,7 +144,13 @@ export const AIGeneratedImages: Video[] = [
     credits: 250,
     resolution: "4K",
     duration: 0,
-    category: "design",
+    categoryId: 8,
+    category: {
+      id: 8,
+      name: "Design",
+      slug: "design",
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>'
+    },
     contentType: "image"
   },
   {
@@ -142,7 +160,13 @@ export const AIGeneratedImages: Video[] = [
     credits: 300,
     resolution: "4K",
     duration: 0,
-    category: "art",
+    categoryId: 7,
+    category: {
+      id: 7,
+      name: "Art",
+      slug: "art",
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5"></circle><circle cx="17.5" cy="10.5" r=".5"></circle><circle cx="8.5" cy="7.5" r=".5"></circle><circle cx="6.5" cy="12.5" r=".5"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg>'
+    },
     contentType: "image"
   },
   {
@@ -152,7 +176,13 @@ export const AIGeneratedImages: Video[] = [
     credits: 200,
     resolution: "HD",
     duration: 0,
-    category: "art",
+    categoryId: 7,
+    category: {
+      id: 7,
+      name: "Art",
+      slug: "art",
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5"></circle><circle cx="17.5" cy="10.5" r=".5"></circle><circle cx="8.5" cy="7.5" r=".5"></circle><circle cx="6.5" cy="12.5" r=".5"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg>'
+    },
     contentType: "image"
   },
   {
@@ -162,7 +192,13 @@ export const AIGeneratedImages: Video[] = [
     credits: 350,
     resolution: "4K",
     duration: 0,
-    category: "characters",
+    categoryId: 5,
+    category: {
+      id: 5,
+      name: "Characters",
+      slug: "characters",
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>'
+    },
     contentType: "image"
   },
   {
@@ -172,7 +208,13 @@ export const AIGeneratedImages: Video[] = [
     credits: 275,
     resolution: "4K",
     duration: 0,
-    category: "entertainment",
+    categoryId: 3,
+    category: {
+      id: 3,
+      name: "Entertainment",
+      slug: "entertainment",
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>'
+    },
     contentType: "image"
   }
 ];
@@ -185,7 +227,13 @@ export const NewReleases: Video[] = [
     credits: 600,
     resolution: "4K",
     duration: 20,
-    category: "nature",
+    categoryId: 13,
+    category: {
+      id: 13,
+      name: "Nature",
+      slug: "nature",
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 22V9.76a2 2 0 0 1 .51-1.33L12 3l5.49 5.43a2 2 0 0 1 .51 1.33V22"></path><path d="M2 22h20"></path></svg>'
+    },
     contentType: "video"
   },
   {
@@ -195,7 +243,13 @@ export const NewReleases: Video[] = [
     credits: 450,
     resolution: "HD",
     duration: 60,
-    category: "nature",
+    categoryId: 13,
+    category: {
+      id: 13,
+      name: "Nature",
+      slug: "nature",
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 22V9.76a2 2 0 0 1 .51-1.33L12 3l5.49 5.43a2 2 0 0 1 .51 1.33V22"></path><path d="M2 22h20"></path></svg>'
+    },
     contentType: "video"
   },
   {
@@ -205,7 +259,13 @@ export const NewReleases: Video[] = [
     credits: 850,
     resolution: "4K",
     duration: 25,
-    category: "entertainment",
+    categoryId: 3,
+    category: {
+      id: 3,
+      name: "Entertainment",
+      slug: "entertainment",
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>'
+    },
     contentType: "video"
   },
   {
@@ -215,32 +275,38 @@ export const NewReleases: Video[] = [
     credits: 300,
     resolution: "HD",
     duration: 15,
-    category: "art",
+    categoryId: 7,
+    category: {
+      id: 7,
+      name: "Art",
+      slug: "art",
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5"></circle><circle cx="17.5" cy="10.5" r=".5"></circle><circle cx="8.5" cy="7.5" r=".5"></circle><circle cx="6.5" cy="12.5" r=".5"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg>'
+    },
     contentType: "video"
   }
 ];
 
 export const PopularCategories: PopularCategory[] = [
   {
-    id: 1,
+    id: 5,
     name: "Characters",
     image: "https://images.pexels.com/photos/1693095/pexels-photo-1693095.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
     count: 542
   },
   {
-    id: 2,
+    id: 13,
     name: "Nature",
     image: "https://images.pexels.com/photos/924824/pexels-photo-924824.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
     count: 321
   },
   {
-    id: 3,
+    id: 7,
     name: "Art",
     image: "https://images.pexels.com/photos/1036936/pexels-photo-1036936.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
     count: 289
   },
   {
-    id: 4,
+    id: 3,
     name: "Entertainment",
     image: "https://images.pexels.com/photos/127513/pexels-photo-127513.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
     count: 456
