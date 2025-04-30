@@ -397,7 +397,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
   }, [title, description, aiGenerator, prompt, categoryId, contentType, selectedFile, embedCode, thumbnailUrl, originalYoutubeUrl, originalRedditUrl, toast, onClose]);
 
   return (
-    <SimpleDialog isOpen={isOpen} onClose={onClose} title="Upload New Media" className="bg-[#1a1a1a] border-gray-800 max-w-lg">
+    <SimpleDialog isOpen={isOpen} onClose={onClose} title="Upload New Media" className="bg-[#1a1a1a] border-gray-800 max-w-md">
       <div>
         <div className="flex items-center justify-between mb-6">
           <p className="text-sm text-gray-400">
@@ -439,9 +439,9 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           </TabsList>
           
           <TabsContent value="video" className="mt-0">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3">
               <div className="grid w-full items-center gap-1.5">
-                <label htmlFor="video-media" className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-700 rounded-lg cursor-pointer bg-[#111] hover:bg-[#181818] transition-colors">
+                <label htmlFor="video-media" className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-700 rounded-lg cursor-pointer bg-[#111] hover:bg-[#181818] transition-colors">
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <i className="fas fa-cloud-upload-alt text-3xl mb-3 text-primary"></i>
                     <p className="mb-2 text-sm text-center text-gray-300">
@@ -529,7 +529,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="Enter the prompt you used to generate this video"
-                  className="resize-none min-h-[50px]"
+                  className="resize-none min-h-[40px]"
                 />
               </div>
               
@@ -575,9 +575,9 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           </TabsContent>
           
           <TabsContent value="image" className="mt-0">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3">
               <div className="grid w-full items-center gap-1.5">
-                <label htmlFor="image-media" className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-700 rounded-lg cursor-pointer bg-[#111] hover:bg-[#181818] transition-colors">
+                <label htmlFor="image-media" className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-700 rounded-lg cursor-pointer bg-[#111] hover:bg-[#181818] transition-colors">
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <i className="fas fa-cloud-upload-alt text-3xl mb-3 text-primary"></i>
                     <p className="mb-2 text-sm text-center text-gray-300">
@@ -711,7 +711,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           </TabsContent>
           
           <TabsContent value="embed" className="mt-0">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3">
               <div className="space-y-2">
                 <label htmlFor="embed-code" className="text-sm font-medium">
                   Embed Code <span className="text-destructive">*</span>
