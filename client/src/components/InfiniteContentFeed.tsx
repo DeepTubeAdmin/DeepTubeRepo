@@ -273,7 +273,7 @@ export default function InfiniteContentFeed({
               return categories[randomIndex].name;
             };
             
-            // For section titles based on block types and position
+            // For section titles based on block types, position, and server-provided category
             let sectionTitle = "";
             
             if (block.type === 'videos') {
@@ -282,8 +282,8 @@ export default function InfiniteContentFeed({
               } else if (index === 1) {
                 sectionTitle = "Recently Uploaded Videos";
               } else {
-                // For subsequent video blocks, show category titles
-                const categoryName = getRandomCategory();
+                // For subsequent video blocks, use the category from server or fallback
+                const categoryName = block.categoryName || getRandomCategory();
                 sectionTitle = `${categoryName} Videos`;
               }
             } else {
@@ -293,8 +293,8 @@ export default function InfiniteContentFeed({
               } else if (index === 7) {
                 sectionTitle = "Most Viewed Images";
               } else {
-                // For other image blocks, show category + Images
-                const categoryName = getRandomCategory();
+                // For other image blocks, use the category from server or fallback
+                const categoryName = block.categoryName || getRandomCategory();
                 sectionTitle = `${categoryName} Images`;
               }
             }

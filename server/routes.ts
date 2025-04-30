@@ -323,6 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: 'videos' | 'images';
           id: number;
           title: string;
+          categoryName?: string;
           items: Video[];
         }>
       };
