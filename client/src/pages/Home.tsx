@@ -12,6 +12,7 @@ import { LogIn, Upload, WandSparkles, Filter } from "lucide-react";
 import LoginRequiredModal from "@/components/LoginRequiredModal";
 import Layout from "@/components/Layout";
 import MiniFooter from "@/components/MiniFooter";
+import SEO from "@/components/SEO";
 import { useQuery } from "@tanstack/react-query";
 
 export default function Home() {
@@ -102,6 +103,7 @@ export default function Home() {
 
   return (
     <Layout showHeader={true}>
+      <SEO />
       {!isCategoriesLoading && (
         <CategoryNavigation 
           categories={allCategories} 
