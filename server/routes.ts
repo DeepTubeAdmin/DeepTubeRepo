@@ -1062,6 +1062,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint to get current user's uploaded videos
+  app.get("/api/user/videos", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      
+      // Get videos uploaded by this user
+      const videos = await dbStorage.getUserVideos(req.user.id);
+      
+      console.log(`Fetched ${videos.length} videos for user ID: ${req.user.id}`);
+      
+      // Enhanced video objects with category data if needed
+      const enhancedVideos = await Promise.all(videos.map(async (video) => {
+        if (video.categoryId) {
+          const category = await dbStorage.getCategoryById(video.categoryId);
+          return {
+            ...video,
+            category: category ? {
+              id: category.id,
+              name: category.name,
+              slug: category.slug
+            } : undefined
+          };
+        }
+        return video;
+      }));
+      
+      res.json(enhancedVideos);
+    } catch (error) {
+      console.error("Error fetching user videos:", error);
+      res.status(500).json({ error: "Failed to fetch your videos" });
+    }
+  });
+
   // Admin endpoints
   // Get all content for admin dashboard
   app.get("/api/content/all", isAdmin, async (req, res) => {
