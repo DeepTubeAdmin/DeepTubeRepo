@@ -86,7 +86,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
                   autoPlay
                   muted
                   playsInline
-                  loop={false}
+                  loop={true}
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     console.error(`Error loading video: ${video.videoUrl}`, e);
@@ -100,17 +100,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
                       parent.appendChild(errorDiv);
                     }
                   }}
-                  onTimeUpdate={(e) => {
-                    // Stop after 5 seconds
-                    if (e.currentTarget.currentTime > 5) {
-                      e.currentTarget.pause();
-                    }
-                  }}
                 />
-                
-                <div className="absolute bottom-0 left-0 bg-black/70 text-white text-xs p-1">
-                  Preview: Max 5s
-                </div>
               </>
             ) : (
               // No video URL available
@@ -141,7 +131,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
             }}
           >
             <iframe
-              src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0&showinfo=0&modestbranding=1&start=0&end=5&disablekb=1&rel=0&loop=0&playlist=${youtubeId}`}
+              src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0&showinfo=0&modestbranding=1&start=0&disablekb=1&rel=0&loop=1&playlist=${youtubeId}`}
               width="100%"
               height="100%"
               frameBorder="0"
@@ -161,23 +151,6 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
             transition: 'opacity 0.2s ease-in-out',
           }}
         ></div>
-        
-        {/* Prominent Play Button in center */}
-        <div className="absolute inset-0 flex items-center justify-center z-30">
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              handlePreview();
-            }}
-            className={`${isHovered ? 'scale-125 bg-opacity-90' : 'scale-100 bg-opacity-70'} 
-                       bg-orange-500 hover:bg-orange-600 text-white p-4 rounded-full 
-                       flex items-center justify-center shadow-lg transition-all duration-200`}
-            title="Watch video"
-            aria-label="Play video"
-          >
-            <Play size={36} strokeWidth={3} />
-          </button>
-        </div>
         
         {/* Duration badge */}
         {video.duration > 0 && video.contentType !== 'image' && (
