@@ -3,6 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import Layout from "@/components/Layout";
 import MiniFooter from "@/components/MiniFooter";
+import SEO from "@/components/SEO";
 import { 
   MessageSquare, 
   Plus, 
@@ -247,6 +248,13 @@ export default function ForumPage() {
 
   return (
     <Layout>
+      <SEO 
+        title="Forum | DeepTube.co"
+        description="Join the DeepTube.co community forum to discuss AI-generated videos, share tips, ask questions, and connect with other AI content creators."
+        canonicalUrl="https://deeptube.co/forum"
+        ogType="website"
+        keywords="AI forum, video generation forum, AI community, AI discussion, video creation, DeepTube.co"
+      />
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="flex items-center gap-4 mb-8">
           <MessageSquare className="h-8 w-8 text-primary" />

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import Layout from '@/components/Layout';
 import MiniFooter from '@/components/MiniFooter';
+import SEO from '@/components/SEO';
 import VideoCard from '@/components/VideoCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -190,8 +191,24 @@ export default function SearchResults() {
   const hasResults = !searchLoading && searchResults && searchResults.length > 0;
   const noResults = !searchLoading && currentQuery && (!searchResults || searchResults.length === 0);
   
+  // Prepare dynamic SEO metadata based on search query and filters
+  const seoTitle = currentQuery 
+    ? `Search results for "${currentQuery}" | DeepTube.co` 
+    : 'Search | DeepTube.co';
+  
+  const seoDescription = currentQuery 
+    ? `Browse search results for "${currentQuery}" on DeepTube.co. Find AI-generated ${contentType !== 'all' ? contentType + 's' : 'content'} ${categorySlug ? `in the ${categorySlug} category` : ''}` 
+    : 'Search for AI-generated videos, images, and embedded content on DeepTube.co';
+  
   return (
     <Layout>
+      <SEO 
+        title={seoTitle}
+        description={seoDescription}
+        canonicalUrl={`https://deeptube.co/search?q=${encodeURIComponent(currentQuery)}`}
+        ogType="website"
+        keywords={`AI search, ${currentQuery}, ${contentType}, AI videos, AI images, DeepTube.co`}
+      />
       <div className="container mx-auto py-6 px-4">
         {/* Search form */}
         <form onSubmit={handleSearch} className="mb-6">
