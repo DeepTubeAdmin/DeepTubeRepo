@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { LogIn, Upload, Video, WandSparkles, Filter } from "lucide-react";
 import LoginRequiredModal from "@/components/LoginRequiredModal";
 import Layout from "@/components/Layout";
+import MiniFooter from "@/components/MiniFooter";
 import { useQuery } from "@tanstack/react-query";
 
 export default function Home() {
@@ -109,7 +110,8 @@ export default function Home() {
       )}
 
       <div id="homePage" className="page active">
-        <main className="container mx-auto px-4 py-4">
+        <main className="container mx-auto px-4 py-4 pb-12">
+        {/* Added padding to bottom (pb-12) to make room for the fixed mini footer */}
           {/* Featured Section */}
           <section className="mb-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -198,6 +200,9 @@ export default function Home() {
         isOpen={isLoginModalOpen} 
         onClose={() => setIsLoginModalOpen(false)} 
       />
+      
+      {/* Mini Footer - only visible on home page */}
+      <MiniFooter />
     </Layout>
   );
 }
