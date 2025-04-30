@@ -318,7 +318,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = {
         page,
         pageSize,
-        hasMore: page < 10, // For demo, limit to 10 pages
+        hasMore: true, // Always true to enable infinite scrolling
         blocks: [] as Array<{
           type: 'videos' | 'images';
           id: number;
@@ -474,12 +474,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resetContentCache(cacheKey);
       }
       
-      // Also reset cache if we have no more content to show
+      // Reset cache if we have no more content to show, but keep loading
       const hasEmptyBlock = response.blocks.some(block => block.items.length === 0);
       if (hasEmptyBlock) {
         console.log(`Some blocks are empty, resetting cache for ${cacheKey}`);
         resetContentCache(cacheKey);
-        response.hasMore = false;
+        // Always keep hasMore true for infinite scrolling
+        // response.hasMore = false; 
       }
       
       // Log the current state of the cache

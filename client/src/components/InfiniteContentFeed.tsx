@@ -336,11 +336,7 @@ export default function InfiniteContentFeed({
             </div>
           )}
           
-          {!hasMore && (
-            <div className="py-6 text-center text-muted-foreground">
-              You've reached the end of the content
-            </div>
-          )}
+          {/* We no longer show "end of content" message for true infinite scrolling */}
         </>
       )}
     </div>
