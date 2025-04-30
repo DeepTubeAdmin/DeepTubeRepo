@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import logoImage from "../assets/deeptube-logo.png";
 
 export default function Footer() {
   return (
@@ -7,7 +8,14 @@ export default function Footer() {
         {/* Top section with main links */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div>
-            <h4 className="text-white text-lg font-semibold mb-4">DeepTube.co</h4>
+            <div className="mb-4">
+              <img 
+                src={logoImage} 
+                alt="DeepTube.co Logo" 
+                className="h-8 mb-3"
+                style={{ maxWidth: '180px' }}
+              />
+            </div>
             <ul className="space-y-3">
               <li>
                 <Link href="/" className="text-gray-400 hover:text-white text-sm">

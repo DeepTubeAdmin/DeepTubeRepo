@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import UploadMediaModal from "./UploadMediaModal";
 import LoginRequiredModal from "./LoginRequiredModal";
+import logoImage from "../assets/deeptube-logo.png";
 
 export default function Header() {
   const { user, logoutMutation } = useAuth();
@@ -72,10 +73,13 @@ export default function Header() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/" className="home-link">
-              <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">
-                DeepTube<span className="text-gray-400">.co</span>
-              </h1>
+            <Link href="/" className="home-link flex items-center">
+              <img 
+                src={logoImage} 
+                alt="DeepTube.co Logo" 
+                className="h-10 mr-2"
+                style={{ maxWidth: '200px' }}
+              />
             </Link>
           </div>
           
