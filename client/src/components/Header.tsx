@@ -70,12 +70,15 @@ export default function Header() {
     <header className="bg-black py-2 px-4 sticky top-0 z-50">
       <div className="container mx-auto">
         <div className="flex items-center justify-between">
-          {/* Logo */}
+          {/* Logo with tagline */}
           <div className="flex items-center">
             <Link href="/" className="home-link">
-              <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">
-                DeepTube<span className="text-gray-400">.co</span>
-              </h1>
+              <div className="flex flex-col">
+                <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">
+                  DeepTube<span className="text-gray-400">.co</span>
+                </h1>
+                <span className="text-xs text-gray-400 -mt-1">Ethical AI Media</span>
+              </div>
             </Link>
           </div>
           
