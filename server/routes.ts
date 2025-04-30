@@ -361,18 +361,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (isTrending) {
             // For trending, use featured videos
             videos = await dbStorage.getFeaturedVideos(fetchLimit);
+            // Filter to only video and embed types for video blocks
+            videos = videos.filter(v => v.contentType === 'video' || v.contentType === 'embed');
             console.log(`Category trending videos (video): first few IDs: [ ${videos.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else if (isMostViewed) {
             // For most viewed, use random order for now (will be replaced with actual view count)
-            videos = await dbStorage.getVideos(fetchLimit, 'video', undefined, 'viewed');
+            videos = await dbStorage.getVideos(fetchLimit, undefined, undefined, 'viewed');
+            // Filter to only video and embed types for video blocks
+            videos = videos.filter(v => v.contentType === 'video' || v.contentType === 'embed');
             console.log(`Category most-viewed videos (video): first few IDs: [ ${videos.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else if (categoryId) {
             // Filter by category if specified
-            videos = await dbStorage.getVideosByCategory(categoryId, 'video', fetchLimit);
+            videos = await dbStorage.getVideosByCategory(categoryId, undefined, fetchLimit);
+            // Filter to only video and embed types for video blocks
+            videos = videos.filter(v => v.contentType === 'video' || v.contentType === 'embed');
             console.log(`Category ${categoryId} videos (video): first few IDs: [ ${videos.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else {
-            // No filter - include all types (video, image, and embeds)
-            videos = await dbStorage.getVideos(fetchLimit, 'video', undefined, sortBy);
+            // No filter - but make sure to include only video and embed types
+            videos = await dbStorage.getVideos(fetchLimit, undefined, undefined, sortBy);
+            // Filter to only video and embed types for video blocks
+            videos = videos.filter(v => v.contentType === 'video' || v.contentType === 'embed');
             console.log(`General videos (video): first few IDs: [ ${videos.slice(0, 3).map(v => v.id).join(', ')} ]`);
           }
           

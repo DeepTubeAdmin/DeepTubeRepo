@@ -2,8 +2,11 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import VideoGrid from './VideoGrid';
 import ImageGallery from './ImageGallery';
 import VideoCard from './VideoCard';
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { ExternalLink, Heart, Image } from 'lucide-react';
 import { Video } from '@/types';
 import { Loader2 } from 'lucide-react';
+import { Link } from 'wouter';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface InfiniteContentFeedProps {
@@ -137,6 +140,99 @@ export default function InfiniteContentFeed({
     return items.slice(0, itemCount);
   };
   
+  // Image card component specifically for images in the infinite feed
+  interface ImageCardProps {
+    image: Video;
+    onPreview?: (imageId: number) => void;
+    onWishlist?: (imageId: number) => void;
+  }
+  
+  function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
+    const [isWishlisted, setIsWishlisted] = useState(false);
+    const [isHovering, setIsHovering] = useState(false);
+
+    const handleClick = () => {
+      if (onPreview) {
+        onPreview(image.id);
+      }
+    };
+
+    const handleWishlist = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setIsWishlisted(!isWishlisted);
+      if (onWishlist) {
+        onWishlist(image.id);
+      }
+    };
+    
+    const handleMouseEnter = () => {
+      setIsHovering(true);
+    };
+
+    const handleMouseLeave = () => {
+      setIsHovering(false);
+    };
+
+    return (
+      <div 
+        className="group transition-transform duration-200 overflow-hidden cursor-pointer rounded"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onClick={handleClick}
+      >
+        <div className="relative">
+          {/* Thumbnail with hover effect */}
+          <AspectRatio ratio={3 / 4} className="bg-black">
+            <img
+              src={image.thumbnail || "https://via.placeholder.com/640x360?text=No+Thumbnail"}
+              alt={image.title}
+              className="object-cover w-full h-full transition-all duration-300 transform group-hover:scale-110"
+            />
+          </AspectRatio>
+          
+          {/* Type badge */}
+          <div className="absolute top-2 right-2 bg-black text-primary text-xs font-semibold px-1 py-0.5 rounded-sm">
+            <div className="flex items-center">
+              <Image className="w-3 h-3 mr-0.5" />
+              <span>AI</span>
+            </div>
+          </div>
+          
+          {/* View/info overlay - only shows on hover */}
+          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+          </div>
+        </div>
+        
+        {/* Image info */}
+        <div className="pt-2 pb-3 px-1">
+          <div className="flex justify-between items-start">
+            <h3 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors cursor-pointer mr-2">
+              {image.title}
+            </h3>
+            <Link to={`/media/${image.id}`} className="text-gray-400 hover:text-primary transition-colors">
+              <ExternalLink className="h-3.5 w-3.5 ml-1" />
+            </Link>
+          </div>
+          
+          <div className="flex justify-between items-center mt-1">
+            <div className="flex items-center space-x-2 text-xs text-gray-400">
+              <span>{image.aiGenerator || "AI Generated"}</span>
+              <span>•</span>
+              <span>{Math.floor(Math.random() * 500) + 100} views</span>
+            </div>
+            
+            <button 
+              onClick={handleWishlist}
+              className="text-gray-400 hover:text-primary transition-colors"
+            >
+              <Heart className="h-4 w-4" fill={isWishlisted ? "currentColor" : "none"} />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {isInitialLoad ? (
@@ -163,10 +259,18 @@ export default function InfiniteContentFeed({
               >
                 <h3 className="text-2xl font-bold mb-6">{sectionTitle}</h3>
                 <div className={`grid grid-cols-1 sm:grid-cols-2 ${block.type === 'videos' ? 'md:grid-cols-3 gap-6' : 'md:grid-cols-3 lg:grid-cols-4 gap-4'}`}>
-                  {block.items.map(item => (
+                  {block.type === 'videos' && block.items.map(item => (
                     <VideoCard
                       key={item.id}
                       video={item}
+                      onPreview={onPreview}
+                      onWishlist={onWishlist}
+                    />
+                  ))}
+                  {block.type === 'images' && block.items.map(item => (
+                    <ImageCard
+                      key={item.id}
+                      image={item}
                       onPreview={onPreview}
                       onWishlist={onWishlist}
                     />
