@@ -13,6 +13,7 @@ import VimeoEmbed from "@/components/VimeoEmbed";
 import MiniFooter from "@/components/MiniFooter";
 import SEO from "@/components/SEO";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { generateVideoStructuredData, generateImageStructuredData } from "@/lib/structuredData";
 import { 
   Dialog,
   DialogContent,
@@ -146,6 +147,11 @@ export default function MediaDetail() {
   const seoImage = media.thumbnail || media.imageUrl || '';
   const seoCanonicalUrl = `https://deeptube.co/media/${id}`;
   const seoKeywords = `${media.aiGenerator || 'AI'}, ${media.contentType}, ${media.title.split(' ').join(', ')}, AI generated media`;
+  
+  // Generate structured data for rich snippets in search results
+  const mediaStructuredData = media.contentType === 'image' 
+    ? generateImageStructuredData(media)
+    : generateVideoStructuredData(media);
 
   return (
     <Layout>
@@ -156,6 +162,7 @@ export default function MediaDetail() {
         canonicalUrl={seoCanonicalUrl}
         ogType="article"
         keywords={seoKeywords}
+        structuredData={mediaStructuredData}
       />
       <div className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -214,7 +221,7 @@ export default function MediaDetail() {
               
               <div className="flex justify-between items-center mb-4">
                 <div className="text-sm text-gray-400">
-                  {media.views || 0} views • Added {new Date(media.createdAt).toLocaleDateString()}
+                  Added {new Date(media.createdAt).toLocaleDateString()}
                 </div>
                 
                 <div className="flex space-x-3">
@@ -274,7 +281,6 @@ export default function MediaDetail() {
               {/* Comment form */}
               <div className="mb-6 flex gap-3">
                 <Avatar className="w-10 h-10">
-                  <AvatarImage src={user?.avatar || undefined} />
                   <AvatarFallback>{user?.username?.[0] || 'A'}</AvatarFallback>
                 </Avatar>
                 
@@ -324,7 +330,7 @@ export default function MediaDetail() {
                           </span>
                         </div>
                         
-                        <p className="text-gray-300">{comment.text}</p>
+                        <p className="text-gray-300">{comment.content}</p>
                       </div>
                     </div>
                   ))

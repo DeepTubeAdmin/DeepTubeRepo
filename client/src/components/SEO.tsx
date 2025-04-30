@@ -1,5 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
+import { generateWebsiteStructuredData } from '@/lib/structuredData';
 
 interface SEOProps {
   title?: string;
@@ -8,6 +9,8 @@ interface SEOProps {
   ogType?: string;
   ogImage?: string;
   keywords?: string;
+  structuredData?: string;
+  isHome?: boolean;
 }
 
 export default function SEO({
@@ -16,13 +19,18 @@ export default function SEO({
   canonicalUrl = 'https://deeptube.co',
   ogType = 'website',
   ogImage = '/og-image.jpg',
-  keywords = 'AI media, AI videos, AI-generated content, ethical AI, AI community, AI creations'
+  keywords = 'AI media, AI videos, AI-generated content, ethical AI, AI community, AI creations',
+  structuredData,
+  isHome = false
 }: SEOProps) {
   
   // Construct the full title
   const fullTitle = title === 'DeepTube.co | AI Media Sharing Platform' 
     ? title 
     : `${title} | DeepTube.co`;
+  
+  // Add website schema for homepage
+  const websiteSchema = isHome ? generateWebsiteStructuredData() : null;
     
   return (
     <Helmet>
@@ -46,6 +54,24 @@ export default function SEO({
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={ogImage} />
+      
+      {/* Structured Data */}
+      {structuredData && (
+        <script type="application/ld+json">
+          {structuredData}
+        </script>
+      )}
+      
+      {/* Website schema for homepage */}
+      {isHome && websiteSchema && (
+        <script type="application/ld+json">
+          {websiteSchema}
+        </script>
+      )}
+      
+      {/* Additional SEO tags */}
+      <meta name="robots" content="index, follow" />
+      <meta name="googlebot" content="index, follow" />
     </Helmet>
   );
 }
