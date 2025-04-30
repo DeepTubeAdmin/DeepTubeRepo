@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import logoImage from "../assets/deeptube-logo.png";
+import logoImage from "../assets/deeptube-logo-text.png";
 
 export default function Footer() {
   return (
@@ -12,8 +12,8 @@ export default function Footer() {
               <img 
                 src={logoImage} 
                 alt="DeepTube.co Logo" 
-                className="h-8 mb-3"
-                style={{ maxWidth: '180px' }}
+                className="h-10 mb-3"
+                style={{ maxWidth: '220px' }}
               />
             </div>
             <ul className="space-y-3">
