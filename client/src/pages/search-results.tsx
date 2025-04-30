@@ -22,6 +22,12 @@ export default function SearchResults() {
   const initialContentType = (searchParams.get('type') || 'all') as 'all' | 'video' | 'image' | 'embed';
   const initialCategorySlug = searchParams.get('category') || '';
   
+  console.log('Search params directly from URL:', { 
+    rawSearch: search,
+    parsedQuery: searchParams.get('q'),
+    initialQuery
+  });
+  
   // State for search filters
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [contentType, setContentType] = useState<'all' | 'video' | 'image' | 'embed'>(initialContentType);
@@ -93,10 +99,19 @@ export default function SearchResults() {
     setLocation(`/search?${params.toString()}`, { replace: true });
   };
   
-  // Fetch search results - only run when params in URL change
+  // Get the query directly from the URL every time to ensure it's accurate
+  const getQueryDirectFromUrl = () => {
+    const currentSearch = location.split('?')[1] || '';
+    const currentParams = new URLSearchParams(currentSearch);
+    return currentParams.get('q') || '';
+  };
+  
+  const currentQuery = getQueryDirectFromUrl();
+  
   // Construct the backend API URL with query parameters
   const constructSearchUrl = () => {
-    let url = `/api/search?q=${encodeURIComponent(initialQuery)}`;
+    // Always use the current URL query to ensure it's fresh
+    let url = `/api/search?q=${encodeURIComponent(currentQuery)}`;
     
     if (initialContentType !== 'all') {
       url += `&type=${initialContentType}`;
@@ -111,24 +126,33 @@ export default function SearchResults() {
   
   const searchApiUrl = constructSearchUrl();
   
-  console.log('Executing search query:', searchApiUrl, 'with initialQuery:', initialQuery);
+  console.log('Executing search query:', searchApiUrl, 'with current URL query:', currentQuery);
   
-  // Check if URL has a query parameter
+  // Listen for route changes and update state accordingly
   useEffect(() => {
-    console.log('Search page mounted with params:', { 
-      initialQuery, 
-      initialContentType, 
-      initialCategorySlug,
-      searchParams: Object.fromEntries(searchParams.entries())
-    });
-  }, []);
+    // When the location changes, update the search parameters
+    const currentSearch = location.split('?')[1] || '';
+    const currentParams = new URLSearchParams(currentSearch);
+    
+    const query = currentParams.get('q') || '';
+    const type = (currentParams.get('type') || 'all') as 'all' | 'video' | 'image' | 'embed';
+    const category = currentParams.get('category') || '';
+    
+    console.log('Route changed, updating search params:', { query, type, category });
+    
+    // Update the search state
+    setSearchQuery(query);
+    setContentType(type);
+    setCategorySlug(category);
+    
+  }, [location]);
   
   const { data: searchResults, isLoading: searchLoading, error: searchError } = useQuery<Video[]>({
-    queryKey: [searchApiUrl],
+    queryKey: [searchApiUrl, location], // Include location in the query key to refetch when it changes
     queryFn: getQueryFn({
       on401: "returnNull"
     }),
-    enabled: !!initialQuery,
+    enabled: !!currentQuery, // Use currentQuery instead of initialQuery
   });
   
   // Log any search errors
@@ -156,9 +180,9 @@ export default function SearchResults() {
     }
   }, [searchResults]);
   
-  // Determine if we have any results to show
+  // Determine if we have any results to show 
   const hasResults = !searchLoading && searchResults && searchResults.length > 0;
-  const noResults = !searchLoading && initialQuery && (!searchResults || searchResults.length === 0);
+  const noResults = !searchLoading && currentQuery && (!searchResults || searchResults.length === 0);
   
   return (
     <Layout>
@@ -243,7 +267,7 @@ export default function SearchResults() {
             <div className="text-center py-12 bg-[#1a1a1a] rounded-md">
               <h2 className="text-2xl font-bold mb-2">No results found</h2>
               <p className="text-gray-400 mb-4">
-                We couldn't find any matches for "{initialQuery}"
+                We couldn't find any matches for "{currentQuery}"
               </p>
               <div className="mb-6">
                 <h3 className="font-semibold mb-2">Suggestions:</h3>
@@ -258,7 +282,7 @@ export default function SearchResults() {
           ) : hasResults ? (
             <div>
               <h2 className="text-2xl font-bold mb-4">
-                Search results for "{initialQuery}"
+                Search results for "{currentQuery}"
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {searchResults.map(video => (
