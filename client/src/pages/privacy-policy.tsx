@@ -1,4 +1,5 @@
 import Layout from "@/components/Layout";
+import MiniFooter from "@/components/MiniFooter";
 
 export default function PrivacyPolicy() {
   return (
@@ -166,6 +167,9 @@ export default function PrivacyPolicy() {
           </div>
         </div>
       </div>
+      
+      {/* Add MiniFooter */}
+      <MiniFooter />
     </Layout>
   );
 }

@@ -1,4 +1,5 @@
 import Layout from "@/components/Layout";
+import MiniFooter from "@/components/MiniFooter";
 
 export default function TermsOfService() {
   return (
@@ -138,6 +139,9 @@ export default function TermsOfService() {
           </div>
         </div>
       </div>
+      
+      {/* Add MiniFooter */}
+      <MiniFooter />
     </Layout>
   );
 }

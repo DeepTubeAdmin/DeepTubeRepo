@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Heart, Flag, Share, MessageSquare, ThumbsUp, Flag as FlagIcon } from "lucide-react";
 import VimeoEmbed from "@/components/VimeoEmbed";
+import MiniFooter from "@/components/MiniFooter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   Dialog,
@@ -369,6 +370,9 @@ export default function MediaDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Add MiniFooter */}
+      <MiniFooter />
     </Layout>
   );
 }
