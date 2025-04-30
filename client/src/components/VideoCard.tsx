@@ -68,19 +68,19 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
       onClick={handlePreview}
     >
       <div className="thumbnail-container relative overflow-hidden aspect-video">
-        {/* Video or image based on content type */}
-        {video.contentType === 'video' && video.videoUrl ? (
-          <>
-            {/* Always show thumbnail as base layer */}
-            <img 
-              src={video.thumbnail || "https://via.placeholder.com/640x360?text=No+Thumbnail"} 
-              alt={video.title} 
-              className="absolute inset-0 w-full h-full object-cover" 
-            />
+        {/* Always show thumbnail as base layer for all content types */}
+        <img 
+          src={video.thumbnail || "https://via.placeholder.com/640x360?text=No+Thumbnail"} 
+          alt={video.title} 
+          className="w-full h-full object-cover" 
+        />
             
-            {/* Video element that shows on hover */}
-            {isHovered && (
-              <div className="absolute inset-0 w-full h-full bg-black">
+        {/* Video previews only for video type with valid videoUrl */}
+        {video.contentType === 'video' && isHovered && (
+          <div className="absolute inset-0 w-full h-full bg-black/90">
+            {video.videoUrl ? (
+              // Valid video preview
+              <>
                 <video 
                   src={video.videoUrl}
                   autoPlay
@@ -88,6 +88,18 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
                   playsInline
                   loop={false}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.error(`Error loading video: ${video.videoUrl}`, e);
+                    e.currentTarget.style.display = "none";
+                    // Show error message when video fails to load
+                    const parent = e.currentTarget.parentElement;
+                    if (parent) {
+                      const errorDiv = document.createElement('div');
+                      errorDiv.className = "flex items-center justify-center h-full text-white";
+                      errorDiv.innerHTML = "Error loading video";
+                      parent.appendChild(errorDiv);
+                    }
+                  }}
                   onTimeUpdate={(e) => {
                     // Stop after 5 seconds
                     if (e.currentTarget.currentTime > 5) {
@@ -95,19 +107,27 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
                     }
                   }}
                 />
+                
                 <div className="absolute bottom-0 left-0 bg-black/70 text-white text-xs p-1">
                   Preview: Max 5s
                 </div>
+              </>
+            ) : (
+              // No video URL available
+              <div className="flex flex-col items-center justify-center h-full text-white text-sm p-4 text-center">
+                <span className="mb-2">This video requires full view</span>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePreview();
+                  }}
+                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full"
+                >
+                  Watch Full Video
+                </button>
               </div>
             )}
-          </>
-        ) : (
-          /* Static thumbnail for non-video content types */
-          <img 
-            src={video.thumbnail || "https://via.placeholder.com/640x360?text=No+Thumbnail"} 
-            alt={video.title} 
-            className="thumbnail w-full h-full object-cover" 
-          />
+          </div>
         )}
         
         {/* YouTube Preview for embed type only */}
