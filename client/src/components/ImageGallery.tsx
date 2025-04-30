@@ -35,10 +35,8 @@ export default function ImageGallery({
     const width = window.innerWidth;
     if (width < 640) return 'grid-cols-1'; // Mobile
     if (width < 768) return 'grid-cols-2'; // Small tablets
-    if (width < 1024) return 'grid-cols-4'; // Large tablets/small desktop
-    if (width < 1280) return 'grid-cols-6'; // Medium desktop
-    if (width < 1536) return 'grid-cols-7'; // Large desktop
-    return 'grid-cols-8'; // Extra large desktop
+    if (width < 1024) return 'grid-cols-3'; // Large tablets 
+    return 'grid-cols-4'; // Desktop sizes - exactly 4 per row for images
   };
 
   // Create a dynamic class that adjusts to screen width
@@ -132,7 +130,7 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
     >
       <div className="relative">
         {/* Thumbnail with hover effect */}
-        <AspectRatio ratio={16 / 9} className="bg-black">
+        <AspectRatio ratio={3 / 4} className="bg-black">
           <img
             src={image.thumbnail}
             alt={image.title}

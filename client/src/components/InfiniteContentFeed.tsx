@@ -162,7 +162,7 @@ export default function InfiniteContentFeed({
                 className={isContentTypeTransition ? "mt-16 mb-10" : "mb-10"}
               >
                 <h3 className="text-2xl font-bold mb-6">{sectionTitle}</h3>
-                <div className={`grid grid-cols-1 sm:grid-cols-2 ${block.type === 'videos' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-8`}>
+                <div className={`grid grid-cols-1 sm:grid-cols-2 ${block.type === 'videos' ? 'md:grid-cols-3 gap-6' : 'md:grid-cols-3 lg:grid-cols-4 gap-4'}`}>
                   {block.items.map(item => (
                     <VideoCard
                       key={item.id}
