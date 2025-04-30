@@ -64,25 +64,37 @@ export default function AdminPage() {
 
     const fetchData = async () => {
       try {
-        // In a real application, fetch reported content from an API
-        // For demo, we'll get some content from the regular API
-        const contentRes = await apiRequest('GET', '/api/content/featured');
-        const contentData = await contentRes.json();
-        
-        // Create some "reported" content for demonstration purposes
-        const demoReported = contentData.slice(0, 3).map((video: Video): ReportedContent => ({
-          ...video,
-          reportReason: 'Content violates community guidelines',
-          reportedAt: new Date().toISOString(),
-          reportedBy: 'user123'
-        }));
-        
-        setReportedContent(demoReported);
-        
-        // Fetch all users
+        // Fetch all users first
         const usersRes = await apiRequest('GET', '/api/admin/users');
         const usersData = await usersRes.json();
         setUsers(usersData);
+        
+        // Then try to get content for demo purposes
+        try {
+          const contentRes = await apiRequest('GET', '/api/content/featured');
+          if (contentRes.ok) {
+            const contentData = await contentRes.json();
+            
+            // Create some "reported" content for demonstration purposes
+            if (contentData && Array.isArray(contentData) && contentData.length > 0) {
+              const demoReported = contentData.slice(0, 3).map((video: Video): ReportedContent => ({
+                ...video,
+                reportReason: 'Content violates community guidelines',
+                reportedAt: new Date().toISOString(),
+                reportedBy: 'user123'
+              }));
+              
+              setReportedContent(demoReported);
+            } else {
+              // If no content, use empty array
+              setReportedContent([]);
+            }
+          }
+        } catch (contentError) {
+          console.warn('Could not load demo content for admin page:', contentError);
+          // Continue with empty reported content
+          setReportedContent([]);
+        }
         
         setLoading(false);
       } catch (error) {

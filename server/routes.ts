@@ -1145,6 +1145,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // We're using the other deletion endpoint at "/api/admin/content/:contentId" defined below
+  
   // Ban/unban user endpoint
   app.put("/api/admin/users/:userId", isAuthenticated, isAdmin, async (req, res) => {
     try {
