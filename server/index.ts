@@ -15,6 +15,8 @@ app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
 // Serve uploaded files statically - make sure this happens before other routes
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Serve placeholder files statically
+app.use('/placeholder', express.static(path.join(__dirname, '../placeholder')));
 
 app.use((req, res, next) => {
   const start = Date.now();
