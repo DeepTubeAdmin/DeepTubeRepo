@@ -26,13 +26,64 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
     }
   }, [video.embedCode, video.contentType]);
   
-  // Mouse enter handler - just set hovered state
+  // Reference to the video element
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
+  // Add an effect to control video playback when the hover state changes
+  useEffect(() => {
+    // Only run this effect for videos, not for images or embeds
+    if (video.contentType === 'video' && video.videoUrl) {
+      // Delay to give the browser time to process
+      const videoPlayTimer = setTimeout(() => {
+        // Get all video elements in this card (there should be just one)
+        const videoElements = cardRef.current?.querySelectorAll('video') || [];
+        
+        if (videoElements.length > 0) {
+          const videoElement = videoElements[0];
+          
+          if (isHovered) {
+            console.log('Effect: Playing video manually through DOM:', video.videoUrl);
+            
+            try {
+              // Force configuration for autoplay
+              videoElement.currentTime = 0;
+              videoElement.muted = true;
+              videoElement.playsInline = true;
+              videoElement.loop = true;
+              
+              // Simulate user interaction and then play
+              document.body.click();
+              videoElement.play().catch(err => {
+                console.error('Failed to play via direct DOM access:', err);
+              });
+            } catch (error) {
+              console.error('Error accessing video DOM element:', error);
+            }
+          } else {
+            try {
+              videoElement.pause();
+            } catch (error) {
+              console.error('Error pausing video:', error);
+            }
+          }
+        } else {
+          console.log('No video elements found in the card');
+        }
+      }, 10); // Short delay
+      
+      return () => clearTimeout(videoPlayTimer);
+    }
+  }, [isHovered, video.contentType, video.videoUrl]);
+  
+  // Mouse enter handler - set state only
   const handleMouseEnter = () => {
+    console.log('Mouse entered video card');
     setIsHovered(true);
   };
   
-  // Mouse leave handler - reset hovered state
+  // Mouse leave handler - set state only
   const handleMouseLeave = () => {
+    console.log('Mouse left video card');
     setIsHovered(false);
   };
 
@@ -78,32 +129,39 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           }}
         />
         
-        {/* Video Preview - shown when hovering, using a native HTML video element for direct control */}
+        {/* Video Preview - shown when hovering, using a native HTML video element with direct reference */}
         {video.contentType === 'video' && video.videoUrl && (
           <div 
             className="absolute inset-0 z-15"
             onClick={(e) => {
               // Prevent clicks on the video from propagating
-              // to allow click handling in the video itself
               e.stopPropagation();
               handlePreview();
             }}
           >
             <video
+              ref={videoRef}
               src={video.videoUrl}
               poster={video.thumbnail || undefined}
               muted
               playsInline
               loop
               autoPlay={isHovered}
+              preload="auto"
               className="w-full h-full object-cover"
               style={{opacity: isHovered ? 1 : 0}}
-              onMouseOver={(e) => {
-                // Explicitly try to play on mouse over
+              // Add all possible event handlers to try to catch any browser-specific behavior
+              onMouseEnter={(e) => {
                 const vid = e.currentTarget;
-                if (vid.paused) {
-                  vid.play().catch(err => console.error('Video play error:', err));
-                }
+                vid.play().catch(err => console.error('Video play error on mouse enter:', err));
+              }}
+              onMouseOver={(e) => {
+                const vid = e.currentTarget;
+                vid.play().catch(err => console.error('Video play error on mouse over:', err));
+              }}
+              onFocus={(e) => {
+                const vid = e.currentTarget;
+                vid.play().catch(err => console.error('Video play error on focus:', err));
               }}
             />
           </div>
