@@ -107,6 +107,9 @@
   scrollbar-width: none;  /* Firefox */
   -ms-overflow-style: none;  /* IE and Edge */
   padding: 10px 0;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; /* For smoother scrolling on iOS */
+  max-width: 100%; /* Ensure container respects parent width */
 }
 
 .nav-tabs::-webkit-scrollbar {
