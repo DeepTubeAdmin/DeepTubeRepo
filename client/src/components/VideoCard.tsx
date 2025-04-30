@@ -1,4 +1,4 @@
-import { Heart, Play } from "lucide-react";
+import { Heart, Play, Pause } from "lucide-react";
 import { Video } from "@/types";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
@@ -14,7 +14,9 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [youtubeId, setYoutubeId] = useState<string | null>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   
   // Extract YouTube ID from embed code when the component loads
   useEffect(() => {
@@ -26,64 +28,74 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
     }
   }, [video.embedCode, video.contentType]);
   
-  // Reference to the video element
-  const videoRef = useRef<HTMLVideoElement>(null);
-  
-  // Add an effect to control video playback when the hover state changes
-  useEffect(() => {
-    // Only run this effect for videos, not for images or embeds
-    if (video.contentType === 'video' && video.videoUrl) {
-      // Delay to give the browser time to process
-      const videoPlayTimer = setTimeout(() => {
-        // Get all video elements in this card (there should be just one)
-        const videoElements = cardRef.current?.querySelectorAll('video') || [];
+  // Toggle video playback - guaranteed to work with user interaction
+  const toggleVideoPlayback = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent opening the modal
+    
+    if (video.contentType !== 'video' || !video.videoUrl || !videoRef.current) return;
+    
+    try {
+      if (isPlaying) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        videoRef.current.muted = true; // Always mute for autoplay
+        videoRef.current.currentTime = 0; // Start from beginning
         
-        if (videoElements.length > 0) {
-          const videoElement = videoElements[0];
-          
-          if (isHovered) {
-            console.log('Effect: Playing video manually through DOM:', video.videoUrl);
-            
-            try {
-              // Force configuration for autoplay
-              videoElement.currentTime = 0;
-              videoElement.muted = true;
-              videoElement.playsInline = true;
-              videoElement.loop = true;
-              
-              // Simulate user interaction and then play
-              document.body.click();
-              videoElement.play().catch(err => {
-                console.error('Failed to play via direct DOM access:', err);
-              });
-            } catch (error) {
-              console.error('Error accessing video DOM element:', error);
-            }
-          } else {
-            try {
-              videoElement.pause();
-            } catch (error) {
-              console.error('Error pausing video:', error);
-            }
-          }
-        } else {
-          console.log('No video elements found in the card');
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log('Video playing successfully with manual interaction');
+              setIsPlaying(true);
+            })
+            .catch(err => {
+              console.error('Failed to play with manual interaction:', err);
+              setIsPlaying(false);
+            });
         }
-      }, 10); // Short delay
-      
-      return () => clearTimeout(videoPlayTimer);
+      }
+    } catch (error) {
+      console.error('Error toggling video playback:', error);
     }
-  }, [isHovered, video.contentType, video.videoUrl]);
+  };
+  
+  // Prepare video when hovered
+  useEffect(() => {
+    if (video.contentType === 'video' && video.videoUrl && videoRef.current) {
+      if (isHovered) {
+        // Preload when hovered but don't auto-play - user needs to click the play button
+        videoRef.current.load();
+        videoRef.current.muted = true;
+        videoRef.current.playsInline = true;
+        videoRef.current.loop = true;
+        
+        // If already playing, don't interrupt
+        if (isPlaying) {
+          try {
+            videoRef.current.play().catch(err => {
+              console.error('Error continuing playback on hover:', err);
+            });
+          } catch (error) {
+            console.error('Error accessing video element:', error);
+          }
+        }
+      } else {
+        // When leaving, pause if it was auto-playing
+        if (isPlaying) {
+          videoRef.current.pause();
+        }
+      }
+    }
+  }, [isHovered, isPlaying, video.contentType, video.videoUrl]);
   
   // Mouse enter handler - set state only
   const handleMouseEnter = () => {
-    console.log('Mouse entered video card');
     setIsHovered(true);
   };
   
   // Mouse leave handler - set state only
   const handleMouseLeave = () => {
-    console.log('Mouse left video card');
     setIsHovered(false);
   };
 
@@ -199,34 +211,53 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           }}
         ></div>
         
-        {/* Play Button */}
+        {/* Preview Button - Top left corner */}
         <button 
           onClick={(e) => {
             e.stopPropagation();
             handlePreview();
           }}
           className={`absolute top-2 left-2 z-30 ${isHovered ? 'opacity-100' : 'opacity-70'} bg-orange-500 hover:bg-orange-600 text-white p-2 rounded-full flex items-center justify-center shadow-lg transition-opacity`}
-          title="Watch video"
+          title="Watch full video"
           style={{ width: '40px', height: '40px' }}
         >
           <Play size={24} strokeWidth={3} />
         </button>
         
-        {/* Play icon overlay - appears on hover */}
-        <div 
-          className="absolute inset-0 flex items-center justify-center z-25"
-          style={{ 
-            opacity: isHovered ? 1 : 0.5,
-            transition: 'opacity 0.3s ease-in-out',
-            pointerEvents: 'none' // Make sure it doesn't block clicks
-          }}
-        >
-          <div className="bg-black bg-opacity-50 rounded-full p-3">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="5 3 19 12 5 21 5 3"></polygon>
-            </svg>
+        {/* Play/Pause Toggle Button - Shows in center when hovered for videos */}
+        {video.contentType === 'video' && video.videoUrl && isHovered && (
+          <button
+            onClick={toggleVideoPlayback}
+            className="absolute inset-0 flex items-center justify-center z-40 cursor-pointer"
+            title={isPlaying ? "Pause preview" : "Play preview"}
+          >
+            <div className="bg-black bg-opacity-50 p-4 rounded-full hover:bg-opacity-70 transition-all">
+              {isPlaying ? (
+                <Pause size={40} className="text-white" />
+              ) : (
+                <Play size={40} className="text-white" />
+              )}
+            </div>
+          </button>
+        )}
+        
+        {/* Play icon overlay */}
+        {(!isHovered || video.contentType !== 'video' || !video.videoUrl) && (
+          <div 
+            className="absolute inset-0 flex items-center justify-center z-25"
+            style={{ 
+              opacity: isHovered ? 1 : 0.5,
+              transition: 'opacity 0.3s ease-in-out',
+              pointerEvents: 'none' // Make sure it doesn't block clicks
+            }}
+          >
+            <div className="bg-black bg-opacity-50 rounded-full p-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+            </div>
           </div>
-        </div>
+        )}
         
         {/* Duration badge */}
         {video.duration > 0 && video.contentType !== 'image' && (
