@@ -533,7 +533,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Create video record
+      // Debug the request - see what's happening
+      console.log("DEBUG - Creating video with userId:", req.user.id);
+      console.log("DEBUG - Current user info:", JSON.stringify(req.user));
+      
+      // Create video record with explicit userId
       const video = await dbStorage.createVideo({
         title,
         description: description || "",
@@ -547,11 +551,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contentType,
         categoryId: parseInt(categoryId),
         vimeoId,
-        userId: req.user.id, // Associate with the current user
+        userId: req.user.id, // Force this value
         credits: 0, // Default to 0 credits for free content
         embedCode: contentType === "embed" ? embedCode : null,
-        imageUrl: contentType === "image" ? imageUrl : null,
+        imageUrl: contentType === "image" ? imageUrl : null
       });
+      
+      console.log("Created new video with ID:", video.id, video.title);
       
       res.status(201).json(video);
     } catch (error) {
