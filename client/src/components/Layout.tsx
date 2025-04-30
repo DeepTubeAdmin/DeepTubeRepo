@@ -1,5 +1,4 @@
 import React from 'react';
-import Footer from './Footer';
 import Header from './Header';
 
 interface LayoutProps {
@@ -16,7 +15,8 @@ export default function Layout({ children, showHeader = true }: LayoutProps) {
         {children}
       </div>
       
-      <Footer />
+      {/* The MiniFooter has been moved to specific pages instead of globally here,
+          so that we can keep it unchanged on the Home page as requested */}
     </div>
   );
 }
