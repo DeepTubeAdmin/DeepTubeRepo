@@ -416,11 +416,11 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
         <Tabs defaultValue="video" onValueChange={(value) => setContentType(value as "video" | "image" | "embed")}>
           <TabsList className="grid w-full grid-cols-3 mb-4 bg-[#272727] p-1 rounded-lg">
             <TabsTrigger 
-              value="video" 
+              value="embed" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:font-bold uppercase font-semibold rounded"
             >
-              <i className="fas fa-video"></i>
-              Video
+              <i className="fas fa-link"></i>
+              Embed
             </TabsTrigger>
             <TabsTrigger 
               value="image" 
@@ -430,11 +430,11 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
               Image
             </TabsTrigger>
             <TabsTrigger 
-              value="embed" 
+              value="video" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:font-bold uppercase font-semibold rounded"
             >
-              <i className="fas fa-link"></i>
-              Embed
+              <i className="fas fa-video"></i>
+              Video
             </TabsTrigger>
           </TabsList>
           
