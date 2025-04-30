@@ -72,51 +72,39 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         <img 
           src={video.thumbnail || "https://via.placeholder.com/640x360?text=No+Thumbnail"} 
           alt={video.title} 
-          className="w-full h-full object-cover" 
+          className="w-full h-full object-cover absolute inset-0" 
         />
             
-        {/* Video previews only for video type with valid videoUrl */}
-        {video.contentType === 'video' && isHovered && (
-          <div className="absolute inset-0 w-full h-full bg-black/90">
-            {video.videoUrl ? (
-              // Valid video preview
-              <>
-                <video 
-                  src={video.videoUrl}
-                  autoPlay
-                  muted
-                  playsInline
-                  loop={true}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    console.error(`Error loading video: ${video.videoUrl}`, e);
-                    e.currentTarget.style.display = "none";
-                    // Show error message when video fails to load
-                    const parent = e.currentTarget.parentElement;
-                    if (parent) {
-                      const errorDiv = document.createElement('div');
-                      errorDiv.className = "flex items-center justify-center h-full text-white";
-                      errorDiv.innerHTML = "Error loading video";
-                      parent.appendChild(errorDiv);
-                    }
-                  }}
-                />
-              </>
-            ) : (
-              // No video URL available
-              <div className="flex flex-col items-center justify-center h-full text-white text-sm p-4 text-center">
-                <span className="mb-2">This video requires full view</span>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handlePreview();
-                  }}
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full"
-                >
-                  Watch Full Video
-                </button>
-              </div>
-            )}
+        {/* Video previews only for video type with valid videoUrl on hover */}
+        {video.contentType === 'video' && isHovered && video.videoUrl && (
+          <div className="absolute inset-0 w-full h-full">
+            <video 
+              src={video.videoUrl}
+              autoPlay
+              muted
+              playsInline
+              loop={true}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                console.error(`Error loading video: ${video.videoUrl}`, e);
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          </div>
+        )}
+        
+        {/* No video URL available but still show "Watch Full Video" button on hover */}
+        {video.contentType === 'video' && isHovered && !video.videoUrl && (
+          <div className="absolute inset-0 w-full h-full bg-black/60 flex flex-col items-center justify-center">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePreview();
+              }}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded"
+            >
+              Watch Full Video
+            </button>
           </div>
         )}
         
@@ -159,12 +147,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           </div>
         )}
         
-        {/* Content type badge */}
-        <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full z-30 uppercase">
-          {video.contentType === 'video' ? 'MP4' : 
-           video.contentType === 'image' ? 'IMG' : 
-           video.contentType === 'embed' ? 'YT' : 'Media'}
-        </div>
+
       </div>
       
       {/* Video info */}
