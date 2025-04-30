@@ -135,8 +135,8 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
         ? file.type.startsWith("video/")
         : file.type.startsWith("image/");
       
-      // Check file size (10MB limit for images, 50MB for videos)
-      const maxSize = contentType === "video" ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+      // Check file size (10MB limit for images, 500MB for videos)
+      const maxSize = contentType === "video" ? 500 * 1024 * 1024 : 10 * 1024 * 1024;
       const isValidSize = file.size <= maxSize;
       
       if (!isValidType) {
@@ -152,7 +152,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
       if (!isValidSize) {
         toast({
           title: "File too large",
-          description: `${contentType === "video" ? "Video" : "Image"} must be less than ${contentType === "video" ? "50MB" : "10MB"}`,
+          description: `${contentType === "video" ? "Video" : "Image"} must be less than ${contentType === "video" ? "500MB" : "10MB"}`,
           variant: "destructive",
         });
         e.target.value = ""; // Reset input
