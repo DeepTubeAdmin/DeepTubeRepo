@@ -70,7 +70,15 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
       <div className="thumbnail-container relative overflow-hidden aspect-video h-52 sm:h-56 md:h-60 lg:h-64">
         {/* Always show thumbnail as base layer for all content types */}
         <img 
-          src={video.thumbnail || "https://via.placeholder.com/640x360?text=No+Thumbnail"} 
+          src={
+            // If we have a thumbnail, use it
+            video.thumbnail ? video.thumbnail :
+            // For video type with videoUrl but no thumbnail, use a better placeholder
+            (video.contentType === 'video' && video.videoUrl) ? 
+              `/placeholder/video-thumbnail.svg` : 
+              // Fallback placeholder
+              "https://placehold.co/400x225?text=AI+Video"
+          } 
           alt={video.title} 
           className="w-full h-full object-cover absolute inset-0" 
         />

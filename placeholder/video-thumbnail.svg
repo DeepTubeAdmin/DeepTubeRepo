@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="225" viewBox="0 0 400 225">
+  <rect width="400" height="225" fill="#191919"/>
+  <path d="M200,112.5 L165,90 L165,135 Z" fill="#FF6600" transform="scale(1.5) translate(-82.5, -45)"/>
+  <text x="200" y="135" font-family="Arial, sans-serif" font-size="18" fill="#ffffff" text-anchor="middle">Video Preview</text>
+</svg>
