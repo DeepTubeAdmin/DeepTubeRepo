@@ -3,6 +3,7 @@ import { Video } from "@/types";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { formatNumber, extractYoutubeIdFromEmbed } from "@/lib/utils";
+import VideoPreview from "./VideoPreview";
 
 interface VideoCardProps {
   video: Video;
@@ -67,12 +68,23 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
       onClick={handlePreview}
     >
       <div className="thumbnail-container relative overflow-hidden aspect-video">
-        {/* Thumbnail Image - always shown for videos instead of actual video preview */}
-        <img 
-          src={video.thumbnail || "https://via.placeholder.com/640x360?text=No+Thumbnail"} 
-          alt={video.title} 
-          className="thumbnail w-full h-full object-cover" 
-        />
+        {/* Video with 5-second preview on hover for video type */}
+        {video.contentType === 'video' && video.videoUrl ? (
+          <VideoPreview
+            src={video.videoUrl}
+            poster={video.thumbnail || "https://via.placeholder.com/640x360?text=No+Thumbnail"}
+            isHovered={isHovered}
+            className="w-full h-full object-cover"
+            previewDuration={5}
+          />
+        ) : (
+          /* Static thumbnail for non-video content types */
+          <img 
+            src={video.thumbnail || "https://via.placeholder.com/640x360?text=No+Thumbnail"} 
+            alt={video.title} 
+            className="thumbnail w-full h-full object-cover" 
+          />
+        )}
         
         {/* YouTube Preview for embed type only */}
         {video.contentType === 'embed' && youtubeId && isHovered && (
@@ -85,7 +97,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
             }}
           >
             <iframe
-              src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0&showinfo=0&modestbranding=1`}
+              src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0&showinfo=0&modestbranding=1&start=0&end=5`}
               width="100%"
               height="100%"
               frameBorder="0"
@@ -141,7 +153,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
       <div className="p-3 bg-gray-900">
         <h3 className="font-medium truncate">{video.title}</h3>
         <div className="flex justify-between text-sm text-gray-400 mt-1">
-          <span>{"AI Artist"}</span>
+          <span>{video.aiGenerator || "AI Artist"}</span>
           <div>
             <span className="mr-2">
               <i className="fas fa-eye mr-1"></i>
