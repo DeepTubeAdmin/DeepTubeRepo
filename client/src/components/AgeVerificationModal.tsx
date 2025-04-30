@@ -38,7 +38,7 @@ export default function AgeVerificationModal({ isOpen, onVerify }: AgeVerificati
             Age Verification Required
           </DialogTitle>
           <DialogDescription className="text-gray-300 text-center">
-            This website contains AI-generated content that requires users to be 18 years or older.
+            Even ethical AI content requires viewers be 18+
           </DialogDescription>
         </DialogHeader>
         
