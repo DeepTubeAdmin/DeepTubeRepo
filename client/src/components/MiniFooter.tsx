@@ -1,6 +1,10 @@
+import { useState } from "react";
 import { Link } from "wouter";
+import ContactModal from "./ContactModal";
 
 export default function MiniFooter() {
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+
   return (
     <footer className="fixed bottom-0 left-0 right-0 bg-[#121212] border-t border-gray-800 py-2 px-4 z-40">
       <div className="container mx-auto">
@@ -27,12 +31,21 @@ export default function MiniFooter() {
               Privacy
             </Link>
             <span className="text-gray-600 text-xs">•</span>
-            <Link href="/contact" className="text-xs text-gray-400 hover:text-white">
+            <button 
+              onClick={() => setIsContactModalOpen(true)}
+              className="text-xs text-gray-400 hover:text-white bg-transparent border-none cursor-pointer"
+            >
               Contact
-            </Link>
+            </button>
           </div>
         </div>
       </div>
+      
+      {/* Contact Modal */}
+      <ContactModal 
+        isOpen={isContactModalOpen} 
+        onClose={() => setIsContactModalOpen(false)} 
+      />
     </footer>
   );
 }
