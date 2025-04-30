@@ -343,15 +343,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const usedContentIds = infiniteScrollCache.get(cacheKey)!;
       
-      // Create pattern of 3 video blocks followed by 2 image blocks
+      // Create pattern of 3 video blocks followed by 1 image block (repeating)
       for (let i = 0; i < pageSize; i++) {
         const blockId = baseIndex + i;
-        const blockType = i < 3 ? 'videos' : 'images';
+        const blockType = i % 4 < 3 ? 'videos' : 'images';
         
         // Define our row size constant for reuse between blocks
-        const itemsPerRow = 8; // Increased from 5 to fill rows better
+        // Videos are 3 per row, images are 4 per row
+        const itemsPerRow = blockType === 'videos' ? 3 : 4;
         // Request more items than needed to allow for filtering out duplicates
-        const fetchLimit = itemsPerRow * 3; // Request even more to account for used IDs across pages
+        const fetchLimit = itemsPerRow * 5; // Request even more to account for used IDs across pages
         
         if (blockType === 'videos') {
           // Get video content based on filters
@@ -399,8 +400,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Get image content based on filters
           let images: Video[] = [];
           
-          // Use the same number of images per row as videos but fetch more to allow for filtering
-          const imagesPerRow = itemsPerRow;
+          // Images are always 4 per row
+          const imagesPerRow = 4;
           
           if (isTrending) {
             // For trending, use newest images
