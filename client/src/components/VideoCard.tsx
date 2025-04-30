@@ -97,13 +97,14 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
             }}
           >
             <iframe
-              src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0&showinfo=0&modestbranding=1&start=0&end=5`}
+              src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0&showinfo=0&modestbranding=1&start=0&end=5&disablekb=1&rel=0&loop=0&playlist=${youtubeId}`}
               width="100%"
               height="100%"
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               title={video.title}
+              onLoad={() => console.log(`YouTube embed loaded for video ID: ${youtubeId}`)}
             />
           </div>
         )}

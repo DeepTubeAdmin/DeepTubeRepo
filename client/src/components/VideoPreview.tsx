@@ -22,84 +22,160 @@ export default function VideoPreview({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   
-  // Load and prepare video on mount
+  // Debug logs to track component state
+  useEffect(() => {
+    console.log(`VideoPreview for ${src.substring(0, 30)}... - isHovered: ${isHovered}, isLoaded: ${isLoaded}, isPlaying: ${isPlaying}`);
+  }, [src, isHovered, isLoaded, isPlaying]);
+  
+  // Initialize video on mount
   useEffect(() => {
     if (!videoRef.current) return;
     
     const video = videoRef.current;
     video.muted = true;
     video.playsInline = true;
-    video.preload = "metadata"; // Only preload metadata initially
+    video.preload = "auto"; // Changed from metadata to auto for better preview experience
+    
+    // Ensure these attributes are set in HTML as well
+    video.setAttribute('muted', 'true');
+    video.setAttribute('playsinline', 'true');
+    
+    console.log(`VideoPreview: initializing video for ${src.substring(0, 30)}...`);
     
     const handleCanPlay = () => {
+      console.log(`VideoPreview: canplay event for ${src.substring(0, 30)}...`);
       setIsLoaded(true);
+      
+      // If component mounted while hovered, start playing immediately
+      if (isHovered && !isPlaying) {
+        playVideo();
+      }
+    };
+    
+    const handleLoadedData = () => {
+      console.log(`VideoPreview: loadeddata event for ${src.substring(0, 30)}...`);
+      setIsLoaded(true);
+      
+      // If component mounted while hovered, start playing immediately
+      if (isHovered && !isPlaying) {
+        playVideo();
+      }
     };
     
     const handleError = (e: Event) => {
-      console.error('Video preview error for', src, e);
+      console.error('VideoPreview: error for', src, e);
       setHasError(true);
     };
     
     // Set up event listeners
     video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('loadeddata', handleLoadedData);
     video.addEventListener('error', handleError);
     
-    // Load just the video metadata
+    // Load the video
     video.load();
     
     // Cleanup
     return () => {
+      console.log(`VideoPreview: cleaning up video for ${src.substring(0, 30)}...`);
+      
       video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('loadeddata', handleLoadedData);
       video.removeEventListener('error', handleError);
       
       try {
         video.pause();
+        setIsPlaying(false);
         video.removeAttribute('src');
         video.load();
       } catch (err) {
         console.error('Cleanup error:', err);
       }
     };
-  }, [src]);
+  }, [src, isHovered]); // Added isHovered to dependencies
   
-  // Handle hover state changes
-  useEffect(() => {
-    if (!videoRef.current || !isLoaded) return;
+  // Function to handle video playback with all necessary error handling
+  const playVideo = () => {
+    if (!videoRef.current) return;
     
     const video = videoRef.current;
     
-    if (isHovered) {
-      // Set to beginning and start playing when hovered
+    try {
+      // Reset to beginning for consistent preview experience
       video.currentTime = 0;
+      
+      console.log(`VideoPreview: attempting to play video for ${src.substring(0, 30)}...`);
       
       // Play with promise handling for browsers that return a promise
       const playPromise = video.play();
       
       if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.error('Preview autoplay prevented:', error);
-        });
+        playPromise
+          .then(() => {
+            console.log(`VideoPreview: successfully playing ${src.substring(0, 30)}...`);
+            setIsPlaying(true);
+          })
+          .catch(error => {
+            console.error('VideoPreview: autoplay prevented:', error);
+            setIsPlaying(false);
+            
+            // Try one more time with user interaction simulation
+            const handleUserInteraction = () => {
+              if (videoRef.current && isHovered) {
+                console.log(`VideoPreview: retrying play after user interaction for ${src.substring(0, 30)}...`);
+                videoRef.current.play()
+                  .then(() => {
+                    setIsPlaying(true);
+                  })
+                  .catch(e => {
+                    console.error('VideoPreview: still cannot play after user interaction:', e);
+                  });
+              }
+              document.removeEventListener('mousemove', handleUserInteraction);
+            };
+            
+            document.addEventListener('mousemove', handleUserInteraction, { once: true });
+          });
+      } else {
+        // For older browsers that don't return a promise
+        setIsPlaying(true);
       }
+    } catch (err) {
+      console.error('VideoPreview: Error starting video:', err);
+      setIsPlaying(false);
+    }
+  };
+  
+  // Handle hover state changes
+  useEffect(() => {
+    if (!videoRef.current) return;
+    
+    const video = videoRef.current;
+    
+    if (isHovered && isLoaded) {
+      // Play video when hovered and loaded
+      playVideo();
       
       // Set a timeout to pause the video after previewDuration seconds
       const timeoutId = setTimeout(() => {
-        // If still playing and near the end, pause
-        if (!video.paused && video.currentTime >= previewDuration - 0.5) {
-          video.pause();
-          // Reset to beginning for next hover
-          video.currentTime = 0;
+        if (videoRef.current && !videoRef.current.paused) {
+          console.log(`VideoPreview: pausing after ${previewDuration}s for ${src.substring(0, 30)}...`);
+          videoRef.current.pause();
+          setIsPlaying(false);
         }
       }, previewDuration * 1000);
       
       return () => clearTimeout(timeoutId);
-    } else {
-      // Pause the video when not hovered
+    } else if (!isHovered && isPlaying) {
+      // Pause video when mouse leaves
+      console.log(`VideoPreview: pausing on mouse leave for ${src.substring(0, 30)}...`);
       video.pause();
-      // Reset to beginning
-      video.currentTime = 0;
+      video.currentTime = 0; // Reset to beginning
+      setIsPlaying(false);
     }
-  }, [isHovered, isLoaded, previewDuration, src]);
+  }, [isHovered, isLoaded, previewDuration, src, isPlaying]);
   
   // Set duration limit on the video
   useEffect(() => {
@@ -109,9 +185,10 @@ export default function VideoPreview({
     
     const handleTimeUpdate = () => {
       // If the video has played for previewDuration seconds, pause it
-      if (video.currentTime >= previewDuration) {
+      if (video.currentTime >= previewDuration && !video.paused) {
+        console.log(`VideoPreview: reached duration limit of ${previewDuration}s for ${src.substring(0, 30)}...`);
         video.pause();
-        // Don't reset to beginning here, let the hover effect handle that
+        setIsPlaying(false);
       }
     };
     
@@ -120,7 +197,7 @@ export default function VideoPreview({
     return () => {
       video.removeEventListener('timeupdate', handleTimeUpdate);
     };
-  }, [isLoaded, previewDuration]);
+  }, [isLoaded, previewDuration, src]);
   
   if (hasError) {
     return (
@@ -134,25 +211,31 @@ export default function VideoPreview({
   }
   
   return (
-    <>
+    <div className="relative w-full h-full">
       {/* Always show the poster image as the base layer */}
       <img 
         src={poster} 
         alt="Video thumbnail" 
         className={`absolute inset-0 w-full h-full object-cover ${className}`}
-        style={{ width, height }}
       />
       
       {/* Video element that plays on hover */}
       <video
         ref={videoRef}
         className={`absolute inset-0 w-full h-full object-cover ${isHovered ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300 ${className}`}
-        style={{ width, height }}
         src={src}
         muted
         playsInline
-        preload="metadata"
+        preload="auto"
+        loop={false}
       />
-    </>
+      
+      {/* Debug overlay - uncomment for testing */}
+      {/* <div className="absolute bottom-0 left-0 bg-black/70 text-white text-xs p-1 z-50">
+        {isHovered ? 'Hovered' : 'Not Hovered'} | 
+        {isLoaded ? 'Loaded' : 'Loading'} | 
+        {isPlaying ? 'Playing' : 'Paused'}
+      </div> */}
+    </div>
   );
 }
