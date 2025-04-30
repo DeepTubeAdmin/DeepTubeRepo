@@ -95,15 +95,48 @@ export default function SearchResults() {
   
   // Fetch search results - only run when params in URL change
   // Construct the backend API URL with query parameters
-  const searchApiUrl = `/api/search?q=${encodeURIComponent(initialQuery)}${initialContentType !== 'all' ? `&type=${initialContentType}` : ''}${categoryId ? `&categoryId=${categoryId}` : ''}`;
+  const constructSearchUrl = () => {
+    let url = `/api/search?q=${encodeURIComponent(initialQuery)}`;
+    
+    if (initialContentType !== 'all') {
+      url += `&type=${initialContentType}`;
+    }
+    
+    if (categoryId) {
+      url += `&categoryId=${categoryId}`;
+    }
+    
+    return url;
+  };
   
-  const { data: searchResults, isLoading: searchLoading } = useQuery<Video[]>({
+  const searchApiUrl = constructSearchUrl();
+  
+  console.log('Executing search query:', searchApiUrl, 'with initialQuery:', initialQuery);
+  
+  // Check if URL has a query parameter
+  useEffect(() => {
+    console.log('Search page mounted with params:', { 
+      initialQuery, 
+      initialContentType, 
+      initialCategorySlug,
+      searchParams: Object.fromEntries(searchParams.entries())
+    });
+  }, []);
+  
+  const { data: searchResults, isLoading: searchLoading, error: searchError } = useQuery<Video[]>({
     queryKey: [searchApiUrl],
     queryFn: getQueryFn({
       on401: "returnNull"
     }),
     enabled: !!initialQuery,
   });
+  
+  // Log any search errors
+  useEffect(() => {
+    if (searchError) {
+      console.error('Search error:', searchError);
+    }
+  }, [searchError]);
   
   // Handle preview click
   const handlePreview = (videoId: number) => {
@@ -115,6 +148,13 @@ export default function SearchResults() {
     // Implementation to add/remove from wishlist
     console.log('Add to wishlist:', videoId);
   };
+  
+  // Log search results for debugging
+  useEffect(() => {
+    if (searchResults) {
+      console.log('Search results received:', searchResults.length, searchResults);
+    }
+  }, [searchResults]);
   
   // Determine if we have any results to show
   const hasResults = !searchLoading && searchResults && searchResults.length > 0;

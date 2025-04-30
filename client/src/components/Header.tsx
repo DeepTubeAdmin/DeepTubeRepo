@@ -41,6 +41,7 @@ export default function Header() {
     e.preventDefault();
     if (searchQuery.trim()) {
       const searchPath = `/search?q=${encodeURIComponent(searchQuery.trim())}`;
+      console.log('Header search - redirecting to:', searchPath);
       setLocation(searchPath);
       setSearchQuery(''); // Reset the search field after search
     }
