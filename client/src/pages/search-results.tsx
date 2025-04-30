@@ -101,9 +101,14 @@ export default function SearchResults() {
   
   // Get the query directly from the URL every time to ensure it's accurate
   const getQueryDirectFromUrl = () => {
-    const currentSearch = location.split('?')[1] || '';
-    const currentParams = new URLSearchParams(currentSearch);
-    return currentParams.get('q') || '';
+    // Use window.location.search to get the query string
+    const currentParams = new URLSearchParams(window.location.search);
+    const query = currentParams.get('q') || '';
+    console.log('Reading search param directly from window.location:', { 
+      windowLocationSearch: window.location.search,
+      extractedQuery: query
+    });
+    return query;
   };
   
   const currentQuery = getQueryDirectFromUrl();
