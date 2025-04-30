@@ -21,6 +21,8 @@ export interface Video {
   videoUrl?: string;  // URL to the video file or Vimeo URL
   imageUrl?: string;  // URL to the image file for image content type
   embedCode?: string; // Embed code for embedded content
+  userId?: number;    // User ID who uploaded the video
+  createdAt?: string; // Creation timestamp
 }
 
 export interface Category {

@@ -159,10 +159,10 @@ export default function InfiniteContentFeed({
             return (
               <section 
                 key={`${block.type}-${block.id}`} 
-                className={isContentTypeTransition ? "mt-12 mb-8" : "mb-8"}
+                className={isContentTypeTransition ? "mt-16 mb-10" : "mb-10"}
               >
-                <h3 className="text-xl font-bold mb-4">{sectionTitle}</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <h3 className="text-2xl font-bold mb-6">{sectionTitle}</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                   {block.items.map(item => (
                     <VideoCard
                       key={item.id}

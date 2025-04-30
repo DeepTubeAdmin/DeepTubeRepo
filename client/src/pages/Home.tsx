@@ -115,8 +115,8 @@ export default function Home() {
         {/* Added padding to bottom (pb-12) to make room for the fixed mini footer */}
           {/* Featured Section */}
           <section className="mb-8">
-            <h3 className="text-xl font-bold mb-4">Featured Content</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <h3 className="text-2xl font-bold mb-6">Featured Content</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               <div className="col-span-full lg:col-span-2">
                 <VideoCard 
                   video={{
