@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Heart, Flag, Share, MessageSquare, ThumbsUp, Flag as FlagIcon } from "lucide-react";
 import VimeoEmbed from "@/components/VimeoEmbed";
 import MiniFooter from "@/components/MiniFooter";
+import SEO from "@/components/SEO";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   Dialog,
@@ -139,8 +140,23 @@ export default function MediaDetail() {
     );
   }
   
+  // Generate SEO metadata based on the media content
+  const seoTitle = media.title;
+  const seoDescription = media.description || `${media.title} - AI generated ${media.contentType} on DeepTube.co`;
+  const seoImage = media.thumbnail || media.imageUrl || '';
+  const seoCanonicalUrl = `https://deeptube.co/media/${id}`;
+  const seoKeywords = `${media.aiGenerator || 'AI'}, ${media.contentType}, ${media.title.split(' ').join(', ')}, AI generated media`;
+
   return (
     <Layout>
+      <SEO 
+        title={seoTitle}
+        description={seoDescription}
+        ogImage={seoImage}
+        canonicalUrl={seoCanonicalUrl}
+        ogType="article"
+        keywords={seoKeywords}
+      />
       <div className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main content column */}

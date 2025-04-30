@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Disallow admin and authentication pages
+Disallow: /admin
+Disallow: /access-denied
+
+# Sitemap location
+Sitemap: https://deeptube.co/sitemap.xml
