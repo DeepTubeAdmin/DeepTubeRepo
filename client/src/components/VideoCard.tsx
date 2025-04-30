@@ -3,7 +3,6 @@ import { Video } from "@/types";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { formatNumber, extractYoutubeIdFromEmbed } from "@/lib/utils";
-import PreviewableVideo from "./PreviewableVideo";
 
 interface VideoCardProps {
   video: Video;
@@ -79,7 +78,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           }}
         />
         
-        {/* Video Preview - shown when hovering, using our specialized component */}
+        {/* Video Preview - shown when hovering, using a native HTML video element for direct control */}
         {video.contentType === 'video' && video.videoUrl && (
           <div 
             className="absolute inset-0 z-15"
@@ -90,11 +89,22 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
               handlePreview();
             }}
           >
-            <PreviewableVideo
+            <video
               src={video.videoUrl}
               poster={video.thumbnail || undefined}
-              isPlaying={isHovered}
+              muted
+              playsInline
+              loop
+              autoPlay={isHovered}
               className="w-full h-full object-cover"
+              style={{opacity: isHovered ? 1 : 0}}
+              onMouseOver={(e) => {
+                // Explicitly try to play on mouse over
+                const vid = e.currentTarget;
+                if (vid.paused) {
+                  vid.play().catch(err => console.error('Video play error:', err));
+                }
+              }}
             />
           </div>
         )}
