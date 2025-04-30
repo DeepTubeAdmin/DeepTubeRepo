@@ -114,7 +114,24 @@ export const insertUserSchema = createInsertSchema(users).pick({
 });
 
 export const insertCategorySchema = createInsertSchema(categories);
-export const insertVideoSchema = createInsertSchema(videos);
+export const insertVideoSchema = createInsertSchema(videos, {
+  userId: true, // Explicitly include userId
+  title: true,
+  description: true,
+  aiGenerator: true,
+  prompt: true,
+  thumbnail: true,
+  videoUrl: true,
+  imageUrl: true,
+  embedCode: true,
+  preview: true,
+  contentType: true,
+  resolution: true,
+  duration: true,
+  categoryId: true,
+  vimeoId: true,
+  credits: true
+});
 export const insertWishlistItemSchema = createInsertSchema(wishlistItems);
 export const insertCommentSchema = createInsertSchema(comments);
 
