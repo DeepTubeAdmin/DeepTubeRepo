@@ -1,4 +1,4 @@
-import { Heart, Play, Pause } from "lucide-react";
+import { Heart, Play } from "lucide-react";
 import { Video } from "@/types";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
@@ -14,9 +14,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [youtubeId, setYoutubeId] = useState<string | null>(null);
   const [isHovered, setIsHovered] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   
   // Extract YouTube ID from embed code when the component loads
   useEffect(() => {
@@ -27,137 +25,6 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
       }
     }
   }, [video.embedCode, video.contentType]);
-  
-  // Toggle video playback with guaranteed browser compatibility for manual interaction
-  const toggleVideoPlayback = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent opening the modal
-    e.preventDefault(); // Prevent any default browser behavior
-    
-    if (video.contentType !== 'video' || !video.videoUrl || !videoRef.current) return;
-    
-    try {
-      if (isPlaying) {
-        // If currently playing, pause the video
-        videoRef.current.pause();
-        setIsPlaying(false);
-        console.log('Video paused by user interaction');
-      } else {
-        // Apply all recommended attributes for maximum browser compatibility
-        videoRef.current.muted = true; // Required for autoplay in all browsers
-        videoRef.current.playsInline = true; // Required for iOS
-        videoRef.current.loop = true; // Keep playing
-        videoRef.current.currentTime = 0; // Start from beginning
-        videoRef.current.setAttribute('playsinline', ''); // Extra insurance for iOS
-        videoRef.current.setAttribute('webkit-playsinline', ''); // For older iOS versions
-        
-        // First simulate a click on the document to help browsers recognize user interaction
-        document.body.click();
-        
-        console.log('Attempting to play video:', video.videoUrl);
-        
-        // Use the play() Promise API with proper error handling
-        const playPromise = videoRef.current.play();
-        
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              console.log('✓ Video playing successfully with explicit user interaction');
-              setIsPlaying(true);
-            })
-            .catch(err => {
-              console.error('✗ Browser blocked video playback despite user interaction:', err);
-              // Try one more time with a slight delay
-              setTimeout(() => {
-                if (videoRef.current) {
-                  videoRef.current.play()
-                    .then(() => {
-                      console.log('✓ Video playing successfully after retry');
-                      setIsPlaying(true);
-                    })
-                    .catch(retryErr => {
-                      console.error('✗ Browser blocked video playback on retry:', retryErr);
-                      setIsPlaying(false);
-                    });
-                }
-              }, 100);
-            });
-        } else {
-          // For older browsers without Promise support
-          setIsPlaying(true); 
-        }
-      }
-    } catch (error) {
-      console.error('Error in video playback system:', error);
-    }
-  };
-  
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      // Always cleanup video playback when component unmounts
-      if (videoRef.current) {
-        try {
-          videoRef.current.pause();
-          videoRef.current.src = '';
-          videoRef.current.load();
-        } catch (error) {
-          console.error('Error cleaning up video on unmount:', error);
-        }
-      }
-    };
-  }, []);
-  
-  // When video URL changes, reset playback state
-  useEffect(() => {
-    setIsPlaying(false);
-    
-    if (videoRef.current) {
-      try {
-        videoRef.current.pause();
-        videoRef.current.currentTime = 0;
-      } catch (error) {
-        console.error('Error resetting video on URL change:', error);
-      }
-    }
-  }, [video.videoUrl]);
-  
-  // Prepare video when hovered and maintain playback state
-  useEffect(() => {
-    if (video.contentType === 'video' && video.videoUrl && videoRef.current) {
-      try {
-        if (isHovered) {
-          // When hovering, make sure all the required attributes are set for maximum compatibility
-          videoRef.current.muted = true;
-          videoRef.current.playsInline = true;
-          videoRef.current.loop = true;
-          videoRef.current.setAttribute('playsinline', '');
-          videoRef.current.setAttribute('webkit-playsinline', '');
-          
-          // Preload the video when hovering (but don't autoplay)
-          if (videoRef.current.readyState === 0) { // HAVE_NOTHING
-            videoRef.current.load();
-          }
-          
-          // If already playing and just re-hovering, ensure playback continues
-          if (isPlaying) {
-            const playPromise = videoRef.current.play();
-            if (playPromise !== undefined) {
-              playPromise.catch(err => {
-                console.error('Error resuming playback on hover:', err);
-              });
-            }
-          }
-        } else {
-          // When not hovering anymore, pause video if no longer playing
-          if (!isPlaying && !videoRef.current.paused) {
-            videoRef.current.pause();
-          }
-        }
-      } catch (error) {
-        console.error('Error in hover/playback management:', error);
-      }
-    }
-  }, [isHovered, isPlaying, video.contentType, video.videoUrl]);
   
   // Mouse enter handler - set state only
   const handleMouseEnter = () => {
@@ -200,44 +67,14 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
       onClick={handlePreview}
     >
       <div className="thumbnail-container relative overflow-hidden aspect-video">
-        {/* Thumbnail Image - only shown when not hovering on video */}
+        {/* Thumbnail Image - always shown for videos instead of actual video preview */}
         <img 
           src={video.thumbnail || "https://via.placeholder.com/640x360?text=No+Thumbnail"} 
           alt={video.title} 
           className="thumbnail w-full h-full object-cover" 
-          style={{ 
-            opacity: isHovered && video.contentType === 'video' && video.videoUrl ? 0 : 1,
-            transition: 'opacity 0.3s ease'
-          }}
         />
         
-        {/* Video Preview - using a simpler approach with explicit controls and UI states */}
-        {video.contentType === 'video' && video.videoUrl && (
-          <div 
-            className="absolute inset-0 z-15"
-            onClick={(e) => {
-              // Don't open the modal when clicking the video area
-              e.stopPropagation();
-            }}
-          >
-            <video
-              ref={videoRef}
-              src={video.videoUrl}
-              poster={video.thumbnail || undefined}
-              muted={true}
-              playsInline={true}
-              loop={true}
-              preload="metadata"
-              className="w-full h-full object-cover"
-              style={{
-                opacity: isHovered || isPlaying ? 1 : 0,
-                transition: 'opacity 0.3s ease'
-              }}
-            />
-          </div>
-        )}
-        
-        {/* YouTube Preview for embed type */}
+        {/* YouTube Preview for embed type only */}
         {video.contentType === 'embed' && youtubeId && isHovered && (
           <div 
             className="absolute inset-0 z-15 bg-black"
@@ -259,63 +96,31 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           </div>
         )}
         
-        {/* Animated hover effect - place above video but lower z-index than controls */}
+        {/* Hover overlay with gradient for better button visibility */}
         <div 
           className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-20"
           style={{
-            opacity: isHovered ? 1 : 0,
+            opacity: isHovered ? 1 : 0.2,
             transition: 'opacity 0.2s ease-in-out',
-            pointerEvents: 'none' // Allow clicks through to the video beneath
           }}
         ></div>
         
-        {/* Preview Button - Top left corner */}
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            handlePreview();
-          }}
-          className={`absolute top-2 left-2 z-30 ${isHovered ? 'opacity-100' : 'opacity-70'} bg-orange-500 hover:bg-orange-600 text-white p-2 rounded-full flex items-center justify-center shadow-lg transition-opacity`}
-          title="Watch full video"
-          style={{ width: '40px', height: '40px' }}
-        >
-          <Play size={24} strokeWidth={3} />
-        </button>
-        
-        {/* Play/Pause Toggle Button - Shows in center when hovered for videos */}
-        {video.contentType === 'video' && video.videoUrl && isHovered && (
-          <button
-            onClick={toggleVideoPlayback}
-            className="absolute inset-0 flex items-center justify-center z-40 cursor-pointer"
-            title={isPlaying ? "Pause preview" : "Play preview"}
-          >
-            <div className="bg-black bg-opacity-50 p-4 rounded-full hover:bg-opacity-70 transition-all">
-              {isPlaying ? (
-                <Pause size={40} className="text-white" />
-              ) : (
-                <Play size={40} className="text-white" />
-              )}
-            </div>
-          </button>
-        )}
-        
-        {/* Play icon overlay */}
-        {(!isHovered || video.contentType !== 'video' || !video.videoUrl) && (
-          <div 
-            className="absolute inset-0 flex items-center justify-center z-25"
-            style={{ 
-              opacity: isHovered ? 1 : 0.5,
-              transition: 'opacity 0.3s ease-in-out',
-              pointerEvents: 'none' // Make sure it doesn't block clicks
+        {/* Prominent Play Button in center */}
+        <div className="absolute inset-0 flex items-center justify-center z-30">
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePreview();
             }}
+            className={`${isHovered ? 'scale-125 bg-opacity-90' : 'scale-100 bg-opacity-70'} 
+                       bg-orange-500 hover:bg-orange-600 text-white p-4 rounded-full 
+                       flex items-center justify-center shadow-lg transition-all duration-200`}
+            title="Watch video"
+            aria-label="Play video"
           >
-            <div className="bg-black bg-opacity-50 rounded-full p-3">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-              </svg>
-            </div>
-          </div>
-        )}
+            <Play size={36} strokeWidth={3} />
+          </button>
+        </div>
         
         {/* Duration badge */}
         {video.duration > 0 && video.contentType !== 'image' && (
@@ -323,6 +128,13 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
             {formatDuration(video.duration)}
           </div>
         )}
+        
+        {/* Content type badge */}
+        <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full z-30 uppercase">
+          {video.contentType === 'video' ? 'MP4' : 
+           video.contentType === 'image' ? 'IMG' : 
+           video.contentType === 'embed' ? 'YT' : 'Media'}
+        </div>
       </div>
       
       {/* Video info */}
@@ -342,11 +154,6 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           </div>
         </div>
       </div>
-      
-      {/* Link to detail page */}
-      <Link to={`/media/${video.id}`} className="absolute inset-0 z-5 opacity-0">
-        View details
-      </Link>
     </div>
   );
 }
