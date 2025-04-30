@@ -28,63 +28,133 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
     }
   }, [video.embedCode, video.contentType]);
   
-  // Toggle video playback - guaranteed to work with user interaction
+  // Toggle video playback with guaranteed browser compatibility for manual interaction
   const toggleVideoPlayback = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent opening the modal
+    e.preventDefault(); // Prevent any default browser behavior
     
     if (video.contentType !== 'video' || !video.videoUrl || !videoRef.current) return;
     
     try {
       if (isPlaying) {
+        // If currently playing, pause the video
         videoRef.current.pause();
         setIsPlaying(false);
+        console.log('Video paused by user interaction');
       } else {
-        videoRef.current.muted = true; // Always mute for autoplay
+        // Apply all recommended attributes for maximum browser compatibility
+        videoRef.current.muted = true; // Required for autoplay in all browsers
+        videoRef.current.playsInline = true; // Required for iOS
+        videoRef.current.loop = true; // Keep playing
         videoRef.current.currentTime = 0; // Start from beginning
+        videoRef.current.setAttribute('playsinline', ''); // Extra insurance for iOS
+        videoRef.current.setAttribute('webkit-playsinline', ''); // For older iOS versions
         
+        // First simulate a click on the document to help browsers recognize user interaction
+        document.body.click();
+        
+        console.log('Attempting to play video:', video.videoUrl);
+        
+        // Use the play() Promise API with proper error handling
         const playPromise = videoRef.current.play();
+        
         if (playPromise !== undefined) {
           playPromise
             .then(() => {
-              console.log('Video playing successfully with manual interaction');
+              console.log('✓ Video playing successfully with explicit user interaction');
               setIsPlaying(true);
             })
             .catch(err => {
-              console.error('Failed to play with manual interaction:', err);
-              setIsPlaying(false);
+              console.error('✗ Browser blocked video playback despite user interaction:', err);
+              // Try one more time with a slight delay
+              setTimeout(() => {
+                if (videoRef.current) {
+                  videoRef.current.play()
+                    .then(() => {
+                      console.log('✓ Video playing successfully after retry');
+                      setIsPlaying(true);
+                    })
+                    .catch(retryErr => {
+                      console.error('✗ Browser blocked video playback on retry:', retryErr);
+                      setIsPlaying(false);
+                    });
+                }
+              }, 100);
             });
+        } else {
+          // For older browsers without Promise support
+          setIsPlaying(true); 
         }
       }
     } catch (error) {
-      console.error('Error toggling video playback:', error);
+      console.error('Error in video playback system:', error);
     }
   };
   
-  // Prepare video when hovered
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      // Always cleanup video playback when component unmounts
+      if (videoRef.current) {
+        try {
+          videoRef.current.pause();
+          videoRef.current.src = '';
+          videoRef.current.load();
+        } catch (error) {
+          console.error('Error cleaning up video on unmount:', error);
+        }
+      }
+    };
+  }, []);
+  
+  // When video URL changes, reset playback state
+  useEffect(() => {
+    setIsPlaying(false);
+    
+    if (videoRef.current) {
+      try {
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0;
+      } catch (error) {
+        console.error('Error resetting video on URL change:', error);
+      }
+    }
+  }, [video.videoUrl]);
+  
+  // Prepare video when hovered and maintain playback state
   useEffect(() => {
     if (video.contentType === 'video' && video.videoUrl && videoRef.current) {
-      if (isHovered) {
-        // Preload when hovered but don't auto-play - user needs to click the play button
-        videoRef.current.load();
-        videoRef.current.muted = true;
-        videoRef.current.playsInline = true;
-        videoRef.current.loop = true;
-        
-        // If already playing, don't interrupt
-        if (isPlaying) {
-          try {
-            videoRef.current.play().catch(err => {
-              console.error('Error continuing playback on hover:', err);
-            });
-          } catch (error) {
-            console.error('Error accessing video element:', error);
+      try {
+        if (isHovered) {
+          // When hovering, make sure all the required attributes are set for maximum compatibility
+          videoRef.current.muted = true;
+          videoRef.current.playsInline = true;
+          videoRef.current.loop = true;
+          videoRef.current.setAttribute('playsinline', '');
+          videoRef.current.setAttribute('webkit-playsinline', '');
+          
+          // Preload the video when hovering (but don't autoplay)
+          if (videoRef.current.readyState === 0) { // HAVE_NOTHING
+            videoRef.current.load();
+          }
+          
+          // If already playing and just re-hovering, ensure playback continues
+          if (isPlaying) {
+            const playPromise = videoRef.current.play();
+            if (playPromise !== undefined) {
+              playPromise.catch(err => {
+                console.error('Error resuming playback on hover:', err);
+              });
+            }
+          }
+        } else {
+          // When not hovering anymore, pause video if no longer playing
+          if (!isPlaying && !videoRef.current.paused) {
+            videoRef.current.pause();
           }
         }
-      } else {
-        // When leaving, pause if it was auto-playing
-        if (isPlaying) {
-          videoRef.current.pause();
-        }
+      } catch (error) {
+        console.error('Error in hover/playback management:', error);
       }
     }
   }, [isHovered, isPlaying, video.contentType, video.videoUrl]);
@@ -141,39 +211,27 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           }}
         />
         
-        {/* Video Preview - shown when hovering, using a native HTML video element with direct reference */}
+        {/* Video Preview - using a simpler approach with explicit controls and UI states */}
         {video.contentType === 'video' && video.videoUrl && (
           <div 
             className="absolute inset-0 z-15"
             onClick={(e) => {
-              // Prevent clicks on the video from propagating
+              // Don't open the modal when clicking the video area
               e.stopPropagation();
-              handlePreview();
             }}
           >
             <video
               ref={videoRef}
               src={video.videoUrl}
               poster={video.thumbnail || undefined}
-              muted
-              playsInline
-              loop
-              autoPlay={isHovered}
-              preload="auto"
+              muted={true}
+              playsInline={true}
+              loop={true}
+              preload="metadata"
               className="w-full h-full object-cover"
-              style={{opacity: isHovered ? 1 : 0}}
-              // Add all possible event handlers to try to catch any browser-specific behavior
-              onMouseEnter={(e) => {
-                const vid = e.currentTarget;
-                vid.play().catch(err => console.error('Video play error on mouse enter:', err));
-              }}
-              onMouseOver={(e) => {
-                const vid = e.currentTarget;
-                vid.play().catch(err => console.error('Video play error on mouse over:', err));
-              }}
-              onFocus={(e) => {
-                const vid = e.currentTarget;
-                vid.play().catch(err => console.error('Video play error on focus:', err));
+              style={{
+                opacity: isHovered || isPlaying ? 1 : 0,
+                transition: 'opacity 0.3s ease'
               }}
             />
           </div>
