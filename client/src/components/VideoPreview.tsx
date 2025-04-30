@@ -230,12 +230,12 @@ export default function VideoPreview({
         loop={false}
       />
       
-      {/* Debug overlay - uncomment for testing */}
-      {/* <div className="absolute bottom-0 left-0 bg-black/70 text-white text-xs p-1 z-50">
+      {/* Debug overlay */}
+      <div className="absolute bottom-0 left-0 bg-black/70 text-white text-xs p-1 z-50">
         {isHovered ? 'Hovered' : 'Not Hovered'} | 
         {isLoaded ? 'Loaded' : 'Loading'} | 
         {isPlaying ? 'Playing' : 'Paused'}
-      </div> */}
+      </div>
     </div>
   );
 }

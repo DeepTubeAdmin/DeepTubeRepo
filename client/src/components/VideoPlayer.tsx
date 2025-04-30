@@ -35,7 +35,11 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
   
   // This effect loads the video data
   useEffect(() => {
-    console.log("VideoPlayer: Effect triggered with videoId:", videoId, "isOpen:", isOpen);
+    // Only log if the player is actually being opened (don't log initial state)
+    if (isOpen) {
+      console.log("VideoPlayer: Opening with videoId:", videoId);
+    }
+    
     if (!isOpen || !videoId) return;
 
     const fetchVideo = async () => {
