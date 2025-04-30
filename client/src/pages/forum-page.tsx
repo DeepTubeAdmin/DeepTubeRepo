@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import Layout from "@/components/Layout";
+import MiniFooter from "@/components/MiniFooter";
 import { 
   MessageSquare, 
   Plus, 
@@ -623,6 +624,9 @@ export default function ForumPage() {
           </div>
         </div>
       </main>
+      
+      {/* Add MiniFooter */}
+      <MiniFooter />
     </Layout>
   );
 }

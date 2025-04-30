@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Layout from "@/components/Layout";
+import MiniFooter from "@/components/MiniFooter";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 import { 

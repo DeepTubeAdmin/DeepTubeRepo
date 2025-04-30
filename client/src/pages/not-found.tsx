@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import Layout from "@/components/Layout";
+import MiniFooter from "@/components/MiniFooter";
 
 export default function NotFound() {
   return (
@@ -19,6 +20,9 @@ export default function NotFound() {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Add MiniFooter */}
+      <MiniFooter />
     </Layout>
   );
 }
