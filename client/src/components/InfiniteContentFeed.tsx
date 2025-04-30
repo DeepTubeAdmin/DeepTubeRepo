@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import VideoGrid from './VideoGrid';
 import ImageGallery from './ImageGallery';
+import VideoCard from './VideoCard';
 import { Video } from '@/types';
 import { Loader2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -163,48 +164,12 @@ export default function InfiniteContentFeed({
                 <h3 className="text-xl font-bold mb-4">{sectionTitle}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {block.items.map(item => (
-                    <div 
+                    <VideoCard
                       key={item.id}
-                      className="video-card video-item cursor-pointer"
-                      data-id={item.id}
-                      data-type={item.contentType}
-                      onClick={() => onPreview && onPreview(item.id)}
-                    >
-                      <div className="thumbnail-container">
-                        <div className="bg-gray-800 thumbnail flex items-center justify-center">
-                          <img 
-                            src={item.thumbnail} 
-                            alt={item.title} 
-                            className="thumbnail" 
-                          />
-                        </div>
-                        
-                        {/* Duration badge */}
-                        {item.duration > 0 && item.contentType !== 'image' && (
-                          <div className="duration">
-                            {Math.floor(item.duration / 60)}:{(item.duration % 60).toString().padStart(2, '0')}
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Video info */}
-                      <div className="p-3">
-                        <h3 className="font-medium truncate">{item.title}</h3>
-                        <div className="flex justify-between text-sm text-gray-400 mt-1">
-                          <span>AI Creator</span>
-                          <div>
-                            <span className="mr-2">
-                              <i className="fas fa-eye mr-1"></i>
-                              {Math.floor(Math.random() * 10000) + 1000}
-                            </span>
-                            <span>
-                              <i className="fas fa-thumbs-up mr-1"></i>
-                              {Math.floor(Math.random() * 10) + 90}%
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                      video={item}
+                      onPreview={onPreview}
+                      onWishlist={onWishlist}
+                    />
                   ))}
                 </div>
               </section>
