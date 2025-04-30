@@ -247,16 +247,19 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
             {/* Media section */}
             <div className="bg-black relative">
               {video.vimeoId ? (
-                <VimeoEmbed
-                  videoId={video.vimeoId}
-                  title={video.title}
-                  autoplay={true}
-                  loop={false}
-                  responsive={true}
-                  showTitle={false}
-                  showByline={false}
-                  showPortrait={false}
-                />
+                <div className="relative">
+                  <VimeoEmbed
+                    videoId={video.vimeoId}
+                    title={video.title}
+                    autoplay={true}
+                    loop={false}
+                    responsive={true}
+                    showTitle={false}
+                    showByline={false}
+                    showPortrait={false}
+                  />
+                  <AIWatermark position="bottom-right" size="medium" />
+                </div>
               ) : video.contentType === 'embed' && video.embedCode ? (
                 <div className="aspect-video w-full">
                   <div 
@@ -267,6 +270,8 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                       ref={embedContainerRef}
                       className="absolute inset-0"
                     />
+                    {/* Add AI watermark on top of the embedded content */}
+                    <AIWatermark position="bottom-right" size="medium" />
                     <style dangerouslySetInnerHTML={{__html: `
                       .embed-container iframe,
                       .embed-container object,
@@ -281,11 +286,14 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                   </div>
                 </div>
               ) : video.contentType === 'video' && video.videoUrl ? (
-                <div className="bg-black flex items-center justify-center aspect-video w-full">
+                <div className="bg-black flex items-center justify-center aspect-video w-full relative">
                   {/* Remove debug info in production */}
                   {/* <div className="absolute top-2 left-2 z-10 bg-black/80 text-xs text-white p-1 rounded opacity-50 hover:opacity-100">
                     MP4 Debug: {video.videoUrl ? (video.videoUrl.length > 20 ? video.videoUrl.substring(0, 20) + '...' : video.videoUrl) : 'No URL'}
                   </div> */}
+                  
+                  {/* Add AI watermark for all videos */}
+                  <AIWatermark position="bottom-right" size="medium" />
                   
                   {/* Try different approach for mp4 videos */}
                   {video.videoUrl.includes('.mp4') || video.videoUrl.includes('video/mp4') || video.videoUrl.startsWith('/uploads/') ? (
@@ -483,7 +491,10 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                   )}
                 </div>
               ) : video.contentType === 'image' ? (
-                <div className="flex flex-col items-center justify-center bg-black p-4 max-h-[70vh] overflow-auto">
+                <div className="flex flex-col items-center justify-center bg-black p-4 max-h-[70vh] overflow-auto relative">
+                  {/* Add AI watermark for all images */}
+                  <AIWatermark position="bottom-right" size="medium" />
+                  
                   {/* Check for data URLs which are usually properly formatted images */}
                   {video.imageUrl?.startsWith('data:image/') ? (
                     <img 
