@@ -20,29 +20,36 @@ export default function PreviewableVideo({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [canPlay, setCanPlay] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
+  // Initial video setup
   useEffect(() => {
     if (!videoRef.current) return;
     
     const video = videoRef.current;
     
+    // Ensure video is always muted to allow autoplay
+    video.muted = true;
+    video.playsInline = true;
+    video.loop = true;
+    
+    // Log when component mounts
+    console.log('PreviewableVideo mounted for:', src);
+    
     const handleCanPlay = () => {
-      console.log('Video can play:', src);
+      console.log('Video can play event triggered:', src);
       setCanPlay(true);
+      setIsLoaded(true);
+      
+      // Try to play immediately if isPlaying is true
       if (isPlaying) {
-        try {
-          video.currentTime = 0;
-          const playPromise = video.play();
-          if (playPromise) {
-            playPromise.catch(error => {
-              console.error('Auto-play prevented by browser:', error);
-              // We don't set error state here as it might be just autoplay restriction
-            });
-          }
-        } catch (err) {
-          console.error('Error playing video:', err);
-        }
+        playVideo();
       }
+    };
+    
+    const handleLoadedData = () => {
+      console.log('Video loaded data event triggered:', src);
+      setIsLoaded(true);
     };
     
     const handleError = (e: Event) => {
@@ -52,11 +59,16 @@ export default function PreviewableVideo({
     
     // Set up event listeners
     video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('loadeddata', handleLoadedData);
     video.addEventListener('error', handleError);
+    
+    // Start loading the video
+    video.load();
     
     // Cleanup
     return () => {
       video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('loadeddata', handleLoadedData);
       video.removeEventListener('error', handleError);
       
       try {
@@ -67,34 +79,60 @@ export default function PreviewableVideo({
         console.error('Cleanup error:', err);
       }
     };
-  }, [src]);
+  }, [src]); // Only re-run if src changes
   
-  // Handle play/pause based on isPlaying prop
-  useEffect(() => {
-    if (!videoRef.current || !canPlay) return;
+  // Function to play video with error handling
+  const playVideo = () => {
+    if (!videoRef.current) return;
     
-    console.log('Play state change:', isPlaying, 'for', src);
-    
-    if (isPlaying) {
-      try {
-        videoRef.current.currentTime = 0;
-        const playPromise = videoRef.current.play();
-        if (playPromise) {
-          playPromise.catch(error => {
-            console.error('Play prevented:', error);
+    try {
+      console.log('Attempting to play video:', src);
+      
+      // Reset to beginning for better preview experience
+      videoRef.current.currentTime = 0;
+      
+      // Play with promise handling for browsers that return a promise
+      const playPromise = videoRef.current.play();
+      
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log('Video playing successfully:', src);
+          })
+          .catch(error => {
+            console.error('Autoplay prevented by browser:', error);
+            // Try one more time with user interaction simulation
+            document.addEventListener('mousemove', function playOnce() {
+              if (videoRef.current) {
+                videoRef.current.play().catch(e => {
+                  console.error('Still cannot play after user interaction:', e);
+                });
+              }
+              document.removeEventListener('mousemove', playOnce);
+            });
           });
-        }
-      } catch (err) {
-        console.error('Error playing on hover:', err);
       }
-    } else {
+    } catch (err) {
+      console.error('Error playing video:', err);
+    }
+  };
+  
+  // Handle play/pause based on isPlaying prop changes
+  useEffect(() => {
+    if (!videoRef.current) return;
+    
+    console.log('Play state changed to:', isPlaying, 'for video:', src);
+    
+    if (isPlaying && (canPlay || isLoaded)) {
+      playVideo();
+    } else if (!isPlaying) {
       try {
         videoRef.current.pause();
       } catch (err) {
-        console.error('Error pausing:', err);
+        console.error('Error pausing video:', err);
       }
     }
-  }, [isPlaying, canPlay, src]);
+  }, [isPlaying, canPlay, isLoaded, src]);
 
   if (hasError) {
     return (
@@ -117,6 +155,7 @@ export default function PreviewableVideo({
       muted
       playsInline
       loop
+      autoPlay={isPlaying} // Add explicit autoPlay attribute based on isPlaying
       preload="auto"
     />
   );

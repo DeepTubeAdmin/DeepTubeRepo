@@ -81,7 +81,15 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         
         {/* Video Preview - shown when hovering, using our specialized component */}
         {video.contentType === 'video' && video.videoUrl && (
-          <div className="absolute inset-0 z-10">
+          <div 
+            className="absolute inset-0 z-15"
+            onClick={(e) => {
+              // Prevent clicks on the video from propagating
+              // to allow click handling in the video itself
+              e.stopPropagation();
+              handlePreview();
+            }}
+          >
             <PreviewableVideo
               src={video.videoUrl}
               poster={video.thumbnail || undefined}
@@ -93,9 +101,16 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         
         {/* YouTube Preview for embed type */}
         {video.contentType === 'embed' && youtubeId && isHovered && (
-          <div className="absolute inset-0 z-10 bg-black">
+          <div 
+            className="absolute inset-0 z-15 bg-black"
+            onClick={(e) => {
+              // Prevent clicks on the iframe from propagating
+              e.stopPropagation();
+              handlePreview();
+            }}
+          >
             <iframe
-              src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0`}
+              src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0&showinfo=0&modestbranding=1`}
               width="100%"
               height="100%"
               frameBorder="0"
