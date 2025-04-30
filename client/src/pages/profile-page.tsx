@@ -55,6 +55,13 @@ export default function ProfilePage() {
   if (isLoading) {
     return (
       <Layout>
+        <SEO 
+          title="Profile | DeepTube.co"
+          description="Manage your DeepTube.co profile settings, account security, and personal information."
+          canonicalUrl="https://deeptube.co/profile"
+          ogType="website"
+          keywords="profile settings, account management, user profile, DeepTube.co"
+        />
         <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -174,6 +181,13 @@ export default function ProfilePage() {
   
   return (
     <Layout>
+      <SEO 
+        title={`${user.username}'s Profile | DeepTube.co`}
+        description="Manage your DeepTube.co profile settings, account security, and personal information."
+        canonicalUrl="https://deeptube.co/profile"
+        ogType="profile"
+        keywords="profile settings, account management, user profile, DeepTube.co"
+      />
       <div className="container max-w-4xl py-8">
         <h1 className="text-4xl font-bold mb-6 text-white">My Profile</h1>
         
