@@ -398,10 +398,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Add these video IDs to the used set for persistent tracking across page loads
           selectedVideos.forEach(video => usedContentIds.add(video.id));
           
+          // Get category info if available for the first video
+          let categoryName = '';
+          if (selectedVideos.length > 0 && selectedVideos[0].categoryId) {
+            const category = await dbStorage.getCategoryById(selectedVideos[0].categoryId);
+            categoryName = category?.name || '';
+          }
+          
           response.blocks.push({
             type: 'videos',
             id: blockId,
             title: '',
+            categoryName, 
             items: selectedVideos
           });
         } else {
@@ -443,10 +451,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Add these image IDs to the used set for persistent tracking across page loads
           selectedImages.forEach(image => usedContentIds.add(image.id));
           
+          // Get category info if available for the first image
+          let categoryName = '';
+          if (selectedImages.length > 0 && selectedImages[0].categoryId) {
+            const category = await dbStorage.getCategoryById(selectedImages[0].categoryId);
+            categoryName = category?.name || '';
+          }
+          
           response.blocks.push({
             type: 'images',
             id: blockId,
             title: '',
+            categoryName,
             items: selectedImages
           });
         }

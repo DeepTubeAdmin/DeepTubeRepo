@@ -4,7 +4,7 @@ import ImageGallery from './ImageGallery';
 import VideoCard from './VideoCard';
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { ExternalLink, Heart, Image } from 'lucide-react';
-import { Video } from '@/types';
+import { Video, Category } from '@/types';
 import { Loader2 } from 'lucide-react';
 import { Link } from 'wouter';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -27,14 +27,33 @@ export default function InfiniteContentFeed({
     items: Video[];
     id: number;
     title: string;
+    categoryName?: string;
   }>>([]);
   
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const observer = useRef<IntersectionObserver | null>(null);
   const isMobile = useIsMobile();
+  
+  // Fetch categories
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const response = await fetch('/api/categories');
+        if (response.ok) {
+          const data = await response.json();
+          setCategories(data);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    }
+    
+    fetchCategories();
+  }, []);
   
   // Determine how many items should be shown per row based on screen size
   const getItemsPerRow = () => {
@@ -247,10 +266,38 @@ export default function InfiniteContentFeed({
               contentBlocks[index-1] && 
               contentBlocks[index-1].type !== block.type;
             
-            // For section titles based on block types
-            const sectionTitle = block.type === 'videos' 
-              ? (index === 0 ? "Trending Now" : "Recently Uploaded Videos") 
-              : "AI-Generated Images";
+            // Get a random category for variety in section titles
+            const getRandomCategory = () => {
+              if (categories.length === 0) return "Entertainment";
+              const randomIndex = Math.floor(Math.random() * categories.length);
+              return categories[randomIndex].name;
+            };
+            
+            // For section titles based on block types and position
+            let sectionTitle = "";
+            
+            if (block.type === 'videos') {
+              if (index === 0) {
+                sectionTitle = "Trending Now";
+              } else if (index === 1) {
+                sectionTitle = "Recently Uploaded Videos";
+              } else {
+                // For subsequent video blocks, show category titles
+                const categoryName = getRandomCategory();
+                sectionTitle = `${categoryName} Videos`;
+              }
+            } else {
+              // For image blocks based on position
+              if (index === 3) {
+                sectionTitle = "Trending Images";
+              } else if (index === 7) {
+                sectionTitle = "Most Viewed Images";
+              } else {
+                // For other image blocks, show category + Images
+                const categoryName = getRandomCategory();
+                sectionTitle = `${categoryName} Images`;
+              }
+            }
             
             return (
               <section 
