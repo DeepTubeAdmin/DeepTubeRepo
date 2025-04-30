@@ -4,7 +4,7 @@ export const Categories: Category[] = [
   {
     id: 1,
     name: "Trending",
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>',
     slug: "trending"
   },
   {
@@ -15,70 +15,70 @@ export const Categories: Category[] = [
   },
   {
     id: 3,
-    name: "Sci-Fi",
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3a8 8 0 0 1 11.67 9H21v4h-6.96a8 8 0 0 1-10.41 2.29"/><line x1="6" x2="6" y1="16" y2="20"/><line x1="10" x2="10" y1="16" y2="20"/><line x1="14" x2="14" y1="16" y2="20"/></svg>',
-    slug: "sci-fi"
+    name: "Entertainment",
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>',
+    slug: "entertainment"
   },
   {
     id: 4,
-    name: "Comedy",
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>',
-    slug: "comedy"
+    name: "Marketing",
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11l18-5v12L3 14v-3z"></path><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path></svg>',
+    slug: "marketing"
   },
   {
     id: 5,
-    name: "Animation",
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19.82 2H4.18A2.18 2.18 0 0 0 2 4.18v15.64A2.18 2.18 0 0 0 4.18 22h15.64A2.18 2.18 0 0 0 22 19.82V4.18A2.18 2.18 0 0 0 19.82 2Z"/><path d="M7 2v20"/><path d="M17 2v20"/><path d="M2 12h20"/><path d="M2 7h5"/><path d="M2 17h5"/><path d="M17 17h5"/><path d="M17 7h5"/></svg>',
-    slug: "animation"
+    name: "Characters",
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>',
+    slug: "characters"
   },
   {
     id: 6,
-    name: "Nature",
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 14c.9-1 1.5-2.3 1.8-3.8.2-1.2-.1-2.3-.5-3.3-.5-1.6-1.9-2.7-3.5-3.4-2.3-.8-5-.6-7.1.8C5.4 5.5 4 7.7 3.6 10c-.4 1.5-.2 3 .4 4.4 1 2.2 3.2 3.6 5.6 3.6h.2"></path><path d="M17 14h-1.5c-1.1 0-2.5.2-3.5.9-.8.5-1.5 1.4-2 2.3-.4.8-.8 1.7-1 2.6"></path></svg>',
-    slug: "nature"
+    name: "Editing",
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>',
+    slug: "editing"
   },
   {
     id: 7,
-    name: "Horror",
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1Z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>',
-    slug: "horror"
+    name: "Art",
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5"></circle><circle cx="17.5" cy="10.5" r=".5"></circle><circle cx="8.5" cy="7.5" r=".5"></circle><circle cx="6.5" cy="12.5" r=".5"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg>',
+    slug: "art"
   },
   {
     id: 8,
-    name: "Avatar",
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>',
-    slug: "avatar"
-  },
-  {
-    id: 9,
-    name: "Action",
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
-    slug: "action"
-  },
-  {
-    id: 10,
-    name: "Surreal",
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 16.2A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"/><path d="M13 13v4"/><path d="M17 13v4"/></svg>',
-    slug: "surreal"
+    name: "Design",
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>',
+    slug: "design"
   },
   {
     id: 11,
-    name: "Historical",
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
-    slug: "historical"
+    name: "Social Media",
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>',
+    slug: "social-media"
   },
   {
     id: 12,
-    name: "Kids",
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12h.01"/><path d="M15 12h.01"/><path d="M10 16c.5.3 1.2.5 2 .5s1.5-.2 2-.5"/><path d="M19 6.3a9 9 0 0 1 1.8 3.9 2 2 0 0 1 0 3.6 9 9 0 0 1-17.6 0 2 2 0 0 1 0-3.6A9 9 0 0 1 12 3c2 0 3.5 1.1 3.5 2.5s-.9 2.5-2 2.5c-.8 0-1.5-.4-1.5-1s.4-1 1-1 1 .4 1 1"/></svg>',
-    slug: "kids"
+    name: "Business",
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>',
+    slug: "business"
   },
   {
     id: 13,
-    name: "People",
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
-    slug: "people"
-  }
+    name: "Nature",
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 22V9.76a2 2 0 0 1 .51-1.33L12 3l5.49 5.43a2 2 0 0 1 .51 1.33V22"></path><path d="M2 22h20"></path></svg>',
+    slug: "nature"
+  },
+  {
+    id: 14,
+    name: "Fashion",
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>',
+    slug: "fashion"
+  },
+  {
+    id: 15,
+    name: "Education",
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>',
+    slug: "education"
+  },
 ];
 
 export const FeaturedVideos: Video[] = [
@@ -99,7 +99,7 @@ export const FeaturedVideos: Video[] = [
     credits: 750,
     resolution: "4K",
     duration: 30,
-    category: "sci-fi",
+    category: "entertainment",
     contentType: "video"
   },
   {
@@ -109,7 +109,7 @@ export const FeaturedVideos: Video[] = [
     credits: 350,
     resolution: "HD",
     duration: 10,
-    category: "style-transfer",
+    category: "art",
     contentType: "video"
   },
   {
@@ -119,7 +119,7 @@ export const FeaturedVideos: Video[] = [
     credits: 1200,
     resolution: "4K",
     duration: 45,
-    category: "portrait-animations",
+    category: "characters",
     contentType: "video"
   }
 ];
@@ -132,7 +132,7 @@ export const AIGeneratedImages: Video[] = [
     credits: 250,
     resolution: "4K",
     duration: 0,
-    category: "urban",
+    category: "design",
     contentType: "image"
   },
   {
@@ -142,7 +142,7 @@ export const AIGeneratedImages: Video[] = [
     credits: 300,
     resolution: "4K",
     duration: 0,
-    category: "surreal",
+    category: "art",
     contentType: "image"
   },
   {
@@ -152,7 +152,7 @@ export const AIGeneratedImages: Video[] = [
     credits: 200,
     resolution: "HD",
     duration: 0,
-    category: "abstract",
+    category: "art",
     contentType: "image"
   },
   {
@@ -162,7 +162,7 @@ export const AIGeneratedImages: Video[] = [
     credits: 350,
     resolution: "4K",
     duration: 0,
-    category: "portrait",
+    category: "characters",
     contentType: "image"
   },
   {
@@ -172,7 +172,7 @@ export const AIGeneratedImages: Video[] = [
     credits: 275,
     resolution: "4K",
     duration: 0,
-    category: "sci-fi",
+    category: "entertainment",
     contentType: "image"
   }
 ];
@@ -205,7 +205,7 @@ export const NewReleases: Video[] = [
     credits: 850,
     resolution: "4K",
     duration: 25,
-    category: "urban",
+    category: "entertainment",
     contentType: "video"
   },
   {
@@ -215,7 +215,7 @@ export const NewReleases: Video[] = [
     credits: 300,
     resolution: "HD",
     duration: 15,
-    category: "style-transfer",
+    category: "art",
     contentType: "video"
   }
 ];
@@ -223,25 +223,25 @@ export const NewReleases: Video[] = [
 export const PopularCategories: PopularCategory[] = [
   {
     id: 1,
-    name: "Portraits",
+    name: "Characters",
     image: "https://images.pexels.com/photos/1693095/pexels-photo-1693095.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
     count: 542
   },
   {
     id: 2,
-    name: "Landscapes",
+    name: "Nature",
     image: "https://images.pexels.com/photos/924824/pexels-photo-924824.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
     count: 321
   },
   {
     id: 3,
-    name: "Abstract",
+    name: "Art",
     image: "https://images.pexels.com/photos/1036936/pexels-photo-1036936.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
     count: 289
   },
   {
     id: 4,
-    name: "Sci-Fi",
+    name: "Entertainment",
     image: "https://images.pexels.com/photos/127513/pexels-photo-127513.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
     count: 456
   }
