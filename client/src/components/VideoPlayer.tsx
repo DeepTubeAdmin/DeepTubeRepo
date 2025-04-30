@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import VimeoEmbed from './VimeoEmbed';
+import AIWatermark from './AIWatermark';
 import { Video } from '@shared/schema';
 import { apiRequest } from '@/lib/queryClient';
 import { Loader2 } from 'lucide-react';
