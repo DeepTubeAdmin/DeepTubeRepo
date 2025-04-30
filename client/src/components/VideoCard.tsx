@@ -67,7 +67,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
       onMouseLeave={handleMouseLeave}
       onClick={handlePreview}
     >
-      <div className="thumbnail-container relative overflow-hidden aspect-video h-52 sm:h-56 md:h-60 lg:h-64">
+      <div className={`thumbnail-container relative overflow-hidden ${video.contentType === 'image' ? 'aspect-[3/4] h-64 sm:h-72 md:h-80 lg:h-96' : 'aspect-video h-52 sm:h-56 md:h-60 lg:h-64'}`}>
         {/* Always show thumbnail as base layer for all content types */}
         <img 
           src={video.thumbnail || "https://via.placeholder.com/640x360?text=No+Thumbnail"} 
@@ -151,7 +151,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
       </div>
       
       {/* Video info */}
-      <div className="p-3 bg-gray-900">
+      <div className="p-3 bg-transparent">
         <h3 className="font-medium text-base md:text-lg truncate">{video.title}</h3>
         <div className="flex justify-between text-sm text-gray-400 mt-1">
           <span>{video.aiGenerator || "AI Artist"}</span>
