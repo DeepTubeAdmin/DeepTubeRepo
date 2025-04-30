@@ -399,7 +399,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
   return (
     <SimpleDialog isOpen={isOpen} onClose={onClose} title="Upload New Media" className="bg-[#1a1a1a] border-gray-800 max-w-md">
       <div>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-gray-400">
             Share your AI-generated content with the DeepTube community
           </p>
@@ -414,7 +414,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
         </div>
         
         <Tabs defaultValue="video" onValueChange={(value) => setContentType(value as "video" | "image" | "embed")}>
-          <TabsList className="grid w-full grid-cols-3 mb-6 bg-[#272727] p-1 rounded-lg">
+          <TabsList className="grid w-full grid-cols-3 mb-4 bg-[#272727] p-1 rounded-lg">
             <TabsTrigger 
               value="video" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:font-bold uppercase font-semibold rounded"
@@ -542,7 +542,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Add a description for your video"
-                  className="resize-none min-h-[80px]"
+                  className="resize-none min-h-[60px]"
                 />
               </div>
               
@@ -665,7 +665,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="Enter the prompt you used to generate this image"
-                  className="resize-none min-h-[80px]"
+                  className="resize-none min-h-[60px]"
                 />
               </div>
               
@@ -678,7 +678,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Add a description for your image"
-                  className="resize-none min-h-[80px]"
+                  className="resize-none min-h-[60px]"
                 />
               </div>
               
@@ -721,7 +721,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                   value={embedCode}
                   onChange={handleEmbedCodeChange}
                   placeholder="Paste embed code from YouTube or Vimeo only"
-                  className="resize-none min-h-[80px] font-mono text-sm"
+                  className="resize-none min-h-[60px] font-mono text-sm"
                 />
                 <div className="flex justify-between items-center mt-1">
                   <p className="text-xs text-muted-foreground">
@@ -846,7 +846,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="Enter the prompt you used to generate this content"
-                  className="resize-none min-h-[80px]"
+                  className="resize-none min-h-[60px]"
                 />
               </div>
               
@@ -859,7 +859,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Add a description for your embedded media"
-                  className="resize-none min-h-[80px]"
+                  className="resize-none min-h-[60px]"
                 />
               </div>
               
