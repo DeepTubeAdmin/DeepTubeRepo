@@ -19,14 +19,15 @@ export default function AIWatermark({
 
   // Define size classes
   const sizeClasses = {
-    'small': 'text-sm px-1.5 py-0.5',
-    'medium': 'text-base px-2 py-1',
-    'large': 'text-lg px-3 py-1.5',
+    'small': 'text-base',
+    'medium': 'text-xl',
+    'large': 'text-2xl',
   };
 
   return (
     <div 
-      className={`absolute ${positionClasses[position]} ${sizeClasses[size]} bg-primary bg-opacity-90 text-black font-bold rounded-md z-50 shadow-lg pointer-events-none`}
+      className={`absolute ${positionClasses[position]} ${sizeClasses[size]} text-primary font-extrabold z-50 pointer-events-none`}
+      style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}
     >
       AI
     </div>
