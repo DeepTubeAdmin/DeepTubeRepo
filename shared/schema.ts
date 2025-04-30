@@ -114,7 +114,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
 });
 
 export const insertCategorySchema = createInsertSchema(categories);
-export const insertVideoSchema = createInsertSchema(videos, {
+// Properly defining the insert schema for videos
+export const insertVideoSchema = createInsertSchema(videos).pick({
   userId: true, // Explicitly include userId
   title: true,
   description: true,

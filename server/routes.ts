@@ -623,7 +623,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/user/videos", isAuthenticated, async (req, res) => {
     try {
       ensureUser(req);
+      console.log("DEBUG - Fetching videos for user ID:", req.user.id);
+      
+      // First check for this user's videos directly in the database
+      const { pool } = await import('./db');
+      const rawResults = await pool.query(
+        'SELECT * FROM videos WHERE user_id = $1 ORDER BY id DESC',
+        [req.user.id]
+      );
+      console.log("DEBUG - Direct SQL found videos:", rawResults.rows.length, "videos");
+      
       const userVideos = await dbStorage.getUserVideos(req.user.id);
+      console.log("DEBUG - getUserVideos returned:", userVideos.length, "videos");
       
       // Get category info for each video
       const videosWithCategories = await Promise.all(userVideos.map(async (video) => {
@@ -637,6 +648,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }));
       
+      console.log("DEBUG - Sending videos to client:", videosWithCategories.length);
       res.json(videosWithCategories);
     } catch (error) {
       console.error("Error fetching user videos:", error);
