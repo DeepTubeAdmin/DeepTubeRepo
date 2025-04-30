@@ -68,15 +68,39 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
       onClick={handlePreview}
     >
       <div className="thumbnail-container relative overflow-hidden aspect-video">
-        {/* Video with 5-second preview on hover for video type */}
+        {/* Video or image based on content type */}
         {video.contentType === 'video' && video.videoUrl ? (
-          <VideoPreview
-            src={video.videoUrl}
-            poster={video.thumbnail || "https://via.placeholder.com/640x360?text=No+Thumbnail"}
-            isHovered={isHovered}
-            className="w-full h-full object-cover"
-            previewDuration={5}
-          />
+          <>
+            {/* Always show thumbnail as base layer */}
+            <img 
+              src={video.thumbnail || "https://via.placeholder.com/640x360?text=No+Thumbnail"} 
+              alt={video.title} 
+              className="absolute inset-0 w-full h-full object-cover" 
+            />
+            
+            {/* Video element that shows on hover */}
+            {isHovered && (
+              <div className="absolute inset-0 w-full h-full bg-black">
+                <video 
+                  src={video.videoUrl}
+                  autoPlay
+                  muted
+                  playsInline
+                  loop={false}
+                  className="w-full h-full object-cover"
+                  onTimeUpdate={(e) => {
+                    // Stop after 5 seconds
+                    if (e.currentTarget.currentTime > 5) {
+                      e.currentTarget.pause();
+                    }
+                  }}
+                />
+                <div className="absolute bottom-0 left-0 bg-black/70 text-white text-xs p-1">
+                  Preview: Max 5s
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           /* Static thumbnail for non-video content types */
           <img 
