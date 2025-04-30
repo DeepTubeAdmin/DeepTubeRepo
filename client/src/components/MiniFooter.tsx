@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import ContactModal from "./ContactModal";
+import FAQModal from "./FAQModal";
 
 export default function MiniFooter() {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isFAQModalOpen, setIsFAQModalOpen] = useState(false);
 
   return (
     <footer className="fixed bottom-0 left-0 right-0 bg-[#121212] border-t border-gray-800 py-2 px-4 z-40">
@@ -19,9 +21,13 @@ export default function MiniFooter() {
           
           {/* Navigation links - centered on very small screens */}
           <div className="flex space-x-3 md:space-x-4 items-center mx-auto xxs:mx-0">
-            <Link href="/faq" className="text-xs text-gray-400 hover:text-white">
+            <span className="text-xs text-orange-500 hidden md:inline-block">Are Deepfakes Legal?:</span>
+            <button
+              onClick={() => setIsFAQModalOpen(true)} 
+              className="text-xs text-gray-400 hover:text-white bg-transparent border-none cursor-pointer"
+            >
               FAQ
-            </Link>
+            </button>
             <span className="text-gray-600 text-xs">•</span>
             <Link href="/terms-of-service" className="text-xs text-gray-400 hover:text-white">
               Terms
@@ -45,6 +51,12 @@ export default function MiniFooter() {
       <ContactModal 
         isOpen={isContactModalOpen} 
         onClose={() => setIsContactModalOpen(false)} 
+      />
+
+      {/* FAQ Modal */}
+      <FAQModal
+        isOpen={isFAQModalOpen}
+        onClose={() => setIsFAQModalOpen(false)}
       />
     </footer>
   );

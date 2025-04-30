@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ: Legal AI-Generated Content on DeepTube.co</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    h2 {
+      color: #34495e;
+      margin-top: 20px;
+    }
+    p, ul {
+      margin-bottom: 15px;
+    }
+    a {
+      color: #3498db;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .faq-section {
+      margin-bottom: 30px;
+    }
+  </style>
+</head>
+<body>
+  <h1>FAQ: Legal AI-Generated Content on DeepTube.co</h1>
+  <p>Welcome to DeepTube.co, your platform for sharing AI-generated videos in a safe, legal, and creative community. Below, we answer common questions about what types of AI-generated content, including deepfakes, are permitted on our platform. Our goal is to foster ethical and entertaining content while strictly adhering to laws and our <a href="/terms">Terms of Use</a>. If you have further questions, contact us at <a href="mailto:support@deeptube.co">support@deeptube.co</a>.</p>
+
+  <div class="faq-section">
+    <h2>1. What is AI-generated content?</h2>
+    <p>AI-generated content refers to videos created or enhanced using artificial intelligence tools, such as text-to-video generators (e.g., Runway, Pika), AI avatars (e.g., Synthesia), or deepfake technology. On DeepTube.co, this includes videos in our 12 entertainment categories: Sci-Fi, Comedy, Animation, Music, Horror, Romance, Action, Surreal, Parody, Interactive, Historical, and Kids.</p>
+    <p>Examples include animated shorts, virtual music videos, or interactive stories created with AI. All content must comply with our strict guidelines, and <strong>nudity or explicit material is strictly forbidden</strong>.</p>
+  </div>
+
+  <div class="faq-section">
+    <h2>2. What types of AI-generated content are legal to upload?</h2>
+    <p>You may upload AI-generated videos that are original, consensual, and compliant with all applicable laws, including U.S. laws (e.g., DMCA, TAKE IT DOWN Act) and international regulations (e.g., EU AI Act, UK Online Safety Act). Legal content includes:</p>
+    <ul>
+      <li><strong>AI Avatars</strong>: Videos featuring synthetic characters or avatars for storytelling, comedy, or music videos, such as a virtual singer in a Music video or a cartoon character in a Kids’ animation.</li>
+      <li><strong>Text-to-Video Animations</strong>: Videos generated from text prompts, like surreal art for the Surreal category or action scenes for the Action category, provided they don’t depict real individuals without consent.</li>
+      <li><strong>Voice-Over Videos</strong>: AI-generated voiceovers narrating stories, such as a Kids’ fairy tale or a Parody skit, using tools like Lyrebird AI.</li>
+      <li><strong>Full-Body Synthetic Videos</strong>: Videos with entirely AI-generated characters, like sci-fi aliens in the Sci-Fi category or historical figures in the Historical category, with proper consent if resembling real people.</li>
+      <li><strong>Interactive Videos</strong>: Choose-your-own-adventure stories or gamified content in the Interactive category, created with tools like Elai.io.</li>
+    </ul>
+    <p>All content must be free of nudity, explicit material, or illegal elements (e.g., violence, hate speech). Creators must verify that their videos are original or use licensed/public domain assets (e.g., music, images).</p>
+  </div>
+
+  <div class="faq-section">
+    <h2>3. Are deepfakes allowed on DeepTube.co?</h2>
+    <p>Deepfakes—videos that use AI to manipulate or swap faces, voices, or likenesses—are only permitted if they are <strong>ethical, consensual, and clearly labeled as synthetic</strong>. Legal deepfakes include:</p>
+    <ul>
+      <li><strong>Consensual Parodies</strong>: Spoofs or humorous videos in the Parody category, such as an AI-generated celebrity likeness with their explicit permission (e.g., a comedic movie scene reenactment).</li>
+      <li><strong>Historical Reenactments</strong>: Videos in the Historical category recreating figures (e.g., Abraham Lincoln), provided they are fictionalized, labeled as AI-generated, and don’t misrepresent living individuals.</li>
+      <li><strong>Fictional Characters</strong>: Deepfakes creating entirely fictional personas for Sci-Fi or Comedy, with no real-person likenesses involved.</li>
+    </ul>
+    <p><strong>Prohibited Deepfakes</strong>: Non-consensual deepfakes, including those depicting real individuals without their explicit written consent, are strictly forbidden. This includes revenge porn, deepfakes intended to deceive (e.g., political misinformation), or any content that harms reputations. Nudity or sexually explicit deepfakes are also banned.</p>
+    <p>Creators must submit metadata or affidavits confirming consent for any deepfake depicting a real person’s likeness, per our Content Guidelines. Violators face immediate content removal and account termination.</p>
+  </div>
+
+  <div class="faq-section">
+    <h2>4. Why is nudity forbidden on DeepTube.co?</h2>
+    <p>Nudity, pornography, or sexually explicit content is strictly prohibited to maintain a safe, inclusive, and legal platform for all users. This aligns with our 18+ age restriction and compliance with laws like the U.S. TAKE IT DOWN Act and UK Online Safety Act, which prioritize preventing non-consensual or harmful material. Our focus is on creative, entertainment-driven AI content (e.g., Sci-Fi, Animation, Music), not adult content.</p>
+    <p>Any video containing nudity or explicit material will be removed, and the uploader’s account may be suspended or banned, as outlined in our <a href="/terms">Terms of Use</a>.</p>
+  </div>
+
+  <div class="faq-section">
+    <h2>5. What laws govern AI-generated content on DeepTube.co?</h2>
+    <p>We comply with strict legal standards to ensure all content is lawful, including:</p>
+    <ul>
+      <li><strong>U.S. DMCA</strong>: Protects against copyright infringement. Upload only original or licensed content, and report violations to <a href="mailto:dmca@deeptube.co">dmca@deeptube.co</a>.</li>
+      <li><strong>TAKE IT DOWN Act (2024)</strong>: Mandates removal of non-consensual deepfakes or intimate content within 48 hours. We promptly remove such material upon report.</li>
+      <li><strong>Section 230</strong>: Grants us safe harbor from user content liability, provided we act swiftly to remove illegal material.</li>
+      <li><strong>EU AI Act</strong>: Requires labeling of AI-generated content to prevent deception. All deepfakes must be marked as synthetic.</li>
+      <li><strong>UK Online Safety Act</strong>: Obliges us to prevent illegal content, including revenge porn or CSAM, and implement age verification.</li>
+      <li><strong>State Revenge Porn Laws</strong>: Most U.S. states criminalize non-consensual intimate content. We ban such material and support victim reports.</li>
+    </ul>
+    <p>Creators must ensure their content complies with these laws and local regulations in their jurisdiction. We use AI detection tools and human moderators to enforce compliance.</p>
+  </div>
+
+  <div class="faq-section">
+    <h2>6. How do I ensure my AI-generated content is legal?</h2>
+    <p>To upload legal content, follow these guidelines:</p>
+    <ul>
+      <li><strong>Obtain Consent</strong>: For deepfakes or likenesses of real people, secure explicit written consent from the individual and submit it with your upload.</li>
+      <li><strong>Label AI Content</strong>: Clearly mark AI-generated videos as synthetic in the title, description, or video itself (e.g., “AI-Generated Parody”).</li>
+      <li><strong>Use Licensed Assets</strong>: Ensure music, images, or other elements are original, licensed, or public domain. Unlicensed content violates DMCA.</li>
+      <li><strong>Avoid Nudity</strong>: Do not include nudity, explicit content, or material that could be deemed offensive or illegal.</li>
+      <li><strong>Verify Fictional Content</strong>: Ensure AI-generated characters or scenarios don’t mimic real individuals without permission.</li>
+    </ul>
+    <p>Check our <a href="/content-guidelines">Content Guidelines</a> for full details. Use tools like Runway or Synthesia ethically, and consult a legal professional if unsure about your content.</p>
+  </div>
+
+  <div class="faq-section">
+    <h2>7. What happens if I upload illegal AI-generated content?</h2>
+    <p>Uploading illegal content, such as non-consensual deepfakes, nudity, or copyrighted material, violates our Terms of Use and Content Guidelines. Consequences include:</p>
+    <ul>
+      <li>Immediate removal of the content.</li>
+      <li>Suspension or termination of your account.</li>
+      <li>Reporting to authorities if the content involves serious violations (e.g., CSAM, revenge porn).</li>
+      <li>Potential legal action from affected parties or regulators.</li>
+    </ul>
+    <p>We use AI detection tools (e.g., deepfake detection) and human moderators to identify and remove illegal content. Report violations via our “Report” button or at <a href="mailto:support@deeptube.co">support@deeptube.co</a>.</p>
+  </div>
+
+  <div class="faq-section">
+    <h2>8. Can I upload AI-generated content depicting real people?</h2>
+    <p>Only if you have <strong>explicit written consent</strong> from the depicted individual. For example, a deepfake parody of a celebrity in the Parody category is allowed if the celebrity has provided permission and the video is labeled as AI-generated. Without consent, such content is considered non-consensual and prohibited, especially if it includes nudity or defamatory elements.</p>
+    <p>Submit consent documentation with your upload to verify compliance. Fictional AI characters (e.g., a sci-fi alien) don’t require consent, provided they don’t resemble real people.</p>
+  </div>
+
+  <div class="faq-section">
+    <h2>9. How does DeepTube.co prevent illegal content?</h2>
+    <p>We take proactive steps to ensure a safe platform:</p>
+    <ul>
+      <li><strong>AI Moderation</strong>: Tools like deepfake detection and content fingerprinting identify non-consensual or illegal content.</li>
+      <li><strong>Human Moderation</strong>: Trained moderators review flagged videos for compliance.</li>
+      <li><strong>User Reporting</strong>: A “Report” button allows users to flag illegal content, with rapid response within 24–48 hours.</li>
+      <li><strong>Consent Verification</strong>: Creators must provide metadata or affidavits for deepfakes depicting real people.</li>
+      <li><strong>Partnerships</strong>: We work with organizations like NCMEC and StopNCII to address CSAM and non-consensual content.</li>
+    </ul>
+    <p>Our <a href="/terms">Terms of Use</a> and <a href="/privacy">Privacy Policy</a> outline our commitment to legal compliance and user safety.</p>
+  </div>
+
+  <div class="faq-section">
+    <h2>10. Where can I learn more about creating legal AI content?</h2>
+    <p>We provide resources to help you create ethical AI-generated videos:</p>
+    <ul>
+      <li><strong>Creator Tutorials</strong>: Available on our <a href="/help">Help Center</a>, covering tools like Synthesia, Runway, and Pika.</li>
+      <li><strong>Content Guidelines</strong>: Review our <a href="/content-guidelines">guidelines</a> for detailed rules.</li>
+      <li><strong>Support Team</strong>: Contact <a href="mailto:support@deeptube.co">support@deeptube.co</a> for guidance on specific content.</li>
+      <li><strong>External Resources</strong>: Consult the Cyber Civil Rights Initiative (<a href="tel:844-878-2274">844-878-2274</a>) or legal experts for advice on deepfakes and consent.</li>
+    </ul>
+    <p>We encourage creators to produce content that’s fun, creative, and compliant with our entertainment categories!</p>
+  </div>
+
+  <div class="faq-section">
+    <h2>11. Can I monetize my AI-generated content on DeepTube.co?</h2>
+    <p>Yes, eligible creators can monetize legal AI-generated content through subscriptions, pay-per-view, or ads, as outlined in our <a href="/monetization">Monetization Policy</a>. However, content containing nudity, non-consensual deepfakes, or other illegal material cannot be monetized and will be removed.</p>
+    <p>To monetize, ensure your videos comply with our Content Guidelines, are labeled as AI-generated where required, and use only licensed or original assets. For example, a consensual AI-generated parody in the Parody category or an animated music video in the Music category can be monetized if it meets all legal standards.</p>
+  </div>
+
+  <div class="faq-section">
+    <h2>12. How do I report illegal AI-generated content, like non-consensual deepfakes?</h2>
+    <p>If you encounter illegal content, such as non-consensual deepfakes, nudity, or revenge porn, use the “Report” button on the video page to flag it. Provide details about the violation (e.g., lack of consent, explicit content), and our team will review it within 24–48 hours, per the U.S. TAKE IT DOWN Act and our <a href="/terms">Terms of Use</a>.</p>
+    <p>You can also email <a href="mailto:support@deeptube.co">support@deeptube.co</a> or contact external organizations like the Cyber Civil Rights Initiative (844-878-2274) or StopNCII for support. We prioritize victim reports and work with partners like NCMEC to address serious violations.</p>
+  </div>
+
+  <div class="faq-section">
+    <h2>13. Which AI tools can I use to create legal content for DeepTube.co?</h2>
+    <p>You can use any reputable AI tool to create legal content, provided the output complies with our guidelines. Popular tools include:</p>
+    <ul>
+      <li><strong>Synthesia</strong>: For AI avatars in Comedy or Romance videos.</li>
+      <li><strong>Runway</strong>: For text-to-video animations in Surreal or Animation categories.</li>
+      <li><strong>Pika</strong>: For short-form storytelling in Horror or Kids categories.</li>
+      <li><strong>DeepBrain AI</strong>: For full-body synthetic characters in Sci-Fi or Action videos.</li>
+      <li><strong>Elai.io</strong>: For interactive videos in the Interactive category.</li>
+    </ul>
+    <p>Ensure your content avoids nudity, uses licensed assets, and includes consent for any real-person likenesses. Check our <a href="/help">Help Center</a> for tutorials on using these tools ethically.</p>
+  </div>
+
+  <div class="faq-section">
+    <h2>14. Do international users face different rules for AI-generated content?</h2>
+    <p>While our <a href="/content-guidelines">Content Guidelines</a> apply globally, international users must also comply with local laws. For example:</p>
+    <ul>
+      <li><strong>EU Users</strong>: Under the EU AI Act, AI-generated content must be labeled, and high-risk deepfakes are heavily regulated. Ensure clear synthetic labels.</li>
+      <li><strong>UK Users</strong>: The Online Safety Act requires preventing illegal content, like revenge porn, and age verification. Avoid nudity and non-consensual content.</li>
+      <li><strong>Other Jurisdictions</strong>: Laws vary (e.g., Canada’s Bill C-27 regulates AI transparency). Consult local regulations before uploading.</li>
+    </ul>
+    <p>Regardless of location, nudity and non-consensual deepfakes are banned on DeepTube.co. Contact <a href="mailto:support@deeptube.co">support@deeptube.co</a> for guidance on your region’s laws.</p>
+  </div>
+
+  <div class="faq-section">
+    <h2>15. Why is DeepTube.co restricted to users 18 and older?</h2>
+    <p>DeepTube.co is restricted to users 18+ to ensure a safe, legal environment and comply with laws like the UK Online Safety Act and U.S. regulations. This helps us prevent minors from accessing or uploading potentially sensitive AI-generated content, even though nudity and explicit material are strictly forbidden.</p>
+    <p>We use age verification (e.g., ID checks) to enforce this restriction. If you’re under 18, do not attempt to use the platform, as accounts will be terminated. For more details, see our <a href="/privacy">Privacy Policy</a>.</p>
+  </div>
+
+  <p><strong>Still have questions?</strong> Reach out to DeepTube LLC at 123 Main St, Wilmington, DE 19801, email <a href="mailto:support@deeptube.co">support@deeptube.co</a>, or call (800) 555-1234. Let’s keep DeepTube.co a vibrant, legal, and nudity-free community!</p>
+</body>
+</html>
