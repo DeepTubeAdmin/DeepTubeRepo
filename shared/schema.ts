@@ -51,6 +51,7 @@ export const videos = pgTable("videos", {
   userId: integer("user_id").references(() => users.id), // Added userId for tracking ownership
   createdAt: timestamp("created_at").defaultNow().notNull(),
   credits: integer("credits").notNull().default(0), // Number of credits required to purchase
+  views: integer("views").notNull().default(0), // Track number of views
 });
 
 export const videosRelations = relations(videos, ({ one, many }) => ({
@@ -171,7 +172,8 @@ export const insertVideoSchema = createInsertSchema(videos).pick({
   duration: true,
   categoryId: true,
   vimeoId: true,
-  credits: true
+  credits: true,
+  views: true
 });
 export const insertWishlistItemSchema = createInsertSchema(wishlistItems);
 export const insertCommentSchema = createInsertSchema(comments);

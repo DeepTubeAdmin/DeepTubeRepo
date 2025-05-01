@@ -65,6 +65,12 @@ export interface IStorage {
   getLikesByVideoId(videoId: number): Promise<Like[]>;
   getLikeCount(videoId: number): Promise<number>;
   
+  // View tracking operations
+  incrementViews(videoId: number): Promise<number>;
+  getMostViewedVideos(limit?: number, contentType?: string): Promise<Video[]>;
+  getTrendingVideos(limit?: number, contentType?: string): Promise<Video[]>;
+  getPopularVideos(limit?: number, contentType?: string): Promise<Video[]>;
+  
   // Session store
   sessionStore: SessionStore;
 }
