@@ -63,6 +63,8 @@ export const videosRelations = relations(videos, ({ one, many }) => ({
     references: [users.id],
   }),
   wishlistItems: many(wishlistItems),
+  likes: many(likes),
+  comments: many(comments),
 }));
 
 // Wishlist table
@@ -105,6 +107,44 @@ export const commentsRelations = relations(comments, ({ one }) => ({
   }),
 }));
 
+// Likes table for videos/images (supports both anonymous and logged-in users)
+export const likes = pgTable("likes", {
+  id: serial("id").primaryKey(),
+  videoId: integer("video_id").references(() => videos.id, { onDelete: "cascade" }).notNull(),
+  userId: integer("user_id").references(() => users.id), // Optional for anonymous users
+  ipAddress: text("ip_address"), // To track anonymous likes by IP
+  sessionId: text("session_id"), // Alternative to IP for tracking anonymous users
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Create a unique constraint to prevent duplicate likes
+export const likesConstraint = pgTable("likes_constraint", {
+  videoId: integer("video_id").references(() => videos.id).notNull(),
+  userId: integer("user_id").references(() => users.id),
+  ipAddress: text("ip_address"),
+  sessionId: text("session_id"),
+}, (table) => {
+  // Constraint ensures a user/IP/session can only like a video once
+  return {
+    unique_like: primaryKey({ columns: [table.videoId, 
+      // Use either userId or the combination of IP and session
+      table.userId || table.ipAddress, 
+      table.sessionId] 
+    })
+  };
+});
+
+export const likesRelations = relations(likes, ({ one }) => ({
+  video: one(videos, {
+    fields: [likes.videoId],
+    references: [videos.id],
+  }),
+  user: one(users, {
+    fields: [likes.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -135,6 +175,7 @@ export const insertVideoSchema = createInsertSchema(videos).pick({
 });
 export const insertWishlistItemSchema = createInsertSchema(wishlistItems);
 export const insertCommentSchema = createInsertSchema(comments);
+export const insertLikeSchema = createInsertSchema(likes);
 
 // Type definitions
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -151,3 +192,6 @@ export type WishlistItem = typeof wishlistItems.$inferSelect;
 
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type Comment = typeof comments.$inferSelect;
+
+export type InsertLike = z.infer<typeof insertLikeSchema>;
+export type Like = typeof likes.$inferSelect;

@@ -56,6 +56,13 @@ export interface IStorage {
   addComment(comment: InsertComment): Promise<Comment>;
   getCommentsByVideoId(videoId: number): Promise<Comment[]>;
   
+  // Like operations
+  addLike(like: InsertLike): Promise<Like>;
+  removeLike(videoId: number, userId?: number, ipAddress?: string, sessionId?: string): Promise<void>;
+  isLiked(videoId: number, userId?: number, ipAddress?: string, sessionId?: string): Promise<boolean>;
+  getLikesByVideoId(videoId: number): Promise<Like[]>;
+  getLikeCount(videoId: number): Promise<number>;
+  
   // Session store
   sessionStore: SessionStore;
 }
