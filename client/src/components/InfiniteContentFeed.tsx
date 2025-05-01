@@ -209,6 +209,75 @@ export default function InfiniteContentFeed({
     }
   }, [displayedAds]);
   
+  // Function to render video blocks with ad control
+  const renderVideoBlock = (block: any, blockIndex: number, blockPosition: number) => {
+    // First, determine which items will have ads after them
+    const itemsWithAdIndices: number[] = [];
+    const preparedItems: { item: TypeVideo; hasAd: boolean }[] = [];
+    
+    // Calculate start index for the current block's videos
+    const blockStartIndex = contentBlocks.slice(0, blockIndex).reduce((count, prevBlock) => {
+      return prevBlock.type === 'videos' ? count + prevBlock.items.length : count;
+    }, 0);
+    
+    // Analyze the items to find out where ads will be placed
+    block.items.forEach((item: TypeVideo, itemIndex: number) => {
+      const globalVideoIndex = blockStartIndex + itemIndex;
+      const shouldShowAd = globalVideoIndex > 0 && (globalVideoIndex + 1) % 11 === 0;
+      
+      preparedItems.push({
+        item,
+        hasAd: shouldShowAd
+      });
+      
+      if (shouldShowAd) {
+        itemsWithAdIndices.push(itemIndex);
+      }
+    });
+    
+    // Special case for first two blocks (9 videos each) and regular blocks (3 videos per row)
+    const isSpecialBlock = blockPosition === 0 || blockPosition === 1;
+    const maxItemsToShow = isSpecialBlock ? 9 : 3; // 9 for special blocks, 3 for regular blocks
+    
+    // Adjust the items to ensure we don't exceed the limit when ads are included
+    const totalItemsWithAds = preparedItems.length + itemsWithAdIndices.length;
+    let itemsToRender = preparedItems;
+    
+    // If adding ads would exceed our limit, trim the content items to make room
+    if (totalItemsWithAds > maxItemsToShow) {
+      const itemsToRemove = totalItemsWithAds - maxItemsToShow;
+      itemsToRender = preparedItems.slice(0, preparedItems.length - itemsToRemove);
+    }
+    
+    // Now render the items with ads in the right places
+    return itemsToRender.map(({ item, hasAd }, i) => (
+      <React.Fragment key={`video-container-${item.id}`}>
+        <VideoCard
+          key={`video-${item.id}`}
+          video={item}
+          onPreview={onPreview}
+          onWishlist={onWishlist}
+        />
+        
+        {/* Insert advertisement if needed */}
+        {hasAd && (() => {
+          // Get a random ad and track it in displayedAds
+          const ad = getRandomAd();
+          // Add this ad ID to be processed in the useEffect
+          setTimeout(() => {
+            setDisplayedAds(prev => [...prev, ad.id]);
+          }, 0);
+          return (
+            <AdvertisementCard 
+              key={`ad-after-${item.id}`}
+              ad={ad} 
+            />
+          );
+        })()}
+      </React.Fragment>
+    ));
+  };
+  
   // Image card component specifically for images in the infinite feed
   interface ImageCardProps {
     image: TypeVideo;
@@ -372,44 +441,7 @@ export default function InfiniteContentFeed({
               >
                 <h3 className="text-2xl font-bold mb-6">{sectionTitle}</h3>
                 <div className={`grid grid-cols-1 sm:grid-cols-2 ${block.type === 'videos' ? 'md:grid-cols-3 gap-6' : 'md:grid-cols-3 lg:grid-cols-4 gap-4'}`}>
-                  {block.type === 'videos' && block.items.map((item, itemIndex) => {
-                    // Calculate global index for this video to determine ad placement
-                    // This index is calculated based on its position in the content blocks
-                    const blockStartIndex = contentBlocks.slice(0, index).reduce((count, prevBlock) => {
-                      return prevBlock.type === 'videos' ? count + prevBlock.items.length : count;
-                    }, 0);
-                    const globalVideoIndex = blockStartIndex + itemIndex;
-                    
-                    // Insert an ad after every 11th video (10th index) across all sections
-                    const shouldShowAd = globalVideoIndex > 0 && (globalVideoIndex + 1) % 11 === 0;
-                    
-                    return (
-                      <React.Fragment key={`video-container-${item.id}`}>
-                        <VideoCard
-                          key={`video-${item.id}`}
-                          video={item}
-                          onPreview={onPreview}
-                          onWishlist={onWishlist}
-                        />
-                        
-                        {/* Insert advertisement every 11 videos across all content */}
-                        {shouldShowAd && (() => {
-                          // Get a random ad and track it in displayedAds
-                          const ad = getUniqueRandomAd();
-                          // Add this ad ID to be processed in the useEffect
-                          setTimeout(() => {
-                            setDisplayedAds(prev => [...prev, ad.id]);
-                          }, 0);
-                          return (
-                            <AdvertisementCard 
-                              key={`ad-after-${item.id}`}
-                              ad={ad} 
-                            />
-                          );
-                        })()}
-                      </React.Fragment>
-                    );
-                  })}
+                  {block.type === 'videos' && renderVideoBlock(block, index, block.id)}
                   {block.type === 'images' && block.items.map(item => (
                     <ImageCard
                       key={item.id}
