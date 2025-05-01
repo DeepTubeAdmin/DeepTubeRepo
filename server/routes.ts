@@ -437,6 +437,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return `${categorySlug || 'all'}_${sortBy}_${shuffleSeed}`;
   }
   
+  // Using shuffle seed to create a seeded random function
+  function createSeededRandom(seed: string): () => number {
+    // If no seed is provided, use standard Math.random()
+    if (!seed) return Math.random;
+    
+    // Create a simple seeded random number generator
+    let s = 0;
+    for (let i = 0; i < seed.length; i++) {
+      s += seed.charCodeAt(i);
+    }
+    
+    return function() {
+      s = Math.sin(s) * 10000;
+      return s - Math.floor(s);
+    };
+  }
+  
+  // Fisher-Yates shuffle with a seed
+  function shuffleArray<T>(array: T[], seed: string): T[] {
+    const result = [...array]; // Create a copy to avoid mutating the original
+    const random = createSeededRandom(seed);
+    
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    
+    return result;
+  }
+  
   // Helper to reset cache when needed
   function resetContentCache(key?: string, resetCategories: boolean = false) {
     if (key) {
@@ -583,18 +613,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
             videos = await dbStorage.getFeaturedVideos(fetchLimit);
             // Filter to only video and embed types for video blocks
             videos = videos.filter(v => v.contentType === 'video' || v.contentType === 'embed');
+            // Apply shuffle with seed if provided
+            if (shuffleSeed) {
+              videos = shuffleArray(videos, shuffleSeed);
+              console.log(`Shuffled trending videos with seed: ${shuffleSeed}`);
+            }
             console.log(`Category trending videos (video): first few IDs: [ ${videos.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else if (isMostViewed) {
             // For most viewed, use random order for now (will be replaced with actual view count)
             videos = await dbStorage.getVideos(fetchLimit, undefined, undefined, 'viewed');
             // Filter to only video and embed types for video blocks
             videos = videos.filter(v => v.contentType === 'video' || v.contentType === 'embed');
+            // Apply shuffle with seed if provided
+            if (shuffleSeed) {
+              videos = shuffleArray(videos, shuffleSeed);
+              console.log(`Shuffled most-viewed videos with seed: ${shuffleSeed}`);
+            }
             console.log(`Category most-viewed videos (video): first few IDs: [ ${videos.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else if (categoryId) {
             // Filter by category if specified
             videos = await dbStorage.getVideosByCategory(categoryId, undefined, fetchLimit);
             // Filter to only video and embed types for video blocks
             videos = videos.filter(v => v.contentType === 'video' || v.contentType === 'embed');
+            // Apply shuffle with seed if provided
+            if (shuffleSeed) {
+              videos = shuffleArray(videos, shuffleSeed);
+              console.log(`Shuffled category ${categoryId} videos with seed: ${shuffleSeed}`);
+            }
             console.log(`Category ${categoryId} videos (video): first few IDs: [ ${videos.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else {
             // No specific category filter - try to find a new unused category
@@ -624,6 +669,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (selectedCategoryId !== undefined) {
                 videos = await dbStorage.getVideosByCategory(selectedCategoryId, undefined, fetchLimit);
                 
+                // Apply shuffle with seed if provided
+                if (shuffleSeed) {
+                  videos = shuffleArray(videos, shuffleSeed);
+                  console.log(`Shuffled selected category ${selectedCategoryId} videos with seed: ${shuffleSeed}`);
+                }
+                
                 // Mark this category as used
                 usedCategoryIds.add(selectedCategoryId);
                 console.log(`✓ Marked category ${selectedCategoryId} as used. Total used: ${usedCategoryIds.size}/${allCategories.length}`);
@@ -639,12 +690,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Use the user-selected sort option
               if (sortBy === 'popular') {
                 videos = await dbStorage.getPopularVideos(fetchLimit);
+                // Apply shuffle with seed if provided
+                if (shuffleSeed) {
+                  videos = shuffleArray(videos, shuffleSeed);
+                  console.log(`Shuffled popular videos with seed: ${shuffleSeed}`);
+                }
               } else if (sortBy === 'trending') {
                 videos = await dbStorage.getTrendingVideos(fetchLimit);
+                // Apply shuffle with seed if provided
+                if (shuffleSeed) {
+                  videos = shuffleArray(videos, shuffleSeed);
+                  console.log(`Shuffled trending videos with seed: ${shuffleSeed}`);
+                }
               } else if (sortBy === 'most-viewed') {
                 videos = await dbStorage.getMostViewedVideos(fetchLimit);
+                // Apply shuffle with seed if provided
+                if (shuffleSeed) {
+                  videos = shuffleArray(videos, shuffleSeed);
+                  console.log(`Shuffled most-viewed videos with seed: ${shuffleSeed}`);
+                }
               } else {
                 videos = await dbStorage.getVideos(fetchLimit, undefined, undefined, dbSortBy as 'newest' | 'oldest' | 'viewed');
+                // Apply shuffle with seed if provided
+                if (shuffleSeed) {
+                  videos = shuffleArray(videos, shuffleSeed);
+                  console.log(`Shuffled ${dbSortBy} videos with seed: ${shuffleSeed}`);
+                }
               }
             }
             
@@ -691,14 +762,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (isTrending) {
             // For trending, use trending algorithm
             images = await dbStorage.getTrendingVideos(fetchLimit, 'image');
+            // Apply shuffle with seed if provided
+            if (shuffleSeed) {
+              images = shuffleArray(images, shuffleSeed);
+              console.log(`Shuffled trending images with seed: ${shuffleSeed}`);
+            }
             console.log(`Category trending videos (image): first few IDs: [ ${images.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else if (isMostViewed) {
             // For most viewed, use most viewed sorting
             images = await dbStorage.getMostViewedVideos(fetchLimit, 'image');
+            // Apply shuffle with seed if provided
+            if (shuffleSeed) {
+              images = shuffleArray(images, shuffleSeed);
+              console.log(`Shuffled most-viewed images with seed: ${shuffleSeed}`);
+            }
             console.log(`Category most-viewed videos (image): first few IDs: [ ${images.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else if (categoryId) {
             // Filter by category if specified
             images = await dbStorage.getVideosByCategory(categoryId, 'image', fetchLimit);
+            // Apply shuffle with seed if provided
+            if (shuffleSeed) {
+              images = shuffleArray(images, shuffleSeed);
+              console.log(`Shuffled category ${categoryId} images with seed: ${shuffleSeed}`);
+            }
             console.log(`Category ${categoryId} videos (image): first few IDs: [ ${images.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else {
             // No specific category filter - try to find a new unused category
@@ -727,6 +813,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Get images for this category
               images = await dbStorage.getVideosByCategory(selectedCategoryId, 'image', fetchLimit);
               
+              // Apply shuffle with seed if provided
+              if (shuffleSeed) {
+                images = shuffleArray(images, shuffleSeed);
+                console.log(`Shuffled selected category ${selectedCategoryId} images with seed: ${shuffleSeed}`);
+              }
+              
               // Mark this category as used
               usedCategoryIds.add(selectedCategoryId);
               console.log(`✓ Marked category ${selectedCategoryId} as used. Total used: ${usedCategoryIds.size}/${allCategories.length}`);
@@ -741,12 +833,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Use the user-selected sort option
               if (sortBy === 'popular') {
                 images = await dbStorage.getPopularVideos(fetchLimit, 'image');
+                // Apply shuffle with seed if provided
+                if (shuffleSeed) {
+                  images = shuffleArray(images, shuffleSeed);
+                  console.log(`Shuffled popular images with seed: ${shuffleSeed}`);
+                }
               } else if (sortBy === 'trending') {
                 images = await dbStorage.getTrendingVideos(fetchLimit, 'image');
+                // Apply shuffle with seed if provided
+                if (shuffleSeed) {
+                  images = shuffleArray(images, shuffleSeed);
+                  console.log(`Shuffled trending images with seed: ${shuffleSeed}`);
+                }
               } else if (sortBy === 'most-viewed') {
                 images = await dbStorage.getMostViewedVideos(fetchLimit, 'image');
+                // Apply shuffle with seed if provided
+                if (shuffleSeed) {
+                  images = shuffleArray(images, shuffleSeed);
+                  console.log(`Shuffled most-viewed images with seed: ${shuffleSeed}`);
+                }
               } else {
                 images = await dbStorage.getVideos(fetchLimit, 'image', undefined, dbSortBy as 'newest' | 'oldest' | 'viewed');
+                // Apply shuffle with seed if provided
+                if (shuffleSeed) {
+                  images = shuffleArray(images, shuffleSeed);
+                  console.log(`Shuffled ${dbSortBy} images with seed: ${shuffleSeed}`);
+                }
               }
             }
             
