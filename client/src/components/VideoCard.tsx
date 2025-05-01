@@ -33,6 +33,9 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
     }
   }, [video.embedCode, video.contentType]);
   
+  // State for username
+  const [username, setUsername] = useState<string>("");
+  
   // Fetch like status and count when component mounts
   useEffect(() => {
     const fetchLikeStatus = async () => {
@@ -49,6 +52,25 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
     
     fetchLikeStatus();
   }, [video.id]);
+  
+  // Fetch username if video has a userId
+  useEffect(() => {
+    if (video.userId) {
+      const fetchUsername = async () => {
+        try {
+          const response = await apiRequest('GET', `/api/users/${video.userId}/profile`);
+          const data = await response.json();
+          if (data && data.username) {
+            setUsername(data.username);
+          }
+        } catch (error) {
+          console.error('Error fetching username:', error);
+        }
+      };
+      
+      fetchUsername();
+    }
+  }, [video.userId]);
   
   // Handle liking/unliking a video
   const handleLike = async (e: React.MouseEvent) => {
@@ -224,7 +246,21 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
       <div className="p-3 bg-[#0f172a]">
         <h3 className="font-medium text-base md:text-lg truncate">{video.title}</h3>
         <div className="flex justify-between text-sm text-gray-400 mt-1">
-          <span>{video.aiGenerator || "AI Artist"}</span>
+          <div className="flex items-center space-x-2">
+            <span>{video.aiGenerator || "AI Artist"}</span>
+            {username && (
+              <>
+                <span className="text-gray-500">•</span>
+                <Link 
+                  to={`/user/${username}`} 
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-orange-500 hover:text-orange-400 hover:underline"
+                >
+                  {username}
+                </Link>
+              </>
+            )}
+          </div>
           <div className="flex items-center">
             {/* Like button - much more prominent and visually distinct */}
             <button 

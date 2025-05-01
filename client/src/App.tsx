@@ -13,6 +13,7 @@ import TermsOfService from "@/pages/terms-of-service";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import MyVideosPage from "@/pages/my-videos";
 import ProfilePage from "@/pages/profile-page";
+import UserPage from "@/pages/user-page";
 import SearchResults from "@/pages/search-results";
 import AdminPage from "@/pages/admin-page";
 import AccessDenied from "@/pages/access-denied";
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/my-videos" component={MyVideosPage} />
       <Route path="/profile" component={ProfilePage} />
+      <Route path="/user/:username" component={UserPage} />
       <Route path="/admin" component={AdminPage} />
       <Route path="/access-denied" component={AccessDenied} />
       <Route component={NotFound} />

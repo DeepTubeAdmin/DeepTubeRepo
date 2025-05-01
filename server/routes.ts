@@ -1883,6 +1883,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Public user profile routes
+  // Get user by ID
+  app.get("/api/users/:userId/profile", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      const user = await dbStorage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Don't expose sensitive data
+      const safeUser = {
+        id: user.id,
+        username: user.username,
+        createdAt: user.createdAt,
+        isAdmin: Boolean(user.isAdmin), // Safe to expose admin status, but not other fields
+      };
+      
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      res.status(500).json({ error: "Failed to fetch user profile" });
+    }
+  });
+  
+  // Get user by username
   app.get("/api/users/by-username/:username", async (req, res) => {
     try {
       const { username } = req.params;
