@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CategoryNavigation from '@/components/CategoryNavigation';
-import { Video, Category } from '@shared/schema';
+import { Category } from '@shared/schema';
+import { Video } from '@/types';
 import { Loader2 } from 'lucide-react';
 import { getQueryFn } from '@/lib/queryClient';
 
@@ -309,21 +310,30 @@ export default function SearchResults() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {searchResults.map(video => {
-                  // Process all nullable fields to ensure type safety
-                  const processedVideo: Video = {
-                    ...video,
-                    duration: video.duration || 0,
-                    description: video.description || "",
-                    prompt: video.prompt || "",
+                  // Handle nullable fields for client-side Video type
+                  const clientVideo: Video = {
+                    id: video.id,
+                    title: video.title,
+                    thumbnail: video.thumbnail,
+                    credits: video.credits,
+                    resolution: video.resolution as "HD" | "4K",
+                    duration: video.duration || 0,  // Prevent null duration
                     categoryId: video.categoryId || 0,
-                    aiGenerator: video.aiGenerator || "",
-                    userId: video.userId || 0,
-                    resolution: video.resolution || ""
+                    description: video.description || undefined,
+                    aiGenerator: video.aiGenerator || undefined,
+                    prompt: video.prompt || undefined,
+                    contentType: video.contentType as "video" | "image" | "embed" || undefined,
+                    vimeoId: video.vimeoId || undefined,
+                    videoUrl: video.videoUrl || undefined,
+                    imageUrl: video.imageUrl || undefined,
+                    embedCode: video.embedCode || undefined,
+                    userId: video.userId || undefined,
+                    createdAt: video.createdAt?.toString() || undefined,
                   };
                   return (
                     <VideoCard
                       key={video.id}
-                      video={processedVideo}
+                      video={clientVideo}
                       onPreview={() => handlePreview(video.id)}
                       onWishlist={() => handleWishlist(video.id)}
                     />

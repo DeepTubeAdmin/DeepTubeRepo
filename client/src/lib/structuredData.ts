@@ -3,7 +3,11 @@
  * for better SEO and rich snippets in search results
  */
 
-import { Video } from '@shared/schema';
+import { Video as SchemaVideo } from '@shared/schema';
+import { Video as TypeVideo } from '@/types';
+
+// Type can be either from schema or client-side type definition
+type Video = SchemaVideo | TypeVideo;
 
 /**
  * Generate VideoObject structured data for a video
