@@ -145,7 +145,7 @@
 
 /* Video cards */
 .video-card {
-  background-color: #1a1a1a;
+  background-color: #0f172a;
   border-radius: 8px;
   overflow: hidden;
   transition: transform 0.2s;
@@ -222,7 +222,7 @@
 
 /* Modal styles */
 .modal-content {
-  background-color: #1a1a1a;
+  background-color: #0f172a;
   margin: 60px auto;
   max-width: 500px;
   border-radius: 8px;
