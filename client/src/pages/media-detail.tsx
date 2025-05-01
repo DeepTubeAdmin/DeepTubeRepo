@@ -33,6 +33,7 @@ export default function MediaDetail() {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
+  const [uploaderUsername, setUploaderUsername] = useState<string>("");
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -61,6 +62,25 @@ export default function MediaDetail() {
       setLikeCount(likeData.count || 0);
     }
   }, [likeData]);
+  
+  // Fetch uploader username when media loads
+  useEffect(() => {
+    if (media && media.userId) {
+      const fetchUploaderUsername = async () => {
+        try {
+          const response = await apiRequest('GET', `/api/users/${media.userId}/profile`);
+          const data = await response.json();
+          if (data && data.username) {
+            setUploaderUsername(data.username);
+          }
+        } catch (error) {
+          console.error('Error fetching uploader username:', error);
+        }
+      };
+      
+      fetchUploaderUsername();
+    }
+  }, [media]);
   
   // Add comment mutation
   const addCommentMutation = useMutation({
