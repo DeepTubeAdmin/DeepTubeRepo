@@ -266,6 +266,71 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           // Store the URL for the video
           videoUrl = fileData.url;
           
+          // Generate a thumbnail from the video if none exists
+          if (!thumbnailUrl) {
+            try {
+              // Create a video element to extract the thumbnail
+              const videoEl = document.createElement('video');
+              videoEl.src = videoUrl;
+              videoEl.crossOrigin = 'anonymous';
+              videoEl.muted = true;
+              videoEl.currentTime = 1; // Set to 1 second in to avoid black frames
+              
+              // Wait for the video to load enough to extract a frame
+              finalThumbnailUrl = await new Promise((resolve, reject) => {
+                // Set a timeout to prevent hanging if video loading fails
+                const timeout = setTimeout(() => {
+                  console.log("Thumbnail extraction timed out");
+                  resolve("https://placehold.co/400x225?text=" + encodeURIComponent(title));
+                }, 5000);
+                
+                videoEl.onloadeddata = async () => {
+                  try {
+                    // Allow some time for the frame to be loaded
+                    await new Promise(r => setTimeout(r, 1000));
+                    
+                    // Create a canvas to draw the video frame
+                    const canvas = document.createElement('canvas');
+                    canvas.width = videoEl.videoWidth || 400;
+                    canvas.height = videoEl.videoHeight || 225;
+                    
+                    // Draw the current frame of the video onto the canvas
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                      ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+                      
+                      // Convert canvas to data URL (thumbnail)
+                      const thumbnailDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                      console.log("Generated thumbnail from video");
+                      clearTimeout(timeout);
+                      resolve(thumbnailDataUrl);
+                    } else {
+                      console.error("Could not get canvas context");
+                      clearTimeout(timeout);
+                      resolve("https://placehold.co/400x225?text=" + encodeURIComponent(title));
+                    }
+                  } catch (err) {
+                    console.error("Error generating thumbnail:", err);
+                    clearTimeout(timeout);
+                    resolve("https://placehold.co/400x225?text=" + encodeURIComponent(title));
+                  }
+                };
+                
+                videoEl.onerror = (e) => {
+                  console.error("Error loading video for thumbnail:", e);
+                  clearTimeout(timeout);
+                  resolve("https://placehold.co/400x225?text=" + encodeURIComponent(title));
+                };
+              });
+              
+              console.log("Final thumbnail URL type:", typeof finalThumbnailUrl);
+            } catch (thumbnailError) {
+              console.error("Error creating thumbnail:", thumbnailError);
+              // Fall back to placeholder if thumbnail generation fails
+              finalThumbnailUrl = "https://placehold.co/400x225?text=" + encodeURIComponent(title);
+            }
+          }
+          
           // Proceed with metadata upload in the next step
         } else if (contentType === "image") {
           // For images, we'll continue using the Data URL approach

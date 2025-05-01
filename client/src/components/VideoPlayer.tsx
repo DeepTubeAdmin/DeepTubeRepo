@@ -288,6 +288,85 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
     }
   }, [isOpen, video]);
 
+  // Create MP4 player with autoplay and improved error handling
+  const renderMP4Player = () => {
+    if (!video || !video.videoUrl) return null;
+    
+    return (
+      <div className="relative w-full h-full">
+        {/* Create a ref-based video element to ensure proper control */}
+        <div 
+          className="w-full h-full" 
+          ref={el => {
+            if (!el || !video.videoUrl) return;
+            
+            // Clear previous content
+            el.innerHTML = '';
+            
+            // Create video element
+            const videoEl = document.createElement('video');
+            videoEl.controls = true;
+            videoEl.autoplay = true;
+            videoEl.playsInline = true;
+            videoEl.className = 'w-full h-full';
+            videoEl.muted = false;
+            videoEl.src = video.videoUrl;
+            
+            if (video.thumbnail) {
+              videoEl.poster = video.thumbnail;
+            }
+            
+            // Add event listeners for debugging
+            videoEl.addEventListener('loadstart', () => console.log('MP4 video: loadstart'));
+            videoEl.addEventListener('loadedmetadata', () => console.log('MP4 video: loadedmetadata'));
+            videoEl.addEventListener('canplay', () => {
+              console.log('MP4 video: canplay');
+              // Force play after canplay event
+              videoEl.play().catch(e => console.warn('Autoplay prevented:', e));
+            });
+            
+            // Error handling
+            videoEl.addEventListener('error', (e) => {
+              console.error('MP4 video error:', e);
+              if (videoEl.error) {
+                console.error('Error code:', videoEl.error.code, 'Message:', videoEl.error.message);
+              }
+              
+              // Hide the video element
+              videoEl.style.display = 'none';
+              
+              // Add error message
+              const errorDiv = document.createElement('div');
+              errorDiv.className = 'absolute inset-0 flex items-center justify-center';
+              errorDiv.innerHTML = `
+                <div class="bg-black/70 p-4 rounded-md text-center max-w-md">
+                  <p class="text-red-500 text-lg mb-2">Unable to play this video</p>
+                  <p class="text-gray-300 text-sm">The video format may be unsupported in your browser.</p>
+                </div>
+              `;
+              el.appendChild(errorDiv);
+            });
+            
+            // Add video to container
+            el.appendChild(videoEl);
+            
+            // Force play with delay (helps with some browsers)
+            setTimeout(() => {
+              videoEl.play().catch(e => console.warn('Delayed autoplay prevented:', e));
+            }, 300);
+          }}
+        >
+          {/* Fallback content while video loads */}
+          <div className="absolute inset-0 flex items-center justify-center bg-black">
+            <div className="animate-pulse">
+              <Loader2 className="h-10 w-10 text-primary" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogTitle className="sr-only">Media viewer</DialogTitle>
@@ -355,97 +434,12 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                 </div>
               ) : video.contentType === 'video' && video.videoUrl ? (
                 <div className="bg-black flex items-center justify-center aspect-video w-full relative">
-                  {/* Remove debug info in production */}
-                  {/* <div className="absolute top-2 left-2 z-10 bg-black/80 text-xs text-white p-1 rounded opacity-50 hover:opacity-100">
-                    MP4 Debug: {video.videoUrl ? (video.videoUrl.length > 20 ? video.videoUrl.substring(0, 20) + '...' : video.videoUrl) : 'No URL'}
-                  </div> */}
-                  
                   {/* Add AI watermark for all videos */}
                   <AIWatermark position="bottom-right" size="medium" />
                   
-                  {/* Try different approach for mp4 videos */}
+                  {/* Improved MP4 video handling */}
                   {video.videoUrl.includes('.mp4') || video.videoUrl.includes('video/mp4') || video.videoUrl.startsWith('/uploads/') ? (
-                    // For MP4 videos and server-hosted files, use a source element inside video instead of src attribute
-                    <video 
-                      src={video.videoUrl}
-                      controls 
-                      autoPlay 
-                      muted={false}
-                      playsInline
-                      preload="auto"
-                      className="w-full h-full" 
-                      poster={video.thumbnail || undefined}
-                      onError={(e) => {
-                        console.error("Error playing MP4 video:", e);
-                        const videoEl = e.currentTarget;
-                        console.log("Video element:", videoEl);
-                        if (videoEl.error) {
-                          console.log("Video error code:", videoEl.error.code);
-                          console.log("Video error message:", videoEl.error.message);
-                        }
-                        
-                        // Create fallback for data URLs that may be corrupted
-                        if (video.videoUrl && video.videoUrl.startsWith('data:') && videoEl.parentElement) {
-                          console.log("Attempting alternative playback method for data URL");
-                          
-                          // Hide the failed video element
-                          videoEl.style.display = 'none';
-                          
-                          // Create a blob from the data URL
-                          try {
-                            // Safe copy for TypeScript
-                            const videoUrl = video.videoUrl;
-                            // Try creating an object URL directly
-                            fetch(videoUrl)
-                              .then(res => res.blob())
-                              .then(blob => {
-                                // Create an object URL from the blob
-                                const url = URL.createObjectURL(blob);
-                                
-                                // Create a new video element with the object URL
-                                const newVideo = document.createElement('video');
-                                newVideo.src = url;
-                                newVideo.className = "max-h-[70vh] max-w-full";
-                                newVideo.controls = true;
-                                newVideo.autoplay = true;
-                                
-                                // Add the new video element to the DOM
-                                if (videoEl.parentElement) {
-                                  videoEl.parentElement.appendChild(newVideo);
-                                }
-                              })
-                              .catch(err => {
-                                console.error("Failed to create blob from data URL:", err);
-                                // Show error message
-                                if (videoEl.parentElement) {
-                                  const errorDiv = document.createElement('div');
-                                  errorDiv.className = 'bg-red-600/20 border border-red-600 rounded-md p-4 text-center';
-                                  errorDiv.innerHTML = `
-                                    <h3 class="text-red-400 text-lg font-semibold mb-2">
-                                      <i class="fas fa-exclamation-circle mr-2"></i>
-                                      Video Playback Error
-                                    </h3>
-                                    <p class="text-gray-300 mb-2">
-                                      The video could not be played. It may be corrupted or in an unsupported format.
-                                    </p>
-                                    <div class="text-xs text-gray-400 bg-black/50 p-2 rounded mt-2 text-left overflow-auto max-h-24">
-                                      <p>Error: Failed to create playable video from data URL</p>
-                                      <p>Error details: ${err.message}</p>
-                                      <p>Try downloading the video instead and playing it locally</p>
-                                    </div>
-                                  `;
-                                  videoEl.parentElement.appendChild(errorDiv);
-                                }
-                              });
-                          } catch (err) {
-                            console.error("Error processing data URL:", err);
-                          }
-                        }
-                      }}
-                    >
-                      <source src={video.videoUrl || ''} type="video/mp4" />
-                      Your browser does not support the video tag.
-                    </video>
+                    renderMP4Player()
                   ) : (
                     // For other video types, use the src attribute directly
                     <video 
@@ -458,98 +452,19 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                         console.error("Error playing video:", e);
                         // If the video element is available, try to show error details
                         const videoEl = e.currentTarget;
+                        videoEl.style.display = 'none';
                         
-                        // Helper function to show error message - define outside to avoid strict mode issues
-                        const showErrorMessage = () => {
+                        // Add error message to parent
+                        if (videoEl.parentElement) {
                           const errorDiv = document.createElement('div');
-                          errorDiv.className = 'bg-red-600/20 border border-red-600 rounded-md p-4 text-center';
-                          
-                          // Create safe local references to values
-                          const safeVideoUrl = video?.videoUrl || 'Not available';
-                          const displayUrl = safeVideoUrl.length > 100 ? safeVideoUrl.substring(0, 100) + '...' : safeVideoUrl;
-                          const errorCode = videoEl.error ? videoEl.error.code : 'Unknown';
-                          const errorMessage = videoEl.error ? videoEl.error.message : 'Unknown error';
-                          
+                          errorDiv.className = 'absolute inset-0 flex items-center justify-center';
                           errorDiv.innerHTML = `
-                            <h3 class="text-red-400 text-lg font-semibold mb-2">
-                              <i class="fas fa-exclamation-circle mr-2"></i>
-                              Video Playback Error
-                            </h3>
-                            <p class="text-gray-300 mb-2">
-                              The video could not be played. It may be in an unsupported format or corrupted.
-                            </p>
-                            <div class="text-xs text-gray-400 bg-black/50 p-2 rounded mt-2 text-left overflow-auto max-h-24">
-                              <p>Video URL: ${displayUrl}</p>
-                              <p>Error code: ${errorCode}</p>
-                              <p>Error message: ${errorMessage}</p>
-                            </div>
-                            <div class="mt-4">
-                              <p class="mt-2 text-yellow-400">Please try refreshing the page or using a different browser.</p>
+                            <div class="bg-black/70 p-4 rounded-md text-center max-w-md">
+                              <p class="text-red-500 text-lg mb-2">Unable to play this video</p>
+                              <p class="text-gray-300 text-sm">The video format may be unsupported.</p>
                             </div>
                           `;
-                          
-                          const parentElement = videoEl.parentElement;
-                          if (parentElement) {
-                            parentElement.appendChild(errorDiv);
-                          }
-                        };
-                        
-                        // Main error handling logic
-                        if (videoEl.parentElement) {
-                          videoEl.style.display = 'none';
-                          
-                          // Try creating a source element approach as a fallback
-                          if (video && video.videoUrl) {
-                            try {
-                              console.log("Trying alternative video playback method with source element");
-                              
-                              // Create a local reference to ensure videoUrl is not null
-                              const videoUrl = video.videoUrl;
-                              
-                              // Try to determine content type
-                              let contentType = "video/mp4"; // Default
-                              if (videoUrl.includes('webm')) {
-                                contentType = "video/webm";
-                              } else if (videoUrl.includes('ogg') || videoUrl.includes('ogv')) {
-                                contentType = "video/ogg";
-                              } else if (videoUrl.includes('mov') || videoUrl.includes('quicktime')) {
-                                contentType = "video/quicktime";
-                              }
-                              
-                              // Create new video element with source
-                              const newVideo = document.createElement('video');
-                              newVideo.controls = true;
-                              newVideo.autoplay = true;
-                              newVideo.className = "max-h-[70vh] max-w-full";
-                              
-                              // Set poster if available
-                              if (video.thumbnail) {
-                                newVideo.poster = video.thumbnail;
-                              }
-                              
-                              // Create and add source element
-                              const source = document.createElement('source');
-                              source.src = videoUrl;
-                              source.type = contentType;
-                              
-                              newVideo.appendChild(source);
-                              videoEl.parentElement.appendChild(newVideo);
-                              
-                              // Add error handler to the new video too
-                              newVideo.onerror = () => {
-                                console.error("Alternative video approach also failed");
-                                newVideo.style.display = 'none';
-                                showErrorMessage();
-                              };
-                              
-                              return; // Exit early if we're trying the alternative
-                            } catch (err) {
-                              console.error("Error in alternative video approach:", err);
-                              // Fall through to standard error display
-                            }
-                          }
-                          
-                          showErrorMessage();
+                          videoEl.parentElement.appendChild(errorDiv);
                         }
                       }}
                     />
@@ -561,259 +476,129 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                   <AIWatermark position="bottom-right" size="medium" />
                   
                   {/* Check for data URLs which are usually properly formatted images */}
-                  {video.imageUrl?.startsWith('data:image/') ? (
+                  {video.imageUrl ? (
                     <img 
                       src={video.imageUrl} 
                       alt={video.title} 
                       className="max-h-[70vh] object-contain"
                       onError={(e) => {
-                        console.error("Error loading image data URL");
-                        e.currentTarget.style.display = 'none';
-                        if (e.currentTarget.parentElement) {
+                        console.error("Error loading image");
+                        const imgEl = e.currentTarget;
+                        imgEl.style.display = 'none';
+                        
+                        // Add error message if possible
+                        if (imgEl.parentElement) {
                           const errorDiv = document.createElement('div');
                           errorDiv.className = 'bg-red-600/20 border border-red-600 rounded-md p-4 text-center';
-                          errorDiv.innerHTML = `
-                            <h3 class="text-red-400 text-lg font-semibold mb-2">
-                              <i class="fas fa-exclamation-circle mr-2"></i>
-                              Image Data Failed to Load
-                            </h3>
-                            <p class="text-gray-300">
-                              The image data could not be displayed. It may be corrupted or in an unsupported format.
-                            </p>
-                          `;
-                          e.currentTarget.parentElement.appendChild(errorDiv);
+                          errorDiv.textContent = 'Image could not be loaded. It may be in an unsupported format.';
+                          imgEl.parentElement.appendChild(errorDiv);
                         }
                       }}
                     />
-                  ) : (video.imageUrl?.includes('<!DOCTYPE html>') || 
-                     video.imageUrl?.includes('<html') || 
-                     video.imageUrl?.startsWith('data:text/html;') ||
-                     video.imageUrl?.startsWith('data:text/plain;') ||
-                     video.imageUrl?.startsWith('data:application/') ||
-                     /^data:text\/(?!image)/.test(video.imageUrl || '')) ? (
-                    <div className="text-center p-4">
-                      <div className="bg-yellow-600/20 border border-yellow-600 rounded-md p-4 mb-4">
-                        <h3 className="text-yellow-400 text-lg font-semibold mb-2">
-                          <i className="fas fa-exclamation-triangle mr-2"></i>
-                          Document or Text File Detected
-                        </h3>
-                        <p className="text-gray-300 mb-4">
-                          This content appears to be a document, HTML file, or text-based format rather than an image. It cannot be displayed directly in the image viewer.
-                        </p>
-                        <a 
-                          href={video.imageUrl || '#'} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded inline-flex items-center"
-                        >
-                          <i className="fas fa-external-link-alt mr-2"></i>
-                          Open Document
-                        </a>
-                      </div>
-                      
-                      <div className="mt-4 text-gray-400 text-sm">
-                        <p>For best results, please upload image files (JPEG, PNG, GIF, WebP, etc.) rather than text or document files.</p>
-                      </div>
-                    </div>
                   ) : (
-                    <img 
-                      src={video.thumbnail || video.imageUrl || ''} 
-                      alt={video.title} 
-                      className="max-h-[70vh] object-contain"
-                      onError={(e) => {
-                        // If image fails to load, show a fallback message
-                        console.error("Error loading image from URL:", video.imageUrl);
-                        e.currentTarget.style.display = 'none';
-                        if (e.currentTarget.parentElement) {
-                          const errorDiv = document.createElement('div');
-                          errorDiv.className = 'bg-red-600/20 border border-red-600 rounded-md p-4 text-center';
-                          errorDiv.innerHTML = `
-                            <h3 class="text-red-400 text-lg font-semibold mb-2">
-                              <i class="fas fa-exclamation-circle mr-2"></i>
-                              Image Failed to Load
-                            </h3>
-                            <p class="text-gray-300">
-                              The image could not be displayed. It may be in an unsupported format or the URL might be invalid.
-                            </p>
-                            <div class="mt-4">
-                              <a href="${video.imageUrl}" target="_blank" rel="noopener noreferrer" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded inline-flex items-center mt-2">
-                                <i class="fas fa-external-link-alt mr-2"></i>
-                                Try Opening Directly
-                              </a>
-                            </div>
-                          `;
-                          e.currentTarget.parentElement.appendChild(errorDiv);
-                        }
-                      }}
-                    />
+                    <div className="text-red-500">Image data not available</div>
                   )}
                 </div>
               ) : (
-                <div className="aspect-video bg-gray-900 flex items-center justify-center text-gray-400 w-full">
-                  No media available
+                <div className="bg-black aspect-video flex items-center justify-center">
+                  <div className="text-center p-8 bg-gray-800/50 rounded-lg">
+                    <h3 className="text-red-400 text-xl font-semibold">Unsupported Content Type</h3>
+                    <p className="text-gray-300 mt-2">
+                      This content type ({video.contentType || 'unknown'}) cannot be displayed.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
             
             {/* Info section */}
-            <div className="px-6 py-5">
+            <div className="p-4 md:p-6">
               <div className="flex justify-between items-start mb-4">
-                <div className="flex-1">
-                  <h2 id="video-title" className="text-xl font-semibold mb-2 text-white">{video.title}</h2>
-                  
-                  <div className="flex items-center text-gray-400 text-sm">
-                    <span className="flex items-center">
-                      <i className="fas fa-eye mr-1"></i>
-                      {Math.floor(Math.random() * 10000) + 100} views
-                    </span>
-                    <span className="mx-2">•</span>
-                    <span>
-                      Added {Math.floor(Math.random() * 15) + 1} days ago
-                    </span>
-                  </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">{video.title}</h2>
+                  {video.createdAt && (
+                    <p className="text-gray-400 text-sm mt-1">
+                      Uploaded {new Date(video.createdAt).toLocaleDateString()}
+                    </p>
+                  )}
                 </div>
                 
-                <div className="flex items-center space-x-3">
-                  <button 
-                    className={`flex items-center px-3 py-2 rounded ${isLiked 
-                      ? 'bg-orange-500 hover:bg-orange-400 text-black' 
-                      : 'bg-[#333] hover:bg-[#444] text-white hover:text-orange-300 hover:border-orange-500'}`}
+                <div className="flex gap-2">
+                  <button
                     onClick={handleLike}
                     disabled={isLikeLoading}
+                    className={`flex items-center gap-1 px-4 py-2 rounded-full transition-colors ${isLiked ? 'bg-primary text-black' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
                   >
-                    <ThumbsUp className={`w-5 h-5 mr-2 ${isLikeLoading ? 'animate-pulse' : ''}`} />
+                    <ThumbsUp size={16} className={isLikeLoading ? 'animate-pulse' : ''} />
                     <span>{isLiked ? 'Liked' : 'Like'}</span>
-                    {likeCount > 0 && (
-                      <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${isLiked ? 'bg-orange-700' : 'bg-gray-700'}`}>
-                        {likeCount}
-                      </span>
-                    )}
+                    {likeCount > 0 && <span className="ml-1">({likeCount})</span>}
                   </button>
-                  <button className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded flex items-center" onClick={handleReport}>
-                    <i className="fas fa-flag mr-2"></i>
+                  
+                  <button
+                    onClick={handleReport}
+                    className="bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2 rounded-full flex items-center gap-1"
+                  >
+                    <i className="fas fa-flag text-sm"></i>
                     <span>Report</span>
                   </button>
                 </div>
               </div>
               
-              <div className="flex flex-wrap items-center gap-2 mb-6">
-                {video.contentType === 'embed' ? (
-                  video.embedCode && isRedditEmbed(video.embedCode) ? (
-                    <span className="bg-[#333] text-white text-xs px-2 py-1 rounded">
-                      <i className="fab fa-reddit mr-1"></i> Reddit Embed
-                    </span>
-                  ) : (
-                    <span className="bg-[#333] text-white text-xs px-2 py-1 rounded">
-                      <i className="fab fa-youtube mr-1"></i> YouTube Embed
-                    </span>
-                  )
-                ) : (
-                  <span className="bg-[#333] text-white text-xs px-2 py-1 rounded">
-                    <i className="fas fa-robot mr-1"></i> AI Generated
-                  </span>
+              <div className="flex gap-4 mb-4 flex-wrap">
+                {video.aiGenerator && (
+                  <div className="bg-gray-800 rounded-md px-3 py-1 text-sm">
+                    <span className="text-gray-400">AI: </span>
+                    <span className="text-primary">{video.aiGenerator}</span>
+                  </div>
+                )}
+                
+                {video.category && (
+                  <div className="bg-gray-800 rounded-md px-3 py-1 text-sm">
+                    <span className="text-gray-400">Category: </span>
+                    <span className="text-blue-400">{video.category.name}</span>
+                  </div>
+                )}
+                
+                {video.contentType && (
+                  <div className="bg-gray-800 rounded-md px-3 py-1 text-sm">
+                    <span className="text-gray-400">Type: </span>
+                    <span className="text-yellow-400">{
+                      video.contentType === 'video' ? 'Video' :
+                      video.contentType === 'image' ? 'Image' :
+                      video.contentType === 'embed' ? 'Embedded Content' :
+                      video.contentType
+                    }</span>
+                  </div>
                 )}
                 
                 {video.resolution && (
-                  <span className="bg-[#333] text-white text-xs px-2 py-1 rounded">
-                    <i className="fas fa-video mr-1"></i> {video.resolution}
-                  </span>
-                )}
-                
-                {video.aiGenerator && (
-                  <span className="bg-[#333] text-white text-xs px-2 py-1 rounded">
-                    <i className="fas fa-magic mr-1"></i> {video.aiGenerator}
-                  </span>
-                )}
-                
-                {video.categoryId && (
-                  <span className="bg-[#333] text-white text-xs px-2 py-1 rounded">
-                    <i className="fas fa-tag mr-1"></i> Category {video.categoryId}
-                  </span>
+                  <div className="bg-gray-800 rounded-md px-3 py-1 text-sm">
+                    <span className="text-gray-400">Quality: </span>
+                    <span className="text-green-400">{video.resolution}</span>
+                  </div>
                 )}
               </div>
               
-              <div className="space-y-4 pt-4 border-t border-gray-800">
-                {video.prompt && (
-                  <div className="mb-4">
-                    <h3 className="text-white text-sm font-semibold mb-2">
-                      <i className="fas fa-comment-alt mr-2"></i> AI PROMPT
-                    </h3>
-                    <div className="bg-[#111] p-3 rounded text-sm leading-relaxed text-gray-300 whitespace-pre-wrap">
-                      {video.prompt}
-                    </div>
-                  </div>
-                )}
-                
-                {video.description && (
-                  <div className="mb-4">
-                    <h3 className="text-white text-sm font-semibold mb-2">
-                      <i className="fas fa-info-circle mr-2"></i> DESCRIPTION
-                    </h3>
-                    <div className="bg-[#111] p-3 rounded text-sm leading-relaxed text-gray-300 whitespace-pre-wrap">
-                      {video.description}
-                    </div>
-                  </div>
-                )}
-                
-                <div className="mt-6">
-                  <h3 className="text-white text-sm font-semibold mb-3">
-                    <i className="fas fa-comments mr-2"></i> COMMENTS
-                  </h3>
-                  
-                  {/* Comment form */}
-                  <div className="mb-4 bg-[#111] p-3 rounded">
-                    <textarea 
-                      className="w-full bg-[#222] text-white text-sm p-3 rounded border border-gray-700 focus:border-primary focus:ring-0 outline-none" 
-                      rows={3}
-                      placeholder="Add a comment..."
-                    ></textarea>
-                    <div className="flex justify-end mt-2">
-                      <button className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded text-sm">
-                        Post Comment
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {/* Comments list */}
-                  <div className="space-y-4">
-                    {/* Sample comment */}
-                    <div className="flex space-x-3 bg-[#111] p-3 rounded">
-                      <div className="shrink-0">
-                        <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-white">
-                          <i className="fas fa-user text-sm"></i>
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center mb-1">
-                          <span className="font-medium text-white text-sm">Anonymous User</span>
-                          <span className="mx-2 text-gray-500 text-xs">•</span>
-                          <span className="text-gray-500 text-xs">2 days ago</span>
-                        </div>
-                        <p className="text-gray-300 text-sm">This is amazing! The AI generation quality is incredible. Would love to know more about the prompt used.</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex space-x-3 bg-[#111] p-3 rounded">
-                      <div className="shrink-0">
-                        <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-white">
-                          <i className="fas fa-user text-sm"></i>
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center mb-1">
-                          <span className="font-medium text-white text-sm">AI Enthusiast</span>
-                          <span className="mx-2 text-gray-500 text-xs">•</span>
-                          <span className="text-gray-500 text-xs">5 days ago</span>
-                        </div>
-                        <p className="text-gray-300 text-sm">Very cool content. How long did this take to generate? I'm experimenting with similar techniques.</p>
-                      </div>
-                    </div>
-                  </div>
+              {video.description && (
+                <div className="mt-4 border-t border-gray-800 pt-4">
+                  <h3 className="text-lg font-semibold text-gray-300 mb-2">Description</h3>
+                  <p className="text-gray-400 whitespace-pre-line">{video.description}</p>
                 </div>
-              </div>
+              )}
+              
+              {video.prompt && (
+                <div className="mt-4 border-t border-gray-800 pt-4">
+                  <h3 className="text-lg font-semibold text-gray-300 mb-2">Prompt Used</h3>
+                  <p className="text-gray-400 whitespace-pre-line bg-gray-800/50 p-3 rounded-md font-mono text-sm">{video.prompt}</p>
+                </div>
+              )}
             </div>
           </div>
-        ) : null}
+        ) : (
+          <div className="text-center py-16 text-gray-400">
+            <p>No content available</p>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
