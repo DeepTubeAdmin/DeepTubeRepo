@@ -35,23 +35,26 @@ export default function Home() {
   // Use only standard categories from the API
   const allCategories = apiCategories || [];
   
-  // Get featured video for the active category
+  // Get featured video for the active category with shuffling
   const { data: featuredVideo, isLoading: isFeaturedLoading } = useQuery<Video>({
-    queryKey: ['/api/featured', activeCategory],
+    queryKey: ['/api/featured', activeCategory, shuffleSeed], // Add shuffleSeed to query key to refresh on seed change
     queryFn: async () => {
       // If a category is selected, get its featured video
       if (activeCategory) {
         const categoryId = allCategories.find(cat => cat.slug === activeCategory)?.id;
         if (categoryId) {
-          const res = await fetch(`/api/videos?category=${categoryId}&limit=1`);
+          // Add shuffleSeed to the API query
+          const res = await fetch(`/api/videos?category=${categoryId}&limit=5&shuffleSeed=${shuffleSeed}`);
           const videos = await res.json();
-          return videos[0] || defaultFeaturedVideo;
+          // Return a random video from the results
+          return videos.length > 0 ? videos[Math.floor(Math.random() * videos.length)] : defaultFeaturedVideo;
         }
       }
-      // Otherwise get overall featured video
-      const res = await fetch('/api/videos/featured?limit=1');
+      // Otherwise get overall featured video with shuffling
+      const res = await fetch(`/api/videos/featured?limit=5&shuffleSeed=${shuffleSeed}`);
       const videos = await res.json();
-      return videos[0] || defaultFeaturedVideo;
+      // Return a random video from the results
+      return videos.length > 0 ? videos[Math.floor(Math.random() * videos.length)] : defaultFeaturedVideo;
     },
     enabled: !isCategoriesLoading, // Only run after categories are loaded
   });

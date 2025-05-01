@@ -359,7 +359,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/videos", async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
-      const videos = await dbStorage.getVideos(limit);
+      const shuffleSeed = req.query.shuffleSeed as string || '';
+      const categoryId = req.query.category ? parseInt(req.query.category as string) : undefined;
+      
+      // Get videos by category if category parameter is provided
+      let videos;
+      if (categoryId) {
+        videos = await dbStorage.getVideosByCategory(categoryId, undefined, limit || 50);
+      } else {
+        videos = await dbStorage.getVideos(limit);
+      }
+      
+      // Shuffle videos if a seed is provided
+      if (shuffleSeed) {
+        // Log the first few IDs for debugging
+        console.log('Videos before shuffle: first few IDs:', videos.slice(0, 3).map(v => v.id));
+        
+        // Shuffle videos using the seeded shuffle function
+        const shuffledVideos = shuffleArray(videos, shuffleSeed);
+        
+        // Log the first few IDs after shuffling for debugging
+        console.log('Shuffled videos with seed:', shuffleSeed);
+        console.log('Videos after shuffle: first few IDs:', shuffledVideos.slice(0, 3).map(v => v.id));
+        
+        return res.json(shuffledVideos);
+      }
+      
       res.json(videos);
     } catch (error) {
       console.error("Error fetching videos:", error);
@@ -370,7 +395,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/videos/featured", async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const shuffleSeed = req.query.shuffleSeed as string || '';
+      
+      // Get featured videos
       const videos = await dbStorage.getFeaturedVideos(limit);
+      
+      // Shuffle videos if a seed is provided
+      if (shuffleSeed) {
+        // Log the first few IDs for debugging
+        console.log('Featured videos: first few IDs:', videos.slice(0, 3).map(v => v.id));
+        
+        // Shuffle videos using the seeded shuffle function
+        const shuffledVideos = shuffleArray(videos, shuffleSeed);
+        
+        // Log the first few IDs after shuffling for debugging
+        console.log('Shuffled featured videos with seed:', shuffleSeed);
+        console.log('Featured videos after shuffle: first few IDs:', shuffledVideos.slice(0, 3).map(v => v.id));
+        
+        return res.json(shuffledVideos);
+      }
+      
       res.json(videos);
     } catch (error) {
       console.error("Error fetching featured videos:", error);
