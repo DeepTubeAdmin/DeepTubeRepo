@@ -103,7 +103,12 @@ export default function Home() {
 
   return (
     <Layout showHeader={true}>
-      <SEO isHome={true} />
+      <SEO 
+        title="DeepTube: Ethical AI Media Hub"
+        description="DeepTube.co: Where innovative creators share responsible AI-powered media. Host, view, and explore trusted video content!"
+        keywords="AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
+        isHome={true} 
+      />
       {!isCategoriesLoading && (
         <CategoryNavigation 
           categories={allCategories} 

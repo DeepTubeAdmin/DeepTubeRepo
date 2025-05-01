@@ -142,11 +142,13 @@ export default function MediaDetail() {
   }
   
   // Generate SEO metadata based on the media content
-  const seoTitle = media.title;
-  const seoDescription = media.description || `${media.title} - AI generated ${media.contentType} on DeepTube.co`;
+  const seoTitle = `${media.title} | DeepTube: Ethical AI Media Hub`;
+  const seoDescription = media.description 
+    ? `DeepTube.co: Where innovative creators share responsible AI-powered media. ${media.description.substring(0, 100)}${media.description.length > 100 ? '...' : ''}` 
+    : `DeepTube.co: Where innovative creators share responsible AI-powered media. Experience this AI-generated ${media.contentType} created with ${media.aiGenerator || 'advanced AI technology'}.`;
   const seoImage = media.thumbnail || media.imageUrl || '';
   const seoCanonicalUrl = `https://deeptube.co/media/${id}`;
-  const seoKeywords = `${media.aiGenerator || 'AI'}, ${media.contentType}, ${media.title.split(' ').join(', ')}, AI generated media`;
+  const seoKeywords = `AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing`;
   
   // Generate structured data for rich snippets in search results
   const mediaStructuredData = media.contentType === 'image' 
