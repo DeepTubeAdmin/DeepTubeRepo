@@ -1090,9 +1090,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(` - Video URL: ${video.videoUrl || 'None'}`);
       console.log(` - Existing Thumbnail: ${video.thumbnail || 'None'}`);
       
-      // If video has a pre-defined thumbnail, redirect to it
+      // If video has a pre-defined thumbnail, handle it
       if (video.thumbnail && !video.thumbnail.includes("placehold.co") && !video.thumbnail.startsWith("data:")) {
-        return res.redirect(video.thumbnail);
+        // If thumbnail is internal API route, serve the file directly instead of redirecting
+        if (video.thumbnail === `/api/videos/${videoId}/thumbnail`) {
+          try {
+            // Check if the cached thumbnail file exists
+            await fs.access(thumbnailPath);
+            // Serve it directly
+            return res.sendFile(path.resolve(thumbnailPath));
+          } catch (err) {
+            // If not yet generated, don't redirect to avoid loops
+            console.log(`Thumbnail reference exists but file doesn't, regenerating for ${videoId}`);
+            // Continue with normal processing
+          }
+        } else {
+          // For external URLs, redirect
+          return res.redirect(video.thumbnail);
+        }
       }
       
       // If we have a thumbnail already generated, serve it
