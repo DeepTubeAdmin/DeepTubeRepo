@@ -1,11 +1,13 @@
 import { 
-  users, categories, videos, wishlistItems, comments,
+  users, categories, videos, wishlistItems, comments, likes,
   type User, type InsertUser, 
   type Category, type InsertCategory,
   type Video, type InsertVideo,
   type WishlistItem, type InsertWishlistItem,
-  type Comment, type InsertComment
+  type Comment, type InsertComment,
+  type Like, type InsertLike
 } from "@shared/schema";
+import { count } from "drizzle-orm";
 import { db } from "./db";
 import { eq, and, desc, asc, sql, or, ilike } from "drizzle-orm";
 import session from "express-session";
@@ -372,7 +374,92 @@ export class DatabaseStorage implements IStorage {
     return results;
   }
 
-  // End of implementation
+  // Like operations
+  async addLike(like: InsertLike): Promise<Like> {
+    try {
+      // First check if this video is already liked by this user/IP/session
+      const isAlreadyLiked = await this.isLiked(
+        like.videoId, 
+        like.userId, 
+        like.ipAddress || undefined, 
+        like.sessionId || undefined
+      );
+      
+      if (isAlreadyLiked) {
+        throw new Error('Video already liked');
+      }
+      
+      // If not, add the like
+      const [result] = await db.insert(likes).values(like).returning();
+      return result;
+    } catch (error) {
+      console.error('Error adding like:', error);
+      throw error;
+    }
+  }
+  
+  async removeLike(videoId: number, userId?: number, ipAddress?: string, sessionId?: string): Promise<void> {
+    try {
+      // Build query conditions based on available identifiers
+      const conditions = [eq(likes.videoId, videoId)];
+      
+      if (userId) {
+        conditions.push(eq(likes.userId, userId));
+      } else if (ipAddress && sessionId) {
+        conditions.push(eq(likes.ipAddress, ipAddress));
+        conditions.push(eq(likes.sessionId, sessionId));
+      } else {
+        throw new Error('Must provide either userId or both ipAddress and sessionId');
+      }
+      
+      await db.delete(likes).where(and(...conditions));
+    } catch (error) {
+      console.error('Error removing like:', error);
+      throw error;
+    }
+  }
+  
+  async isLiked(videoId: number, userId?: number, ipAddress?: string, sessionId?: string): Promise<boolean> {
+    try {
+      // Build query conditions based on available identifiers
+      const conditions = [eq(likes.videoId, videoId)];
+      
+      if (userId) {
+        conditions.push(eq(likes.userId, userId));
+      } else if (ipAddress && sessionId) {
+        conditions.push(eq(likes.ipAddress, ipAddress));
+        conditions.push(eq(likes.sessionId, sessionId));
+      } else {
+        // If no identifiers provided, cannot check for likes
+        return false;
+      }
+      
+      const [like] = await db.select().from(likes).where(and(...conditions));
+      return !!like;
+    } catch (error) {
+      console.error('Error checking like status:', error);
+      return false;
+    }
+  }
+  
+  async getLikesByVideoId(videoId: number): Promise<Like[]> {
+    try {
+      return await db.select().from(likes).where(eq(likes.videoId, videoId));
+    } catch (error) {
+      console.error('Error getting likes for video:', error);
+      return [];
+    }
+  }
+  
+  async getLikeCount(videoId: number): Promise<number> {
+    try {
+      const result = await db.select({ count: count() }).from(likes).where(eq(likes.videoId, videoId));
+      return result[0].count;
+    } catch (error) {
+      console.error('Error getting like count:', error);
+      return 0;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

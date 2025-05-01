@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage as dbStorage } from "./storage";
 import { setupAuth, comparePasswords, hashPassword } from "./auth";
 import { z } from "zod";
-import { insertCategorySchema, insertVideoSchema, type Video, type Category } from "@shared/schema";
+import { insertCategorySchema, insertVideoSchema, type Video, type Category, type InsertLike } from "@shared/schema";
 import * as vimeoService from "./vimeo";
 import multer from "multer";
 import path from "path";
@@ -952,6 +952,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error removing from wishlist:", error);
       res.status(500).json({ error: "Failed to remove from wishlist" });
+    }
+  });
+
+  // Like endpoints
+  app.post("/api/videos/:id/like", async (req, res) => {
+    try {
+      const videoId = parseInt(req.params.id);
+      
+      // Check if video exists
+      const video = await dbStorage.getVideoById(videoId);
+      if (!video) {
+        return res.status(404).json({ error: "Video not found" });
+      }
+      
+      // Prepare like object based on authentication state
+      const likeData: InsertLike = {
+        videoId,
+        // Store either user ID (if authenticated) or IP/session (if anonymous)
+        userId: req.isAuthenticated() ? (req.user as Express.User).id : undefined,
+        ipAddress: !req.isAuthenticated() ? req.ip : undefined,
+        sessionId: !req.isAuthenticated() ? req.sessionID : undefined
+      };
+      
+      // Check if already liked
+      const isLiked = await dbStorage.isLiked(
+        videoId, 
+        likeData.userId, 
+        likeData.ipAddress, 
+        likeData.sessionId
+      );
+      
+      if (isLiked) {
+        return res.status(400).json({ error: "Already liked" });
+      }
+      
+      // Add the like
+      const like = await dbStorage.addLike(likeData);
+      
+      // Get updated like count
+      const likeCount = await dbStorage.getLikeCount(videoId);
+      
+      res.status(201).json({ like, count: likeCount });
+    } catch (error) {
+      console.error("Error adding like:", error);
+      res.status(500).json({ error: "Failed to add like" });
+    }
+  });
+
+  app.delete("/api/videos/:id/like", async (req, res) => {
+    try {
+      const videoId = parseInt(req.params.id);
+      
+      // Remove like based on authentication state
+      if (req.isAuthenticated()) {
+        const userId = (req.user as Express.User).id;
+        await dbStorage.removeLike(videoId, userId);
+      } else {
+        // For anonymous users, use IP and session ID
+        await dbStorage.removeLike(videoId, undefined, req.ip, req.sessionID);
+      }
+      
+      // Get updated like count
+      const likeCount = await dbStorage.getLikeCount(videoId);
+      
+      res.json({ success: true, count: likeCount });
+    } catch (error) {
+      console.error("Error removing like:", error);
+      res.status(500).json({ error: "Failed to remove like" });
+    }
+  });
+
+  app.get("/api/videos/:id/like", async (req, res) => {
+    try {
+      const videoId = parseInt(req.params.id);
+      
+      // Check like status based on authentication state
+      let isLiked = false;
+      if (req.isAuthenticated()) {
+        const userId = (req.user as Express.User).id;
+        isLiked = await dbStorage.isLiked(videoId, userId);
+      } else {
+        // For anonymous users, use IP and session ID
+        isLiked = await dbStorage.isLiked(videoId, undefined, req.ip, req.sessionID);
+      }
+      
+      // Get like count
+      const likeCount = await dbStorage.getLikeCount(videoId);
+      
+      res.json({ isLiked, count: likeCount });
+    } catch (error) {
+      console.error("Error checking like status:", error);
+      res.status(500).json({ error: "Failed to check like status" });
     }
   });
 
