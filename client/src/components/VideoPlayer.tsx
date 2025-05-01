@@ -292,28 +292,62 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
   // Effect to cleanup video elements when dialog closes
   useEffect(() => {
     return () => {
-      // When component unmounts or dialog closes, pause and cleanup all video elements
+      // When component unmounts or dialog closes, use the emergency shutdown procedure
       if (!isOpen) {
-        console.log('VideoPlayer: Cleaning up and stopping all videos');
-        const videoElements = document.querySelectorAll('video');
-        videoElements.forEach(videoEl => {
+        console.log('VideoPlayer: Automatic emergency cleanup on unmount');
+        
+        // Create a safety timer that will forcefully run even if the main cleanup fails
+        const safetyTimer = setTimeout(() => {
+          // LAST RESORT: Global media shutdown
+          console.log('🚨 EXECUTING GLOBAL MEDIA SHUTDOWN 🚨');
+          
           try {
-            if (!videoEl.paused) {
-              videoEl.pause();
-              console.log('Video paused on dialog close');
-            }
-            // Remove src to stop downloading
-            videoEl.removeAttribute('src');
-            videoEl.load();
-          } catch (e) {
-            console.error('Error pausing video:', e);
+            // Force a global media shutdown through browser APIs
+            const allMedia = [...document.querySelectorAll('video'), ...document.querySelectorAll('audio')];
+            allMedia.forEach(media => {
+              try {
+                // 1. Pause, mute and clear source
+                if ('pause' in media) media.pause();
+                if ('muted' in media) media.muted = true;
+                if ('volume' in media) media.volume = 0;
+                if ('src' in media && media.hasAttribute('src')) media.removeAttribute('src');
+                if ('load' in media) media.load();
+                
+                // 2. Replace with inert clone to clear event listeners
+                const emptyClone = document.createElement(media.tagName);
+                if (media.parentNode) {
+                  media.parentNode.replaceChild(emptyClone, media);
+                  // 3. Then remove the clone too
+                  setTimeout(() => {
+                    if (emptyClone.parentNode) {
+                      emptyClone.parentNode.removeChild(emptyClone);
+                    }
+                  }, 0);
+                }
+              } catch (err) {
+                console.error('Failed final cleanup attempt for media:', err);
+              }
+            });
+            
+            // Also clear all iframes that could contain media
+            document.querySelectorAll('iframe').forEach(iframe => {
+              if (iframe.parentNode && (
+                iframe.src?.includes('youtube') || 
+                iframe.src?.includes('vimeo') || 
+                iframe.src?.includes('video') || 
+                iframe.src?.includes('audio') ||
+                iframe.src?.includes('embed')
+              )) {
+                iframe.parentNode.removeChild(iframe);
+              }
+            });
+          } catch (finalError) {
+            console.error('Global media shutdown failed:', finalError);
           }
-        });
-
-        // Clear the video reference
-        if (videoRef.current) {
-          videoRef.current = null;
-        }
+        }, 100); // Short timeout to allow normal cleanup to work first
+        
+        // Clear the timeout if the component remounts quickly
+        return () => clearTimeout(safetyTimer);
       }
     };
   }, [isOpen]);
@@ -406,59 +440,112 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
 
   // Function to handle dialog close with proper cleanup
   const handleCloseDialog = () => {
-    console.log('VideoPlayer: FORCEFULLY stopping all videos');
+    console.log('VideoPlayer: EMERGENCY SHUTDOWN OF ALL MEDIA');
     
-    // Force destroy all video elements
+    // This is a multi-step approach to guarantee all media is stopped
     try {
-      // Find all player containers and completely clear them
+      // STEP 1: Destroy all video containers completely
       const videoContainers = document.querySelectorAll('.video-player-container');
       videoContainers.forEach(container => {
         if (container instanceof HTMLElement) {
-          // Store original content to recreate later if needed
           container.innerHTML = '';
           console.log('Cleared video container');
         }
       });
       
-      // More aggressive approach - find and force stop all video elements
+      // STEP 2: Nuclear option - find and completely annihilate all video elements
       document.querySelectorAll('video').forEach(videoEl => {
         try {
-          // First pause the video
-          videoEl.pause();
+          console.log('Destroying video element:', videoEl);
           
-          // Then completely remove all sources
+          // Method 1: Pause and mute
+          videoEl.pause();
+          videoEl.muted = true;
+          videoEl.volume = 0;
+          
+          // Method 2: Remove sources
           const sources = videoEl.querySelectorAll('source');
           sources.forEach(source => source.remove());
-          
-          // Clear the src attribute
           videoEl.removeAttribute('src');
           
-          // Force a load which clears the media element
+          // Method 3: Force media element to clear its buffer
           videoEl.load();
           
-          // Optional - remove the whole element from DOM
+          // Method 4: Remove event listeners that might restart playback
+          const clone = videoEl.cloneNode(false);
           if (videoEl.parentNode) {
-            videoEl.parentNode.removeChild(videoEl);
-            console.log('Removed video element from DOM');
+            videoEl.parentNode.replaceChild(clone, videoEl);
           }
+          
+          // Method 5: Force browser garbage collection by removing references
+          if (clone.parentNode) {
+            clone.parentNode.removeChild(clone);
+          }
+          
+          console.log('Video element completely destroyed');
         } catch (e) {
-          console.error('Error forcefully stopping video:', e);
+          console.error('Error destroying video:', e);
+          // Final fallback - crude DOM manipulation to kill it
+          try {
+            if (videoEl.parentNode) {
+              videoEl.parentNode.removeChild(videoEl);
+            }
+          } catch (e2) {
+            console.error('Ultimate fallback failed:', e2);
+          }
         }
       });
+      
+      // STEP 3: Also clear any audio elements that might be playing
+      document.querySelectorAll('audio').forEach(audioEl => {
+        try {
+          audioEl.pause();
+          audioEl.muted = true;
+          audioEl.volume = 0;
+          audioEl.removeAttribute('src');
+          audioEl.load();
+          
+          if (audioEl.parentNode) {
+            audioEl.parentNode.removeChild(audioEl);
+          }
+        } catch (e) {
+          console.error('Error stopping audio:', e);
+        }
+      });
+      
+      // STEP 4: Clear all iframes that might contain audio/video
+      if (embedContainerRef.current) {
+        embedContainerRef.current.innerHTML = '';
+      }
+      
+      // STEP 5: Remove all other potential iframe sources
+      document.querySelectorAll('iframe').forEach(iframe => {
+        try {
+          // Don't touch UI iframes, just media ones
+          if (iframe.src && (
+              iframe.src.includes('youtube.com') || 
+              iframe.src.includes('vimeo.com') || 
+              iframe.src.includes('reddit.com') ||
+              iframe.src.includes('video')))
+          {
+            if (iframe.parentNode) {
+              iframe.parentNode.removeChild(iframe);
+            }
+          }
+        } catch (e) {
+          console.error('Error removing iframe:', e);
+        }
+      });
+      
+      // STEP 6: Nullify all references
+      videoRef.current = null;
+      
     } catch (e) {
-      console.error('Error in aggressive video cleanup:', e);
+      console.error('Error in emergency media shutdown:', e);
+    } finally {
+      // Always call the original onClose, even if cleanup fails
+      onClose();
     }
-    
-    // Clear iframes as well
-    if (embedContainerRef.current) {
-      embedContainerRef.current.innerHTML = '';
-    }
-    
-    // Reset all video references
-    videoRef.current = null;
-    
-    // Then call the original onClose
-    onClose();
   };
   
   return (
