@@ -27,6 +27,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
   const [likeCount, setLikeCount] = useState(0);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
   const embedContainerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const { toast } = useToast();
   
   // Handler for report button
@@ -288,6 +289,35 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
     }
   }, [isOpen, video]);
 
+  // Effect to cleanup video elements when dialog closes
+  useEffect(() => {
+    return () => {
+      // When component unmounts or dialog closes, pause and cleanup all video elements
+      if (!isOpen) {
+        console.log('VideoPlayer: Cleaning up and stopping all videos');
+        const videoElements = document.querySelectorAll('video');
+        videoElements.forEach(videoEl => {
+          try {
+            if (!videoEl.paused) {
+              videoEl.pause();
+              console.log('Video paused on dialog close');
+            }
+            // Remove src to stop downloading
+            videoEl.removeAttribute('src');
+            videoEl.load();
+          } catch (e) {
+            console.error('Error pausing video:', e);
+          }
+        });
+
+        // Clear the video reference
+        if (videoRef.current) {
+          videoRef.current = null;
+        }
+      }
+    };
+  }, [isOpen]);
+
   // Create MP4 player with autoplay and improved error handling
   const renderMP4Player = () => {
     if (!video || !video.videoUrl) return null;
@@ -317,6 +347,9 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
             if (video.thumbnail) {
               videoEl.poster = video.thumbnail;
             }
+            
+            // Store reference to the video element for cleanup
+            videoRef.current = videoEl;
             
             // Add event listeners for debugging
             videoEl.addEventListener('loadstart', () => console.log('MP4 video: loadstart'));
@@ -354,7 +387,9 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
             
             // Force play with delay (helps with some browsers)
             setTimeout(() => {
-              videoEl.play().catch(e => console.warn('Delayed autoplay prevented:', e));
+              if (isOpen && videoEl) { // Only play if dialog still open
+                videoEl.play().catch(e => console.warn('Delayed autoplay prevented:', e));
+              }
             }, 300);
           }}
         >
@@ -369,13 +404,51 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
     );
   };
 
+  // Function to handle dialog close with proper cleanup
+  const handleCloseDialog = () => {
+    // Pause all video elements first
+    document.querySelectorAll('video').forEach(videoEl => {
+      try {
+        if (!videoEl.paused) {
+          videoEl.pause();
+          console.log('Video paused on dialog close');
+        }
+        // Remove src to stop downloading
+        videoEl.removeAttribute('src');
+        videoEl.load();
+      } catch (e) {
+        console.error('Error stopping video:', e);
+      }
+    });
+    
+    // Clear specific video reference
+    if (videoRef.current) {
+      try {
+        videoRef.current.pause();
+        videoRef.current.removeAttribute('src');
+        videoRef.current.load();
+      } catch (e) {
+        console.error('Error cleaning up video ref:', e);
+      }
+      videoRef.current = null;
+    }
+    
+    // Clear iframes if needed
+    if (embedContainerRef.current) {
+      embedContainerRef.current.innerHTML = '';
+    }
+    
+    // Then call the original onClose
+    onClose();
+  };
+  
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
       <DialogTitle className="sr-only">Media viewer</DialogTitle>
       <DialogContent className="sm:max-w-5xl md:max-w-6xl lg:max-w-7xl max-h-[95vh] overflow-y-auto w-[95vw] bg-[#1a1a1a] border-gray-800 p-0">
         <div className="absolute top-4 right-4 z-10">
           <button 
-            onClick={onClose}
+            onClick={handleCloseDialog}
             className="bg-black/60 hover:bg-black/80 text-white rounded-full w-10 h-10 flex items-center justify-center"
             aria-label="Close"
           >
@@ -557,7 +630,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                 {video.categoryId && (
                   <div className="bg-gray-800 rounded-md px-3 py-1 text-sm">
                     <span className="text-gray-400">Category: </span>
-                    <span className="text-blue-400">{video.category?.name || 'Category ' + video.categoryId}</span>
+                    <span className="text-blue-400">{'Category ' + video.categoryId}</span>
                   </div>
                 )}
                 
