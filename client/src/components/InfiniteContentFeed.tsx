@@ -277,8 +277,18 @@ export default function InfiniteContentFeed({
             if (block.type === 'videos') {
               if (index === 0) {
                 sectionTitle = "Trending Now";
+                // Show 3 rows for Trending Now
+                if (block.items.length > 3) {
+                  // Keep only the first 9 items (3 rows of 3)
+                  block.items = block.items.slice(0, 9);
+                }
               } else if (index === 1) {
                 sectionTitle = "Recently Uploaded Videos";
+                // Show 3 rows for Recently Uploaded
+                if (block.items.length > 3) {
+                  // Keep only the first 9 items (3 rows of 3)
+                  block.items = block.items.slice(0, 9);
+                }
               } else {
                 // For subsequent video blocks, use the category from server or fallback
                 const categoryName = block.categoryName || getRandomCategory();

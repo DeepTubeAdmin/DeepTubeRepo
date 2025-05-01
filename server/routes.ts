@@ -456,8 +456,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const blockType = i % 4 < 3 ? 'videos' : 'images';
         
         // Define our row size constant for reuse between blocks
-        // Videos are 3 per row, images are 4 per row
-        const itemsPerRow = blockType === 'videos' ? 3 : 4;
+        // Videos are 3 per row (with special cases for first two blocks - 9 videos each), images are 4 per row
+        let itemsPerRow = blockType === 'videos' ? 3 : 4;
+        
+        // Special case: For trending and recent videos (first two blocks), we want 9 videos (3 rows of 3)
+        if (blockType === 'videos' && (blockId === 0 || blockId === 1)) {
+          itemsPerRow = 9; // 3 rows of 3 videos each
+        }
+        
         // Request more items than needed to allow for filtering out duplicates
         const fetchLimit = itemsPerRow * 5; // Request even more to account for used IDs across pages
         
