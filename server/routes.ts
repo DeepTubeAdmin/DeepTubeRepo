@@ -1934,7 +1934,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(safeUser);
     } catch (error) {
-      console.error("Error fetching user profile:", error);
+      console.error("Error fetching user by username:", error);
       res.status(500).json({ error: "Failed to fetch user profile" });
     }
   });
