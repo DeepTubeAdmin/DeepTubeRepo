@@ -353,7 +353,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const page = parseInt(req.query.page as string) || 1;
       const pageSize = parseInt(req.query.pageSize as string) || 5; // Default to 5 blocks per page
       const categorySlug = req.query.category as string || '';
-      const sortBy = (req.query.sortBy as 'newest' | 'oldest' | 'viewed' | 'most-viewed' | 'trending' | 'popular') || 'newest';
+      const sortBy = (req.query.sortBy as 'newest' | 'oldest' | 'most-viewed' | 'trending' | 'popular') || 'newest';
+      
+      // For database compatibility - convert 'most-viewed' to 'viewed' for the storage layer
+      const dbSortBy = sortBy === 'most-viewed' ? 'viewed' : sortBy;
       
       // Get categoryId if category slug is provided
       let categoryId: number | undefined = undefined;
@@ -528,7 +531,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               } else if (sortBy === 'most-viewed') {
                 videos = await dbStorage.getMostViewedVideos(fetchLimit);
               } else {
-                videos = await dbStorage.getVideos(fetchLimit, undefined, undefined, sortBy);
+                videos = await dbStorage.getVideos(fetchLimit, undefined, undefined, dbSortBy as 'newest' | 'oldest' | 'viewed');
               }
             }
             
@@ -630,7 +633,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               } else if (sortBy === 'most-viewed') {
                 images = await dbStorage.getMostViewedVideos(fetchLimit, 'image');
               } else {
-                images = await dbStorage.getVideos(fetchLimit, 'image', undefined, sortBy);
+                images = await dbStorage.getVideos(fetchLimit, 'image', undefined, dbSortBy as 'newest' | 'oldest' | 'viewed');
               }
             }
             
