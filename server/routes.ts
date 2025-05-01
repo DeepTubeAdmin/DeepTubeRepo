@@ -2059,6 +2059,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to get unread message count" });
     }
   });
+  
+  // Get all conversations for the current user
+  app.get("/api/messages/conversations", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      
+      // First, get all messages for the user (sent or received)
+      const allMessages = await dbStorage.getAllUserMessages(req.user.id);
+      
+      // Create a map of user IDs to their conversations
+      const conversationsMap = new Map();
+      
+      // Process all messages to build conversations
+      for (const message of allMessages) {
+        const isUserSender = message.senderId === req.user.id;
+        const otherUserId = isUserSender ? message.receiverId : message.senderId;
+        
+        // Skip if this is a message to self
+        if (otherUserId === req.user.id) continue;
+        
+        // Get or create conversation entry
+        if (!conversationsMap.has(otherUserId)) {
+          // Get other user's information
+          const otherUser = await dbStorage.getUser(otherUserId);
+          if (!otherUser) continue; // Skip if user no longer exists
+          
+          conversationsMap.set(otherUserId, {
+            userId: otherUserId,
+            username: otherUser.username,
+            lastMessage: message.content,
+            lastMessageDate: message.createdAt,
+            unreadCount: 0
+          });
+        } else {
+          // Update last message if newer
+          const conversation = conversationsMap.get(otherUserId);
+          const messageDate = new Date(message.createdAt);
+          const lastMessageDate = new Date(conversation.lastMessageDate);
+          
+          if (messageDate > lastMessageDate) {
+            conversation.lastMessage = message.content;
+            conversation.lastMessageDate = message.createdAt;
+          }
+        }
+        
+        // Count unread messages from other user
+        if (!isUserSender && !message.read) {
+          conversationsMap.get(otherUserId).unreadCount++;
+        }
+      }
+      
+      // Sort conversations by most recent message
+      const conversations = Array.from(conversationsMap.values())
+        .sort((a, b) => new Date(b.lastMessageDate).getTime() - new Date(a.lastMessageDate).getTime());
+      
+      res.json(conversations);
+    } catch (error) {
+      console.error("Error getting conversations:", error);
+      res.status(500).json({ error: "Failed to get conversations" });
+    }
+  });
+  
+  // Get specific conversation and mark messages as read
+  app.get("/api/messages/conversation/:userId", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      
+      const otherUserId = parseInt(req.params.userId);
+      if (isNaN(otherUserId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      // Get the other user to verify they exist
+      const otherUser = await dbStorage.getUser(otherUserId);
+      if (!otherUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Fetch messages between the two users
+      const messages = await dbStorage.getConversation(req.user.id, otherUserId);
+      
+      // Mark messages as read if they're sent to the current user
+      const unreadMessages = messages.filter(
+        message => message.receiverId === req.user.id && !message.read
+      );
+      
+      if (unreadMessages.length > 0) {
+        for (const message of unreadMessages) {
+          await dbStorage.markMessageAsRead(message.id);
+        }
+      }
+      
+      // Add sender and receiver names to the messages
+      const messagesWithNames = messages.map(message => ({
+        ...message,
+        senderName: message.senderId === req.user.id ? req.user.username : otherUser.username,
+        receiverName: message.receiverId === req.user.id ? req.user.username : otherUser.username
+      }));
+      
+      res.json(messagesWithNames);
+    } catch (error) {
+      console.error("Error fetching conversation:", error);
+      res.status(500).json({ error: "Failed to fetch conversation" });
+    }
+  });
+  
+  // Mark all messages from a user as read
+  app.post("/api/messages/mark-read/:userId", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      
+      const otherUserId = parseInt(req.params.userId);
+      if (isNaN(otherUserId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      // Mark all messages from other user as read
+      await dbStorage.markAllMessagesAsRead(req.user.id, otherUserId);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+      res.status(500).json({ error: "Failed to mark messages as read" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

@@ -184,6 +184,15 @@ export default function Header() {
                       >
                         My Videos
                       </a>
+                      <a 
+                        onClick={() => {
+                          setLocation("/my-messages");
+                          setShowUserDropdown(false);
+                        }} 
+                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"
+                      >
+                        My Messages
+                      </a>
                       {/* Show Admin Dashboard link only for admin users */}
                       {user && (user.id === 1 || user.id === 2) && (
                         <a 

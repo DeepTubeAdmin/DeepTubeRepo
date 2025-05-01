@@ -12,6 +12,7 @@ import ForumPage from "@/pages/forum-page";
 import TermsOfService from "@/pages/terms-of-service";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import MyVideosPage from "@/pages/my-videos";
+import MyMessages from "@/pages/my-messages";
 import ProfilePage from "@/pages/profile-page";
 import UserPage from "@/pages/user-page";
 import SearchResults from "@/pages/search-results";
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/terms-of-service" component={TermsOfService} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/my-videos" component={MyVideosPage} />
+      <Route path="/my-messages" component={MyMessages} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/user/:username" component={UserPage} />
       <Route path="/admin" component={AdminPage} />
