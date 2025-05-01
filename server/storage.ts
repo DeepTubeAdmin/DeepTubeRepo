@@ -84,6 +84,8 @@ export interface IStorage {
   getConversation(userId1: number, userId2: number): Promise<Message[]>;
   markMessageAsRead(messageId: number): Promise<Message>;
   getUnreadMessageCount(userId: number): Promise<number>;
+  getAllUserMessages(userId: number): Promise<Message[]>;
+  markAllMessagesAsRead(receiverId: number, senderId: number): Promise<void>;
   
   // Session store
   sessionStore: SessionStore;
@@ -697,6 +699,28 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return result?.count || 0;
+  }
+  
+  async getAllUserMessages(userId: number): Promise<Message[]> {
+    // Get all messages that involve this user (sent or received)
+    return db.select()
+      .from(messages)
+      .where(or(
+        eq(messages.senderId, userId),
+        eq(messages.receiverId, userId)
+      ))
+      .orderBy(desc(messages.createdAt));
+  }
+  
+  async markAllMessagesAsRead(receiverId: number, senderId: number): Promise<void> {
+    // Mark all unread messages from sender to receiver as read
+    await db.update(messages)
+      .set({ read: true })
+      .where(and(
+        eq(messages.receiverId, receiverId),
+        eq(messages.senderId, senderId),
+        eq(messages.read, false)
+      ));
   }
 }
 
