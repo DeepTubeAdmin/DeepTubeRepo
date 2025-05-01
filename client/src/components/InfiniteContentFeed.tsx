@@ -355,8 +355,15 @@ export default function InfiniteContentFeed({
                 <h3 className="text-2xl font-bold mb-6">{sectionTitle}</h3>
                 <div className={`grid grid-cols-1 sm:grid-cols-2 ${block.type === 'videos' ? 'md:grid-cols-3 gap-6' : 'md:grid-cols-3 lg:grid-cols-4 gap-4'}`}>
                   {block.type === 'videos' && block.items.map((item, itemIndex) => {
-                    // Insert an ad after every 11th video (10th index)
-                    const shouldShowAd = itemIndex > 0 && (itemIndex + 1) % 11 === 0;
+                    // Calculate global index for this video to determine ad placement
+                    // This index is calculated based on its position in the content blocks
+                    const blockStartIndex = contentBlocks.slice(0, index).reduce((count, prevBlock) => {
+                      return prevBlock.type === 'videos' ? count + prevBlock.items.length : count;
+                    }, 0);
+                    const globalVideoIndex = blockStartIndex + itemIndex;
+                    
+                    // Insert an ad after every 11th video (10th index) across all sections
+                    const shouldShowAd = globalVideoIndex > 0 && (globalVideoIndex + 1) % 11 === 0;
                     
                     return (
                       <React.Fragment key={`video-container-${item.id}`}>
@@ -367,7 +374,7 @@ export default function InfiniteContentFeed({
                           onWishlist={onWishlist}
                         />
                         
-                        {/* Insert advertisement every 11 videos */}
+                        {/* Insert advertisement every 11 videos across all content */}
                         {shouldShowAd && (() => {
                           // Get a random ad and track it in displayedAds
                           const ad = getUniqueRandomAd();
