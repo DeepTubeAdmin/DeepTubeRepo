@@ -63,6 +63,7 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [_, setLocation] = useLocation();
   const { user, loginMutation, registerMutation, isLoading } = useAuth();
+  const { toast } = useToast();
 
   // Login form
   const loginForm = useForm<LoginFormValues>({
@@ -86,18 +87,7 @@ export default function AuthPage() {
     },
   });
 
-  // Use the useEffect hook for navigation after render
-  useEffect(() => {
-    if (user) {
-      setLocation("/");
-    }
-  }, [user, setLocation]);
-  
-  // If user is logged in, we'll render nothing but useEffect will handle redirect
-  if (user) {
-    return null;
-  }
-
+  // Define all handlers without any conditionals
   const onLoginSubmit = (data: LoginFormValues) => {
     loginMutation.mutate(data);
   };
@@ -114,8 +104,6 @@ export default function AuthPage() {
     registerMutation.mutate(registerData);
   };
   
-  const { toast } = useToast();
-  
   const handleSocialLogin = (provider: string) => {
     // Show a toast notification
     toast({
@@ -127,6 +115,18 @@ export default function AuthPage() {
     // Log the attempt
     console.log(`Initiating ${provider} login flow`);
   };
+  
+  // Use the useEffect hook for navigation after render
+  useEffect(() => {
+    if (user) {
+      setLocation("/");
+    }
+  }, [user, setLocation]);
+  
+  // If user is logged in, we'll render nothing but useEffect will handle redirect
+  if (user) {
+    return null;
+  }
 
   return (
     <Layout simpleHeader showFooter>
