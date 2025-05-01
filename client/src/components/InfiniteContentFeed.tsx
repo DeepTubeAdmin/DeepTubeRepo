@@ -168,7 +168,8 @@ export default function InfiniteContentFeed({
   };
   
   // Function to get a unique random advertisement
-  const getUniqueRandomAd = () => {
+  // Use useCallback to memoize the function and prevent re-renders
+  const getUniqueRandomAd = useCallback(() => {
     let ad = getRandomAd();
     let attempts = 0;
     
@@ -179,16 +180,30 @@ export default function InfiniteContentFeed({
       attempts++;
     }
     
-    // Mark this ad as used
-    setUsedAdIds(prev => new Set(prev).add(ad.id));
-    
-    // If we've used all ads, reset the tracking
-    if (usedAdIds.size >= 5) { // 5 is the number of sample ads we have
-      setUsedAdIds(new Set());
-    }
-    
+    // We'll update the usedAdIds in a useEffect to avoid render loops
     return ad;
-  };
+  }, [usedAdIds]);
+  
+  // Track the ads that are displayed in the current view
+  const [displayedAds, setDisplayedAds] = useState<string[]>([]);
+  
+  // Update usedAdIds when displayedAds changes
+  useEffect(() => {
+    if (displayedAds.length > 0) {
+      const newUsedAdIds = new Set(usedAdIds);
+      displayedAds.forEach(id => newUsedAdIds.add(id));
+      
+      // If we've used all ads, reset the tracking
+      if (newUsedAdIds.size >= 5) { // 5 is the number of sample ads we have
+        setUsedAdIds(new Set());
+      } else {
+        setUsedAdIds(newUsedAdIds);
+      }
+      
+      // Clear the displayed ads after processing
+      setDisplayedAds([]);
+    }
+  }, [displayedAds]);
   
   // Image card component specifically for images in the infinite feed
   interface ImageCardProps {
@@ -353,12 +368,20 @@ export default function InfiniteContentFeed({
                         />
                         
                         {/* Insert advertisement every 5 videos */}
-                        {shouldShowAd && (
-                          <AdvertisementCard 
-                            key={`ad-after-${item.id}`}
-                            ad={getUniqueRandomAd()} 
-                          />
-                        )}
+                        {shouldShowAd && (() => {
+                          // Get a random ad and track it in displayedAds
+                          const ad = getUniqueRandomAd();
+                          // Add this ad ID to be processed in the useEffect
+                          setTimeout(() => {
+                            setDisplayedAds(prev => [...prev, ad.id]);
+                          }, 0);
+                          return (
+                            <AdvertisementCard 
+                              key={`ad-after-${item.id}`}
+                              ad={ad} 
+                            />
+                          );
+                        })()}
                       </React.Fragment>
                     );
                   })}
