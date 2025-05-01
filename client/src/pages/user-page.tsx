@@ -7,7 +7,6 @@ import { Loader2, MessageSquare, User as UserIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
@@ -78,7 +77,7 @@ export default function UserPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
-  const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
+
   const [messageContent, setMessageContent] = useState("");
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   
@@ -131,7 +130,6 @@ export default function UserPage() {
       }
       
       setMessageContent("");
-      setIsMessageDialogOpen(false);
       toast({
         title: "Message sent",
         description: `Your message has been sent to ${username}`,
@@ -197,21 +195,51 @@ export default function UserPage() {
                     )}
                   </div>
                   
-                  {currentUser && currentUser.id !== userProfile.id && (
-                    <Button 
-                      onClick={() => setIsMessageDialogOpen(true)}
-                      className="bg-orange-600 hover:bg-orange-700 text-white"
-                    >
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Message
-                    </Button>
-                  )}
+                  <div className="flex items-center bg-gray-800/30 px-3 py-1 rounded text-gray-400 text-sm">
+                    <UserIcon className="h-4 w-4 mr-2" />
+                    {userProfile.isAdmin ? "Administrator" : "Member"}
+                  </div>
                 </div>
                 
                 <div className="mt-6">
                   <h2 className="text-xl font-semibold mb-2">About</h2>
                   <p className="text-gray-300">AI content creator on DeepTube.</p>
                 </div>
+                
+                {/* Direct Message Box */}
+                {currentUser?.id !== userProfile.id && (
+                  <div className="mt-6 bg-gray-800/50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-md">Send a Message</h3>
+                      {currentUser ? null : (
+                        <span className="text-xs text-orange-400">
+                          <a href="/auth" className="hover:underline">Login</a> to send messages
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Textarea 
+                        placeholder={currentUser ? `Write a message to ${username}...` : "Login to send messages"}
+                        className="min-h-[60px] text-sm resize-none"
+                        value={messageContent}
+                        onChange={(e) => setMessageContent(e.target.value)}
+                        disabled={!currentUser}
+                      />
+                      <Button
+                        className="bg-orange-600 hover:bg-orange-700 text-white self-end"
+                        size="sm"
+                        onClick={handleSendMessage}
+                        disabled={!currentUser || !messageContent.trim() || isSendingMessage}
+                      >
+                        {isSendingMessage ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <MessageSquare className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ) : null}
@@ -246,50 +274,7 @@ export default function UserPage() {
           )}
         </div>
         
-        {/* Message dialog */}
-        <Dialog open={isMessageDialogOpen} onOpenChange={setIsMessageDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Send message to {username}</DialogTitle>
-              <DialogDescription>
-                Your message will be delivered to {username}'s inbox. They'll be able to reply to you.  
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="mt-4">
-              <Textarea
-                placeholder="Type your message here..."
-                value={messageContent}
-                onChange={(e) => setMessageContent(e.target.value)}
-                className="min-h-[120px]"
-              />
-            </div>
-            
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setIsMessageDialogOpen(false)}
-                disabled={isSendingMessage}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSendMessage}
-                disabled={!messageContent.trim() || isSendingMessage}
-                className="bg-orange-600 hover:bg-orange-700 text-white"
-              >
-                {isSendingMessage ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  <>Send</>  
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* We replaced the message dialog with an inline message box */}
       </div>
       <MiniFooter />
     </Layout>
