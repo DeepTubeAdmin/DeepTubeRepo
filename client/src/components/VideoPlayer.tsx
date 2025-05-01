@@ -3,8 +3,9 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import VimeoEmbed from './VimeoEmbed';
 import AIWatermark from './AIWatermark';
 import { Video } from '@shared/schema';
-import { apiRequest } from '@/lib/queryClient';
-import { Loader2 } from 'lucide-react';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Loader2, ThumbsUp } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { 
   extractYoutubeVideoId, 
   extractYoutubeIdFromEmbed,
@@ -22,7 +23,11 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
   const [video, setVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [isLikeLoading, setIsLikeLoading] = useState(false);
   const embedContainerRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
   
   // Handler for report button
   const handleReport = () => {
@@ -31,6 +36,45 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
         // Here we would normally make an API call to report the video
         alert("Thank you for your report. Our moderation team will review this content.");
       }
+    }
+  };
+  
+  // Handler for like button
+  const handleLike = async () => {
+    if (!videoId || isLikeLoading) return;
+    
+    setIsLikeLoading(true);
+    try {
+      let response;
+      if (isLiked) {
+        // Unlike the video
+        response = await apiRequest('DELETE', `/api/videos/${videoId}/like`);
+      } else {
+        // Like the video
+        response = await apiRequest('POST', `/api/videos/${videoId}/like`);
+      }
+      
+      const data = await response.json();
+      setIsLiked(data.isLiked);
+      setLikeCount(data.count || 0);
+      
+      // Show a toast message
+      toast({
+        title: isLiked ? 'Like removed' : 'Content liked',
+        description: isLiked ? 'You removed your like from this content' : 'You liked this content',
+      });
+      
+      // Invalidate the query to update other components
+      queryClient.invalidateQueries({ queryKey: [`/api/videos/${videoId}/like`] });
+    } catch (err) {
+      console.error('Error toggling like:', err);
+      toast({
+        title: 'Error',
+        description: 'Could not process your like. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLikeLoading(false);
     }
   };
   
@@ -81,6 +125,25 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
   }, [videoId, isOpen]);
   
   // This effect handles creating the embed iframes when the video is an embed
+  // Fetch like status
+  useEffect(() => {
+    if (!isOpen || !videoId) return;
+    
+    const fetchLikeStatus = async () => {
+      try {
+        const response = await apiRequest('GET', `/api/videos/${videoId}/like`);
+        const data = await response.json();
+        setIsLiked(data.isLiked);
+        setLikeCount(data.count || 0);
+      } catch (err) {
+        console.error('Error fetching like status:', err);
+      }
+    };
+    
+    fetchLikeStatus();
+  }, [videoId, isOpen]);
+  
+  // Process embed code
   useEffect(() => {
     if (!isOpen || !video || video.contentType !== 'embed' || !video.embedCode) return;
     
@@ -416,10 +479,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                               <p>Error message: ${errorMessage}</p>
                             </div>
                             <div class="mt-4">
-                              <a href="${safeVideoUrl}" download target="_blank" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded inline-flex items-center mt-2">
-                                <i class="fas fa-download mr-2"></i>
-                                Download Video
-                              </a>
+                              <p class="mt-2 text-yellow-400">Please try refreshing the page or using a different browser.</p>
                             </div>
                           `;
                           
@@ -609,13 +669,20 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                 </div>
                 
                 <div className="flex items-center space-x-3">
-                  <button className="bg-[#333] hover:bg-[#444] text-white px-3 py-2 rounded flex items-center">
-                    <i className="fas fa-thumbs-up mr-2"></i>
-                    <span>93%</span>
-                  </button>
-                  <button className="bg-primary hover:bg-primary/90 text-white px-3 py-2 rounded flex items-center">
-                    <i className="fas fa-download mr-2"></i>
-                    <span>Download</span>
+                  <button 
+                    className={`flex items-center px-3 py-2 rounded ${isLiked 
+                      ? 'bg-orange-500 hover:bg-orange-400 text-black' 
+                      : 'bg-[#333] hover:bg-[#444] text-white hover:text-orange-300 hover:border-orange-500'}`}
+                    onClick={handleLike}
+                    disabled={isLikeLoading}
+                  >
+                    <ThumbsUp className={`w-5 h-5 mr-2 ${isLikeLoading ? 'animate-pulse' : ''}`} />
+                    <span>{isLiked ? 'Liked' : 'Like'}</span>
+                    {likeCount > 0 && (
+                      <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${isLiked ? 'bg-orange-700' : 'bg-gray-700'}`}>
+                        {likeCount}
+                      </span>
+                    )}
                   </button>
                   <button className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded flex items-center" onClick={handleReport}>
                     <i className="fas fa-flag mr-2"></i>
