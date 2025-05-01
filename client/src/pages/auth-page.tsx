@@ -120,7 +120,7 @@ export default function AuthPage() {
   };
 
   return (
-    <Layout simpleHeader>
+    <Layout simpleHeader showFooter>
       <SEO 
         title="Sign In or Register | DeepTube: Ethical AI Media Hub"
         description="Join DeepTube.co - the ethical AI media platform where creators share innovative and responsible AI-generated videos. Sign in or create an account to start uploading and sharing your content."
