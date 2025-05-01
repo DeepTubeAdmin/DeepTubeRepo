@@ -1534,6 +1534,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Admin content review endpoints
+  app.get("/api/admin/content/pending", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const pendingContent = await dbStorage.getPendingReviewContent();
+      res.json(pendingContent);
+    } catch (error) {
+      console.error("Error fetching pending content:", error);
+      res.status(500).json({ error: "Failed to fetch pending content" });
+    }
+  });
+
+  app.post("/api/admin/content/:contentId/approve", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      ensureUser(req);
+      const contentId = parseInt(req.params.contentId);
+      
+      // Verify the content exists
+      const content = await dbStorage.getVideoById(contentId);
+      if (!content) {
+        return res.status(404).json({ error: "Content not found" });
+      }
+      
+      const reviewedContent = await dbStorage.updateContentReviewStatus(
+        contentId, 
+        'approved', 
+        req.user.id
+      );
+      
+      res.json(reviewedContent);
+    } catch (error) {
+      console.error("Error approving content:", error);
+      res.status(500).json({ error: "Failed to approve content" });
+    }
+  });
+
+  app.post("/api/admin/content/:contentId/reject", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      ensureUser(req);
+      const contentId = parseInt(req.params.contentId);
+      const { reason } = req.body;
+      
+      // Verify the content exists
+      const content = await dbStorage.getVideoById(contentId);
+      if (!content) {
+        return res.status(404).json({ error: "Content not found" });
+      }
+      
+      // First update the review status
+      await dbStorage.updateContentReviewStatus(
+        contentId, 
+        'rejected', 
+        req.user.id, 
+        reason || 'Content rejected by admin'
+      );
+      
+      // Then delete the content
+      await dbStorage.deleteVideo(contentId);
+      
+      res.json({ success: true, message: "Content rejected and deleted" });
+    } catch (error) {
+      console.error("Error rejecting content:", error);
+      res.status(500).json({ error: "Failed to reject content" });
+    }
+  });
+  
   // Delete content as admin
   app.delete("/api/admin/content/:contentId", isAuthenticated, isAdmin, async (req, res) => {
     try {

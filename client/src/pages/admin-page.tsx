@@ -8,6 +8,9 @@ import { Video, User } from '@shared/schema';
 // Type augmentation for admin purposes
 type AdminUser = User & { banned: boolean };
 
+// Define content types for admin page
+type PendingContent = Video;
+
 // Extended type for reported content
 type ReportedContent = Video & { 
   reportReason: string;

@@ -38,6 +38,12 @@ export interface IStorage {
   getFeaturedVideos(limit?: number): Promise<Video[]>;
   getNewVideos(limit?: number): Promise<Video[]>;
   createVideo(video: InsertVideo): Promise<Video>;
+  deleteVideo(id: number): Promise<void>;
+  getUserVideos(userId: number): Promise<Video[]>;
+  
+  // Content review operations
+  getPendingReviewContent(limit?: number): Promise<Video[]>;
+  updateContentReviewStatus(contentId: number, status: 'approved' | 'rejected', reviewerId: number, rejectionReason?: string): Promise<Video>;
   
   // Search operations
   searchVideos(options: {
@@ -303,6 +309,34 @@ export class DatabaseStorage implements IStorage {
   
   async deleteVideo(id: number): Promise<void> {
     await db.delete(videos).where(eq(videos.id, id));
+  }
+
+  // Content review operations
+  async getPendingReviewContent(limit: number = 50): Promise<Video[]> {
+    return db.select()
+      .from(videos)
+      .where(eq(videos.reviewStatus, 'pending'))
+      .orderBy(desc(videos.createdAt))
+      .limit(limit);
+  }
+
+  async updateContentReviewStatus(
+    contentId: number, 
+    status: 'approved' | 'rejected', 
+    reviewerId: number,
+    rejectionReason?: string
+  ): Promise<Video> {
+    const [result] = await db.update(videos)
+      .set({
+        reviewStatus: status,
+        reviewedAt: new Date(),
+        reviewedBy: reviewerId,
+        rejectionReason: status === 'rejected' ? rejectionReason : null,
+      })
+      .where(eq(videos.id, contentId))
+      .returning();
+    
+    return result;
   }
 
   // Wishlist operations
