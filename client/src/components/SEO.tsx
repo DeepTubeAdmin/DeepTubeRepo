@@ -14,20 +14,20 @@ interface SEOProps {
 }
 
 export default function SEO({
-  title = 'DeepTube.co | AI Media Sharing Platform',
-  description = 'Discover and share AI-generated videos, images, and content. Join DeepTube, the ethical community for AI media creators and enthusiasts.',
+  title = 'DeepTube: Ethical AI Media Hub',
+  description = 'DeepTube.co: Where innovative creators share responsible AI-powered media. Host, view, and explore trusted video content!',
   canonicalUrl = 'https://deeptube.co',
   ogType = 'website',
   ogImage = '/og-image.jpg',
-  keywords = 'AI media, AI videos, AI-generated content, ethical AI, AI community, AI creations',
+  keywords = 'AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing',
   structuredData,
   isHome = false
 }: SEOProps) {
   
   // Construct the full title
-  const fullTitle = title === 'DeepTube.co | AI Media Sharing Platform' 
+  const fullTitle = title === 'DeepTube: Ethical AI Media Hub' 
     ? title 
-    : `${title} | DeepTube.co`;
+    : title;
   
   // Add website schema for homepage
   const websiteSchema = isHome ? generateWebsiteStructuredData() : null;
