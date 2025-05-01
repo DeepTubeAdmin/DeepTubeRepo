@@ -13,6 +13,8 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   banned: boolean("banned").default(false),
   isAdmin: boolean("is_admin").default(false),
+  resetToken: text("reset_token"),
+  resetTokenExpires: timestamp("reset_token_expires"),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
