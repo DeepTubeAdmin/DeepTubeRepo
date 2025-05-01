@@ -1,5 +1,5 @@
 import { Heart, Play, ThumbsUp } from "lucide-react";
-import { Video } from "@/types";
+import { Video } from "@shared/schema";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { formatNumber, extractYoutubeIdFromEmbed } from "@/lib/utils";
@@ -110,7 +110,8 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
     }
   };
 
-  const formatDuration = (seconds: number): string => {
+  const formatDuration = (seconds: number | null): string => {
+    if (!seconds) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -208,9 +209,9 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         ></div>
         
         {/* Duration badge */}
-        {video.duration > 0 && video.contentType !== 'image' && (
+        {video.contentType !== 'image' && (
           <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1 py-0.5 rounded z-30">
-            {formatDuration(video.duration)}
+            {formatDuration(video.duration ?? 0)}
           </div>
         )}
         

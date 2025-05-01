@@ -56,7 +56,7 @@ export default function Home() {
   });
   
   // Default featured video to show if none is found
-  const defaultFeaturedVideo: Video = {
+  const defaultFeaturedVideo = {
     id: 65,
     title: "AI Generated Nature Documentary with David Attenborough Voice",
     thumbnail: "https://i.vimeocdn.com/video/1729347065-e1ed63828a4185f9f8f381e05199a18b80053c935f292a4b?mw=1000&mh=562",
@@ -64,12 +64,19 @@ export default function Home() {
     contentType: "video",
     duration: 138,
     aiGenerator: "DeepLearning Studio",
-    resolution: "4K",
+    resolution: "4K" as "4K" | "HD",
     credits: 0,
     categoryId: 3,
     userId: 1,
-    createdAt: new Date().toISOString()
-  };
+    createdAt: new Date(),
+    views: 100,
+    description: null,
+    prompt: null,
+    imageUrl: null,
+    embedCode: null,
+    preview: null,
+    vimeoId: null
+  } as Video;
 
   const handleCategoryChange = (slug: string) => {
     setActiveCategory(slug);
