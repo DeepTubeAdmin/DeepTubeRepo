@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import SEO from "@/components/SEO";
+import Layout from "@/components/Layout";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -65,7 +66,7 @@ export default function ForgotPassword() {
   };
 
   return (
-    <>
+    <Layout simpleHeader>
       <SEO
         title="Forgot Password | DeepTube: Ethical AI Media Hub"
         description="Reset your password for DeepTube.co - the ethical AI media platform. Recover your account to continue sharing and accessing innovative and responsible AI-generated videos."
@@ -152,6 +153,6 @@ export default function ForgotPassword() {
           )}
         </div>
       </div>
-    </>
+    </Layout>
   );
 }

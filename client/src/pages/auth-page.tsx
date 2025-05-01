@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/use-auth";
 import SEO from "@/components/SEO";
+import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -119,7 +120,7 @@ export default function AuthPage() {
   };
 
   return (
-    <>
+    <Layout simpleHeader>
       <SEO 
         title="Sign In or Register | DeepTube: Ethical AI Media Hub"
         description="Join DeepTube.co - the ethical AI media platform where creators share innovative and responsible AI-generated videos. Sign in or create an account to start uploading and sharing your content."
@@ -451,6 +452,6 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
-    </>
+    </Layout>
   );
 }
