@@ -1900,7 +1900,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: user.id,
         username: user.username,
         createdAt: user.createdAt,
-        admin: Boolean(user.admin), // Safe to expose admin status, but not other fields
+        isAdmin: Boolean(user.isAdmin), // Safe to expose admin status, but not other fields
       };
       
       res.json(safeUser);

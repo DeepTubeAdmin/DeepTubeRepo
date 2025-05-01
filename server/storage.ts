@@ -1,11 +1,12 @@
 import { 
-  users, categories, videos, wishlistItems, comments, likes,
+  users, categories, videos, wishlistItems, comments, likes, messages,
   type User, type InsertUser, 
   type Category, type InsertCategory,
   type Video, type InsertVideo,
   type WishlistItem, type InsertWishlistItem,
   type Comment, type InsertComment,
-  type Like, type InsertLike
+  type Like, type InsertLike,
+  type Message, type InsertMessage
 } from "@shared/schema";
 import { count } from "drizzle-orm";
 import { db } from "./db";
@@ -77,6 +78,12 @@ export interface IStorage {
   getMostViewedVideos(limit?: number, contentType?: string): Promise<Video[]>;
   getTrendingVideos(limit?: number, contentType?: string): Promise<Video[]>;
   getPopularVideos(limit?: number, contentType?: string): Promise<Video[]>;
+  
+  // Messaging operations
+  createMessage(message: InsertMessage): Promise<Message>;
+  getConversation(userId1: number, userId2: number): Promise<Message[]>;
+  markMessageAsRead(messageId: number): Promise<Message>;
+  getUnreadMessageCount(userId: number): Promise<number>;
   
   // Session store
   sessionStore: SessionStore;
@@ -644,6 +651,52 @@ export class DatabaseStorage implements IStorage {
       console.error('Error getting popular videos:', error);
       return [];
     }
+  }
+  
+  // Messaging operations
+  async createMessage(message: InsertMessage): Promise<Message> {
+    const [result] = await db.insert(messages).values(message).returning();
+    return result;
+  }
+  
+  async getConversation(userId1: number, userId2: number): Promise<Message[]> {
+    // Get messages where these two users are sender and receiver (in either direction)
+    return db.select()
+      .from(messages)
+      .where(
+        or(
+          and(
+            eq(messages.senderId, userId1),
+            eq(messages.receiverId, userId2)
+          ),
+          and(
+            eq(messages.senderId, userId2),
+            eq(messages.receiverId, userId1)
+          )
+        )
+      )
+      .orderBy(asc(messages.createdAt));
+  }
+  
+  async markMessageAsRead(messageId: number): Promise<Message> {
+    const [result] = await db.update(messages)
+      .set({ read: true })
+      .where(eq(messages.id, messageId))
+      .returning();
+    return result;
+  }
+  
+  async getUnreadMessageCount(userId: number): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(messages)
+      .where(
+        and(
+          eq(messages.receiverId, userId),
+          eq(messages.read, false)
+        )
+      );
+    return result?.count || 0;
   }
 }
 

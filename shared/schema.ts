@@ -213,6 +213,7 @@ export const insertVideoSchema = createInsertSchema(videos).pick({
 export const insertWishlistItemSchema = createInsertSchema(wishlistItems);
 export const insertCommentSchema = createInsertSchema(comments);
 export const insertLikeSchema = createInsertSchema(likes);
+export const insertMessageSchema = createInsertSchema(messages);
 
 // Type definitions
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -232,3 +233,6 @@ export type Comment = typeof comments.$inferSelect;
 
 export type InsertLike = z.infer<typeof insertLikeSchema>;
 export type Like = typeof likes.$inferSelect;
+
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type Message = typeof messages.$inferSelect;
