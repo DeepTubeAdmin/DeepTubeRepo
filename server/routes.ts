@@ -282,6 +282,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Use a Map with category+sortBy as keys to store used IDs for different views
   const infiniteScrollCache = new Map<string, Set<number>>();
   
+  // Track used categories to ensure variety in blocks
+  const usedCategoriesCache = new Map<string, Set<number>>();
+  
   // Helper to get or create a cache key
   function getCacheKey(categorySlug: string, sortBy: string): string {
     return `${categorySlug || 'all'}_${sortBy}`;
@@ -291,8 +294,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   function resetContentCache(key?: string) {
     if (key) {
       infiniteScrollCache.delete(key);
+      usedCategoriesCache.delete(key);
     } else {
       infiniteScrollCache.clear();
+      usedCategoriesCache.clear();
     }
   }
   
@@ -344,6 +349,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const usedContentIds = infiniteScrollCache.get(cacheKey)!;
       
+      // Get or create the set of used category IDs for this view
+      if (!usedCategoriesCache.has(cacheKey)) {
+        usedCategoriesCache.set(cacheKey, new Set<number>());
+      }
+      const usedCategoryIds = usedCategoriesCache.get(cacheKey)!;
+      
+      // Fetch all categories for use in the content blocks
+      const allCategories = await dbStorage.getCategories();
+      
       // Create pattern of 3 video blocks followed by 1 image block (repeating)
       for (let i = 0; i < pageSize; i++) {
         const blockId = baseIndex + i;
@@ -378,11 +392,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
             videos = videos.filter(v => v.contentType === 'video' || v.contentType === 'embed');
             console.log(`Category ${categoryId} videos (video): first few IDs: [ ${videos.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else {
-            // No filter - but make sure to include only video and embed types
-            videos = await dbStorage.getVideos(fetchLimit, undefined, undefined, sortBy);
+            // No specific category filter - try to find a new unused category
+            let selectedCategoryId: number | undefined = undefined;
+            
+            // Find unused categories first (if we have any)
+            const unusedCategories = allCategories.filter(cat => !usedCategoryIds.has(cat.id));
+            
+            if (unusedCategories.length > 0) {
+              // Choose a random unused category
+              const randomIndex = Math.floor(Math.random() * unusedCategories.length);
+              selectedCategoryId = unusedCategories[randomIndex].id;
+              console.log(`Selected unused category: ${unusedCategories[randomIndex].name} (${selectedCategoryId})`);
+              
+              // Get videos for this category
+              videos = await dbStorage.getVideosByCategory(selectedCategoryId, undefined, fetchLimit);
+              
+              // Mark this category as used
+              usedCategoryIds.add(selectedCategoryId);
+              
+              // If we've used all categories, reset the tracking
+              if (usedCategoryIds.size >= allCategories.length) {
+                console.log('All video categories have been used, resetting category tracking');
+                usedCategoryIds.clear();
+              }
+            } else {
+              // If all categories have been used or something went wrong, get general videos
+              videos = await dbStorage.getVideos(fetchLimit, undefined, undefined, sortBy);
+            }
+            
             // Filter to only video and embed types for video blocks
             videos = videos.filter(v => v.contentType === 'video' || v.contentType === 'embed');
-            console.log(`General videos (video): first few IDs: [ ${videos.slice(0, 3).map(v => v.id).join(', ')} ]`);
+            console.log(`Videos for category ID ${selectedCategoryId ?? 'general'}: first few IDs: [ ${videos.slice(0, 3).map(v => v.id).join(', ')} ]`);
           }
           
           // Filter out videos that have already been used in previous pages
@@ -433,9 +473,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
             images = await dbStorage.getVideosByCategory(categoryId, 'image', fetchLimit);
             console.log(`Category ${categoryId} videos (image): first few IDs: [ ${images.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else {
-            // No filter - include all image types
-            images = await dbStorage.getVideos(fetchLimit, 'image', undefined, sortBy);
-            console.log(`General videos (image): first few IDs: [ ${images.slice(0, 3).map(v => v.id).join(', ')} ]`);
+            // No specific category filter - try to find a new unused category
+            let selectedCategoryId: number | undefined = undefined;
+            
+            // Find unused categories first (if we have any)
+            const unusedCategories = allCategories.filter(cat => !usedCategoryIds.has(cat.id));
+            
+            if (unusedCategories.length > 0) {
+              // Choose a random unused category
+              const randomIndex = Math.floor(Math.random() * unusedCategories.length);
+              selectedCategoryId = unusedCategories[randomIndex].id;
+              console.log(`Selected unused category for images: ${unusedCategories[randomIndex].name} (${selectedCategoryId})`);
+              
+              // Get images for this category
+              images = await dbStorage.getVideosByCategory(selectedCategoryId, 'image', fetchLimit);
+              
+              // Mark this category as used
+              usedCategoryIds.add(selectedCategoryId);
+              
+              // If we've used all categories, reset the tracking
+              if (usedCategoryIds.size >= allCategories.length) {
+                console.log('All image categories have been used, resetting category tracking');
+                usedCategoryIds.clear();
+              }
+            } else {
+              // If all categories have been used or something went wrong, get general images
+              images = await dbStorage.getVideos(fetchLimit, 'image', undefined, sortBy);
+            }
+            
+            console.log(`Images for category ID ${selectedCategoryId ?? 'general'}: first few IDs: [ ${images.slice(0, 3).map(v => v.id).join(', ')} ]`);
           }
           
           // Filter out images that have already been used in previous pages
@@ -485,6 +551,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log the current state of the cache
       console.log(`Used content IDs for ${cacheKey}: ${infiniteScrollCache.get(cacheKey)?.size} items`);
+      console.log(`Used category IDs for ${cacheKey}: ${Array.from(usedCategoryIds).join(', ')}`);
+      
+      // If all categories have been used, reset to allow for a fresh cycle in next request
+      if (usedCategoryIds.size >= allCategories.length) {
+        console.log('All categories have been used, resetting category tracking for next request');
+        usedCategoryIds.clear();
+      }
       
       res.json(response);
     } catch (error) {
