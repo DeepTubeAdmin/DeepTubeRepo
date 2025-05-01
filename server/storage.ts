@@ -10,7 +10,7 @@ import {
 } from "@shared/schema";
 import { count } from "drizzle-orm";
 import { db } from "./db";
-import { eq, and, desc, asc, sql, or, ilike } from "drizzle-orm";
+import { eq, and, desc, asc, sql, or, ilike, gt } from "drizzle-orm";
 import session from "express-session";
 import type { Store as SessionStore } from "express-session";
 import connectPg from "connect-pg-simple";
@@ -21,10 +21,14 @@ export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, data: Partial<InsertUser> & { banned?: boolean }): Promise<User>;
+  updateUser(id: number, data: Partial<InsertUser> & { banned?: boolean, resetToken?: string, resetTokenExpires?: Date }): Promise<User>;
   deleteUser(id: number): Promise<void>;
   getAllUsers(): Promise<User[]>;
+  setPasswordResetToken(email: string, token: string, expiry: Date): Promise<User | undefined>;
+  getUserByResetToken(token: string): Promise<User | undefined>;
+  resetPassword(userId: number, newPassword: string): Promise<User | undefined>;
   
   // Category operations
   getCategories(): Promise<Category[]>;
@@ -120,12 +124,50 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
   
-  async updateUser(id: number, data: Partial<InsertUser> & { banned?: boolean }): Promise<User> {
+  async updateUser(id: number, data: Partial<InsertUser> & { banned?: boolean, resetToken?: string, resetTokenExpires?: Date }): Promise<User> {
     const [user] = await db.update(users)
       .set(data)
       .where(eq(users.id, id))
       .returning();
     return user;
+  }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+  
+  async setPasswordResetToken(email: string, token: string, expiry: Date): Promise<User | undefined> {
+    // First find the user by email
+    const user = await this.getUserByEmail(email);
+    if (!user) return undefined;
+    
+    // Update the user with the reset token
+    const updatedUser = await this.updateUser(user.id, {
+      resetToken: token,
+      resetTokenExpires: expiry
+    });
+    
+    return updatedUser;
+  }
+  
+  async getUserByResetToken(token: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users)
+      .where(and(
+        eq(users.resetToken, token),
+        gt(users.resetTokenExpires as any, new Date()) // Cast needed due to type issue
+      ));
+    return user;
+  }
+  
+  async resetPassword(userId: number, newPassword: string): Promise<User | undefined> {
+    const updatedUser = await this.updateUser(userId, {
+      password: newPassword,
+      resetToken: null as any, // Clear the reset token
+      resetTokenExpires: null as any // Clear the expiry date
+    });
+    
+    return updatedUser;
   }
   
   // Get all users for admin purposes

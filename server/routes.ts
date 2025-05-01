@@ -2,6 +2,8 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage as dbStorage } from "./storage";
 import { setupAuth, comparePasswords, hashPassword } from "./auth";
+import { randomBytes } from "crypto";
+import { sendPasswordResetEmail } from "./sendgrid";
 import { z } from "zod";
 import { insertCategorySchema, insertVideoSchema, type Video, type Category, type InsertLike } from "@shared/schema";
 import * as vimeoService from "./vimeo";
