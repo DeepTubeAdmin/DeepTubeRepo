@@ -6,6 +6,7 @@ import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import Layout from "@/components/Layout";
 import {
   Form,
   FormControl,
@@ -265,7 +266,7 @@ export default function ResetPassword() {
   };
 
   return (
-    <>
+    <Layout simpleHeader>
       <SEO
         title="Reset Password | DeepTube: Ethical AI Media Hub"
         description="Reset your password for DeepTube.co - the ethical AI media platform. Create a new password to secure your account."
@@ -289,6 +290,6 @@ export default function ResetPassword() {
           {renderContent()}
         </div>
       </div>
-    </>
+    </Layout>
   );
 }
