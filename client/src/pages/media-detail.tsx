@@ -357,7 +357,20 @@ export default function MediaDetail() {
               
               <div className="flex justify-between items-center mb-4">
                 <div className="text-sm text-gray-400">
-                  Added {new Date(media.createdAt).toLocaleDateString()}
+                  <div className="flex items-center space-x-2">
+                    <span>Added {new Date(media.createdAt).toLocaleDateString()}</span>
+                    {uploaderUsername && (
+                      <>
+                        <span className="text-gray-500">•</span>
+                        <Link 
+                          to={`/user/${uploaderUsername}`} 
+                          className="text-orange-500 hover:text-orange-400 hover:underline"
+                        >
+                          {uploaderUsername}
+                        </Link>
+                      </>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="flex space-x-3">
@@ -467,9 +480,18 @@ export default function MediaDetail() {
                       
                       <div className="flex-1">
                         <div className="flex items-center mb-1">
-                          <span className="font-semibold mr-2">
-                            {comment.username || 'Anonymous'}
-                          </span>
+                          {comment.userId ? (
+                            <Link 
+                              to={`/user/${comment.username || ''}`} 
+                              className="font-semibold mr-2 text-orange-500 hover:text-orange-400 hover:underline"
+                            >
+                              {comment.username || 'User'}
+                            </Link>
+                          ) : (
+                            <span className="font-semibold mr-2">
+                              {comment.username || 'Anonymous'}
+                            </span>
+                          )}
                           <span className="text-xs text-gray-400">
                             {new Date(comment.createdAt).toLocaleDateString()}
                           </span>
