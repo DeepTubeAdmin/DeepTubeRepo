@@ -159,8 +159,16 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
     // Clear previous content
     containerRef.innerHTML = '';
     
-    // First, determine if it's a YouTube video
-    if (video.embedCode.includes('youtube.com') || video.embedCode.includes('youtu.be')) {
+    // Always use the server-provided embed code first
+    // The server has already handled adding autoplay parameters
+    // This ensures all the YouTube iframe attributes are properly set
+    containerRef.innerHTML = video.embedCode;
+    
+    // Check if it's a YouTube embed but doesn't have autoplay for some reason
+    const hasYouTube = video.embedCode.includes('youtube.com/embed/');
+    const hasAutoplay = video.embedCode.includes('autoplay=1');
+    
+    if (hasYouTube && !hasAutoplay) {
       // Try to extract YouTube ID using different methods
       let youtubeId = null;
       
@@ -199,9 +207,6 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
             title="${video.title || 'YouTube video'}"
           ></iframe>
         `;
-      } else {
-        // Fallback to the original embed code
-        containerRef.innerHTML = video.embedCode;
       }
     }
     // Next, check if it's a Reddit embed

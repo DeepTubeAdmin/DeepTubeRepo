@@ -302,10 +302,26 @@ export default function MediaDetail() {
               )}
               
               {media.contentType === 'embed' && media.embedCode && (
-                <div 
-                  className="aspect-video" 
-                  dangerouslySetInnerHTML={{ __html: media.embedCode }} 
-                />
+                <div className="aspect-video">
+                  {/* For YouTube embeds, ensure autoplay is forced */}
+                  {media.embedCode.includes('youtube.com/embed/') ? (
+                    <div
+                      className="w-full h-full"
+                      dangerouslySetInnerHTML={{
+                        __html: media.embedCode.includes('autoplay=1')
+                          ? media.embedCode
+                          : media.embedCode
+                              .replace(/src="([^"]+)"/, 'src="$1?autoplay=1"')
+                              .replace(/src="([^"]+)\?([^"]*)"/, 'src="$1?autoplay=1&$2"')
+                      }}
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full"
+                      dangerouslySetInnerHTML={{ __html: media.embedCode }}
+                    />
+                  )}
+                </div>
               )}
               
               {!media.vimeoId && !media.videoUrl && !media.imageUrl && !media.embedCode && (
