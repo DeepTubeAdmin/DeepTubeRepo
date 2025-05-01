@@ -326,7 +326,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
       <div className="relative w-full h-full">
         {/* Create a ref-based video element to ensure proper control */}
         <div 
-          className="w-full h-full" 
+          className="w-full h-full video-player-container" 
           ref={el => {
             if (!el || !video?.videoUrl) return;
             
@@ -406,37 +406,56 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
 
   // Function to handle dialog close with proper cleanup
   const handleCloseDialog = () => {
-    // Pause all video elements first
-    document.querySelectorAll('video').forEach(videoEl => {
-      try {
-        if (!videoEl.paused) {
-          videoEl.pause();
-          console.log('Video paused on dialog close');
-        }
-        // Remove src to stop downloading
-        videoEl.removeAttribute('src');
-        videoEl.load();
-      } catch (e) {
-        console.error('Error stopping video:', e);
-      }
-    });
+    console.log('VideoPlayer: FORCEFULLY stopping all videos');
     
-    // Clear specific video reference
-    if (videoRef.current) {
-      try {
-        videoRef.current.pause();
-        videoRef.current.removeAttribute('src');
-        videoRef.current.load();
-      } catch (e) {
-        console.error('Error cleaning up video ref:', e);
-      }
-      videoRef.current = null;
+    // Force destroy all video elements
+    try {
+      // Find all player containers and completely clear them
+      const videoContainers = document.querySelectorAll('.video-player-container');
+      videoContainers.forEach(container => {
+        if (container instanceof HTMLElement) {
+          // Store original content to recreate later if needed
+          container.innerHTML = '';
+          console.log('Cleared video container');
+        }
+      });
+      
+      // More aggressive approach - find and force stop all video elements
+      document.querySelectorAll('video').forEach(videoEl => {
+        try {
+          // First pause the video
+          videoEl.pause();
+          
+          // Then completely remove all sources
+          const sources = videoEl.querySelectorAll('source');
+          sources.forEach(source => source.remove());
+          
+          // Clear the src attribute
+          videoEl.removeAttribute('src');
+          
+          // Force a load which clears the media element
+          videoEl.load();
+          
+          // Optional - remove the whole element from DOM
+          if (videoEl.parentNode) {
+            videoEl.parentNode.removeChild(videoEl);
+            console.log('Removed video element from DOM');
+          }
+        } catch (e) {
+          console.error('Error forcefully stopping video:', e);
+        }
+      });
+    } catch (e) {
+      console.error('Error in aggressive video cleanup:', e);
     }
     
-    // Clear iframes if needed
+    // Clear iframes as well
     if (embedContainerRef.current) {
       embedContainerRef.current.innerHTML = '';
     }
+    
+    // Reset all video references
+    videoRef.current = null;
     
     // Then call the original onClose
     onClose();
@@ -517,32 +536,34 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                     renderMP4Player()
                   ) : (
                     // For other video types, use the src attribute directly
-                    <video 
-                      controls 
-                      autoPlay 
-                      className="w-full h-full" 
-                      src={video.videoUrl}
-                      poster={video.thumbnail || undefined}
-                      onError={(e) => {
-                        console.error("Error playing video:", e);
-                        // If the video element is available, try to show error details
-                        const videoEl = e.currentTarget;
-                        videoEl.style.display = 'none';
-                        
-                        // Add error message to parent
-                        if (videoEl.parentElement) {
-                          const errorDiv = document.createElement('div');
-                          errorDiv.className = 'absolute inset-0 flex items-center justify-center';
-                          errorDiv.innerHTML = `
-                            <div class="bg-black/70 p-4 rounded-md text-center max-w-md">
-                              <p class="text-red-500 text-lg mb-2">Unable to play this video</p>
-                              <p class="text-gray-300 text-sm">The video format may be unsupported.</p>
-                            </div>
-                          `;
-                          videoEl.parentElement.appendChild(errorDiv);
-                        }
-                      }}
-                    />
+                    <div className="video-player-container w-full h-full">
+                      <video 
+                        controls 
+                        autoPlay 
+                        className="w-full h-full video-player" 
+                        src={video.videoUrl}
+                        poster={video.thumbnail || undefined}
+                        onError={(e) => {
+                          console.error("Error playing video:", e);
+                          // If the video element is available, try to show error details
+                          const videoEl = e.currentTarget;
+                          videoEl.style.display = 'none';
+                          
+                          // Add error message to parent
+                          if (videoEl.parentElement) {
+                            const errorDiv = document.createElement('div');
+                            errorDiv.className = 'absolute inset-0 flex items-center justify-center';
+                            errorDiv.innerHTML = `
+                              <div class="bg-black/70 p-4 rounded-md text-center max-w-md">
+                                <p class="text-red-500 text-lg mb-2">Unable to play this video</p>
+                                <p class="text-gray-300 text-sm">The video format may be unsupported.</p>
+                              </div>
+                            `;
+                            videoEl.parentElement.appendChild(errorDiv);
+                          }
+                        }}
+                      />
+                    </div>
                   )}
                 </div>
               ) : video.contentType === 'image' ? (
