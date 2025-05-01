@@ -56,11 +56,11 @@ export default function ProfilePage() {
     return (
       <Layout>
         <SEO 
-          title="Profile | DeepTube.co"
-          description="Manage your DeepTube.co profile settings, account security, and personal information."
+          title="Profile | DeepTube: Ethical AI Media Hub"
+          description="DeepTube.co: Where innovative creators share responsible AI-powered media. Manage your account settings on the trusted video content platform."
           canonicalUrl="https://deeptube.co/profile"
           ogType="website"
-          keywords="profile settings, account management, user profile, DeepTube.co"
+          keywords="AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
         />
         <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -182,11 +182,11 @@ export default function ProfilePage() {
   return (
     <Layout>
       <SEO 
-        title={`${user.username}'s Profile | DeepTube.co`}
-        description="Manage your DeepTube.co profile settings, account security, and personal information."
+        title={`${user.username}'s Profile | DeepTube: Ethical AI Media Hub`}
+        description="DeepTube.co: Where innovative creators share responsible AI-powered media. Manage your creator account on our trusted video platform."
         canonicalUrl="https://deeptube.co/profile"
         ogType="profile"
-        keywords="profile settings, account management, user profile, DeepTube.co"
+        keywords="AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
       />
       <div className="container max-w-4xl py-8">
         <h1 className="text-4xl font-bold mb-6 text-white">My Profile</h1>

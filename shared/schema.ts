@@ -23,7 +23,7 @@ export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
-  icon: text("icon"),
+  icon: text("icon").notNull().default(''),
   image: text("image"),
 });
 
@@ -44,7 +44,7 @@ export const videos = pgTable("videos", {
   embedCode: text("embed_code"),
   preview: text("preview"),
   contentType: text("content_type").notNull().default("video"), // "video", "image", or "embed"
-  resolution: text("resolution").default("HD"),
+  resolution: text("resolution").notNull().default("HD"),
   duration: integer("duration").default(0), // in seconds
   categoryId: integer("category_id").references(() => categories.id),
   vimeoId: text("vimeo_id"), // Store Vimeo video ID

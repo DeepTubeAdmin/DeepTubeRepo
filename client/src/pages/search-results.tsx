@@ -193,12 +193,12 @@ export default function SearchResults() {
   
   // Prepare dynamic SEO metadata based on search query and filters
   const seoTitle = currentQuery 
-    ? `Search results for "${currentQuery}" | DeepTube.co` 
-    : 'Search | DeepTube.co';
+    ? `Search results for "${currentQuery}" | DeepTube: Ethical AI Media Hub` 
+    : 'Search | DeepTube: Ethical AI Media Hub';
   
   const seoDescription = currentQuery 
-    ? `Browse search results for "${currentQuery}" on DeepTube.co. Find AI-generated ${contentType !== 'all' ? contentType + 's' : 'content'} ${categorySlug ? `in the ${categorySlug} category` : ''}` 
-    : 'Search for AI-generated videos, images, and embedded content on DeepTube.co';
+    ? `DeepTube.co: Where innovative creators share responsible AI-powered media. Browse search results for "${currentQuery}". Find ${contentType !== 'all' ? contentType + 's' : 'trusted video content'} ${categorySlug ? `in the ${categorySlug} category` : ''}` 
+    : 'DeepTube.co: Where innovative creators share responsible AI-powered media. Host, view, and explore trusted video content!';
   
   return (
     <Layout>
@@ -207,7 +207,7 @@ export default function SearchResults() {
         description={seoDescription}
         canonicalUrl={`https://deeptube.co/search?q=${encodeURIComponent(currentQuery)}`}
         ogType="website"
-        keywords={`AI search, ${currentQuery}, ${contentType}, AI videos, AI images, DeepTube.co`}
+        keywords="AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
       />
       <div className="container mx-auto py-6 px-4">
         {/* Search form */}

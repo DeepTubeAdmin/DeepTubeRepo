@@ -249,11 +249,11 @@ export default function ForumPage() {
   return (
     <Layout>
       <SEO 
-        title="Forum | DeepTube.co"
-        description="Join the DeepTube.co community forum to discuss AI-generated videos, share tips, ask questions, and connect with other AI content creators."
+        title="Community Forum | DeepTube: Ethical AI Media Hub"
+        description="DeepTube.co: Where innovative creators share responsible AI-powered media. Join our community forum to discuss AI-generated videos, share tips, and connect with other creators."
         canonicalUrl="https://deeptube.co/forum"
         ogType="website"
-        keywords="AI forum, video generation forum, AI community, AI discussion, video creation, DeepTube.co"
+        keywords="AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
       />
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="flex items-center gap-4 mb-8">
