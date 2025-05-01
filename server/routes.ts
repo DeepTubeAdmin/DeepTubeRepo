@@ -139,6 +139,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
   
+  // Function to log detailed category state information
+  function logCategoryState(key: string) {
+    const categories = usedCategoriesCache.get(key);
+    if (categories) {
+      console.log(`Current category tracking state for ${key}: ${Array.from(categories).join(', ')}`);
+      console.log(`Using ${categories.size} out of ${cachedCategories.length} total categories`);
+    } else {
+      console.log(`No category tracking state for ${key} yet`);
+    }
+  }
+  
   // Setup predefined categories - must be before the /api/categories/:slug route
   app.get("/api/categories/seed", async (req, res) => {
     try {
@@ -295,13 +306,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
   
   // Helper to reset cache when needed
-  function resetContentCache(key?: string) {
+  function resetContentCache(key?: string, resetCategories: boolean = false) {
     if (key) {
       infiniteScrollCache.delete(key);
-      usedCategoriesCache.delete(key);
+      console.log(`Reset content cache for ${key}, resetCategories=${resetCategories}`);
+      if (resetCategories) {
+        usedCategoriesCache.delete(key);
+      }
     } else {
       infiniteScrollCache.clear();
-      usedCategoriesCache.clear();
+      if (resetCategories) {
+        usedCategoriesCache.clear();
+      }
+      console.log(`Reset ALL content cache, resetCategories=${resetCategories}`);
     }
   }
   
@@ -344,7 +361,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If page 1, reset the cache for this category/sort combo
       if (page === 1) {
-        resetContentCache(cacheKey);
+        // Only reset content but not category tracking when restarting from page 1
+        resetContentCache(cacheKey, false);
       }
       
       // Get or create the set of used content IDs for this view
@@ -355,9 +373,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get or create the set of used category IDs for this view
       if (!usedCategoriesCache.has(cacheKey)) {
+        console.log(`Creating new category tracking set for ${cacheKey}`);
         usedCategoriesCache.set(cacheKey, new Set<number>());
+        
+        // Pre-populate with some random categories if this is a new category set
+        // This ensures variety even on the very first page load after server restart
+        if (cachedCategories.length === 0) {
+          cachedCategories = await dbStorage.getCategories();
+          console.log(`Cached ${cachedCategories.length} categories for content selection`);
+        }
+        
+        // Pre-select some random categories to mark as "used" (about 1/3 of all categories)
+        if (!categoryId && !isTrending && !isMostViewed) {
+          const categoriesToPreselect = Math.floor(cachedCategories.length / 3);
+          const shuffled = [...cachedCategories].sort(() => 0.5 - Math.random());
+          
+          for (let i = 0; i < categoriesToPreselect; i++) {
+            usedCategoriesCache.get(cacheKey)!.add(shuffled[i].id);
+          }
+          
+          console.log(`Pre-selected ${categoriesToPreselect} random categories as used: ${Array.from(usedCategoriesCache.get(cacheKey)!).join(', ')}`);
+        }
       }
+      
       const usedCategoryIds = usedCategoriesCache.get(cacheKey)!;
+      console.log(`Initial category tracking state for ${cacheKey}: ${Array.from(usedCategoryIds).join(', ')}`);
+      
+      // Debug check to ensure the cache survives across requests
+      if (Array.from(usedCategoryIds).length > 0) {
+        console.log(`✓ Category tracking state persisted for ${cacheKey}`);
+      }
       
       // Cache categories to avoid multiple DB calls
       if (cachedCategories.length === 0) {
@@ -549,14 +594,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If we have a 'reset=true' query param, clear the cache
       if (req.query.reset === 'true') {
-        resetContentCache(cacheKey);
+        // Only reset content but not category rotation when requested explicitly
+        resetContentCache(cacheKey, false);
       }
       
       // Reset cache if we have no more content to show, but keep loading
       const hasEmptyBlock = response.blocks.some(block => block.items.length === 0);
       if (hasEmptyBlock) {
         console.log(`Some blocks are empty, resetting cache for ${cacheKey}`);
-        resetContentCache(cacheKey);
+        // Reset content IDs but keep category tracking
+        infiniteScrollCache.delete(cacheKey);
+        // DON'T reset usedCategoriesCache here - let categories cycle completely
         // Always keep hasMore true for infinite scrolling
         // response.hasMore = false; 
       }
@@ -564,6 +612,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log the current state of the cache
       console.log(`Used content IDs for ${cacheKey}: ${infiniteScrollCache.get(cacheKey)?.size} items`);
       console.log(`Used category IDs for ${cacheKey}: ${Array.from(usedCategoryIds).join(', ')}`);
+      console.log(`Total categories in cache: ${allCategories.length}, Used categories: ${usedCategoryIds.size}`);
       
       // If all categories have been used, reset to allow for a fresh cycle in next request
       if (usedCategoryIds.size >= allCategories.length) {
