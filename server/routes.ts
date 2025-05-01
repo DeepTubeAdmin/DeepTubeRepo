@@ -1881,7 +1881,155 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to delete account" });
     }
   });
-
+  
+  // Public user profile routes
+  app.get("/api/users/by-username/:username", async (req, res) => {
+    try {
+      const { username } = req.params;
+      if (!username) {
+        return res.status(400).json({ error: "Username is required" });
+      }
+      
+      const user = await dbStorage.getUserByUsername(username);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Don't expose sensitive data
+      const safeUser = {
+        id: user.id,
+        username: user.username,
+        createdAt: user.createdAt,
+        admin: Boolean(user.admin), // Safe to expose admin status, but not other fields
+      };
+      
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      res.status(500).json({ error: "Failed to fetch user profile" });
+    }
+  });
+  
+  // Get all content uploaded by a specific user
+  app.get("/api/users/:userId/content", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      // Check if user exists
+      const user = await dbStorage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Fetch user's content
+      const videos = await dbStorage.getUserVideos(userId);
+      
+      // Return videos with username attached
+      const videosWithUsername = videos.map(video => ({
+        ...video,
+        username: user.username
+      }));
+      
+      res.json(videosWithUsername);
+    } catch (error) {
+      console.error("Error fetching user content:", error);
+      res.status(500).json({ error: "Failed to fetch user content" });
+    }
+  });
+  
+  // Messaging API endpoints
+  app.post("/api/messages", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      
+      const { receiverId, content } = req.body;
+      if (!receiverId || !content) {
+        return res.status(400).json({ error: "Receiver ID and content are required" });
+      }
+      
+      // Check if receiver exists
+      const receiver = await dbStorage.getUser(receiverId);
+      if (!receiver) {
+        return res.status(404).json({ error: "Receiver not found" });
+      }
+      
+      // Create message
+      const message = await dbStorage.createMessage({
+        senderId: req.user.id,
+        receiverId,
+        content,
+        read: false
+      });
+      
+      // Add sender username to the response
+      const messageWithUsername = {
+        ...message,
+        senderName: req.user.username
+      };
+      
+      res.status(201).json(messageWithUsername);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+  
+  // Get conversation between current user and another user
+  app.get("/api/messages/:userId", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      
+      const otherUserId = parseInt(req.params.userId);
+      if (isNaN(otherUserId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      // Fetch messages between the two users
+      const messages = await dbStorage.getConversation(req.user.id, otherUserId);
+      
+      // Mark messages as read if they're sent to the current user
+      const unreadMessages = messages.filter(
+        message => message.receiverId === req.user.id && !message.read
+      );
+      
+      if (unreadMessages.length > 0) {
+        for (const message of unreadMessages) {
+          await dbStorage.markMessageAsRead(message.id);
+        }
+      }
+      
+      // Get username for the other user
+      const otherUser = await dbStorage.getUser(otherUserId);
+      
+      // Add sender and receiver names to the messages
+      const messagesWithNames = messages.map(message => ({
+        ...message,
+        senderName: message.senderId === req.user.id ? req.user.username : otherUser?.username,
+        receiverName: message.receiverId === req.user.id ? req.user.username : otherUser?.username
+      }));
+      
+      res.json(messagesWithNames);
+    } catch (error) {
+      console.error("Error fetching conversation:", error);
+      res.status(500).json({ error: "Failed to fetch conversation" });
+    }
+  });
+  
+  // Get unread message count
+  app.get("/api/messages/unread/count", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      
+      const count = await dbStorage.getUnreadMessageCount(req.user.id);
+      res.json({ count });
+    } catch (error) {
+      console.error("Error getting unread message count:", error);
+      res.status(500).json({ error: "Failed to get unread message count" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
