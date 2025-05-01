@@ -314,6 +314,8 @@ export default function InfiniteContentFeed({
             // For section titles based on block types, position, and server-provided category
             let sectionTitle = "";
             
+            // Use the block's ID to create consistent section titles that don't change on re-render
+            // This avoids issues with titles changing due to ad insertions
             if (block.type === 'videos') {
               if (index === 0) {
                 sectionTitle = "Trending Now";
@@ -330,9 +332,15 @@ export default function InfiniteContentFeed({
                   block.items = block.items.slice(0, 9);
                 }
               } else {
-                // For subsequent video blocks, use the category from server or fallback
-                const categoryName = block.categoryName || getRandomCategory();
-                sectionTitle = `${categoryName} Videos`;
+                // For subsequent video blocks, use the category from server if available
+                if (block.categoryName) {
+                  sectionTitle = `${block.categoryName} Videos`;
+                } else {
+                  // Use the block ID as a consistent seed for random categories
+                  const categoryIndex = block.id % categories.length;
+                  const category = categories[categoryIndex >= 0 && categoryIndex < categories.length ? categoryIndex : 0];
+                  sectionTitle = category ? `${category.name} Videos` : "Entertainment Videos";
+                }
               }
             } else {
               // For image blocks based on position
@@ -341,9 +349,15 @@ export default function InfiniteContentFeed({
               } else if (index === 7) {
                 sectionTitle = "Most Viewed Images";
               } else {
-                // For other image blocks, use the category from server or fallback
-                const categoryName = block.categoryName || getRandomCategory();
-                sectionTitle = `${categoryName} Images`;
+                // For other image blocks, use the category from server if available
+                if (block.categoryName) {
+                  sectionTitle = `${block.categoryName} Images`;
+                } else {
+                  // Use the block ID as a consistent seed for random categories
+                  const categoryIndex = block.id % categories.length;
+                  const category = categories[categoryIndex >= 0 && categoryIndex < categories.length ? categoryIndex : 0];
+                  sectionTitle = category ? `${category.name} Images` : "Entertainment Images";
+                }
               }
             }
             
