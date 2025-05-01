@@ -4,7 +4,8 @@ import ImageGallery from './ImageGallery';
 import VideoCard from './VideoCard';
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { ExternalLink, Heart, Image } from 'lucide-react';
-import { Video, Category } from '@/types';
+import { Video as TypeVideo, Category } from '@/types';
+import { Video as SchemaVideo } from '@shared/schema';
 import { Loader2 } from 'lucide-react';
 import { Link } from 'wouter';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -24,7 +25,7 @@ export default function InfiniteContentFeed({
 }: InfiniteContentFeedProps) {
   const [contentBlocks, setContentBlocks] = useState<Array<{
     type: 'videos' | 'images';
-    items: Video[];
+    items: TypeVideo[];
     id: number;
     title: string;
     categoryName?: string;
@@ -155,7 +156,7 @@ export default function InfiniteContentFeed({
   // Function to determine how many items should be displayed
   // This now provides enough items to fill the grid while accounting
   // for the responsive design that handles actually showing the items
-  const limitToSingleRow = (items: Video[]) => {
+  const limitToSingleRow = (items: TypeVideo[]) => {
     // For smaller screens (<768px), we want to show 2-3 items
     // For medium screens (768px-1280px), we want to show 3-4 items
     // For larger screens (>1280px), we want to show 5 items
@@ -165,7 +166,7 @@ export default function InfiniteContentFeed({
   
   // Image card component specifically for images in the infinite feed
   interface ImageCardProps {
-    image: Video;
+    image: TypeVideo;
     onPreview?: (imageId: number) => void;
     onWishlist?: (imageId: number) => void;
   }
