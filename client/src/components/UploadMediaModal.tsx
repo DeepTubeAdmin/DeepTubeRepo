@@ -538,14 +538,39 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
               
               <div className="space-y-2">
                 <label htmlFor="video-aiGenerator" className="text-sm font-medium">
-                  AI Generator (Optional)
+                  AI Generator <span className="text-destructive">*</span>
                 </label>
-                <Input 
-                  id="video-aiGenerator"
+                <Select
                   value={aiGenerator}
-                  onChange={(e) => setAiGenerator(e.target.value)}
-                  placeholder="Which AI tool was used (e.g. Midjourney, DALL-E)"
-                />
+                  onValueChange={(value) => {
+                    setAiGenerator(value);
+                    setShowCustomAiGenerator(value === "Other");
+                  }}
+                  required
+                >
+                  <SelectTrigger id="video-aiGenerator">
+                    <SelectValue placeholder="Select AI Generator" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {aiGeneratorOptions.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {showCustomAiGenerator && (
+                  <div className="mt-2">
+                    <Input
+                      id="video-customAiGenerator"
+                      value={customAiGenerator}
+                      onChange={(e) => setCustomAiGenerator(e.target.value)}
+                      placeholder="Specify the AI tool used"
+                      required
+                    />
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -674,14 +699,39 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
               
               <div className="space-y-2">
                 <label htmlFor="image-aiGenerator" className="text-sm font-medium">
-                  AI Generator (Optional)
+                  AI Generator <span className="text-destructive">*</span>
                 </label>
-                <Input 
-                  id="image-aiGenerator"
+                <Select
                   value={aiGenerator}
-                  onChange={(e) => setAiGenerator(e.target.value)}
-                  placeholder="Which AI tool was used (e.g. Midjourney, DALL-E)"
-                />
+                  onValueChange={(value) => {
+                    setAiGenerator(value);
+                    setShowCustomAiGenerator(value === "Other");
+                  }}
+                  required
+                >
+                  <SelectTrigger id="image-aiGenerator">
+                    <SelectValue placeholder="Select AI Generator" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {aiGeneratorOptions.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {showCustomAiGenerator && (
+                  <div className="mt-2">
+                    <Input
+                      id="image-customAiGenerator"
+                      value={customAiGenerator}
+                      onChange={(e) => setCustomAiGenerator(e.target.value)}
+                      placeholder="Specify the AI tool used"
+                      required
+                    />
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -855,14 +905,39 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
               
               <div className="space-y-2">
                 <label htmlFor="embed-aiGenerator" className="text-sm font-medium">
-                  AI Generator (Optional)
+                  AI Generator <span className="text-destructive">*</span>
                 </label>
-                <Input 
-                  id="embed-aiGenerator"
+                <Select
                   value={aiGenerator}
-                  onChange={(e) => setAiGenerator(e.target.value)}
-                  placeholder="Which AI tool was used (e.g. Midjourney, DALL-E)"
-                />
+                  onValueChange={(value) => {
+                    setAiGenerator(value);
+                    setShowCustomAiGenerator(value === "Other");
+                  }}
+                  required
+                >
+                  <SelectTrigger id="embed-aiGenerator">
+                    <SelectValue placeholder="Select AI Generator" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {aiGeneratorOptions.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {showCustomAiGenerator && (
+                  <div className="mt-2">
+                    <Input
+                      id="embed-customAiGenerator"
+                      value={customAiGenerator}
+                      onChange={(e) => setCustomAiGenerator(e.target.value)}
+                      placeholder="Specify the AI tool used"
+                      required
+                    />
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
