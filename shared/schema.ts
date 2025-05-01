@@ -8,7 +8,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
-  email: text("email"),
+  email: text("email").notNull(), // Email is now required
   dateOfBirth: timestamp("date_of_birth"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   banned: boolean("banned").default(false),

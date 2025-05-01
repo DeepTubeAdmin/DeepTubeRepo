@@ -39,7 +39,7 @@ eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18);
 
 const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
-  email: z.string().email("Please enter a valid email").optional(),
+  email: z.string().email("Please enter a valid email"), // Email is now required
   dateOfBirth: z.date()
     .refine(date => date <= eighteenYearsAgo, {
       message: "You must be at least 18 years old to register"
@@ -241,7 +241,7 @@ export default function AuthPage() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email (Optional)</FormLabel>
+                        <FormLabel>Email <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
                           <Input type="email" placeholder="Enter your email" {...field} />
                         </FormControl>
