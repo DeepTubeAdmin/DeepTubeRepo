@@ -353,7 +353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const page = parseInt(req.query.page as string) || 1;
       const pageSize = parseInt(req.query.pageSize as string) || 5; // Default to 5 blocks per page
       const categorySlug = req.query.category as string || '';
-      const sortBy = (req.query.sortBy as 'newest' | 'oldest' | 'viewed') || 'newest';
+      const sortBy = (req.query.sortBy as 'newest' | 'oldest' | 'viewed' | 'most-viewed' | 'trending' | 'popular') || 'newest';
       
       // Get categoryId if category slug is provided
       let categoryId: number | undefined = undefined;
@@ -363,8 +363,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Special handling for "trending" and "most-viewed" categories
-      const isTrending = categorySlug === 'trending';
-      const isMostViewed = categorySlug === 'most-viewed';
+      const isTrending = categorySlug === 'trending' || sortBy === 'trending';
+      const isMostViewed = categorySlug === 'most-viewed' || sortBy === 'most-viewed';
       
       // Create a response with mixed content blocks
       const response = {
@@ -520,7 +520,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             } else {
               // If all categories have been used or something went wrong, get general videos
-              videos = await dbStorage.getVideos(fetchLimit, undefined, undefined, sortBy);
+              // Use the user-selected sort option
+              if (sortBy === 'popular') {
+                videos = await dbStorage.getPopularVideos(fetchLimit);
+              } else if (sortBy === 'trending') {
+                videos = await dbStorage.getTrendingVideos(fetchLimit);
+              } else if (sortBy === 'most-viewed') {
+                videos = await dbStorage.getMostViewedVideos(fetchLimit);
+              } else {
+                videos = await dbStorage.getVideos(fetchLimit, undefined, undefined, sortBy);
+              }
             }
             
             // Filter to only video and embed types for video blocks
@@ -564,12 +573,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const imagesPerRow = 4;
           
           if (isTrending) {
-            // For trending, use newest images
-            images = await dbStorage.getVideos(fetchLimit, 'image', undefined, 'newest');
+            // For trending, use trending algorithm
+            images = await dbStorage.getTrendingVideos(fetchLimit, 'image');
             console.log(`Category trending videos (image): first few IDs: [ ${images.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else if (isMostViewed) {
-            // For most viewed, use "viewed" sort
-            images = await dbStorage.getVideos(fetchLimit, 'image', undefined, 'viewed');
+            // For most viewed, use most viewed sorting
+            images = await dbStorage.getMostViewedVideos(fetchLimit, 'image');
             console.log(`Category most-viewed videos (image): first few IDs: [ ${images.slice(0, 3).map(v => v.id).join(', ')} ]`);
           } else if (categoryId) {
             // Filter by category if specified
@@ -613,7 +622,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             } else {
               // If all categories have been used or something went wrong, get general images
-              images = await dbStorage.getVideos(fetchLimit, 'image', undefined, sortBy);
+              // Use the user-selected sort option
+              if (sortBy === 'popular') {
+                images = await dbStorage.getPopularVideos(fetchLimit, 'image');
+              } else if (sortBy === 'trending') {
+                images = await dbStorage.getTrendingVideos(fetchLimit, 'image');
+              } else if (sortBy === 'most-viewed') {
+                images = await dbStorage.getMostViewedVideos(fetchLimit, 'image');
+              } else {
+                images = await dbStorage.getVideos(fetchLimit, 'image', undefined, sortBy);
+              }
             }
             
             console.log(`Images for category ID ${selectedCategoryId ?? 'general'}: first few IDs: [ ${images.slice(0, 3).map(v => v.id).join(', ')} ]`);
