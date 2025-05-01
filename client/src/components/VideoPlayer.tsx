@@ -298,7 +298,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
         <div 
           className="w-full h-full" 
           ref={el => {
-            if (!el || !video.videoUrl) return;
+            if (!el || !video?.videoUrl) return;
             
             // Clear previous content
             el.innerHTML = '';
@@ -310,7 +310,9 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
             videoEl.playsInline = true;
             videoEl.className = 'w-full h-full';
             videoEl.muted = false;
-            videoEl.src = video.videoUrl;
+            if (video.videoUrl) {
+              videoEl.src = video.videoUrl;
+            }
             
             if (video.thumbnail) {
               videoEl.poster = video.thumbnail;
@@ -552,10 +554,10 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                   </div>
                 )}
                 
-                {video.category && (
+                {video.categoryId && (
                   <div className="bg-gray-800 rounded-md px-3 py-1 text-sm">
                     <span className="text-gray-400">Category: </span>
-                    <span className="text-blue-400">{video.category.name}</span>
+                    <span className="text-blue-400">{video.category?.name || 'Category ' + video.categoryId}</span>
                   </div>
                 )}
                 
