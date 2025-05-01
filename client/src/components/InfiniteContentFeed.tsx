@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import VideoGrid from './VideoGrid';
 import ImageGallery from './ImageGallery';
 import VideoCard from './VideoCard';
+import AdvertisementCard, { getRandomAd } from './AdvertisementCard';
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { ExternalLink, Heart, Image } from 'lucide-react';
 import { Video as TypeVideo, Category } from '@/types';
@@ -36,6 +37,8 @@ export default function InfiniteContentFeed({
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  // Keep track of advertisements to ensure unique ads per session
+  const [usedAdIds, setUsedAdIds] = useState<Set<string>>(new Set());
   const observer = useRef<IntersectionObserver | null>(null);
   const isMobile = useIsMobile();
   
@@ -162,6 +165,29 @@ export default function InfiniteContentFeed({
     // For larger screens (>1280px), we want to show 5 items
     const itemCount = Math.min(items.length, itemsPerRow);
     return items.slice(0, itemCount);
+  };
+  
+  // Function to get a unique random advertisement
+  const getUniqueRandomAd = () => {
+    let ad = getRandomAd();
+    let attempts = 0;
+    
+    // Try to find an ad that hasn't been used yet
+    // But limit attempts to avoid infinite loop if all ads have been used
+    while (usedAdIds.has(ad.id) && attempts < 10) {
+      ad = getRandomAd();
+      attempts++;
+    }
+    
+    // Mark this ad as used
+    setUsedAdIds(prev => new Set(prev).add(ad.id));
+    
+    // If we've used all ads, reset the tracking
+    if (usedAdIds.size >= 5) { // 5 is the number of sample ads we have
+      setUsedAdIds(new Set());
+    }
+    
+    return ad;
   };
   
   // Image card component specifically for images in the infinite feed
