@@ -110,11 +110,70 @@ export default function Home() {
         isHome={true} 
       />
       {!isCategoriesLoading && (
-        <CategoryNavigation 
-          categories={allCategories} 
-          activeCategory={activeCategory}
-          onCategoryChange={handleCategoryChange} 
-        />
+        <div className="relative">
+          <CategoryNavigation 
+            categories={allCategories} 
+            activeCategory={activeCategory}
+            onCategoryChange={handleCategoryChange} 
+          />
+          
+          {/* Sort dropdown UI */}
+          <div className="absolute right-6 top-2.5 z-50">
+            <button 
+              ref={filterButtonRef}
+              onClick={toggleFilterMenu}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-black/50 hover:bg-black/80 text-white text-sm border border-gray-700"
+            >
+              <Filter className="h-3.5 w-3.5" />
+              <span>Sort</span>
+            </button>
+            
+            {showFilterMenu && (
+              <div 
+                ref={filterMenuRef}
+                className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-black border border-gray-700 ring-1 ring-black ring-opacity-5 z-50"
+              >
+                <div className="py-1" role="menu" aria-orientation="vertical">
+                  <button
+                    className={`${sortBy === 'newest' ? 'bg-gray-800 text-primary' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                    onClick={() => handleSortChange('newest')}
+                    role="menuitem"
+                  >
+                    Newest First
+                  </button>
+                  <button
+                    className={`${sortBy === 'oldest' ? 'bg-gray-800 text-primary' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                    onClick={() => handleSortChange('oldest')}
+                    role="menuitem"
+                  >
+                    Oldest First
+                  </button>
+                  <button
+                    className={`${sortBy === 'most-viewed' ? 'bg-gray-800 text-primary' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                    onClick={() => handleSortChange('most-viewed')}
+                    role="menuitem"
+                  >
+                    Most Viewed
+                  </button>
+                  <button
+                    className={`${sortBy === 'trending' ? 'bg-gray-800 text-primary' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                    onClick={() => handleSortChange('trending')}
+                    role="menuitem"
+                  >
+                    Trending
+                  </button>
+                  <button
+                    className={`${sortBy === 'popular' ? 'bg-gray-800 text-primary' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                    onClick={() => handleSortChange('popular')}
+                    role="menuitem"
+                  >
+                    Popular
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       <div id="homePage" className="page active">

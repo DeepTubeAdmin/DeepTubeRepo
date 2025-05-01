@@ -154,8 +154,20 @@ export class DatabaseStorage implements IStorage {
     limit: number = 50, 
     contentType?: string, 
     categoryId?: number, 
-    sortBy: 'newest' | 'oldest' | 'viewed' = 'newest'
+    sortBy: 'newest' | 'oldest' | 'viewed' | 'most-viewed' | 'trending' | 'popular' = 'newest'
   ): Promise<Video[]> {
+    // Handle special sort cases that require different query structures
+    if (sortBy === 'popular') {
+      return this.getPopularVideos(limit, contentType);
+    }
+    
+    if (sortBy === 'trending') {
+      return this.getTrendingVideos(limit, contentType);
+    }
+    
+    if (sortBy === 'most-viewed') {
+      return this.getMostViewedVideos(limit, contentType);
+    }
     // Start with base query
     let queryBuilder = db.select().from(videos);
     
