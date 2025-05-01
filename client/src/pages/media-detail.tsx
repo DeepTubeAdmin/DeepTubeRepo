@@ -337,11 +337,6 @@ export default function MediaDetail() {
                   >
                     <ThumbsUp className={`w-5 h-5 mr-1 ${isLikeLoading ? 'animate-pulse' : ''}`} />
                     <span>{isLiked ? 'Liked' : 'Like'}</span>
-                    {likeCount > 0 && (
-                      <span className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${isLiked ? 'bg-orange-700' : 'bg-gray-700'}`}>
-                        {likeCount}
-                      </span>
-                    )}
                   </Button>
                   
                   <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">

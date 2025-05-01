@@ -233,15 +233,8 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
               disabled={isLikeLoading}
             >
               <ThumbsUp className={`h-4 w-4 ${isLikeLoading ? 'animate-pulse' : ''}`} />
-              <span className="ml-1">{formatNumber(likeCount)}</span>
               <span className="sr-only">Like this video</span>
             </button>
-            
-            {/* View count */}
-            <span className="mr-2">
-              <i className="fas fa-eye mr-1"></i>
-              {formatNumber(Math.floor(Math.random() * 10000) + 1000)}
-            </span>
           </div>
         </div>
       </div>
