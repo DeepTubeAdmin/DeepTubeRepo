@@ -6,6 +6,7 @@ import { Video } from '@shared/schema';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Loader2, ThumbsUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import EmergencyVideoPlayer from './EmergencyVideoPlayer';
 import { 
   extractYoutubeVideoId, 
   extractYoutubeIdFromEmbed,
@@ -762,9 +763,16 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                   {/* Add AI watermark for all videos */}
                   <AIWatermark position="bottom-right" size="medium" />
                   
-                  {/* Improved MP4 video handling */}
+                  {/* Improved MP4 video handling with EmergencyVideoPlayer for guaranteed cleanup */}
                   {video.videoUrl.includes('.mp4') || video.videoUrl.includes('video/mp4') || video.videoUrl.startsWith('/uploads/') ? (
-                    renderMP4Player()
+                    <div className="w-full h-full">
+                      <EmergencyVideoPlayer
+                        src={video.videoUrl}
+                        poster={video.thumbnail || undefined}
+                        onEnded={() => console.log('Video playback completed')}
+                        className="w-full h-full"
+                      />
+                    </div>
                   ) : (
                     // For other video types, use the src attribute directly
                     <div className="video-player-container w-full h-full">
