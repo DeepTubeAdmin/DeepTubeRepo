@@ -150,6 +150,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
   
+  // Generate consistent mock view counts for categories (for sorting demonstration)
+  // In a real application, we would fetch these from a database
+  const categoryViewCounts = new Map<number, number>();
+  
+  // Function to get view count for a category
+  function getCategoryViewCount(categoryId: number): number {
+    if (!categoryViewCounts.has(categoryId)) {
+      // Pseudo-random but consistent view count generator based on category ID
+      // This ensures the same category always gets the same view count in a single session
+      const baseCount = 1000;
+      const multiplier = (categoryId * 7919) % 10; // Using prime numbers to distribute values
+      const viewCount = baseCount + (multiplier * 500) + (categoryId * 100);
+      categoryViewCounts.set(categoryId, viewCount);
+    }
+    return categoryViewCounts.get(categoryId) || 0;
+  }
+  
+  // Function to sort categories by view count (descending)
+  function sortCategoriesByPopularity(categories: Category[]): Category[] {
+    return [...categories].sort((a, b) => {
+      const viewsA = getCategoryViewCount(a.id);
+      const viewsB = getCategoryViewCount(b.id);
+      return viewsB - viewsA; // Descending order
+    });
+  }
+  
   // Setup predefined categories - must be before the /api/categories/:slug route
   app.get("/api/categories/seed", async (req, res) => {
     try {
@@ -383,16 +409,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Cached ${cachedCategories.length} categories for content selection`);
         }
         
-        // Pre-select some random categories to mark as "used" (about 1/3 of all categories)
+        // Pre-select least popular categories to mark as "used" (about 1/3 of all categories)
+        // This way, the most popular categories will be shown first
         if (!categoryId && !isTrending && !isMostViewed) {
           const categoriesToPreselect = Math.floor(cachedCategories.length / 3);
-          const shuffled = [...cachedCategories].sort(() => 0.5 - Math.random());
           
-          for (let i = 0; i < categoriesToPreselect; i++) {
-            usedCategoriesCache.get(cacheKey)!.add(shuffled[i].id);
+          // Sort all categories by popularity (most viewed first)
+          const categoriesByPopularity = sortCategoriesByPopularity(cachedCategories);
+          
+          // Select the LEAST popular categories to mark as "used"
+          // This ensures that the MOST popular ones will be shown first
+          const leastPopularCategories = categoriesByPopularity.slice(-categoriesToPreselect);
+          
+          for (const category of leastPopularCategories) {
+            usedCategoriesCache.get(cacheKey)!.add(category.id);
+            console.log(`Pre-marking least popular category as used: ${category.name} (${category.id}) with ${getCategoryViewCount(category.id)} views`);
           }
           
-          console.log(`Pre-selected ${categoriesToPreselect} random categories as used: ${Array.from(usedCategoriesCache.get(cacheKey)!).join(', ')}`);
+          console.log(`Pre-selected ${categoriesToPreselect} least popular categories as used: ${Array.from(usedCategoriesCache.get(cacheKey)!).join(', ')}`);
         }
       }
       
@@ -454,10 +488,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const unusedCategories = allCategories.filter(cat => !usedCategoryIds.has(cat.id));
             
             if (unusedCategories.length > 0) {
-              // Choose a random unused category
-              const randomIndex = Math.floor(Math.random() * unusedCategories.length);
-              selectedCategoryId = unusedCategories[randomIndex].id;
-              console.log(`Selected unused category: ${unusedCategories[randomIndex].name} (${selectedCategoryId})`);
+              // Sort unused categories by popularity (most viewed first)
+              const sortedUnusedCategories = sortCategoriesByPopularity(unusedCategories);
+              
+              // Select the most popular unused category that isn't already in use
+              selectedCategoryId = sortedUnusedCategories[0].id;
+              
+              // Debug: Show the view counts for the unused categories
+              const debugCategoriesWithViews = sortedUnusedCategories.map(cat => ({
+                id: cat.id, 
+                name: cat.name, 
+                views: getCategoryViewCount(cat.id)
+              }));
+              console.log('Unused categories sorted by popularity:', JSON.stringify(debugCategoriesWithViews));
+              
+              console.log(`Selected most popular unused category: ${sortedUnusedCategories[0].name} (${selectedCategoryId}) with ${getCategoryViewCount(selectedCategoryId)} views`);
               
               // Get videos for this category
               if (selectedCategoryId !== undefined) {
@@ -465,6 +510,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 // Mark this category as used
                 usedCategoryIds.add(selectedCategoryId);
+                console.log(`✓ Marked category ${selectedCategoryId} as used. Total used: ${usedCategoryIds.size}/${allCategories.length}`);
                 
                 // If we've used all categories, reset the tracking
                 if (usedCategoryIds.size >= allCategories.length) {
@@ -537,16 +583,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const unusedCategories = allCategories.filter(cat => !usedCategoryIds.has(cat.id));
             
             if (unusedCategories.length > 0) {
-              // Choose a random unused category
-              const randomIndex = Math.floor(Math.random() * unusedCategories.length);
-              selectedCategoryId = unusedCategories[randomIndex].id;
-              console.log(`Selected unused category for images: ${unusedCategories[randomIndex].name} (${selectedCategoryId})`);
+              // Sort unused categories by popularity (most viewed first)
+              const sortedUnusedCategories = sortCategoriesByPopularity(unusedCategories);
+              
+              // Select the most popular unused category that isn't already in use
+              selectedCategoryId = sortedUnusedCategories[0].id;
+              
+              // Debug: Show the view counts for the unused categories
+              const debugCategoriesWithViews = sortedUnusedCategories.map(cat => ({
+                id: cat.id, 
+                name: cat.name, 
+                views: getCategoryViewCount(cat.id)
+              }));
+              console.log('Unused image categories sorted by popularity:', JSON.stringify(debugCategoriesWithViews));
+              
+              console.log(`Selected most popular unused category for images: ${sortedUnusedCategories[0].name} (${selectedCategoryId}) with ${getCategoryViewCount(selectedCategoryId)} views`);
               
               // Get images for this category
               images = await dbStorage.getVideosByCategory(selectedCategoryId, 'image', fetchLimit);
               
               // Mark this category as used
               usedCategoryIds.add(selectedCategoryId);
+              console.log(`✓ Marked category ${selectedCategoryId} as used. Total used: ${usedCategoryIds.size}/${allCategories.length}`);
               
               // If we've used all categories, reset the tracking
               if (usedCategoryIds.size >= allCategories.length) {
