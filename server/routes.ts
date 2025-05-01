@@ -1066,6 +1066,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Thumbnail generation endpoint
+  app.get("/api/videos/:id/thumbnail", async (req, res) => {
+    try {
+      const videoId = parseInt(req.params.id);
+      
+      // Get the video data
+      const video = await dbStorage.getVideoById(videoId);
+      if (!video) {
+        return res.status(404).json({ error: "Video not found" });
+      }
+      
+      // If video has a thumbnail, redirect to it
+      if (video.thumbnail && !video.thumbnail.includes("placehold.co") && !video.thumbnail.startsWith("data:")) {
+        return res.redirect(video.thumbnail);
+      }
+      
+      // Generate a colorful default thumbnail based on the video title
+      const title = video.title || "Video";
+      const firstLetter = title.charAt(0).toUpperCase();
+      const hue = (firstLetter.charCodeAt(0) % 26) * 10; // Generate a color based on first letter
+      
+      // Redirect to a placeholder with the title
+      return res.redirect(`https://placehold.co/800x450/${hue.toString(16).padStart(2, '0')}0066/FFFFFF?text=${encodeURIComponent(title)}`);
+      
+    } catch (error) {
+      console.error("Error generating thumbnail:", error);
+      // Fall back to a generic placeholder
+      res.redirect("https://placehold.co/800x450/333/FFF?text=AI+Video");
+    }
+  });
+
   app.get("/api/videos/:id/like", async (req, res) => {
     try {
       const videoId = parseInt(req.params.id);
