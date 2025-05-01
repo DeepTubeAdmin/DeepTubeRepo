@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import UploadMediaModal from "./UploadMediaModal";
 import LoginRequiredModal from "./LoginRequiredModal";
+import AIGeneratorsModal from "./AIGeneratorsModal";
 
 interface HeaderProps {
   simple?: boolean;
@@ -19,6 +20,7 @@ export default function Header({ simple = false }: HeaderProps) {
   const [_, setLocation] = useLocation();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isAIGeneratorsModalOpen, setIsAIGeneratorsModalOpen] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const userBtnRef = useRef<HTMLDivElement>(null);
@@ -92,85 +94,95 @@ export default function Header({ simple = false }: HeaderProps) {
               </Link>
             </div>
             
-            {/* User Account */}
-            <div className="relative" id="userAccountContainer" ref={userBtnRef}>
-              <div 
-                className="h-8 w-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white cursor-pointer"
-                onClick={toggleUserDropdown}
+            <div className="flex items-center space-x-3">
+              {/* Create Button */}
+              <Button
+                className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white font-medium py-1 px-3 rounded-full flex items-center hover:opacity-90 transition-all"
+                onClick={() => setIsAIGeneratorsModalOpen(true)}
               >
-                <span>{user ? user.username.charAt(0).toUpperCase() : "A"}</span>
-              </div>
+                <WandSparkles className="h-4 w-4" />
+              </Button>
               
-              {showUserDropdown && (
+              {/* User Account */}
+              <div className="relative" id="userAccountContainer" ref={userBtnRef}>
                 <div 
-                  ref={userDropdownRef}
-                  className="absolute right-0 mt-2 w-48 bg-gray-900 rounded-md shadow-lg py-1"
+                  className="h-8 w-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white cursor-pointer"
+                  onClick={toggleUserDropdown}
                 >
-                  {!user ? (
-                    <>
-                      <a 
-                        onClick={() => setLocation("/auth")} 
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"
-                      >
-                        Login
-                      </a>
-                      <a 
-                        onClick={() => setLocation("/auth")} 
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"
-                      >
-                        Register
-                      </a>
-                    </>
-                  ) : (
-                    <>
-                      <a 
-                        onClick={() => {
-                          setLocation("/profile");
-                          setShowUserDropdown(false);
-                        }}
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"
-                      >
-                        Profile
-                      </a>
-                      <a 
-                        onClick={() => {
-                          setLocation("/my-videos");
-                          setShowUserDropdown(false);
-                        }} 
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"
-                      >
-                        My Videos
-                      </a>
-                      <a 
-                        onClick={() => {
-                          setLocation("/my-messages");
-                          setShowUserDropdown(false);
-                        }} 
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"
-                      >
-                        My Messages
-                      </a>
-                      {user && (user.id === 1 || user.id === 2) && (
+                  <span>{user ? user.username.charAt(0).toUpperCase() : "A"}</span>
+                </div>
+                
+                {showUserDropdown && (
+                  <div 
+                    ref={userDropdownRef}
+                    className="absolute right-0 mt-2 w-48 bg-gray-900 rounded-md shadow-lg py-1"
+                  >
+                    {!user ? (
+                      <>
+                        <a 
+                          onClick={() => setLocation("/auth")} 
+                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"
+                        >
+                          Login
+                        </a>
+                        <a 
+                          onClick={() => setLocation("/auth")} 
+                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"
+                        >
+                          Register
+                        </a>
+                      </>
+                    ) : (
+                      <>
                         <a 
                           onClick={() => {
-                            setLocation("/admin");
+                            setLocation("/profile");
+                            setShowUserDropdown(false);
+                          }}
+                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"
+                        >
+                          Profile
+                        </a>
+                        <a 
+                          onClick={() => {
+                            setLocation("/my-videos");
                             setShowUserDropdown(false);
                           }} 
-                          className="block px-4 py-2 text-sm text-red-300 hover:bg-gray-800 cursor-pointer"
+                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"
                         >
-                          Admin Dashboard
+                          My Videos
                         </a>
-                      )}
-                      <a 
-                        onClick={handleLogout} 
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"
-                      >
-                        Logout
-                      </a>
-                    </>
-                  )}
-                </div>
-              )}
+                        <a 
+                          onClick={() => {
+                            setLocation("/my-messages");
+                            setShowUserDropdown(false);
+                          }} 
+                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"
+                        >
+                          My Messages
+                        </a>
+                        {user && (user.id === 1 || user.id === 2) && (
+                          <a 
+                            onClick={() => {
+                              setLocation("/admin");
+                              setShowUserDropdown(false);
+                            }} 
+                            className="block px-4 py-2 text-sm text-red-300 hover:bg-gray-800 cursor-pointer"
+                          >
+                            Admin Dashboard
+                          </a>
+                        )}
+                        <a 
+                          onClick={handleLogout} 
+                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"
+                        >
+                          Logout
+                        </a>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -179,6 +191,12 @@ export default function Header({ simple = false }: HeaderProps) {
         <LoginRequiredModal 
           isOpen={isLoginModalOpen} 
           onClose={() => setIsLoginModalOpen(false)} 
+        />
+        
+        {/* AI Generators Modal */}
+        <AIGeneratorsModal
+          isOpen={isAIGeneratorsModalOpen}
+          onClose={() => setIsAIGeneratorsModalOpen(false)}
         />
       </header>
     );
@@ -242,7 +260,7 @@ export default function Header({ simple = false }: HeaderProps) {
             {/* Create Button */}
             <Button
               className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white font-medium py-1 px-4 rounded-full flex items-center hover:opacity-90 hover:transform hover:translate-y-[-2px] transition-all"
-              onClick={() => window.open('https://www.synthesia.io/?via=seth-glass', '_blank')}
+              onClick={() => setIsAIGeneratorsModalOpen(true)}
             >
               <WandSparkles className="mr-2 h-4 w-4" />
               <span className="hidden sm:inline">Create</span>
@@ -359,6 +377,12 @@ export default function Header({ simple = false }: HeaderProps) {
       <LoginRequiredModal 
         isOpen={isLoginModalOpen} 
         onClose={() => setIsLoginModalOpen(false)} 
+      />
+      
+      {/* AI Generators Modal */}
+      <AIGeneratorsModal
+        isOpen={isAIGeneratorsModalOpen}
+        onClose={() => setIsAIGeneratorsModalOpen(false)}
       />
     </header>
   );
