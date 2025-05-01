@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import SEO from "@/components/SEO";
+import MiniFooter from "@/components/MiniFooter";
 
 type UserProfile = {
   id: number;
@@ -161,6 +162,7 @@ export default function UserPage() {
             </Button>
           </div>
         </div>
+        <MiniFooter />
       </Layout>
     );
   }
@@ -289,6 +291,7 @@ export default function UserPage() {
           </DialogContent>
         </Dialog>
       </div>
+      <MiniFooter />
     </Layout>
   );
 }
