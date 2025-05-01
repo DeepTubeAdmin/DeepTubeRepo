@@ -223,14 +223,17 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         <div className="flex justify-between text-sm text-gray-400 mt-1">
           <span>{video.aiGenerator || "AI Artist"}</span>
           <div className="flex items-center">
-            {/* Like button - made more visible */}
+            {/* Like button - much more prominent and visually distinct */}
             <button 
               onClick={handleLike}
-              className={`flex items-center mr-2 p-1 rounded ${isLiked ? 'text-orange-500 bg-orange-950/40' : 'text-gray-400 hover:text-orange-400 hover:bg-gray-800'}`}
+              className={`flex items-center mr-2 p-1 rounded border ${isLiked 
+                ? 'text-orange-500 bg-orange-950/40 border-orange-500' 
+                : 'text-gray-400 hover:text-orange-400 hover:bg-gray-800 border border-gray-700 hover:border-orange-500'}`}
               disabled={isLikeLoading}
             >
               <ThumbsUp className={`h-4 w-4 ${isLikeLoading ? 'animate-pulse' : ''}`} />
               <span className="ml-1">{formatNumber(likeCount)}</span>
+              <span className="sr-only">Like this video</span>
             </button>
             
             {/* View count */}

@@ -984,9 +984,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if already liked
       const isLiked = await dbStorage.isLiked(
         videoId, 
-        likeData.userId, 
-        likeData.ipAddress, 
-        likeData.sessionId
+        likeData.userId || undefined, 
+        likeData.ipAddress || undefined, 
+        likeData.sessionId || undefined
       );
       
       console.log(`Is video already liked? ${isLiked}`);
