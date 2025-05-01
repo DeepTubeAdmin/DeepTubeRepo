@@ -38,6 +38,7 @@ export interface IStorage {
   getFeaturedVideos(limit?: number): Promise<Video[]>;
   getNewVideos(limit?: number): Promise<Video[]>;
   createVideo(video: InsertVideo): Promise<Video>;
+  updateVideo(id: number, data: Partial<InsertVideo>): Promise<Video>;
   deleteVideo(id: number): Promise<void>;
   getUserVideos(userId: number): Promise<Video[]>;
   
@@ -324,6 +325,14 @@ export class DatabaseStorage implements IStorage {
   
   async deleteVideo(id: number): Promise<void> {
     await db.delete(videos).where(eq(videos.id, id));
+  }
+  
+  async updateVideo(id: number, data: Partial<InsertVideo>): Promise<Video> {
+    const [updatedVideo] = await db.update(videos)
+      .set(data)
+      .where(eq(videos.id, id))
+      .returning();
+    return updatedVideo;
   }
 
   // Content review operations

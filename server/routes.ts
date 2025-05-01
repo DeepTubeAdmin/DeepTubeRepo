@@ -1070,6 +1070,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/videos/:id/thumbnail", async (req, res) => {
     try {
       const videoId = parseInt(req.params.id);
+      const thumbnailPath = `./thumbnails/video_${videoId}.jpg`;
+      const fs = await import('fs/promises');
+      const { execFile } = await import('child_process');
+      const util = await import('util');
+      const execFilePromise = util.promisify(execFile);
+      const path = await import('path');
       
       // Get the video data
       const video = await dbStorage.getVideoById(videoId);
@@ -1077,12 +1083,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Video not found" });
       }
       
-      // If video has a thumbnail, redirect to it
+      // If video has a pre-defined thumbnail, redirect to it
       if (video.thumbnail && !video.thumbnail.includes("placehold.co") && !video.thumbnail.startsWith("data:")) {
         return res.redirect(video.thumbnail);
       }
       
-      // Generate a colorful default thumbnail based on the video title
+      // If we have a thumbnail already generated, serve it
+      try {
+        await fs.access(thumbnailPath);
+        // If file exists, serve it
+        return res.sendFile(path.resolve(thumbnailPath));
+      } catch (err) {
+        // File doesn't exist, continue to generate it
+        console.log(`Thumbnail doesn't exist yet for video ${videoId}, generating now...`);
+      }
+      
+      // For videos with local file paths (MP4, WebM, etc.), generate a real thumbnail
+      if (video.contentType === 'video' && video.videoUrl) {
+        // Clean the URL - handle both base64 and file path formats
+        let videoPath = video.videoUrl;
+        
+        if (videoPath.startsWith('data:')) {
+          // For base64 videos - can't generate thumbnails from these directly
+          // Fallback to colorful placeholder
+          const title = video.title || "Video";
+          const firstLetter = title.charAt(0).toUpperCase();
+          const hue = (firstLetter.charCodeAt(0) % 26) * 10; 
+          return res.redirect(`https://placehold.co/800x450/${hue.toString(16).padStart(2, '0')}0066/FFFFFF?text=${encodeURIComponent(title)}`);
+        } else if (videoPath.startsWith('http')) {
+          // Remote URL, use a placeholder for now (can't easily process remote videos)
+          const title = video.title || "Video";
+          const firstLetter = title.charAt(0).toUpperCase();
+          const hue = (firstLetter.charCodeAt(0) % 26) * 10;
+          return res.redirect(`https://placehold.co/800x450/${hue.toString(16).padStart(2, '0')}0066/FFFFFF?text=${encodeURIComponent(title)}`);
+        } else {
+          // Local file path - clean it up if needed
+          if (videoPath.startsWith('./')) {
+            videoPath = videoPath.substring(2); // Remove leading ./
+          }
+          
+          if (!videoPath.startsWith('/')) {
+            videoPath = `./${videoPath}`; // Ensure it's a relative path
+          }
+          
+          // Make sure the path exists
+          try {
+            await fs.access(videoPath);
+            
+            // Generate a thumbnail using ffmpeg
+            console.log(`Generating thumbnail for ${videoPath} to ${thumbnailPath}`);
+            
+            try {
+              // Take a screenshot at 1 second into the video
+              await execFilePromise('ffmpeg', [
+                '-i', videoPath,
+                '-ss', '00:00:01.000',
+                '-vframes', '1',
+                '-vf', 'scale=800:450',
+                thumbnailPath
+              ]);
+              
+              console.log(`Successfully generated thumbnail for video ${videoId}`);
+              
+              // Update the video record with the thumbnail path
+              await dbStorage.updateVideo(videoId, { thumbnail: `/api/videos/${videoId}/thumbnail` });
+              
+              // Serve the generated thumbnail
+              return res.sendFile(path.resolve(thumbnailPath));
+            } catch (ffmpegError) {
+              console.error('Error running FFmpeg:', ffmpegError);
+              throw new Error('Failed to generate thumbnail with FFmpeg');
+            }
+          } catch (fileError) {
+            console.error(`Video file not found: ${videoPath}`, fileError);
+            throw new Error('Video file not found');
+          }
+        }
+      } 
+      
+      // For YouTube embeds, try to get a thumbnail from YouTube
+      if (video.contentType === 'embed' && video.embedCode && video.embedCode.includes('youtube.com/embed/')) {
+        const youtubeIdMatch = video.embedCode.match(/youtube\.com\/embed\/([\w-]+)/);
+        if (youtubeIdMatch && youtubeIdMatch[1]) {
+          const youtubeId = youtubeIdMatch[1];
+          const youtubeThumbnailUrl = `https://img.youtube.com/vi/${youtubeId}/0.jpg`;
+          
+          // Update the video with the YouTube thumbnail URL
+          await dbStorage.updateVideo(videoId, { thumbnail: youtubeThumbnailUrl });
+          
+          return res.redirect(youtubeThumbnailUrl);
+        }
+      }
+      
+      // Generate a colorful default thumbnail based on the video title for other cases
       const title = video.title || "Video";
       const firstLetter = title.charAt(0).toUpperCase();
       const hue = (firstLetter.charCodeAt(0) % 26) * 10; // Generate a color based on first letter
