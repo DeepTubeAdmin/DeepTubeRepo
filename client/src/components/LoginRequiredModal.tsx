@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { SimpleDialog } from "@/components/ui/simple-dialog";
 import { useLocation } from "wouter";
 import { FaFacebook, FaGoogle, FaApple } from "react-icons/fa";
+import { useToast } from "@/hooks/use-toast";
 
 interface LoginRequiredModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface LoginRequiredModalProps {
 
 export default function LoginRequiredModal({ isOpen, onClose }: LoginRequiredModalProps) {
   const [_, setLocation] = useLocation();
+  const { toast } = useToast();
 
   const handleLoginClick = () => {
     onClose();
@@ -17,8 +19,16 @@ export default function LoginRequiredModal({ isOpen, onClose }: LoginRequiredMod
   };
 
   const handleSocialLogin = (provider: string) => {
+    // Show a toast notification
+    toast({
+      title: "Social Login Not Implemented",
+      description: `Login with ${provider} is not available in this demo version.`,
+      variant: "default"
+    });
+    
     // Close the modal and redirect to auth page
     onClose();
+    
     // Delay the redirect slightly to allow modal close animation
     setTimeout(() => {
       setLocation("/auth");

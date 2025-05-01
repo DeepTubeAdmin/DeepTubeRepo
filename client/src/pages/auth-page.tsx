@@ -4,6 +4,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -112,6 +113,8 @@ export default function AuthPage() {
     
     registerMutation.mutate(registerData);
   };
+  
+  const { toast } = useToast();
   
   const handleSocialLogin = (provider: string) => {
     // Show a toast notification
