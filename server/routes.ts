@@ -283,11 +283,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const infiniteScrollCache = new Map<string, Set<number>>();
   
   // Track used categories to ensure variety in blocks
-  // This must be a persistent map that exists across requests
+  // NOTE: This persists for the lifetime of the Node process but will reset on server restart
   const usedCategoriesCache = new Map<string, Set<number>>();
   
   // Cache all categories to avoid multiple DB calls
   let cachedCategories: Category[] = [];
+  
+  // Log category selection for debugging
+  function logCategoryState(key: string) {
+    const used = usedCategoriesCache.get(key);
+    if (used) {
+      console.log(`Current category state for ${key}: ${used.size} categories used`);
+      console.log(`Used categories: ${Array.from(used).join(', ')}`);
+    } else {
+      console.log(`No category tracking available for ${key}`);
+    }
+  }
   
   // Helper to get or create a cache key
   function getCacheKey(categorySlug: string, sortBy: string): string {
@@ -361,9 +372,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get or create the set of used category IDs for this view
       if (!usedCategoriesCache.has(cacheKey)) {
+        console.log(`Creating new category tracking set for ${cacheKey}`);
         usedCategoriesCache.set(cacheKey, new Set<number>());
+        
+        // Pre-populate with some random categories if this is a new category set
+        // This ensures variety even on the very first page load after server restart
+        if (cachedCategories.length === 0) {
+          cachedCategories = await dbStorage.getCategories();
+          console.log(`Cached ${cachedCategories.length} categories for content selection`);
+        }
+        
+        // Pre-select some random categories to mark as "used" (about 1/3 of all categories)
+        const categoriesToPreselect = Math.floor(cachedCategories.length / 3);
+        const shuffled = [...cachedCategories].sort(() => 0.5 - Math.random());
+        
+        for (let i = 0; i < categoriesToPreselect; i++) {
+          usedCategoriesCache.get(cacheKey)!.add(shuffled[i].id);
+        }
+        
+        console.log(`Pre-selected ${categoriesToPreselect} random categories as used: ${Array.from(usedCategoriesCache.get(cacheKey)!).join(', ')}`);
       }
+      
       const usedCategoryIds = usedCategoriesCache.get(cacheKey)!;
+      console.log(`Initial category tracking state for ${cacheKey}: ${Array.from(usedCategoryIds).join(', ')}`);
+      
+      // Debug check to ensure the cache survives across requests
+      if (Array.from(usedCategoryIds).length > 0) {
+        console.log(`✓ Category tracking state persisted for ${cacheKey}`);
+      }
       
       // Cache categories to avoid multiple DB calls
       if (cachedCategories.length === 0) {
