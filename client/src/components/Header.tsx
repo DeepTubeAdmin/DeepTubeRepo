@@ -85,7 +85,7 @@ export default function Header({ simple = false }: HeaderProps) {
               <Link href="/" className="home-link">
                 <div className="flex flex-col">
                   <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">
-                    DeepTube<span className="text-gray-400">.co</span>
+                    DeepTube<span className="text-gray-400">Beta</span>
                   </h1>
                   <span className="text-xs text-gray-400 -mt-1">Ethical AI Media</span>
                 </div>
@@ -193,7 +193,7 @@ export default function Header({ simple = false }: HeaderProps) {
             <Link href="/" className="home-link">
               <div className="flex flex-col">
                 <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">
-                  DeepTube<span className="text-gray-400">.co</span>
+                  DeepTube<span className="text-gray-400">Beta</span>
                 </h1>
                 <span className="text-xs text-gray-400 -mt-1">Ethical AI Media</span>
               </div>

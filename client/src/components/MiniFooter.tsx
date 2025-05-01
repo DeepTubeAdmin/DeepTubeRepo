@@ -18,7 +18,7 @@ export default function MiniFooter() {
           {/* Logo and tagline - hidden on very small screens */}
           <div className="hidden xxs:flex items-center">
             <Link href="/" className="text-sm font-semibold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">
-              DeepTube<span className="text-gray-400">.co</span>
+              DeepTube<span className="text-gray-400">Beta</span>
             </Link>
             <span className="text-[10px] text-gray-500 ml-1">Ethical AI Media</span>
           </div>
