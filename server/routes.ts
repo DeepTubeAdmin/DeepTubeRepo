@@ -295,14 +295,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
   
   // Helper to reset cache when needed
-  function resetContentCache(key?: string) {
+  function resetContentCache(key?: string, resetCategories: boolean = false) {
     if (key) {
       infiniteScrollCache.delete(key);
-      usedCategoriesCache.delete(key);
+      if (resetCategories) {
+        usedCategoriesCache.delete(key);
+      }
     } else {
       infiniteScrollCache.clear();
-      usedCategoriesCache.clear();
+      if (resetCategories) {
+        usedCategoriesCache.clear();
+      }
     }
+    console.log(`Reset content cache for ${key || 'all keys'}, resetCategories=${resetCategories}`);
   }
   
   app.get("/api/content/infinite", async (req, res) => {
@@ -342,9 +347,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Reset cache if we're starting a new page (page 1) or changing categories/filters
       const cacheKey = getCacheKey(categorySlug, sortBy);
       
-      // If page 1, reset the cache for this category/sort combo
+      // If page 1, reset the content cache but preserve category tracking
       if (page === 1) {
-        resetContentCache(cacheKey);
+        // Don't reset categories on page 1, just content IDs
+        resetContentCache(cacheKey, false);
       }
       
       // Get or create the set of used content IDs for this view
@@ -549,14 +555,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If we have a 'reset=true' query param, clear the cache
       if (req.query.reset === 'true') {
-        resetContentCache(cacheKey);
+        // Only reset content but not category rotation when requested explicitly
+        resetContentCache(cacheKey, false);
       }
       
       // Reset cache if we have no more content to show, but keep loading
       const hasEmptyBlock = response.blocks.some(block => block.items.length === 0);
       if (hasEmptyBlock) {
         console.log(`Some blocks are empty, resetting cache for ${cacheKey}`);
-        resetContentCache(cacheKey);
+        // Reset content IDs but keep category tracking
+        infiniteScrollCache.delete(cacheKey);
+        // DON'T reset usedCategoriesCache here - let categories cycle completely
         // Always keep hasMore true for infinite scrolling
         // response.hasMore = false; 
       }
@@ -564,6 +573,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log the current state of the cache
       console.log(`Used content IDs for ${cacheKey}: ${infiniteScrollCache.get(cacheKey)?.size} items`);
       console.log(`Used category IDs for ${cacheKey}: ${Array.from(usedCategoryIds).join(', ')}`);
+      console.log(`Total categories in cache: ${allCategories.length}, Used categories: ${usedCategoryIds.size}`);
       
       // If all categories have been used, reset to allow for a fresh cycle in next request
       if (usedCategoryIds.size >= allCategories.length) {
