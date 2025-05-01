@@ -289,56 +289,107 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
     }
   }, [isOpen, video]);
 
+  // Define AudioContext for TypeScript
+  interface AudioContextType extends AudioContext {
+    webkitAudioContext?: any;
+  }
+  
+  // Define extended video element with added properties
+  interface ExtendedHTMLVideoElement extends HTMLVideoElement {
+    _audioContext?: AudioContext;
+    _mediaSource?: MediaElementAudioSourceNode;
+    _gainNode?: GainNode;
+  }
+
+  // Interface for container element with cleanup function
+  interface ExtendedHTMLElement extends HTMLElement {
+    _cleanup?: () => void;
+  }
+
   // Effect to cleanup video elements when dialog closes
   useEffect(() => {
+    // Clean up when component unmounts
     return () => {
-      // When component unmounts or dialog closes, use the emergency shutdown procedure
       if (!isOpen) {
         console.log('VideoPlayer: Automatic emergency cleanup on unmount');
         
-        // Create a safety timer that will forcefully run even if the main cleanup fails
+        // Create a safety timer that will run after normal cleanup
         const safetyTimer = setTimeout(() => {
-          // LAST RESORT: Global media shutdown
           console.log('🚨 EXECUTING GLOBAL MEDIA SHUTDOWN 🚨');
           
           try {
-            // Force a global media shutdown through browser APIs
-            const allMedia = [...document.querySelectorAll('video'), ...document.querySelectorAll('audio')];
-            allMedia.forEach(media => {
-              try {
-                // 1. Pause, mute and clear source
-                if ('pause' in media) media.pause();
-                if ('muted' in media) media.muted = true;
-                if ('volume' in media) media.volume = 0;
-                if ('src' in media && media.hasAttribute('src')) media.removeAttribute('src');
-                if ('load' in media) media.load();
-                
-                // 2. Replace with inert clone to clear event listeners
-                const emptyClone = document.createElement(media.tagName);
-                if (media.parentNode) {
-                  media.parentNode.replaceChild(emptyClone, media);
-                  // 3. Then remove the clone too
-                  setTimeout(() => {
-                    if (emptyClone.parentNode) {
-                      emptyClone.parentNode.removeChild(emptyClone);
-                    }
-                  }, 0);
+            // Find all video containers with custom cleanup
+            const containers = document.querySelectorAll('.video-player-container');
+            containers.forEach(container => {
+              const extendedContainer = container as ExtendedHTMLElement;
+              if (extendedContainer._cleanup && typeof extendedContainer._cleanup === 'function') {
+                try {
+                  extendedContainer._cleanup();
+                  console.log('Called custom cleanup handler on container');
+                } catch (err) {
+                  console.error('Error in custom cleanup:', err);
                 }
-              } catch (err) {
-                console.error('Failed final cleanup attempt for media:', err);
               }
             });
             
-            // Also clear all iframes that could contain media
+            // Close all audio contexts in the document
+            const videoElements = document.querySelectorAll('video');
+            videoElements.forEach(video => {
+              const extendedVideo = video as ExtendedHTMLVideoElement;
+              if (extendedVideo._audioContext) {
+                try {
+                  if (extendedVideo._gainNode) {
+                    extendedVideo._gainNode.disconnect();
+                  }
+                  if (extendedVideo._mediaSource) {
+                    extendedVideo._mediaSource.disconnect();
+                  }
+                  if (extendedVideo._audioContext && extendedVideo._audioContext.state !== 'closed') {
+                    extendedVideo._audioContext.close();
+                    console.log('Closed audio context from video element');
+                  }
+                } catch (e) {
+                  console.error('Error closing audio context:', e);
+                }
+              }
+              
+              // Basic video cleanup
+              try {
+                video.pause();
+                video.muted = true;
+                video.volume = 0;
+                if (video.hasAttribute('src')) video.removeAttribute('src');
+                video.load();
+              } catch (e) {
+                console.error('Error in basic video cleanup:', e);
+              }
+            });
+            
+            // Also clean up audio elements
+            const audioElements = document.querySelectorAll('audio');
+            audioElements.forEach(audio => {
+              try {
+                audio.pause();
+                audio.muted = true;
+                audio.volume = 0;
+                if (audio.hasAttribute('src')) audio.removeAttribute('src');
+                audio.load();
+              } catch (e) {
+                console.error('Error cleaning up audio element:', e);
+              }
+            });
+            
+            // Clear iframes that could contain media
             document.querySelectorAll('iframe').forEach(iframe => {
-              if (iframe.parentNode && (
-                iframe.src?.includes('youtube') || 
-                iframe.src?.includes('vimeo') || 
-                iframe.src?.includes('video') || 
-                iframe.src?.includes('audio') ||
-                iframe.src?.includes('embed')
+              if (iframe.parentNode && iframe.src && (
+                iframe.src.includes('youtube') || 
+                iframe.src.includes('vimeo') || 
+                iframe.src.includes('video') || 
+                iframe.src.includes('audio') ||
+                iframe.src.includes('embed')
               )) {
                 iframe.parentNode.removeChild(iframe);
+                console.log('Removed iframe with possible media content');
               }
             });
           } catch (finalError) {
@@ -346,20 +397,51 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
           }
         }, 100); // Short timeout to allow normal cleanup to work first
         
-        // Clear the timeout if the component remounts quickly
+        // Return cleanup function
         return () => clearTimeout(safetyTimer);
       }
+      return undefined;
     };
   }, [isOpen]);
 
-  // Create MP4 player with autoplay and improved error handling
+  // Create completely isolated MP4 player with dedicated cleanup mechanisms
   const renderMP4Player = () => {
     if (!video || !video.videoUrl) return null;
     
+    // Create a unique ID for this video instance
+    const videoInstanceId = `video-${videoId}-${new Date().getTime()}`;
+    
+    // Reference to the audio context (browser audio API)
+    let audioCtx: AudioContext | null = null;
+    let mediaSource: MediaElementAudioSourceNode | null = null;
+    let gainNode: GainNode | null = null;
+    
+    // Function to completely dispose of audio resources
+    const destroyAudioContext = () => {
+      try {
+        if (gainNode) {
+          gainNode.disconnect();
+          gainNode = null;
+        }
+        if (mediaSource) {
+          mediaSource.disconnect();
+          mediaSource = null;
+        }
+        if (audioCtx && audioCtx.state !== 'closed') {
+          audioCtx.close();
+          audioCtx = null;
+          console.log('🔇 Audio context fully closed');
+        }
+      } catch (e) {
+        console.error('Error destroying audio context:', e);
+      }
+    };
+    
     return (
       <div className="relative w-full h-full">
-        {/* Create a ref-based video element to ensure proper control */}
+        {/* Create a completely isolated video player */}
         <div 
+          id={videoInstanceId}
           className="w-full h-full video-player-container" 
           ref={el => {
             if (!el || !video?.videoUrl) return;
@@ -367,42 +449,82 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
             // Clear previous content
             el.innerHTML = '';
             
-            // Create video element
+            // Create video element with unique ID and isolation attributes
             const videoEl = document.createElement('video');
+            videoEl.id = `video-element-${videoInstanceId}`;
             videoEl.controls = true;
-            videoEl.autoplay = true;
+            videoEl.autoplay = false; // Start muted and then unmute later
+            videoEl.muted = true;
             videoEl.playsInline = true;
-            videoEl.className = 'w-full h-full';
-            videoEl.muted = false;
+            videoEl.className = 'w-full h-full isolated-video-player';
+            videoEl.crossOrigin = 'anonymous'; // For audio context
+            
+            // Set URL with cache-busting parameter
+            const cacheBuster = `cb=${new Date().getTime()}`;
+            const urlSeparator = video.videoUrl.includes('?') ? '&' : '?';
             if (video.videoUrl) {
-              videoEl.src = video.videoUrl;
+              videoEl.src = `${video.videoUrl}${urlSeparator}${cacheBuster}`;
             }
             
             if (video.thumbnail) {
               videoEl.poster = video.thumbnail;
             }
             
-            // Store reference to the video element for cleanup
+            // Store reference
             videoRef.current = videoEl;
             
-            // Add event listeners for debugging
-            videoEl.addEventListener('loadstart', () => console.log('MP4 video: loadstart'));
-            videoEl.addEventListener('loadedmetadata', () => console.log('MP4 video: loadedmetadata'));
-            videoEl.addEventListener('canplay', () => {
-              console.log('MP4 video: canplay');
-              // Force play after canplay event
-              videoEl.play().catch(e => console.warn('Autoplay prevented:', e));
+            // LOG LIFECYCLE EVENTS
+            videoEl.addEventListener('loadstart', () => console.log('🎬 MP4 video: loadstart'));
+            videoEl.addEventListener('loadedmetadata', () => {
+              console.log('📋 MP4 video: loadedmetadata');
+              // Create audio context after metadata is loaded
+              try {
+                // Create new audio context for isolated audio control
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                mediaSource = audioCtx.createMediaElementSource(videoEl);
+                gainNode = audioCtx.createGain();
+                mediaSource.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                console.log('🔊 Created dedicated audio context for better control');
+                
+                // Store references to audio elements for cleanup
+                videoEl._audioContext = audioCtx;
+                videoEl._mediaSource = mediaSource;
+                videoEl._gainNode = gainNode;
+              } catch (e) {
+                console.error('Error creating audio context:', e);
+              }
             });
             
-            // Error handling
+            videoEl.addEventListener('canplay', () => {
+              console.log('▶️ MP4 video: canplay');
+              // Start playing but keep muted initially
+              videoEl.play()
+                .then(() => {
+                  // Unmute after successfully starting playback
+                  setTimeout(() => {
+                    if (isOpen) {
+                      videoEl.muted = false;
+                      if (gainNode) gainNode.gain.value = 1.0;
+                      console.log('🔊 Unmuted video after successful play');
+                    }
+                  }, 500);
+                })
+                .catch(e => console.warn('⚠️ Autoplay prevented:', e));
+            });
+            
+            // Handle errors
             videoEl.addEventListener('error', (e) => {
-              console.error('MP4 video error:', e);
+              console.error('❌ MP4 video error:', e);
               if (videoEl.error) {
                 console.error('Error code:', videoEl.error.code, 'Message:', videoEl.error.message);
               }
               
               // Hide the video element
               videoEl.style.display = 'none';
+              
+              // Clean up audio resources
+              destroyAudioContext();
               
               // Add error message
               const errorDiv = document.createElement('div');
@@ -416,15 +538,37 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
               el.appendChild(errorDiv);
             });
             
+            // Handle cleanup when video ends
+            videoEl.addEventListener('ended', () => {
+              console.log('🏁 Video playback ended normally');
+              destroyAudioContext();
+            });
+            
+            // Special lifecycle handlers for this component
+            el._cleanup = () => {
+              console.log('🧹 Running specialized video cleanup');
+              if (videoEl) {
+                // Stop video playback
+                videoEl.pause();
+                videoEl.muted = true;
+                if (gainNode) gainNode.gain.value = 0;
+                
+                // Remove source
+                videoEl.removeAttribute('src');
+                videoEl.load();
+                
+                // Destroy audio context
+                destroyAudioContext();
+                
+                // Finally remove from DOM
+                if (videoEl.parentNode) {
+                  videoEl.parentNode.removeChild(videoEl);
+                }
+              }
+            };
+            
             // Add video to container
             el.appendChild(videoEl);
-            
-            // Force play with delay (helps with some browsers)
-            setTimeout(() => {
-              if (isOpen && videoEl) { // Only play if dialog still open
-                videoEl.play().catch(e => console.warn('Delayed autoplay prevented:', e));
-              }
-            }, 300);
           }}
         >
           {/* Fallback content while video loads */}
