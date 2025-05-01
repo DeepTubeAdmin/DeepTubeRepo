@@ -118,7 +118,7 @@ export default function Home() {
           />
           
           {/* Sort dropdown UI */}
-          <div className="absolute right-6 top-14 z-50">
+          <div className="absolute right-6 top-28 z-50">
             <button 
               ref={filterButtonRef}
               onClick={toggleFilterMenu}

@@ -96,7 +96,10 @@ export default function InfiniteContentFeed({
         params.append('category', category);
       }
       
-      const response = await fetch(`/api/content/infinite?${params.toString()}`);
+      const apiUrl = `/api/content/infinite?${params.toString()}`;
+      console.log('Fetching content from:', apiUrl);
+      
+      const response = await fetch(apiUrl);
       
       if (!response.ok) {
         throw new Error('Failed to fetch content');
@@ -123,6 +126,7 @@ export default function InfiniteContentFeed({
 
   // Reset page and reload content when category or sortBy changes
   useEffect(() => {
+    console.log('InfiniteContentFeed: category or sortBy changed', { category, sortBy });
     setPage(1);
     setContentBlocks([]);
     setIsInitialLoad(true);
