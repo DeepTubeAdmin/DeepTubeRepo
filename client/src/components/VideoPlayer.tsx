@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Link } from 'wouter';
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import VimeoEmbed from './VimeoEmbed';
 import AIWatermark from './AIWatermark';
@@ -27,6 +28,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
+  const [uploaderUsername, setUploaderUsername] = useState<string>("");
   const embedContainerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const { toast } = useToast();
@@ -115,6 +117,19 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
         }
         
         setVideo(data);
+        
+        // Fetch uploader username if video has a userId
+        if (data.userId) {
+          try {
+            const response = await apiRequest('GET', `/api/users/${data.userId}/profile`);
+            const userData = await response.json();
+            if (userData && userData.username) {
+              setUploaderUsername(userData.username);
+            }
+          } catch (error) {
+            console.error('Error fetching uploader username:', error);
+          }
+        }
       } catch (err) {
         console.error('Error fetching video:', err);
         setError('Failed to load video');
@@ -854,6 +869,18 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                   {video.createdAt && (
                     <p className="text-gray-400 text-sm mt-1">
                       Uploaded {new Date(video.createdAt).toLocaleDateString()}
+                      {uploaderUsername && (
+                        <>
+                          <span className="text-gray-500 mx-2">•</span>
+                          <Link 
+                            to={`/user/${uploaderUsername}`} 
+                            className="text-orange-500 hover:text-orange-400 hover:underline"
+                            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                          >
+                            {uploaderUsername}
+                          </Link>
+                        </>
+                      )}
                     </p>
                   )}
                 </div>
