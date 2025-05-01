@@ -18,6 +18,8 @@ import UserPage from "@/pages/user-page";
 import SearchResults from "@/pages/search-results";
 import AdminPage from "@/pages/admin-page";
 import AccessDenied from "@/pages/access-denied";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 import { AuthProvider } from "@/hooks/use-auth";
 import Layout from "@/components/Layout";
 import AgeVerificationModal from "@/components/AgeVerificationModal";
@@ -27,6 +29,8 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/media/:id" component={MediaDetail} />
       <Route path="/search" component={SearchResults} />
       <Route path="/forum" component={ForumPage} />

@@ -176,6 +176,15 @@ export default function AuthPage() {
                     )}
                   />
 
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center">
+                      {/* Add remember me checkbox here if needed */}
+                    </div>
+                    <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+                      Forgot Password?
+                    </Link>
+                  </div>
+                  
                   <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
                     {loginMutation.isPending ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

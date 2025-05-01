@@ -118,6 +118,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
   setupAuth(app);
   
+  // Password reset endpoints
+  app.post("/api/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ error: "Email address is required" });
+      }
+      
+      // Check if user exists with this email
+      const user = await dbStorage.getUserByEmail(email);
+      
+      if (!user) {
+        // We don't want to reveal if an email exists or not for security reasons
+        // Still return a success message
+        return res.json({ message: "If your email is registered, you will receive a password reset link." });
+      }
+      
+      // Generate random token
+      const token = randomBytes(32).toString('hex');
+      
+      // Set token expiration (1 hour from now)
+      const tokenExpires = new Date();
+      tokenExpires.setHours(tokenExpires.getHours() + 1);
+      
+      // Save token to user account
+      await dbStorage.setPasswordResetToken(email, token, tokenExpires);
+      
+      // Determine base URL from request
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+      const baseUrl = `${protocol}://${req.get('host')}`;
+      
+      // Send password reset email
+      const emailSent = await sendPasswordResetEmail(email, token, baseUrl);
+      
+      if (!emailSent) {
+        console.error(`Failed to send password reset email to ${email}`);
+        return res.status(500).json({ error: "Failed to send password reset email. Please try again later." });
+      }
+      
+      res.json({ message: "If your email is registered, you will receive a password reset link." });
+    } catch (error) {
+      console.error("Password reset request error:", error);
+      res.status(500).json({ error: "An error occurred while processing your request." });
+    }
+  });
+  
+  app.post("/api/reset-password", async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+      
+      if (!token || !newPassword) {
+        return res.status(400).json({ error: "Token and new password are required" });
+      }
+      
+      // Find user with valid token
+      const user = await dbStorage.getUserByResetToken(token);
+      
+      if (!user) {
+        return res.status(400).json({ error: "Invalid or expired token" });
+      }
+      
+      // Hash the new password
+      const hashedPassword = await hashPassword(newPassword);
+      
+      // Update user's password and clear token
+      await dbStorage.resetPassword(user.id, hashedPassword);
+      
+      res.json({ message: "Password has been reset successfully. You can now log in with your new password." });
+    } catch (error) {
+      console.error("Password reset error:", error);
+      res.status(500).json({ error: "An error occurred while resetting your password." });
+    }
+  });
+  
+  app.get("/api/verify-reset-token/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      
+      if (!token) {
+        return res.status(400).json({ error: "Token is required" });
+      }
+      
+      // Find user with valid token
+      const user = await dbStorage.getUserByResetToken(token);
+      
+      if (!user) {
+        return res.status(400).json({ error: "Invalid or expired token" });
+      }
+      
+      res.json({ valid: true });
+    } catch (error) {
+      console.error("Token verification error:", error);
+      res.status(500).json({ error: "An error occurred while verifying the token." });
+    }
+  });
+  
   // Middleware to check if user is authenticated
   const isAuthenticated = (req: Request, res: Response, next: Function) => {
     if (req.isAuthenticated() && req.user) {
