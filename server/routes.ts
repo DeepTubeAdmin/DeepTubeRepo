@@ -433,8 +433,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   let cachedCategories: Category[] = [];
   
   // Helper to get or create a cache key
-  function getCacheKey(categorySlug: string, sortBy: string): string {
-    return `${categorySlug || 'all'}_${sortBy}`;
+  function getCacheKey(categorySlug: string, sortBy: string, shuffleSeed: string = ''): string {
+    return `${categorySlug || 'all'}_${sortBy}_${shuffleSeed}`;
   }
   
   // Helper to reset cache when needed
@@ -460,6 +460,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pageSize = parseInt(req.query.pageSize as string) || 5; // Default to 5 blocks per page
       const categorySlug = req.query.category as string || '';
       const sortBy = (req.query.sortBy as 'newest' | 'oldest' | 'most-viewed' | 'trending' | 'popular') || 'newest';
+      const shuffleSeed = req.query.shuffleSeed as string || '';
       
       // For database compatibility - convert 'most-viewed' to 'viewed' for the storage layer
       const dbSortBy = sortBy === 'most-viewed' ? 'viewed' : sortBy;
@@ -492,7 +493,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const baseIndex = (page - 1) * pageSize;
       
       // Reset cache if we're starting a new page (page 1) or changing categories/filters
-      const cacheKey = getCacheKey(categorySlug, sortBy);
+      const cacheKey = getCacheKey(categorySlug, sortBy, shuffleSeed);
       
       // If page 1, reset the cache for this category/sort combo
       if (page === 1) {
