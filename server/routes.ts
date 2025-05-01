@@ -958,11 +958,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Like endpoints
   app.post("/api/videos/:id/like", async (req, res) => {
     try {
+      console.log(`POST like request for video ID: ${req.params.id}`);
+      console.log(`Request from IP: ${req.ip}, authenticated: ${req.isAuthenticated()}`);
+      
       const videoId = parseInt(req.params.id);
       
       // Check if video exists
       const video = await dbStorage.getVideoById(videoId);
       if (!video) {
+        console.log(`Video not found: ${videoId}`);
         return res.status(404).json({ error: "Video not found" });
       }
       
@@ -975,6 +979,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionId: !req.isAuthenticated() ? req.sessionID : undefined
       };
       
+      console.log(`Like data: ${JSON.stringify(likeData)}`);
+      
       // Check if already liked
       const isLiked = await dbStorage.isLiked(
         videoId, 
@@ -982,6 +988,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         likeData.ipAddress, 
         likeData.sessionId
       );
+      
+      console.log(`Is video already liked? ${isLiked}`);
       
       if (isLiked) {
         return res.status(400).json({ error: "Already liked" });
@@ -993,6 +1001,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get updated like count
       const likeCount = await dbStorage.getLikeCount(videoId);
       
+      console.log(`Added like. New count: ${likeCount}`);
       res.status(201).json({ like, count: likeCount });
     } catch (error) {
       console.error("Error adding like:", error);

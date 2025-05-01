@@ -111,11 +111,15 @@ export default function MediaDetail() {
   // Like mutation
   const likeMutation = useMutation({
     mutationFn: async () => {
+      console.log(`Attempting to like video with ID: ${id}`);
       setIsLikeLoading(true);
       const res = await apiRequest("POST", `/api/videos/${id}/like`);
-      return res.json();
+      const data = await res.json();
+      console.log(`Like response:`, data);
+      return data;
     },
     onSuccess: (data) => {
+      console.log(`Like successful:`, data);
       setIsLiked(true);
       setLikeCount(data.count || 0);
       queryClient.invalidateQueries({ queryKey: [`/api/videos/${id}/like`] });
@@ -125,6 +129,7 @@ export default function MediaDetail() {
       });
     },
     onError: (error: any) => {
+      console.error(`Like error:`, error);
       toast({
         title: "Error liking content",
         description: error.message || "Could not like this content. Please try again.",
@@ -139,11 +144,15 @@ export default function MediaDetail() {
   // Unlike mutation
   const unlikeMutation = useMutation({
     mutationFn: async () => {
+      console.log(`Attempting to unlike video with ID: ${id}`);
       setIsLikeLoading(true);
       const res = await apiRequest("DELETE", `/api/videos/${id}/like`);
-      return res.json();
+      const data = await res.json();
+      console.log(`Unlike response:`, data);
+      return data;
     },
     onSuccess: (data) => {
+      console.log(`Unlike successful:`, data);
       setIsLiked(false);
       setLikeCount(data.count || 0);
       queryClient.invalidateQueries({ queryKey: [`/api/videos/${id}/like`] });
@@ -153,6 +162,7 @@ export default function MediaDetail() {
       });
     },
     onError: (error: any) => {
+      console.error(`Unlike error:`, error);
       toast({
         title: "Error removing like",
         description: error.message || "Could not remove your like. Please try again.",
