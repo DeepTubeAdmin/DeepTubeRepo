@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Video, Comment } from "@shared/schema";
@@ -49,14 +49,18 @@ export default function MediaDetail() {
   });
   
   // Fetch like status
-  const { data: likeData } = useQuery({
+  const { data: likeData } = useQuery<{ isLiked: boolean; count: number }>({
     queryKey: [`/api/videos/${id}/like`],
-    enabled: !!id,
-    onSuccess: (data) => {
-      setIsLiked(data.isLiked);
-      setLikeCount(data.count || 0);
-    }
+    enabled: !!id
   });
+  
+  // Update like state when data is fetched
+  useEffect(() => {
+    if (likeData) {
+      setIsLiked(likeData.isLiked);
+      setLikeCount(likeData.count || 0);
+    }
+  }, [likeData]);
   
   // Add comment mutation
   const addCommentMutation = useMutation({
@@ -102,6 +106,62 @@ export default function MediaDetail() {
         variant: "destructive",
       });
     },
+  });
+  
+  // Like mutation
+  const likeMutation = useMutation({
+    mutationFn: async () => {
+      setIsLikeLoading(true);
+      const res = await apiRequest("POST", `/api/videos/${id}/like`);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setIsLiked(true);
+      setLikeCount(data.count || 0);
+      queryClient.invalidateQueries({ queryKey: [`/api/videos/${id}/like`] });
+      toast({
+        title: "Content liked",
+        description: "You liked this content",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error liking content",
+        description: error.message || "Could not like this content. Please try again.",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsLikeLoading(false);
+    }
+  });
+  
+  // Unlike mutation
+  const unlikeMutation = useMutation({
+    mutationFn: async () => {
+      setIsLikeLoading(true);
+      const res = await apiRequest("DELETE", `/api/videos/${id}/like`);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setIsLiked(false);
+      setLikeCount(data.count || 0);
+      queryClient.invalidateQueries({ queryKey: [`/api/videos/${id}/like`] });
+      toast({
+        title: "Like removed",
+        description: "You removed your like from this content",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error removing like",
+        description: error.message || "Could not remove your like. Please try again.",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsLikeLoading(false);
+    }
   });
   
   // Handle comment submission
@@ -255,9 +315,21 @@ export default function MediaDetail() {
                 </div>
                 
                 <div className="flex space-x-3">
-                  <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-                    <ThumbsUp className="w-5 h-5 mr-1" />
-                    <span>Like</span>
+                  {/* Like button changes appearance based on whether the user has liked the content */}
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className={`flex items-center ${isLiked ? 'text-orange-500' : 'text-gray-400 hover:text-white'}`}
+                    onClick={() => isLiked ? unlikeMutation.mutate() : likeMutation.mutate()}
+                    disabled={isLikeLoading}
+                  >
+                    <ThumbsUp className={`w-5 h-5 mr-1 ${isLikeLoading ? 'animate-pulse' : ''}`} />
+                    <span>{isLiked ? 'Liked' : 'Like'}</span>
+                    {likeCount > 0 && (
+                      <span className="ml-1 text-xs bg-gray-800 px-1.5 py-0.5 rounded-full">
+                        {likeCount}
+                      </span>
+                    )}
                   </Button>
                   
                   <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
