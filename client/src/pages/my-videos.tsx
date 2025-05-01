@@ -5,6 +5,7 @@ import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 import { Video } from "@shared/schema";
 import {
   AlertDialog,
@@ -112,6 +113,13 @@ export default function MyVideosPage() {
   if (!user) {
     return (
       <Layout>
+        <SEO 
+          title="My Videos | DeepTube: Ethical AI Media Hub"
+          description="Manage your uploaded AI-generated videos and images on DeepTube.co. View your media statistics, edit details, and control your content sharing preferences."
+          canonicalUrl="https://deeptube.co/my-videos"
+          ogType="website"
+          keywords="My videos, uploaded content, content management, DeepTube, AI-powered video, content creator, media dashboard"
+        />
         <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[50vh]">
           <h1 className="text-2xl font-bold mb-4">Please log in to view your videos</h1>
           <Button onClick={() => setLocation("/auth")}>Go to Login</Button>
@@ -122,6 +130,13 @@ export default function MyVideosPage() {
 
   return (
     <Layout>
+      <SEO 
+        title="My Videos | DeepTube: Ethical AI Media Hub"
+        description="Manage your uploaded AI-generated videos and images on DeepTube.co. View your media statistics, edit details, and control your content sharing preferences."
+        canonicalUrl="https://deeptube.co/my-videos"
+        ogType="website"
+        keywords="My videos, uploaded content, content management, DeepTube, AI-powered video, content creator, media dashboard"
+      />
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">My Videos</h1>

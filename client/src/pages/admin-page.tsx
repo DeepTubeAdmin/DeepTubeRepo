@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
+import SEO from '@/components/SEO';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
 import { Video, User } from '@shared/schema';
@@ -161,6 +162,13 @@ export default function AdminPage() {
   if (loading) {
     return (
       <Layout>
+        <SEO 
+          title="Admin Dashboard | DeepTube: Ethical AI Media Hub"
+          description="DeepTube.co administrator dashboard for content moderation, user management, and platform analytics. Restricted access area for managing AI-generated media."
+          canonicalUrl="https://deeptube.co/admin"
+          ogType="website"
+          keywords="Admin dashboard, content moderation, user management, DeepTube admin, AI content management"
+        />
         <div className="flex justify-center items-center h-[calc(100vh-160px)]">
           <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full"></div>
         </div>
@@ -170,6 +178,13 @@ export default function AdminPage() {
 
   return (
     <Layout>
+      <SEO 
+        title="Admin Dashboard | DeepTube: Ethical AI Media Hub"
+        description="DeepTube.co administrator dashboard for content moderation, user management, and platform analytics. Restricted access area for managing AI-generated media."
+        canonicalUrl="https://deeptube.co/admin"
+        ogType="website"
+        keywords="Admin dashboard, content moderation, user management, DeepTube admin, AI content management"
+      />
       <div className="container mx-auto py-8">
         <h1 className="text-3xl font-bold mb-6 text-white">Admin Dashboard</h1>
         
