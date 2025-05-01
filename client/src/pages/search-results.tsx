@@ -309,10 +309,18 @@ export default function SearchResults() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {searchResults.map(video => {
-                  // Ensure duration is never null to fix type issues
+                  // Process all nullable fields to ensure type safety
                   const processedVideo: Video = {
                     ...video,
-                    duration: video.duration || 0
+                    duration: video.duration || 0,
+                    description: video.description || "",
+                    prompt: video.prompt || "",
+                    categoryId: video.categoryId || 0,
+                    aiGenerator: video.aiGenerator || "",
+                    userId: video.userId || 0,
+                    width: video.width || 0,
+                    height: video.height || 0,
+                    resolution: video.resolution || ""
                   };
                   return (
                     <VideoCard

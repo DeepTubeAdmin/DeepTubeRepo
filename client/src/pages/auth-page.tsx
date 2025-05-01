@@ -4,6 +4,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/use-auth";
+import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -118,7 +119,15 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row">
+    <>
+      <SEO 
+        title="Sign In or Register | DeepTube: Ethical AI Media Hub"
+        description="Join DeepTube.co - the ethical AI media platform where creators share innovative and responsible AI-generated videos. Sign in or create an account to start uploading and sharing your content."
+        canonicalUrl="https://deeptube.co/auth"
+        ogType="website"
+        keywords="AI media hosting, login, register, create account, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
+      />
+      <div className="min-h-screen bg-background flex flex-col md:flex-row">
       {/* Auth Form */}
       <div className="w-full md:w-1/2 p-8 flex flex-col justify-center">
         <div className="max-w-md mx-auto space-y-6">
@@ -433,5 +442,6 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
