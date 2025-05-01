@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Category, Video } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { LogIn, Upload, WandSparkles, Filter, Loader2 } from "lucide-react";
+import { LogIn, Upload, WandSparkles, Filter, Loader2, RefreshCcw } from "lucide-react";
 import LoginRequiredModal from "@/components/LoginRequiredModal";
 import Layout from "@/components/Layout";
 import MiniFooter from "@/components/MiniFooter";

@@ -37,6 +37,8 @@ export default function InfiniteContentFeed({
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  // Generate a random shuffle seed for content variety on page refresh
+  const [shuffleSeed, setShuffleSeed] = useState(() => Math.random().toString(36).substring(2, 8));
   // Keep track of advertisements to ensure unique ads per session
   const [usedAdIds, setUsedAdIds] = useState<Set<string>>(new Set());
   const observer = useRef<IntersectionObserver | null>(null);
@@ -92,7 +94,8 @@ export default function InfiniteContentFeed({
       const params = new URLSearchParams({
         page: currentPage.toString(),
         pageSize: '5',
-        sortBy: sortBy
+        sortBy: sortBy,
+        shuffleSeed: shuffleSeed
       });
       
       // Add category parameter if it exists and is not empty
@@ -126,16 +129,16 @@ export default function InfiniteContentFeed({
       setIsLoading(false);
       setIsInitialLoad(false);
     }
-  }, [category, sortBy]);
+  }, [category, sortBy, shuffleSeed]);
 
-  // Reset page and reload content when category or sortBy changes
+  // Reset page and reload content when category, sortBy or shuffle seed changes
   useEffect(() => {
-    console.log('InfiniteContentFeed: category or sortBy changed', { category, sortBy });
+    console.log('InfiniteContentFeed: content criteria changed', { category, sortBy, shuffleSeed });
     setPage(1);
     setContentBlocks([]);
     setIsInitialLoad(true);
     fetchContentBlocks(1);
-  }, [category, sortBy, fetchContentBlocks]);
+  }, [category, sortBy, shuffleSeed, fetchContentBlocks]);
   
   // Load more content when scrolling
   useEffect(() => {
