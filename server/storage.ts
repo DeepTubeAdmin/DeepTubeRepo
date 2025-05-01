@@ -466,6 +466,115 @@ export class DatabaseStorage implements IStorage {
       return 0;
     }
   }
+  
+  // View tracking operations
+  async incrementViews(videoId: number): Promise<number> {
+    try {
+      // Increment views and return the new view count
+      const [updatedVideo] = await db.update(videos)
+        .set({ views: sql`${videos.views} + 1` })
+        .where(eq(videos.id, videoId))
+        .returning({ views: videos.views });
+      
+      console.log(`Incremented views for video ${videoId} to ${updatedVideo.views}`);
+      return updatedVideo.views;
+    } catch (error) {
+      console.error('Error incrementing views:', error);
+      return 0;
+    }
+  }
+  
+  async getMostViewedVideos(limit: number = 20, contentType?: string): Promise<Video[]> {
+    try {
+      // Start with base query
+      let queryBuilder = db.select().from(videos);
+      
+      // Add content type filter if specified
+      if (contentType) {
+        queryBuilder = queryBuilder.where(eq(videos.contentType, contentType));
+      }
+      
+      // Order by views count descending
+      queryBuilder = queryBuilder.orderBy(desc(videos.views));
+      
+      // Add limit
+      const results = await queryBuilder.limit(limit);
+      console.log(`Retrieved ${results.length} most viewed videos. First few IDs:`, 
+        results.length > 0 ? results.slice(0, 3).map(v => v.id) : 'none');
+        
+      return results;
+    } catch (error) {
+      console.error('Error getting most viewed videos:', error);
+      return [];
+    }
+  }
+  
+  async getTrendingVideos(limit: number = 20, contentType?: string): Promise<Video[]> {
+    try {
+      // Start with base query
+      let queryBuilder = db.select().from(videos);
+      
+      // Add content type filter if specified
+      if (contentType) {
+        queryBuilder = queryBuilder.where(eq(videos.contentType, contentType));
+      }
+      
+      // Order by a combination of views and recency (trending algorithm)
+      // This algorithm prioritizes videos that are newer and have more views
+      queryBuilder = queryBuilder.orderBy(
+        sql`(${videos.views} * 0.6) + ((EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) - EXTRACT(EPOCH FROM ${videos.createdAt})) / 86400) * 0.4 DESC`
+      );
+      
+      // Add limit
+      const results = await queryBuilder.limit(limit);
+      console.log(`Retrieved ${results.length} trending videos. First few IDs:`, 
+        results.length > 0 ? results.slice(0, 3).map(v => v.id) : 'none');
+        
+      return results;
+    } catch (error) {
+      console.error('Error getting trending videos:', error);
+      return [];
+    }
+  }
+  
+  async getPopularVideos(limit: number = 20, contentType?: string): Promise<Video[]> {
+    try {
+      // Start with base query to count likes
+      let queryBuilder = db
+        .select({
+          videoId: videos.id,
+          title: videos.title,
+          video: videos,
+          likeCount: sql<number>`COUNT(${likes.id})`
+        })
+        .from(videos)
+        .leftJoin(likes, eq(videos.id, likes.videoId));
+      
+      // Add content type filter if specified
+      if (contentType) {
+        queryBuilder = queryBuilder.where(eq(videos.contentType, contentType));
+      }
+      
+      // Group by video ID and order by like count descending
+      queryBuilder = queryBuilder
+        .groupBy(videos.id)
+        .orderBy(desc(sql<number>`COUNT(${likes.id})`));
+      
+      // Add limit
+      const results = await queryBuilder.limit(limit);
+      
+      // Map the results to Video objects
+      const popularVideos = results.map(result => result.video);
+      
+      console.log(`Retrieved ${popularVideos.length} popular videos. First few IDs:`, 
+        popularVideos.length > 0 ? popularVideos.slice(0, 3).map(v => v.id) : 'none');
+        
+      return popularVideos;
+    } catch (error) {
+      console.error('Error getting popular videos:', error);
+      return [];
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

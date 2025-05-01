@@ -1122,6 +1122,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Video/Image not found" });
       }
       
+      // Increment view count
+      const newViewCount = await dbStorage.incrementViews(videoId);
+      console.log(`API: Incremented view count for video ${videoId} to ${newViewCount}`);
+      
+      // Update views count in video object
+      video.views = newViewCount;
+      
       console.log("API: Retrieved video:", video.id, video.title, "Content type:", video.contentType);
       
       // Debug video URL for MP4 videos
