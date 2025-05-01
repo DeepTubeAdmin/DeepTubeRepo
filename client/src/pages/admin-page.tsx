@@ -45,8 +45,51 @@ export default function AdminPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [reportedContent, setReportedContent] = useState<ReportedContent[]>([]);
+  const [pendingContent, setPendingContent] = useState<PendingContent[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [activeTab, setActiveTab] = useState('content');
+  const [activeTab, setActiveTab] = useState('pending');
+
+  // Handle approving content
+  const handleApproveContent = async (videoId: number) => {
+    try {
+      await apiRequest('POST', `/api/admin/content/${videoId}/approve`);
+      setPendingContent(prev => prev.filter(item => item.id !== videoId));
+      toast({
+        title: 'Success',
+        description: 'Content approved successfully',
+        variant: 'default'
+      });
+    } catch (error) {
+      console.error('Error approving content:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to approve content',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Handle rejecting content
+  const handleRejectContent = async (videoId: number) => {
+    try {
+      await apiRequest('POST', `/api/admin/content/${videoId}/reject`, {
+        reason: 'Content rejected by admin'
+      });
+      setPendingContent(prev => prev.filter(item => item.id !== videoId));
+      toast({
+        title: 'Success',
+        description: 'Content rejected successfully',
+        variant: 'default'
+      });
+    } catch (error) {
+      console.error('Error rejecting content:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to reject content',
+        variant: 'destructive'
+      });
+    }
+  };
 
   useEffect(() => {
     // Only admin can access this page (user with ID 1 or 2 as defined in server/routes.ts)
@@ -68,12 +111,24 @@ export default function AdminPage() {
 
     const fetchData = async () => {
       try {
-        // Fetch all users first
+        // Fetch all users
         const usersRes = await apiRequest('GET', '/api/admin/users');
         const usersData = await usersRes.json();
         setUsers(usersData);
         
-        // Then try to get content for demo purposes
+        // Fetch pending content for review
+        try {
+          const pendingRes = await apiRequest('GET', '/api/admin/content/pending');
+          if (pendingRes.ok) {
+            const pendingData = await pendingRes.json();
+            setPendingContent(pendingData);
+          }
+        } catch (pendingError) {
+          console.error('Could not load pending content:', pendingError);
+          setPendingContent([]);
+        }
+        
+        // Fetch demo reported content
         try {
           const contentRes = await apiRequest('GET', '/api/content/featured');
           if (contentRes.ok) {
@@ -193,9 +248,77 @@ export default function AdminPage() {
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
           <TabsList className="w-full bg-gray-800">
+            <TabsTrigger value="pending" className="flex-1">Pending Review</TabsTrigger>
             <TabsTrigger value="content" className="flex-1">Reported Content</TabsTrigger>
             <TabsTrigger value="users" className="flex-1">User Management</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="pending" className="py-4">
+            <Card className="bg-gray-900 border-gray-800">
+              <CardHeader>
+                <CardTitle>Pending Content Review</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Approve or reject user-submitted content before it appears publicly
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[500px]">
+                  {pendingContent.length === 0 ? (
+                    <p className="text-center text-gray-400 py-8">No content pending review</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-gray-800 hover:bg-gray-800">
+                          <TableHead className="text-gray-300">Title</TableHead>
+                          <TableHead className="text-gray-300">Uploader</TableHead>
+                          <TableHead className="text-gray-300">Content Type</TableHead>
+                          <TableHead className="text-gray-300">Upload Date</TableHead>
+                          <TableHead className="text-gray-300">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {pendingContent.map((content) => (
+                          <TableRow key={content.id} className="border-gray-800 hover:bg-gray-800">
+                            <TableCell className="text-white font-medium">{content.title}</TableCell>
+                            <TableCell className="text-gray-300">{content.userId || 'Anonymous'}</TableCell>
+                            <TableCell className="text-gray-300 capitalize">{content.contentType}</TableCell>
+                            <TableCell className="text-gray-300">
+                              {new Date(content.createdAt).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => window.open(`/media/${content.id}`, '_blank')}
+                                >
+                                  View
+                                </Button>
+                                <Button 
+                                  variant="default" 
+                                  size="sm"
+                                  onClick={() => handleApproveContent(content.id)}
+                                >
+                                  Approve
+                                </Button>
+                                <Button 
+                                  variant="destructive" 
+                                  size="sm"
+                                  onClick={() => handleRejectContent(content.id)}
+                                >
+                                  Reject
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
           
           <TabsContent value="content" className="py-4">
             <Card className="bg-gray-900 border-gray-800">
