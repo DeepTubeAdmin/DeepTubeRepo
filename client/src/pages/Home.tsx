@@ -272,15 +272,19 @@ export default function Home() {
             </div>
           </section>
           
-          {/* Section title with refresh button */}
-          <div className="flex justify-between items-center mb-6">
+          {/* Section title */}
+          <div className="flex justify-between items-center mb-6 mt-2 px-2 py-1 bg-black rounded-md">
             <h3 className="text-xl font-bold">Discover Content</h3>
+          </div>
+          
+          {/* Sticky Refresh Button */}
+          <div className="fixed bottom-20 right-6 z-50">
             <button
               onClick={handleRefreshContent}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-black/50 hover:bg-black/80 text-white text-sm border border-gray-700 transition-colors hover:border-primary"
+              className="flex items-center gap-1 px-4 py-2 rounded-full bg-primary hover:bg-primary/80 text-black font-medium text-sm transition-colors shadow-lg animate-pulse"
             >
-              <RefreshCcw className="h-3.5 w-3.5" />
-              <span>Refresh Content</span>
+              <RefreshCcw className="h-4 w-4" />
+              <span>Shuffle Content</span>
             </button>
           </div>
           
