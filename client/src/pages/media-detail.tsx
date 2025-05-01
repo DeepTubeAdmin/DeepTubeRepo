@@ -30,6 +30,9 @@ export default function MediaDetail() {
   const [commentText, setCommentText] = useState("");
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState<string>("");
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [isLikeLoading, setIsLikeLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -43,6 +46,16 @@ export default function MediaDetail() {
   const { data: comments = [], isLoading: commentsLoading } = useQuery<Comment[]>({
     queryKey: [`/api/videos/${id}/comments`],
     enabled: !!id,
+  });
+  
+  // Fetch like status
+  const { data: likeData } = useQuery({
+    queryKey: [`/api/videos/${id}/like`],
+    enabled: !!id,
+    onSuccess: (data) => {
+      setIsLiked(data.isLiked);
+      setLikeCount(data.count || 0);
+    }
   });
   
   // Add comment mutation

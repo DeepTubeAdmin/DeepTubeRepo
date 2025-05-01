@@ -1,8 +1,10 @@
-import { Heart, Play } from "lucide-react";
+import { Heart, Play, ThumbsUp } from "lucide-react";
 import { Video } from "@/types";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { formatNumber, extractYoutubeIdFromEmbed } from "@/lib/utils";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import VideoPreview from "./VideoPreview";
 
 interface VideoCardProps {
@@ -15,6 +17,10 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [youtubeId, setYoutubeId] = useState<string | null>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [isLikeLoading, setIsLikeLoading] = useState(false);
+  const { toast } = useToast();
   const cardRef = useRef<HTMLDivElement>(null);
   
   // Extract YouTube ID from embed code when the component loads
@@ -26,6 +32,59 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
       }
     }
   }, [video.embedCode, video.contentType]);
+  
+  // Fetch like status and count when component mounts
+  useEffect(() => {
+    const fetchLikeStatus = async () => {
+      try {
+        const response = await apiRequest('GET', `/api/videos/${video.id}/like`);
+        const data = await response.json();
+        
+        setIsLiked(data.isLiked);
+        setLikeCount(data.count || 0);
+      } catch (error) {
+        console.error('Error fetching like status:', error);
+      }
+    };
+    
+    fetchLikeStatus();
+  }, [video.id]);
+  
+  // Handle liking/unliking a video
+  const handleLike = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (isLikeLoading) return;
+    
+    setIsLikeLoading(true);
+    
+    try {
+      // If already liked, unlike it
+      if (isLiked) {
+        const response = await apiRequest('DELETE', `/api/videos/${video.id}/like`);
+        const data = await response.json();
+        
+        setIsLiked(false);
+        setLikeCount(data.count || 0);
+      } else {
+        // Otherwise like it
+        const response = await apiRequest('POST', `/api/videos/${video.id}/like`);
+        const data = await response.json();
+        
+        setIsLiked(true);
+        setLikeCount(data.count || 0);
+      }
+    } catch (error) {
+      console.error('Error toggling like status:', error);
+      toast({
+        title: isLiked ? 'Error removing like' : 'Error adding like',
+        description: 'Please try again later',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLikeLoading(false);
+    }
+  };
   
   // Mouse enter handler - set state only
   const handleMouseEnter = () => {
@@ -163,14 +222,21 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         <h3 className="font-medium text-base md:text-lg truncate">{video.title}</h3>
         <div className="flex justify-between text-sm text-gray-400 mt-1">
           <span>{video.aiGenerator || "AI Artist"}</span>
-          <div>
+          <div className="flex items-center">
+            {/* Like button */}
+            <button 
+              onClick={handleLike}
+              className={`flex items-center mr-2 p-1 rounded-full ${isLiked ? 'text-orange-500' : 'text-gray-400 hover:text-orange-400'}`}
+              disabled={isLikeLoading}
+            >
+              <ThumbsUp className={`h-4 w-4 ${isLikeLoading ? 'animate-pulse' : ''}`} />
+              <span className="ml-1">{formatNumber(likeCount)}</span>
+            </button>
+            
+            {/* View count */}
             <span className="mr-2">
               <i className="fas fa-eye mr-1"></i>
               {formatNumber(Math.floor(Math.random() * 10000) + 1000)}
-            </span>
-            <span>
-              <i className="fas fa-thumbs-up mr-1"></i>
-              {Math.floor(Math.random() * 10) + 90}%
             </span>
           </div>
         </div>
