@@ -142,13 +142,28 @@ export default function MediaDetail() {
   }
   
   // Generate SEO metadata based on the media content
-  const seoTitle = `${media.title} | DeepTube: Ethical AI Media Hub`;
-  const seoDescription = media.description 
-    ? `DeepTube.co: Where innovative creators share responsible AI-powered media. ${media.description.substring(0, 100)}${media.description.length > 100 ? '...' : ''}` 
-    : `DeepTube.co: Where innovative creators share responsible AI-powered media. Experience this AI-generated ${media.contentType} created with ${media.aiGenerator || 'advanced AI technology'}.`;
+  const generatorInfo = media.aiGenerator ? ` created with ${media.aiGenerator}` : '';
+  const seoTitle = `${media.title}${generatorInfo} | DeepTube: Ethical AI Media Hub`;
+  
+  // Create description that includes prompt if available
+  const promptInfo = media.prompt ? ` Prompt: "${media.prompt.substring(0, 50)}${media.prompt.length > 50 ? '...' : ''}"` : '';
+  const baseDescription = media.description 
+    ? `${media.description.substring(0, 100)}${media.description.length > 100 ? '...' : ''}` 
+    : `Experience this AI-generated ${media.contentType}${generatorInfo}.`;
+  
+  const seoDescription = `DeepTube.co: ${baseDescription}${promptInfo}`;
   const seoImage = media.thumbnail || media.imageUrl || '';
   const seoCanonicalUrl = `https://deeptube.co/media/${id}`;
-  const seoKeywords = `AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing`;
+  
+  // Create more specific keywords including media attributes
+  const specificKeywords = [
+    `AI ${media.contentType}`,
+    media.aiGenerator || 'AI generation',
+    media.title.split(' ').slice(0, 3).join(', '),
+    media.prompt ? media.prompt.split(' ').slice(0, 5).join(', ') : '',
+  ].filter(Boolean).join(', ');
+  
+  const seoKeywords = `${specificKeywords}, AI media hosting, Responsible AI media, DeepTube, AI-powered ${media.contentType}, Trusted content, Creator media platform`;
   
   // Generate structured data for rich snippets in search results
   const mediaStructuredData = media.contentType === 'image' 

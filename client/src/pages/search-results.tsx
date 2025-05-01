@@ -318,8 +318,6 @@ export default function SearchResults() {
                     categoryId: video.categoryId || 0,
                     aiGenerator: video.aiGenerator || "",
                     userId: video.userId || 0,
-                    width: video.width || 0,
-                    height: video.height || 0,
                     resolution: video.resolution || ""
                   };
                   return (

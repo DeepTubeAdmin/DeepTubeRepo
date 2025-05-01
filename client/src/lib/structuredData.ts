@@ -29,7 +29,16 @@ export function generateVideoStructuredData(video: Video, baseUrl: string = 'htt
     'potentialAction': {
       '@type': 'WatchAction',
       'target': videoUrl
-    }
+    },
+    'keywords': [
+      'AI generated video',
+      'AI media',
+      video.aiGenerator || 'AI technology',
+      'ethical AI',
+      'DeepTube',
+      ...(video.prompt ? [video.prompt.split(' ').slice(0, 5).join(', ')] : []),
+      ...(video.categoryId ? ['AI ' + video.contentType] : [])
+    ].join(', ')
   };
 
   // Add AI generator and prompt information if available
@@ -37,6 +46,15 @@ export function generateVideoStructuredData(video: Video, baseUrl: string = 'htt
     videoData['creator'] = {
       '@type': 'Organization',
       'name': video.aiGenerator
+    };
+  }
+  
+  // Add the prompt as a specific property
+  if (video.prompt) {
+    videoData['about'] = {
+      '@type': 'Thing',
+      'name': 'AI Prompt',
+      'description': video.prompt
     };
   }
 
@@ -61,14 +79,39 @@ export function generateImageStructuredData(image: Video, baseUrl: string = 'htt
     'contentUrl': contentUrl,
     'thumbnailUrl': image.thumbnail || '',
     'uploadDate': new Date(image.createdAt).toISOString(),
-    'license': 'https://creativecommons.org/licenses/by/4.0/'
+    'license': 'https://creativecommons.org/licenses/by/4.0/',
+    'keywords': [
+      'AI generated image',
+      'AI art',
+      image.aiGenerator || 'AI technology',
+      'ethical AI',
+      'DeepTube',
+      ...(image.prompt ? [image.prompt.split(' ').slice(0, 5).join(', ')] : []),
+      ...(image.categoryId ? ['AI ' + image.contentType] : [])
+    ].join(', ')
   };
+
+  // Add dimensions if available - using a type assertion since width/height might come from API
+  const imageWithDimensions = image as any;
+  if (imageWithDimensions.width && imageWithDimensions.height) {
+    imageData['width'] = imageWithDimensions.width;
+    imageData['height'] = imageWithDimensions.height;
+  }
 
   // Add AI generator and prompt information if available
   if (image.aiGenerator) {
     imageData['creator'] = {
       '@type': 'Organization',
       'name': image.aiGenerator
+    };
+  }
+  
+  // Add the prompt as a specific property
+  if (image.prompt) {
+    imageData['about'] = {
+      '@type': 'Thing',
+      'name': 'AI Prompt',
+      'description': image.prompt
     };
   }
 
