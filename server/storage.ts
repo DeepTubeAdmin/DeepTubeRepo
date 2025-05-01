@@ -137,7 +137,22 @@ export class DatabaseStorage implements IStorage {
 
   // Category operations
   async getCategories(): Promise<Category[]> {
-    return db.select().from(categories);
+    // Get categories from the database
+    const allCategories = await db.select().from(categories);
+    
+    // Custom ordering with Parody (ID 16) after Entertainment (ID 3)
+    return allCategories.sort((a, b) => {
+      // If it's Entertainment (ID 3), it should come before Parody
+      if (a.id === 3) return -1;
+      if (b.id === 3) return 1;
+      
+      // If it's Parody (ID 16), it should come right after Entertainment
+      if (a.id === 16 && b.id !== 3) return -1;
+      if (b.id === 16 && a.id !== 3) return 1;
+      
+      // Natural ordering for other categories based on ID
+      return a.id - b.id;
+    });
   }
   
   async getCategoryById(id: number): Promise<Category | undefined> {
