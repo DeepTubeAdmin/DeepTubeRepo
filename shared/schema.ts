@@ -44,7 +44,7 @@ export const videos = pgTable("videos", {
   embedCode: text("embed_code"),
   preview: text("preview"),
   contentType: text("content_type").notNull().default("video"), // "video", "image", or "embed"
-  resolution: text("resolution").notNull().default("HD"),
+  resolution: varchar("resolution", { enum: ["HD", "4K"] }).notNull().default("HD"),
   duration: integer("duration").default(0), // in seconds
   categoryId: integer("category_id").references(() => categories.id),
   vimeoId: text("vimeo_id"), // Store Vimeo video ID

@@ -6,11 +6,11 @@ export default function PrivacyPolicy() {
   return (
     <Layout>
       <SEO 
-        title="Privacy Policy | DeepTube.co"
-        description="Learn how DeepTube.co collects, uses, and protects your personal information. Review our privacy policy to understand your rights and choices."
+        title="Privacy Policy | DeepTube: Ethical AI Media Hub"
+        description="DeepTube.co: Where innovative creators share responsible AI-powered media. Learn how we safeguard your data and respect your privacy rights on our trusted platform."
         canonicalUrl="https://deeptube.co/privacy-policy"
         ogType="article"
-        keywords="privacy policy, data protection, GDPR, CCPA, cookies, user rights, DeepTube.co"
+        keywords="AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
       />
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <div className="bg-card rounded-lg shadow-lg p-8">

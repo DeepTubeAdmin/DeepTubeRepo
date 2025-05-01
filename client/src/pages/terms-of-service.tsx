@@ -6,11 +6,11 @@ export default function TermsOfService() {
   return (
     <Layout>
       <SEO 
-        title="Terms of Service | DeepTube.co"
-        description="Read the Terms of Service for DeepTube.co. Understand our rules for content upload, user conduct, and legal requirements for using our AI video sharing platform."
+        title="Terms of Service | DeepTube: Ethical AI Media Hub"
+        description="DeepTube.co: Where innovative creators share responsible AI-powered media. Review our terms regarding content ownership, acceptable use, and platform policies."
         canonicalUrl="https://deeptube.co/terms-of-service"
         ogType="article"
-        keywords="terms of service, terms of use, user agreement, content guidelines, legal, DeepTube.co"
+        keywords="AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
       />
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <div className="bg-card rounded-lg shadow-lg p-8">
