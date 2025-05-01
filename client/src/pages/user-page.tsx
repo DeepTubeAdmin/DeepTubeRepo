@@ -151,11 +151,11 @@ export default function UserPage() {
     return (
       <Layout>
         <SEO title="User Not Found" />
-        <div className="container max-w-6xl py-12">
-          <div className="text-center py-12">
+        <div className="container max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+          <div className="text-center py-12 bg-gray-800/30 rounded-xl shadow-md">
             <h1 className="text-2xl font-bold mb-4">User Not Found</h1>
             <p className="text-gray-400">The user you're looking for doesn't exist or has been removed.</p>
-            <Button className="mt-6" onClick={() => navigate("/")}>
+            <Button className="mt-6 bg-orange-600 hover:bg-orange-700" onClick={() => navigate("/")}>
               Return to Home
             </Button>
           </div>
@@ -168,7 +168,7 @@ export default function UserPage() {
   return (
     <Layout>
       <SEO title={`${username}'s Profile`} description={`View ${username}'s uploaded content on DeepTube`} />
-      <div className="container max-w-6xl py-12">
+      <div className="container max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         {/* User profile section */}
         <div className="mb-12">
           {isLoadingProfile ? (
@@ -176,14 +176,14 @@ export default function UserPage() {
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : userProfile ? (
-            <div className="flex flex-col md:flex-row items-start gap-8">
-              <div className="bg-gray-800 rounded-full w-24 h-24 md:w-32 md:h-32 flex items-center justify-center flex-shrink-0">
+            <div className="flex flex-col md:flex-row items-start gap-8 bg-gray-800/30 p-6 rounded-xl">
+              <div className="bg-gray-800 rounded-full w-24 h-24 md:w-32 md:h-32 flex items-center justify-center flex-shrink-0 mx-auto md:mx-0">
                 <UserIcon className="h-12 w-12 md:h-16 md:w-16 text-gray-400" />
               </div>
               
-              <div className="flex-1">
+              <div className="flex-1 w-full">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
+                  <div className="text-center md:text-left">
                     <h1 className="text-2xl md:text-3xl font-bold">{userProfile.username}</h1>
                     <p className="text-gray-400 mt-1">
                       Joined {new Date(userProfile.createdAt).toLocaleDateString()}
@@ -195,20 +195,20 @@ export default function UserPage() {
                     )}
                   </div>
                   
-                  <div className="flex items-center bg-gray-800/30 px-3 py-1 rounded text-gray-400 text-sm">
+                  <div className="flex items-center bg-gray-800/50 px-3 py-1 rounded text-gray-400 text-sm self-center md:self-start">
                     <UserIcon className="h-4 w-4 mr-2" />
                     {userProfile.isAdmin ? "Administrator" : "Member"}
                   </div>
                 </div>
                 
                 <div className="mt-6">
-                  <h2 className="text-xl font-semibold mb-2">About</h2>
-                  <p className="text-gray-300">AI content creator on DeepTube.</p>
+                  <h2 className="text-xl font-semibold mb-2 text-center md:text-left">About</h2>
+                  <p className="text-gray-300 text-center md:text-left">AI content creator on DeepTube.</p>
                 </div>
                 
                 {/* Direct Message Box */}
                 {currentUser?.id !== userProfile.id && (
-                  <div className="mt-6 bg-gray-800/50 p-4 rounded-lg">
+                  <div className="mt-6 bg-gray-800/50 p-4 rounded-lg shadow-md">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-semibold text-md">Send a Message</h3>
                       {currentUser ? null : (
@@ -246,8 +246,8 @@ export default function UserPage() {
         </div>
         
         {/* User content section */}
-        <div>
-          <h2 className="text-2xl font-bold mb-6">Content</h2>
+        <div className="bg-gray-900/50 p-6 rounded-xl">
+          <h2 className="text-2xl font-bold mb-6 text-center">Content</h2>
           
           {isLoadingContent ? (
             <div className="flex justify-center py-12">
@@ -258,7 +258,7 @@ export default function UserPage() {
               <p className="text-destructive">Error loading content. Please try again.</p>
             </div>
           ) : userContent && userContent.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {userContent.map((content) => (
                 <VideoCard
                   key={content.id}
@@ -273,8 +273,6 @@ export default function UserPage() {
             </div>
           )}
         </div>
-        
-        {/* We replaced the message dialog with an inline message box */}
       </div>
       <MiniFooter />
     </Layout>
