@@ -1083,6 +1083,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Video not found" });
       }
       
+      // Log video information for debugging
+      console.log(`Generating thumbnail for video ${videoId}:`); 
+      console.log(` - Title: ${video.title}`); 
+      console.log(` - Content Type: ${video.contentType}`);
+      console.log(` - Video URL: ${video.videoUrl || 'None'}`);
+      console.log(` - Existing Thumbnail: ${video.thumbnail || 'None'}`);
+      
       // If video has a pre-defined thumbnail, redirect to it
       if (video.thumbnail && !video.thumbnail.includes("placehold.co") && !video.thumbnail.startsWith("data:")) {
         return res.redirect(video.thumbnail);
@@ -1118,12 +1125,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.redirect(`https://placehold.co/800x450/${hue.toString(16).padStart(2, '0')}0066/FFFFFF?text=${encodeURIComponent(title)}`);
         } else {
           // Local file path - clean it up if needed
-          if (videoPath.startsWith('./')) {
-            videoPath = videoPath.substring(2); // Remove leading ./
+          // If the path starts with a slash but doesn't have a proper directory prefix
+          if (videoPath.startsWith('/')) {
+            // Remove the leading slash and make it relative to current directory
+            videoPath = `.${videoPath}`;
           }
           
-          if (!videoPath.startsWith('/')) {
-            videoPath = `./${videoPath}`; // Ensure it's a relative path
+          // Make sure we don't have a double period at the start
+          if (videoPath.startsWith('.//')) {
+            videoPath = videoPath.replace('.//','./'); 
+          }
+          
+          // If it doesn't start with ./, add it
+          if (!videoPath.startsWith('./')) {
+            videoPath = `./${videoPath}`;
           }
           
           // Make sure the path exists
