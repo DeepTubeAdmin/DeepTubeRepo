@@ -126,7 +126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Middleware to check if user is an admin
   const isAdmin = (req: Request, res: Response, next: Function) => {
-    if (req.isAuthenticated() && req.user && (req.user.id === 1 || req.user.id === 2)) {
+    if (req.isAuthenticated() && req.user && (req.user.isAdmin || req.user.id === 1 || req.user.id === 2)) {
       return next();
     }
     res.status(403).json({ error: "Admin access required" });
@@ -295,6 +295,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/videos", isAuthenticated, async (req, res) => {
     try {
       const videoData = insertVideoSchema.parse(req.body);
+      
+      // Auto-approve YouTube embeds
+      if (videoData.contentType === 'embed' && videoData.embedCode && 
+          videoData.embedCode.includes('youtube.com/embed')) {
+        videoData.reviewStatus = 'approved';
+      }
+      
       const video = await dbStorage.createVideo(videoData);
       res.status(201).json(video);
     } catch (error) {
