@@ -147,6 +147,8 @@ export default function ProfilePage() {
   };
   
   const handleDeleteAccount = async () => {
+    if (!user) return;
+    
     if (deleteConfirmation !== user.username) {
       toast({
         title: "Confirmation Failed",
@@ -182,7 +184,7 @@ export default function ProfilePage() {
   return (
     <Layout>
       <SEO 
-        title={`${user.username}'s Profile | DeepTube: Ethical AI Media Hub`}
+        title={`Profile: ${user?.username || 'User'} | DeepTube: Ethical AI Media Hub`}
         description="DeepTube.co: Where innovative creators share responsible AI-powered media. Manage your creator account on our trusted video platform."
         canonicalUrl="https://deeptube.co/profile"
         ogType="profile"
@@ -357,14 +359,14 @@ export default function ProfilePage() {
                       </AlertDialogHeader>
                       <div className="space-y-2 my-4">
                         <Label htmlFor="delete-confirmation">
-                          Type your username <span className="font-mono text-primary">{user.username}</span> to confirm:
+                          Type your username <span className="font-mono text-primary">{user?.username}</span> to confirm:
                         </Label>
                         <Input 
                           id="delete-confirmation" 
                           value={deleteConfirmation} 
                           onChange={(e) => setDeleteConfirmation(e.target.value)}
                           className="bg-[#111] border-gray-700"
-                          placeholder={user.username}
+                          placeholder={user?.username || ''}
                         />
                       </div>
                       <AlertDialogFooter>
