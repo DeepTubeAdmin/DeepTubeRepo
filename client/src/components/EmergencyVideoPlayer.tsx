@@ -72,53 +72,142 @@ const EmergencyVideoPlayer: React.FC<EmergencyVideoPlayerProps> = ({
     };
   }, [src]);
   
-  // Complete audio system destruction
+  // Complete audio system destruction - called when unloading or closing
   const destroyEverything = () => {
     try {
       console.log('💣 EMERGENCY PLAYER: Complete system destruction');
       
-      // First, disconnect and nullify the audio routing
+      // CRITICAL: First attempt to stop all audio at the AudioContext level
+      // This is the most reliable way to completely stop audio
+      if (audioContextRef.current) {
+        // Create a zero-volume gain node and connect it to destination
+        try {
+          const silencer = audioContextRef.current.createGain();
+          silencer.gain.value = 0;
+          
+          // Connect it to destination, which will silence all audio
+          silencer.connect(audioContextRef.current.destination);
+          
+          // Suspend the audio context immediately
+          if (audioContextRef.current.state !== 'closed' && audioContextRef.current.state !== 'suspended') {
+            audioContextRef.current.suspend();
+          }
+          
+          console.log('🔇 Applied emergency audio muting via global silencer');
+        } catch (err) {
+          console.error('Failed to create emergency silencer:', err);
+        }
+      }
+      
+      // Next, try disconnecting the audio graph
       if (gainNodeRef.current) {
-        gainNodeRef.current.disconnect();
-        gainNodeRef.current = null;
+        try {
+          // Zero the gain first
+          gainNodeRef.current.gain.value = 0;
+          gainNodeRef.current.disconnect();
+          gainNodeRef.current = null;
+          console.log('🔇 Gain node disconnected');
+        } catch (err) {
+          console.error('Error disconnecting gain node:', err);
+        }
       }
       
       if (sourceNodeRef.current) {
-        sourceNodeRef.current.disconnect();
-        sourceNodeRef.current = null;
+        try {
+          sourceNodeRef.current.disconnect();
+          sourceNodeRef.current = null;
+          console.log('🔇 Source node disconnected');
+        } catch (err) {
+          console.error('Error disconnecting source node:', err);
+        }
       }
       
       // Close the audio context to release all audio resources
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close().catch(e => console.error('Error closing audio context:', e));
-        audioContextRef.current = null;
+      if (audioContextRef.current) {
+        try {
+          if (audioContextRef.current.state !== 'closed') {
+            audioContextRef.current.close();
+            console.log('🔇 Audio context fully closed');
+          }
+          audioContextRef.current = null;
+        } catch (err) {
+          console.error('Error closing audio context:', err);
+        }
       }
       
       // Destroy the video element
       if (videoRef.current) {
         const video = videoRef.current;
         
-        // Stop playback
+        // 1. Stop playback immediately
         try {
-          video.pause();
-          video.currentTime = 0;
+          // First immediately mute and zero volume
           video.muted = true;
           video.volume = 0;
+          
+          // Then pause and remove the time and source
+          video.pause();
+          video.currentTime = 0;
           video.autoplay = false;
+          
+          // Remove source and force load to clear buffers
+          const originalSrc = video.src;
           video.src = '';
           video.removeAttribute('src');
           video.load();
+          
+          console.log('🚩 Video element source cleared:', originalSrc);
         } catch (e) {
           console.error('Error resetting video element:', e);
         }
         
-        // Remove all event listeners by cloning and replacing
-        if (video.parentNode) {
-          const clone = document.createElement('div');
-          video.parentNode.replaceChild(clone, video);
+        // 2. Create empty audio/video MediaStream to replace the video's srcObject
+        try {
+          // Create an empty audio context
+          const emptyCtx = new AudioContext();
+          const emptyOsc = emptyCtx.createOscillator();
+          const emptyGain = emptyCtx.createGain();
+          
+          // Set gain to 0 (silence)
+          emptyGain.gain.value = 0;
+          
+          // Connect and start
+          emptyOsc.connect(emptyGain);
+          emptyGain.connect(emptyCtx.destination);
+          emptyOsc.start();
+          
+          // Create a silent MediaStream
+          const emptyStream = emptyCtx.createMediaStreamDestination().stream;
+          
+          // Apply to video element
+          video.srcObject = emptyStream;
+          
+          // Immediately clean up
+          setTimeout(() => {
+            emptyOsc.stop();
+            emptyGain.disconnect();
+            emptyOsc.disconnect();
+            emptyCtx.close();
+          }, 100);
+          
+          console.log('🔇 Applied silent MediaStream to video element');
+        } catch (err) {
+          // This is an advanced technique that might not be supported in all browsers
+          console.error('Error creating empty MediaStream:', err);
         }
         
-        // Clear the reference
+        // 3. Remove all event listeners by cloning and replacing
+        if (video.parentNode) {
+          try {
+            const emptyDiv = document.createElement('div');
+            video.parentNode.replaceChild(emptyDiv, video);
+            console.log('🗑️ Video element completely removed from DOM');
+          } catch (err) {
+            console.error('Error replacing video element:', err);
+          }
+        }
+        
+        // 4. Clear the reference
         videoRef.current = null;
       }
       
@@ -141,14 +230,44 @@ const EmergencyVideoPlayer: React.FC<EmergencyVideoPlayerProps> = ({
       console.log('🎮 Video: loadedmetadata');
       setIsLoading(false);
       
-      // Setup audio routing with the audio context
+      // Setup direct audio handling
       try {
+        if (!audioContextRef.current) {
+          // Resume/create the audio context - this is critical for Chrome
+          // @ts-ignore - For cross-browser support
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          audioContextRef.current = new AudioContext();
+          
+          // Resume immediately (needed for Chrome's autoplay policy)
+          if (audioContextRef.current.state === 'suspended') {
+            audioContextRef.current.resume().catch(e => console.error('Unable to resume audio context:', e));
+          }
+        }
+        
         if (audioContextRef.current && !sourceNodeRef.current) {
+          // Create the audio source and gain node
           sourceNodeRef.current = audioContextRef.current.createMediaElementSource(element);
           gainNodeRef.current = audioContextRef.current.createGain();
+          
+          // Set initial gain to 1.0 (full volume)
+          if (gainNodeRef.current) {
+            gainNodeRef.current.gain.value = 1.0;
+          }
+          
+          // Connect the nodes
           sourceNodeRef.current.connect(gainNodeRef.current);
           gainNodeRef.current.connect(audioContextRef.current.destination);
           console.log('🔊 Created isolated audio routing');
+          
+          // Add a user interaction handler to unmute
+          document.addEventListener('click', function audioEnableHandler() {
+            if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+              audioContextRef.current.resume();
+              console.log('🔊 Audio context resumed by user interaction');
+            }
+            // Only need this once
+            document.removeEventListener('click', audioEnableHandler);
+          }, { once: true });
         }
       } catch (e) {
         console.error('Failed to create audio routing:', e);
@@ -158,15 +277,41 @@ const EmergencyVideoPlayer: React.FC<EmergencyVideoPlayerProps> = ({
     element.addEventListener('canplay', () => {
       console.log('🎮 Video: canplay');
       if (!isPlaying) {
+        // Ensure audio context is resumed before playing
+        if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+          audioContextRef.current.resume().catch(e => console.error('Unable to resume audio context:', e));
+        }
+        
+        // Now try to play the video
         element.play()
           .then(() => {
             setIsPlaying(true);
-            console.log('▶️ Video playback started');
+            element.muted = false; // Ensure it's unmuted
+            console.log('▶️ Video playback started successfully');
           })
           .catch(e => {
             console.error('Failed to start playback:', e);
-            setError('Autoplay prevented - please click to play');
+            setError('Autoplay prevented - please click play button');
           });
+      }
+    });
+    
+    // Detect audio interruptions and try to fix them
+    element.addEventListener('volumechange', () => {
+      // If something muted our video unexpectedly during playback
+      if (element.muted && isPlaying && !isMuted) {
+        console.log('🔊 Unexpected mute detected, restoring audio');
+        // Try to unmute
+        element.muted = false;
+      }
+    });
+    
+    element.addEventListener('pause', () => {
+      // Only log if we didn't initiate the pause
+      if (isPlaying) {
+        console.log('⏸️ Video unexpectedly paused, will attempt to resume');
+        // Try to resume if unexpectedly paused
+        element.play().catch(e => console.error('Failed to auto-resume:', e));
       }
     });
     
@@ -223,8 +368,23 @@ const EmergencyVideoPlayer: React.FC<EmergencyVideoPlayerProps> = ({
         src={src}
         poster={poster}
         playsInline
-        muted={true} // Start muted for autoplay
+        muted={false} // Don't start muted - we'll control audio via Web Audio API
         controls={false} // We handle controls ourselves for better isolation
+        onTimeUpdate={() => {
+          // This is a continuous check to ensure audio is working
+          if (videoRef.current && videoRef.current.muted && isPlaying && !isMuted) {
+            // If something muted our video while it should be playing with audio
+            console.log('🔄 Ensuring audio is enabled during playback');
+            videoRef.current.muted = false;
+            
+            // Also make sure audio context is running
+            if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+              audioContextRef.current.resume().catch(e => 
+                console.error('Error resuming audio context during playback:', e)
+              );
+            }
+          }
+        }}
       />
       
       {/* Loading indicator */}
