@@ -152,7 +152,7 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
       </div>
       
       {/* Image info */}
-      <div className="pt-2 pb-3 px-1">
+      <div className="pt-2 pb-3 px-1 bg-[#1a1a1a]">
         <div className="flex justify-between items-start">
           <h3 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors cursor-pointer mr-2">
             {image.title}

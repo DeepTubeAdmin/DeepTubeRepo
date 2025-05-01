@@ -218,7 +218,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
       </div>
       
       {/* Video info */}
-      <div className="p-3 bg-transparent">
+      <div className="p-3 bg-[#1a1a1a]">
         <h3 className="font-medium text-base md:text-lg truncate">{video.title}</h3>
         <div className="flex justify-between text-sm text-gray-400 mt-1">
           <span>{video.aiGenerator || "AI Artist"}</span>
