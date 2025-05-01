@@ -19,6 +19,7 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState<string>("");
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'most-viewed' | 'trending' | 'popular'>('trending');
   const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [shuffleSeed, setShuffleSeed] = useState(() => Math.random().toString(36).substring(2, 8));
   const { toast } = useToast();
   const { user } = useAuth();
   const [_, setLocation] = useLocation();
@@ -140,6 +141,18 @@ export default function Home() {
       setIsLoginModalOpen(true);
     }
   };
+  
+  const handleRefreshContent = () => {
+    // Generate a new random shuffle seed to refresh content
+    const newSeed = Math.random().toString(36).substring(2, 8);
+    setShuffleSeed(newSeed);
+    
+    toast({
+      title: "Content Refreshed",
+      description: "Showing you different content!",
+      duration: 2000,
+    });
+  };
 
   return (
     <Layout showHeader={true}>
@@ -259,12 +272,25 @@ export default function Home() {
             </div>
           </section>
           
+          {/* Section title with refresh button */}
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-bold">Discover Content</h3>
+            <button
+              onClick={handleRefreshContent}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-black/50 hover:bg-black/80 text-white text-sm border border-gray-700 transition-colors hover:border-primary"
+            >
+              <RefreshCcw className="h-3.5 w-3.5" />
+              <span>Refresh Content</span>
+            </button>
+          </div>
+          
           {/* Infinite Content Feed with Video-Image alternating pattern */}
           <InfiniteContentFeed 
             onPreview={handlePreview}
             onWishlist={handleWishlist}
             category={activeCategory}
             sortBy={sortBy}
+            shuffleSeed={shuffleSeed}
           />
         </main>
       </div>

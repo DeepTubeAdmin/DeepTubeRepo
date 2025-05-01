@@ -16,13 +16,15 @@ interface InfiniteContentFeedProps {
   onWishlist?: (videoId: number) => void;
   category?: string;
   sortBy?: 'newest' | 'oldest' | 'most-viewed' | 'trending' | 'popular';
+  shuffleSeed?: string;
 }
 
 export default function InfiniteContentFeed({ 
   onPreview, 
   onWishlist,
   category = '',
-  sortBy = 'trending' // Default to trending for initial load
+  sortBy = 'trending', // Default to trending for initial load
+  shuffleSeed = Math.random().toString(36).substring(2, 8) // Default random seed if not provided
 }: InfiniteContentFeedProps) {
   const [contentBlocks, setContentBlocks] = useState<Array<{
     type: 'videos' | 'images';
@@ -37,8 +39,7 @@ export default function InfiniteContentFeed({
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  // Generate a random shuffle seed for content variety on page refresh
-  const [shuffleSeed, setShuffleSeed] = useState(() => Math.random().toString(36).substring(2, 8));
+  // We use the shuffleSeed passed as a prop now instead of generating it here
   // Keep track of advertisements to ensure unique ads per session
   const [usedAdIds, setUsedAdIds] = useState<Set<string>>(new Set());
   const observer = useRef<IntersectionObserver | null>(null);
