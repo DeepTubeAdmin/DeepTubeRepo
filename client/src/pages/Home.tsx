@@ -6,9 +6,9 @@ import VideoCard from "@/components/VideoCard";
 import InfiniteContentFeed from "@/components/InfiniteContentFeed";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Category, Video } from "@/types";
+import { Category, Video } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { LogIn, Upload, WandSparkles, Filter } from "lucide-react";
+import { LogIn, Upload, WandSparkles, Filter, Loader2 } from "lucide-react";
 import LoginRequiredModal from "@/components/LoginRequiredModal";
 import Layout from "@/components/Layout";
 import MiniFooter from "@/components/MiniFooter";
@@ -33,6 +33,43 @@ export default function Home() {
   
   // Use only standard categories from the API
   const allCategories = apiCategories || [];
+  
+  // Get featured video for the active category
+  const { data: featuredVideo, isLoading: isFeaturedLoading } = useQuery<Video>({
+    queryKey: ['/api/featured', activeCategory],
+    queryFn: async () => {
+      // If a category is selected, get its featured video
+      if (activeCategory) {
+        const categoryId = allCategories.find(cat => cat.slug === activeCategory)?.id;
+        if (categoryId) {
+          const res = await fetch(`/api/videos?category=${categoryId}&limit=1`);
+          const videos = await res.json();
+          return videos[0] || defaultFeaturedVideo;
+        }
+      }
+      // Otherwise get overall featured video
+      const res = await fetch('/api/videos/featured?limit=1');
+      const videos = await res.json();
+      return videos[0] || defaultFeaturedVideo;
+    },
+    enabled: !isCategoriesLoading, // Only run after categories are loaded
+  });
+  
+  // Default featured video to show if none is found
+  const defaultFeaturedVideo: Video = {
+    id: 65,
+    title: "AI Generated Nature Documentary with David Attenborough Voice",
+    thumbnail: "https://i.vimeocdn.com/video/1729347065-e1ed63828a4185f9f8f381e05199a18b80053c935f292a4b?mw=1000&mh=562",
+    videoUrl: "https://player.vimeo.com/progressive_redirect/playback/916033253/rendition/720p/file.mp4?loc=external",
+    contentType: "video",
+    duration: 138,
+    aiGenerator: "DeepLearning Studio",
+    resolution: "4K",
+    credits: 0,
+    categoryId: 3,
+    userId: 1,
+    createdAt: new Date().toISOString()
+  };
 
   const handleCategoryChange = (slug: string) => {
     setActiveCategory(slug);
@@ -176,50 +213,25 @@ export default function Home() {
         <main className="container mx-auto px-4 py-4 pb-12">
         {/* Added padding to bottom (pb-12) to make room for the fixed mini footer */}
           {/* Featured Section */}
+          {/* Featured Section - shows dynamic featured content based on active category */}
           <section className="mb-8">
-            <h3 className="text-2xl font-bold mb-6">Featured Content</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              <div className="col-span-full lg:col-span-2">
+            <h3 className="text-2xl font-bold mb-6">
+              {activeCategory 
+                ? `Featured ${allCategories.find(cat => cat.slug === activeCategory)?.name || ''} Content` 
+                : 'Featured Content'}
+            </h3>
+            <div className="max-w-4xl mx-auto">
+              {isFeaturedLoading ? (
+                <div className="w-full aspect-video bg-gray-800 animate-pulse rounded-lg flex items-center justify-center">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                </div>
+              ) : (
                 <VideoCard 
-                  video={{
-                    id: 49,
-                    title: "AI Generated Nature Documentary with David Attenborough Voice",
-                    thumbnail: "https://i.vimeocdn.com/video/1729347065-e1ed63828a4185f9f8f381e05199a18b80053c935f292a4b?mw=1000&mh=562",
-                    videoUrl: "https://player.vimeo.com/progressive_redirect/playback/916033253/rendition/720p/file.mp4?loc=external",
-                    contentType: "video",
-                    duration: 138,
-                    aiGenerator: "DeepLearning Studio",
-                    resolution: "4K",
-                    credits: 0,
-                    categoryId: 3,
-                    userId: 1,
-                    createdAt: new Date().toISOString()
-                  }}
+                  video={featuredVideo || defaultFeaturedVideo}
                   onPreview={handlePreview}
                   onWishlist={handleWishlist}
                 />
-              </div>
-              
-              <div>
-                <VideoCard 
-                  video={{
-                    id: 48,
-                    title: "Photorealistic AI Portrait Creation Tutorial",
-                    thumbnail: "https://img.youtube.com/vi/t_Qn2B40zsM/mqdefault.jpg",
-                    embedCode: `<iframe width="560" height="315" src="https://www.youtube.com/embed/t_Qn2B40zsM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`,
-                    contentType: "embed",
-                    duration: 330,
-                    aiGenerator: "AI Artist",
-                    resolution: "4K",
-                    credits: 0,
-                    categoryId: 3,
-                    userId: 1,
-                    createdAt: new Date().toISOString()
-                  }}
-                  onPreview={handlePreview}
-                  onWishlist={handleWishlist}
-                />
-              </div>
+              )}
             </div>
           </section>
 
