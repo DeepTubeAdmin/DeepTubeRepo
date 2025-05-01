@@ -193,7 +193,7 @@ export default function SearchResults() {
   
   // Prepare dynamic SEO metadata based on search query and filters
   const seoTitle = currentQuery 
-    ? `Search results for "${currentQuery}" | DeepTube: Ethical AI Media Hub` 
+    ? `Search: ${currentQuery} | DeepTube: Ethical AI Media Hub` 
     : 'Search | DeepTube: Ethical AI Media Hub';
   
   const seoDescription = currentQuery 
@@ -308,14 +308,21 @@ export default function SearchResults() {
                 Search results for "{currentQuery}"
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {searchResults.map(video => (
-                  <VideoCard
-                    key={video.id}
-                    video={video}
-                    onPreview={() => handlePreview(video.id)}
-                    onWishlist={() => handleWishlist(video.id)}
-                  />
-                ))}
+                {searchResults.map(video => {
+                  // Ensure duration is never null to fix type issues
+                  const processedVideo: Video = {
+                    ...video,
+                    duration: video.duration || 0
+                  };
+                  return (
+                    <VideoCard
+                      key={video.id}
+                      video={processedVideo}
+                      onPreview={() => handlePreview(video.id)}
+                      onWishlist={() => handleWishlist(video.id)}
+                    />
+                  );
+                })}
               </div>
             </div>
           ) : null}
