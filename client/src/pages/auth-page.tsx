@@ -114,9 +114,15 @@ export default function AuthPage() {
   };
   
   const handleSocialLogin = (provider: string) => {
-    // In a real implementation, this would initiate OAuth flow
+    // Show a toast notification
+    toast({
+      title: "Social Login Not Implemented",
+      description: `Login with ${provider} is not available in this demo version.`,
+      variant: "default"
+    });
+    
+    // Log the attempt
     console.log(`Initiating ${provider} login flow`);
-    // For now we just log the attempt
   };
 
   return (

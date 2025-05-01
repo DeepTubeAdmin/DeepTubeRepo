@@ -17,10 +17,12 @@ export default function LoginRequiredModal({ isOpen, onClose }: LoginRequiredMod
   };
 
   const handleSocialLogin = (provider: string) => {
-    // In a real implementation, this would initiate OAuth flow
-    console.log(`Initiating ${provider} login flow`);
-    // For now, just close the modal
+    // Close the modal and redirect to auth page
     onClose();
+    // Delay the redirect slightly to allow modal close animation
+    setTimeout(() => {
+      setLocation("/auth");
+    }, 100);
   };
 
   return (
