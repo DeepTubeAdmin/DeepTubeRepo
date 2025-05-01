@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import VideoGrid from './VideoGrid';
 import ImageGallery from './ImageGallery';
 import VideoCard from './VideoCard';
@@ -339,14 +339,29 @@ export default function InfiniteContentFeed({
               >
                 <h3 className="text-2xl font-bold mb-6">{sectionTitle}</h3>
                 <div className={`grid grid-cols-1 sm:grid-cols-2 ${block.type === 'videos' ? 'md:grid-cols-3 gap-6' : 'md:grid-cols-3 lg:grid-cols-4 gap-4'}`}>
-                  {block.type === 'videos' && block.items.map(item => (
-                    <VideoCard
-                      key={item.id}
-                      video={item}
-                      onPreview={onPreview}
-                      onWishlist={onWishlist}
-                    />
-                  ))}
+                  {block.type === 'videos' && block.items.map((item, itemIndex) => {
+                    // Insert an ad after every 5th video (4th index)
+                    const shouldShowAd = itemIndex > 0 && (itemIndex + 1) % 5 === 0;
+                    
+                    return (
+                      <React.Fragment key={`video-container-${item.id}`}>
+                        <VideoCard
+                          key={`video-${item.id}`}
+                          video={item}
+                          onPreview={onPreview}
+                          onWishlist={onWishlist}
+                        />
+                        
+                        {/* Insert advertisement every 5 videos */}
+                        {shouldShowAd && (
+                          <AdvertisementCard 
+                            key={`ad-after-${item.id}`}
+                            ad={getUniqueRandomAd()} 
+                          />
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                   {block.type === 'images' && block.items.map(item => (
                     <ImageCard
                       key={item.id}
