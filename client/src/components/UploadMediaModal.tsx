@@ -41,6 +41,19 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
   const [isUploading, setIsUploading] = useState(false);
   const [title, setTitle] = useState("");
   const [aiGenerator, setAiGenerator] = useState("");
+  const [customAiGenerator, setCustomAiGenerator] = useState("");
+  const [showCustomAiGenerator, setShowCustomAiGenerator] = useState(false);
+  
+  // AI Generator options
+  const aiGeneratorOptions = [
+    "Runway", 
+    "Google VEO2", 
+    "Kling", 
+    "Vidu", 
+    "Luma", 
+    "Open AI Sora", 
+    "Other"
+  ];
   const [prompt, setPrompt] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState<string>("");
@@ -118,6 +131,8 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
       setSelectedFile(null);
       setTitle("");
       setAiGenerator("");
+      setCustomAiGenerator("");
+      setShowCustomAiGenerator(false);
       setPrompt("");
       setDescription("");
       setEmbedCode("");
@@ -167,7 +182,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate form - only title and category are required
+    // Validate form - title, category, and AI generator are required
     if (!title || title.length < 3) {
       toast({
         title: "Invalid title",
@@ -181,6 +196,17 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
       toast({
         title: "Category required",
         description: `Please select a category for your ${contentType}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Check if AI Generator is selected or custom one is provided
+    const finalAiGenerator = aiGenerator === "Other" ? customAiGenerator : aiGenerator;
+    if (!finalAiGenerator) {
+      toast({
+        title: "AI Generator required",
+        description: "Please select or specify the AI tool used to generate this content",
         variant: "destructive",
       });
       return;
@@ -350,7 +376,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
         body: JSON.stringify({
           title,
           description,
-          aiGenerator,
+          aiGenerator: aiGenerator === "Other" ? customAiGenerator : aiGenerator,
           prompt,
           categoryId,
           contentType,
@@ -379,6 +405,8 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
       // Reset form
       setTitle("");
       setAiGenerator("");
+      setCustomAiGenerator("");
+      setShowCustomAiGenerator(false);
       setPrompt("");
       setDescription("");
       setCategoryId("");
@@ -394,7 +422,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
     } finally {
       setIsUploading(false);
     }
-  }, [title, description, aiGenerator, prompt, categoryId, contentType, selectedFile, embedCode, thumbnailUrl, originalYoutubeUrl, originalRedditUrl, toast, onClose]);
+  }, [title, description, aiGenerator, customAiGenerator, prompt, categoryId, contentType, selectedFile, embedCode, thumbnailUrl, originalYoutubeUrl, originalRedditUrl, toast, onClose]);
 
   return (
     <SimpleDialog isOpen={isOpen} onClose={onClose} title="Upload New Media" className="bg-[#1a1a1a] border-gray-800 max-w-md">
