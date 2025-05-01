@@ -1195,15 +1195,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (video.contentType === 'embed' && video.embedCode) {
         // Check if this is a YouTube embed and add autoplay
         if (video.embedCode.includes('youtube.com/embed/')) {
-          // Add autoplay parameters to YouTube embeds
-          video.embedCode = video.embedCode
-            // Add autoplay=1 parameter to YouTube URLs
-            .replace(/src="(https:\/\/www\.youtube\.com\/embed\/[^?"]+)"/g, 'src="$1?autoplay=1&mute=1"')
-            // If URL already has query parameters, append autoplay=1
-            .replace(/src="(https:\/\/www\.youtube\.com\/embed\/[^"]+)\?([^"]+)"/g, 'src="$1?autoplay=1&mute=1&$2"')
-            // Add allow="autoplay" to the iframe
-            .replace('allow="', 'allow="autoplay; ');
-            
+          console.log("API: Found YouTube embed, adding autoplay");
+          
+          // First check if the iframe already has autoplay
+          if (!video.embedCode.includes('autoplay=1')) {
+            // Add autoplay parameters to YouTube embeds with more comprehensive regex
+            video.embedCode = video.embedCode
+              // Case 1: URL with no query parameters
+              .replace(/src="(https:\/\/www\.youtube\.com\/embed\/[^?"]+)"/g, 'src="$1?autoplay=1"')
+              
+              // Case 2: URL already has query parameters
+              .replace(/src="(https:\/\/www\.youtube\.com\/embed\/[^"]+)\?([^"]+)"/g, function(match, url, params) {
+                // Don't add autoplay if it's already there
+                if (params.includes('autoplay=')) {
+                  return match;
+                }
+                return `src="${url}?autoplay=1&${params}"`;
+              })
+              
+              // Add allow="autoplay" if it's missing
+              .replace(/<iframe([^>]*)>/g, function(match, attributes) {
+                if (attributes.includes('allow="') && !attributes.includes('autoplay')) {
+                  return match.replace('allow="', 'allow="autoplay; ');
+                } else if (!attributes.includes('allow="')) {
+                  return match.replace('<iframe', '<iframe allow="autoplay"');
+                }
+                return match;
+              });
+          }
+          
           console.log("API: Modified YouTube embed to include autoplay");
         } 
         // Check if this is a Reddit embed and ensure it has the required script
