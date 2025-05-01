@@ -12,6 +12,7 @@ export const users = pgTable("users", {
   dateOfBirth: timestamp("date_of_birth"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   banned: boolean("banned").default(false),
+  isAdmin: boolean("is_admin").default(false),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -52,6 +53,10 @@ export const videos = pgTable("videos", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   credits: integer("credits").notNull().default(0), // Number of credits required to purchase
   views: integer("views").notNull().default(0), // Track number of views
+  reviewStatus: varchar("review_status", { enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewedBy: integer("reviewed_by").references(() => users.id),
+  rejectionReason: text("rejection_reason"),
 });
 
 export const videosRelations = relations(videos, ({ one, many }) => ({
@@ -61,6 +66,10 @@ export const videosRelations = relations(videos, ({ one, many }) => ({
   }),
   user: one(users, {
     fields: [videos.userId],
+    references: [users.id],
+  }),
+  reviewer: one(users, {
+    fields: [videos.reviewedBy],
     references: [users.id],
   }),
   wishlistItems: many(wishlistItems),
@@ -152,6 +161,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
   email: true,
   dateOfBirth: true,
+  isAdmin: true,
 });
 
 export const insertCategorySchema = createInsertSchema(categories);
@@ -173,7 +183,11 @@ export const insertVideoSchema = createInsertSchema(videos).pick({
   categoryId: true,
   vimeoId: true,
   credits: true,
-  views: true
+  views: true,
+  reviewStatus: true,
+  reviewedAt: true,
+  reviewedBy: true,
+  rejectionReason: true
 });
 export const insertWishlistItemSchema = createInsertSchema(wishlistItems);
 export const insertCommentSchema = createInsertSchema(comments);
