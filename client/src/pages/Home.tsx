@@ -16,8 +16,8 @@ import SEO from "@/components/SEO";
 import { useQuery } from "@tanstack/react-query";
 
 export default function Home() {
-  const [activeCategory, setActiveCategory] = useState<string>("trending");
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'most-viewed' | 'trending' | 'popular'>('newest');
+  const [activeCategory, setActiveCategory] = useState<string>("");
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'most-viewed' | 'trending' | 'popular'>('trending');
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -31,12 +31,8 @@ export default function Home() {
     queryKey: ['/api/categories'],
   });
   
-  // Add trending and most viewed to categories
-  const allCategories = [
-    { id: 0, name: "Trending", slug: "trending", icon: "🔥" },
-    { id: 0, name: "Most Viewed", slug: "most-viewed", icon: "👁️" },
-    ...(apiCategories || [])
-  ];
+  // Use only standard categories from the API
+  const allCategories = apiCategories || [];
 
   const handleCategoryChange = (slug: string) => {
     setActiveCategory(slug);
@@ -118,7 +114,7 @@ export default function Home() {
           />
           
           {/* Sort dropdown UI */}
-          <div className="absolute right-6 top-28 z-50">
+          <div className="absolute right-6 top-20 z-50">
             <button 
               ref={filterButtonRef}
               onClick={toggleFilterMenu}

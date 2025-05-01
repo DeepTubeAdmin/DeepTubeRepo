@@ -20,7 +20,7 @@ export default function InfiniteContentFeed({
   onPreview, 
   onWishlist,
   category = '',
-  sortBy = 'newest'
+  sortBy = 'trending' // Default to trending for initial load
 }: InfiniteContentFeedProps) {
   const [contentBlocks, setContentBlocks] = useState<Array<{
     type: 'videos' | 'images';
