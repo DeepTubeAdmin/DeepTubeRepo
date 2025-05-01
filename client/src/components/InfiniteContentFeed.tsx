@@ -13,7 +13,7 @@ interface InfiniteContentFeedProps {
   onPreview?: (videoId: number) => void;
   onWishlist?: (videoId: number) => void;
   category?: string;
-  sortBy?: 'newest' | 'oldest' | 'viewed';
+  sortBy?: 'newest' | 'oldest' | 'most-viewed' | 'trending' | 'popular';
 }
 
 export default function InfiniteContentFeed({ 
