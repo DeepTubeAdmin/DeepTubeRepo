@@ -128,6 +128,27 @@ const upload = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Test endpoint for S3 access
   // Endpoint to fix thumbnails content-type by content type
+  // Route to fix all image thumbnails using the dedicated script
+  app.get('/api/fix-all-image-thumbnails', async (req, res) => {
+    try {
+      const { default: fixAllImageThumbnails } = await import('./fix-all-image-thumbnails.js');
+      const results = await fixAllImageThumbnails();
+      
+      return res.json({
+        success: true,
+        message: 'Image thumbnail fix process completed successfully',
+        results
+      });
+    } catch (error) {
+      console.error('Error running image thumbnail fix script:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to run image thumbnail fix script',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   app.get('/api/update-image-thumbnails', async (req, res) => {
     try {
       // Get all image content
