@@ -149,9 +149,7 @@ async function thumbnailExistsInS3(s3Key: string): Promise<boolean> {
   }
 }
 
-// Additional Node.js utilities needed for file operations
-const fsAccess = promisify(fs.access);
-const fsUnlink = promisify(fs.unlink);
+// No need for duplicate declarations since we already have accessAsync
 
 /**
  * Generate a thumbnail for a video or image and store it directly in S3
