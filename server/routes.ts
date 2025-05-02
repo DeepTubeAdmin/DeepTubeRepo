@@ -13,6 +13,26 @@ import fs from "fs/promises";
 import fsSync from "fs";
 import { fileURLToPath } from 'url';
 import { getSignedS3Url, uploadFileToS3, uploadStringToS3, deleteFileFromS3, localPathToS3Key, urlPathToS3Key } from "./s3";
+
+// Generate placeholder SVG for videos
+function getPlaceholderSvg() {
+  return `
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="225" viewBox="0 0 400 225">
+  <rect width="400" height="225" fill="#111" />
+  <circle cx="200" cy="112.5" r="50" fill="#222" />
+  <polygon points="185,90 185,135 225,112.5" fill="#f97316" stroke="#000" stroke-width="2" />
+</svg>
+`;
+}
+
+// Helper to send SVG placeholder
+function sendSvgPlaceholder(res: Response) {
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  return res.send(getPlaceholderSvg());
+}
 import { WebSocketServer } from 'ws';
 
 // Get directory paths in ES modules
@@ -1456,11 +1476,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If forceSvg is true, immediately return SVG placeholder
       if (forceSvg) {
         console.log(`Serving SVG placeholder for video ${videoId} (forced)`);
-        res.setHeader('Content-Type', 'image/svg+xml');
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-        return res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
+        return sendSvgPlaceholder(res);
       }
       
       // Disable caching for all thumbnail responses to ensure freshness
@@ -1603,9 +1619,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (videoPath.startsWith('data:')) {
           // For base64 videos - can't generate thumbnails from these directly
-          // Fallback to a generic thumbnail without text
-          res.setHeader('Content-Type', 'image/svg+xml');
-          return res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
+          console.log(`Serving SVG placeholder for base64 video ${videoId}`);
+          return sendSvgPlaceholder(res);
         } else if (videoPath.startsWith('http')) {
           // Remote URL - try to use a frame grab from S3 if already exists
           try {
@@ -1756,30 +1771,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Generate a generic video/image thumbnail based on content type
-      if (video.contentType === 'video') {
-        res.setHeader('Content-Type', 'image/svg+xml');
-        return res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
-      } else if (video.contentType === 'image') {
-        res.setHeader('Content-Type', 'image/svg+xml');
-        return res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
-      } else {
-        res.setHeader('Content-Type', 'image/svg+xml');
-        return res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
-      }
+      console.log(`Serving SVG placeholder by content type for ${videoId}: ${video.contentType}`);
+      return sendSvgPlaceholder(res);
       
     } catch (error) {
       console.error("Error generating thumbnail:", error);
-      // Simple SVG placeholder directly in the response
-      const placeholderSvg = `
-<svg xmlns="http://www.w3.org/2000/svg" width="400" height="225" viewBox="0 0 400 225">
-  <rect width="400" height="225" fill="#111" />
-  <circle cx="200" cy="112.5" r="50" fill="#222" />
-  <polygon points="185,90 185,135 225,112.5" fill="#f97316" stroke="#000" stroke-width="2" />
-</svg>
-`;
-      
-      res.setHeader('Content-Type', 'image/svg+xml');
-      return res.send(placeholderSvg);
+      console.log(`Serving SVG placeholder due to error for video ${videoId}`);
+      return sendSvgPlaceholder(res);
     }
   });
 
