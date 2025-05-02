@@ -1428,17 +1428,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (videoPath.startsWith('data:')) {
           // For base64 videos - can't generate thumbnails from these directly
-          // Fallback to colorful placeholder
-          const title = video.title || "Video";
-          const firstLetter = title.charAt(0).toUpperCase();
-          const hue = (firstLetter.charCodeAt(0) % 26) * 10; 
-          return res.redirect(`https://placehold.co/800x450/${hue.toString(16).padStart(2, '0')}0066/FFFFFF?text=${encodeURIComponent(title)}`);
+          // Fallback to a generic thumbnail for videos rather than text
+          return res.redirect(`https://placehold.co/800x450/222/444?text=Video+Preview`);
         } else if (videoPath.startsWith('http')) {
-          // Remote URL, use a placeholder for now (can't easily process remote videos)
-          const title = video.title || "Video";
-          const firstLetter = title.charAt(0).toUpperCase();
-          const hue = (firstLetter.charCodeAt(0) % 26) * 10;
-          return res.redirect(`https://placehold.co/800x450/${hue.toString(16).padStart(2, '0')}0066/FFFFFF?text=${encodeURIComponent(title)}`);
+          // Remote URL - try to use a frame grab from S3 if already exists
+          try {
+            const signedUrl = await getSignedS3Url(s3Key);
+            return res.redirect(signedUrl);
+          } catch (s3Error) {
+            // If S3 thumbnail doesn't exist, fallback to a better placeholder
+            return res.redirect(`https://placehold.co/800x450/222/444?text=Video+Preview`);
+          }
         } else {
           // Local file path - clean it up if needed
           // If the path starts with a slash but doesn't have a proper directory prefix
@@ -1515,18 +1515,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Generate a colorful default thumbnail based on the video title for other cases
-      const title = video.title || "Video";
-      const firstLetter = title.charAt(0).toUpperCase();
-      const hue = (firstLetter.charCodeAt(0) % 26) * 10; // Generate a color based on first letter
-      
-      // Redirect to a placeholder with the title
-      return res.redirect(`https://placehold.co/800x450/${hue.toString(16).padStart(2, '0')}0066/FFFFFF?text=${encodeURIComponent(title)}`);
+      // Generate a generic video/image thumbnail based on content type
+      if (video.contentType === 'video') {
+        return res.redirect(`https://placehold.co/800x450/222/444?text=Video+Preview`);
+      } else if (video.contentType === 'image') {
+        return res.redirect(`https://placehold.co/800x450/222/444?text=Image+Preview`);
+      } else {
+        return res.redirect(`https://placehold.co/800x450/222/444?text=Media+Preview`);
+      }
       
     } catch (error) {
       console.error("Error generating thumbnail:", error);
-      // Fall back to a generic placeholder
-      res.redirect("https://placehold.co/800x450/333/FFF?text=AI+Video");
+      // Fall back to a generic placeholder without text
+      res.redirect("https://placehold.co/800x450/222/444?text=Video+Preview");
     }
   });
 

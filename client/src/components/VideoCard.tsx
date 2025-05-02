@@ -166,9 +166,15 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           alt={video.title} 
           className="w-full h-full object-cover absolute inset-0" 
           onError={(e) => {
-            // If thumbnail fails, fall back to placeholder
+            // If thumbnail fails, fall back to a generic video or image placeholder
             console.error(`Error loading thumbnail for video ${video.id}`);
-            e.currentTarget.src = `https://placehold.co/400x225/333/FFFFFF?text=${encodeURIComponent(video.title || "AI Video")}`;
+            if (video.contentType === 'video') {
+              e.currentTarget.src = `https://placehold.co/400x225/222/444?text=Video+Preview`;
+            } else if (video.contentType === 'image') {
+              e.currentTarget.src = `https://placehold.co/400x225/222/444?text=Image+Preview`;
+            } else {
+              e.currentTarget.src = `https://placehold.co/400x225/222/444?text=Media+Preview`;
+            }
           }}
         />
             
