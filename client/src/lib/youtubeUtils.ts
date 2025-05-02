@@ -57,10 +57,11 @@ export function youtubeUrlToEmbedCode(url: string, autoplay: boolean = false): s
   if (!videoId) return null;
   
   // Note: We add different parameters for different contexts
+  // Always include origin parameter to avoid cross-origin issues with YouTube API
   return `<iframe 
     width="100%" 
     height="100%" 
-    src="https://www.youtube.com/embed/${videoId}?rel=0&enablejsapi=1${autoplay ? '&autoplay=1' : '&mute=1'}" 
+    src="https://www.youtube.com/embed/${videoId}?rel=0&enablejsapi=1${autoplay ? '&autoplay=1' : '&mute=1'}&origin=deeptube.replit.app" 
     title="YouTube video player" 
     frameborder="0" 
     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
