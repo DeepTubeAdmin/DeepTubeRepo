@@ -1648,6 +1648,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Thumbnail generation endpoint
+  // Test endpoint for thumbnail generation
+  app.get("/api/regenerate-thumbnail/:id", async (req, res) => {
+    try {
+      const videoId = parseInt(req.params.id);
+      const video = await dbStorage.getVideoById(videoId);
+      
+      if (!video) {
+        return res.status(404).json({ error: "Video not found" });
+      }
+      
+      // Import the thumbnail generator
+      const { generateAndStoreS3Thumbnail } = await import('./generateThumbnail');
+      
+      // Get the source URL based on content type
+      let sourceUrl = null;
+      let youtubeId = null;
+      
+      if (video.contentType === 'video' || video.contentType === 'videos') {
+        sourceUrl = video.videoUrl;
+      } else if (video.contentType === 'image' || video.contentType === 'images') {
+        sourceUrl = video.imageUrl;
+      } else if (video.contentType === 'embed' && video.embedCode) {
+        // Try to extract YouTube ID
+        const youtubeIdMatch = video.embedCode.match(/youtube\.com\/embed\/([\w-]+)/);
+        if (youtubeIdMatch && youtubeIdMatch[1]) {
+          youtubeId = youtubeIdMatch[1];
+        }
+      }
+      
+      // Force regenerate the thumbnail in S3
+      const s3Key = await generateAndStoreS3Thumbnail(videoId, video.contentType, sourceUrl, youtubeId);
+      
+      // Update the video record with the thumbnail path
+      await dbStorage.updateVideo(videoId, { 
+        thumbnail: `/api/videos/${videoId}/thumbnail` 
+      });
+      
+      res.json({ 
+        success: true, 
+        message: `Thumbnail regenerated for video ${videoId}`,
+        thumbnailUrl: `/api/videos/${videoId}/thumbnail`,
+        contentType: video.contentType,
+        sourceUrl,
+        youtubeId
+      });
+    } catch (error) {
+      console.error("Error regenerating thumbnail:", error);
+      res.status(500).json({ error: String(error) });
+    }
+  });
+  
+  // Thumbnail endpoint
   app.get("/api/videos/:id/thumbnail", async (req, res) => {
     try {
       const videoId = parseInt(req.params.id);
