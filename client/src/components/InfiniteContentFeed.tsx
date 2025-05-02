@@ -10,6 +10,7 @@ import { Video as SchemaVideo } from '@shared/schema';
 import { Loader2 } from 'lucide-react';
 import { Link } from 'wouter';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { checkThumbnail } from '@/lib/checkThumbnail';
 
 interface InfiniteContentFeedProps {
   onPreview?: (videoId: number) => void;
@@ -326,7 +327,7 @@ export default function InfiniteContentFeed({
           {/* Thumbnail with hover effect */}
           <AspectRatio ratio={3 / 4} className="bg-black">
             <img
-              src={image.thumbnail || "https://via.placeholder.com/640x360?text=No+Thumbnail"}
+              src={checkThumbnail(image.thumbnail || "", image.id)}
               alt={image.title}
               className="object-cover w-full h-full transition-all duration-300 transform group-hover:scale-110"
             />
