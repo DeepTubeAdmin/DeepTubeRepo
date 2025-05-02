@@ -6,6 +6,15 @@
  */
 
 import { uploadStringToS3, getSignedS3Url } from './s3';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+
+const execAsync = promisify(exec);
+const readFileAsync = promisify(fs.readFile);
+const unlinkAsync = promisify(fs.unlink);
 
 /**
  * Generate an SVG thumbnail placeholder for specific content types
@@ -73,6 +82,65 @@ async function thumbnailExistsInS3(s3Key: string): Promise<boolean> {
 }
 
 /**
+ * Generate a thumbnail from a video using FFmpeg
+ * @param videoUrl URL of the video file (can be local path or HTTP URL)
+ * @returns Buffer containing the thumbnail image
+ */
+async function generateFFmpegThumbnail(videoUrl: string): Promise<Buffer> {
+  // Create a temporary file path for the thumbnail
+  const tempDir = os.tmpdir();
+  const thumbnailPath = path.join(tempDir, `thumbnail-${Date.now()}.jpg`);
+  
+  try {
+    console.log(`Generating thumbnail from video: ${videoUrl}`);
+    console.log(`Temporary thumbnail path: ${thumbnailPath}`);
+    
+    // Determine if this is a remote or local URL
+    const isRemoteUrl = videoUrl.startsWith('http');
+    
+    // For remote URLs, we need to handle them differently
+    const ffmpegCommand = isRemoteUrl
+      ? `ffmpeg -y -i "${videoUrl}" -ss 00:00:02 -vframes 1 -vf "scale=800:450:force_original_aspect_ratio=decrease,pad=800:450:(ow-iw)/2:(oh-ih)/2" -q:v 2 "${thumbnailPath}"`
+      : `ffmpeg -y -i "${videoUrl}" -ss 00:00:02 -vframes 1 -vf "scale=800:450:force_original_aspect_ratio=decrease,pad=800:450:(ow-iw)/2:(oh-ih)/2" -q:v 2 "${thumbnailPath}"`;
+    
+    console.log(`Executing FFmpeg command: ${ffmpegCommand}`);
+    
+    const { stdout, stderr } = await execAsync(ffmpegCommand);
+    console.log('FFmpeg stdout:', stdout);
+    console.log('FFmpeg stderr:', stderr);
+    
+    // Check if the thumbnail was created successfully
+    if (!fs.existsSync(thumbnailPath)) {
+      throw new Error(`Failed to generate thumbnail: File ${thumbnailPath} not created`);
+    }
+    
+    // Read the generated thumbnail
+    const thumbnailBuffer = await readFileAsync(thumbnailPath);
+    console.log(`Read thumbnail file: ${thumbnailPath} (size: ${thumbnailBuffer.length} bytes)`);
+    
+    // Clean up the temporary file
+    await unlinkAsync(thumbnailPath);
+    console.log(`Deleted temporary thumbnail file: ${thumbnailPath}`);
+    
+    return thumbnailBuffer;
+  } catch (error) {
+    console.error(`Error generating FFmpeg thumbnail: ${String(error)}`);
+    
+    // Try to clean up if file exists and an error occurred
+    if (fs.existsSync(thumbnailPath)) {
+      try {
+        await unlinkAsync(thumbnailPath);
+        console.log(`Cleaned up thumbnail file after error: ${thumbnailPath}`);
+      } catch (cleanupError) {
+        console.error(`Error cleaning up thumbnail: ${String(cleanupError)}`);
+      }
+    }
+    
+    throw error;
+  }
+}
+
+/**
  * Generate a thumbnail for a video or image and store it directly in S3
  * @param videoId The ID of the video or image
  * @param contentType The type of content (video, image, embed)
@@ -135,6 +203,29 @@ export async function generateAndStoreS3Thumbnail(
       }
     } catch (error) {
       console.error(`Error generating YouTube thumbnail: ${String(error)}`);
+      // Fall through to SVG generation
+    }
+  }
+  
+  // Handle videos - use FFmpeg to generate a thumbnail
+  if ((contentType === 'video' || contentType === 'videos') && sourceUrl) {
+    try {
+      console.log(`Generating FFmpeg thumbnail for video ID ${videoId} from ${sourceUrl}`);
+      
+      // Generate the thumbnail using FFmpeg
+      const thumbnailBuffer = await generateFFmpegThumbnail(sourceUrl);
+      
+      // Upload the thumbnail to S3
+      await uploadStringToS3(
+        thumbnailBuffer, 
+        s3Key, 
+        'image/jpeg'
+      );
+      
+      console.log(`Successfully uploaded FFmpeg-generated thumbnail for ${videoId} to S3`);
+      return s3Key;
+    } catch (error) {
+      console.error(`Error generating FFmpeg thumbnail: ${String(error)}`);
       // Fall through to SVG generation
     }
   }
