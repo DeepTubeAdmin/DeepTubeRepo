@@ -18,12 +18,37 @@ interface ThumbnailImageProps {
 
 // Component to handle thumbnail loading with proper S3 URL resolution
 function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailImageProps) {
-  // Use our helper function to get a reliable thumbnail URL
-  const reliableThumbnail = thumbnail ? checkThumbnail(thumbnail, videoId) : `/api/videos/${videoId}/thumbnail?t=${Date.now()}`;
+  // Extract YouTube ID for embeds
+  const [youtubeId, setYoutubeId] = useState<string | null>(null);
+  
+  // Get YouTube ID for embed content types
+  useEffect(() => {
+    if (contentType === 'embed' && thumbnail && 
+        (thumbnail.includes('youtube.com') || thumbnail.includes('youtu.be'))) {
+      // Try to parse YouTube ID from the thumbnail URL
+      const ytMatch = thumbnail.match(/(?:youtube\.com\/vi\/|img\.youtube\.com\/vi\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+      if (ytMatch && ytMatch[1]) {
+        setYoutubeId(ytMatch[1]);
+      }
+    }
+  }, [contentType, thumbnail]);
+  
+  // Default to our API endpoint with a cache buster
+  let reliableThumbnail = thumbnail ? checkThumbnail(thumbnail, videoId) : `/api/videos/${videoId}/thumbnail?t=${Date.now()}`;
+  
+  // Override for YouTube embeds - use direct YouTube image URL
+  if (contentType === 'embed' && youtubeId) {
+    reliableThumbnail = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+  }
   
   // Set the state to our validated thumbnail URL
   const [imgSrc, setImgSrc] = useState<string>(reliableThumbnail);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Update imgSrc when reliableThumbnail changes
+  useEffect(() => {
+    setImgSrc(reliableThumbnail);
+  }, [reliableThumbnail]);
   
   // Simple loading state for visibility
   useEffect(() => {
@@ -45,9 +70,23 @@ function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailIma
         alt={title} 
         className="w-full h-full object-cover absolute inset-0" 
         onError={(e) => {
-          // If the image fails to load, fall back to our SVG placeholder
+          // If the image fails to load, try different YouTube thumbnail sizes if it's YouTube
+          if (contentType === 'embed' && youtubeId) {
+            // Try medium quality if high quality fails
+            if (imgSrc.includes('hqdefault')) {
+              console.log(`ThumbnailImage: Falling back to medium quality YouTube thumbnail for video ${videoId}`);
+              setImgSrc(`https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`);
+              return;
+            } else if (imgSrc.includes('mqdefault')) {
+              // Try default quality if medium quality fails
+              console.log(`ThumbnailImage: Falling back to default quality YouTube thumbnail for video ${videoId}`);
+              setImgSrc(`https://img.youtube.com/vi/${youtubeId}/default.jpg`);
+              return;
+            }
+          }
+          
+          // If all else fails, use our API endpoint with SVG flag
           console.error(`ThumbnailImage: Error loading thumbnail for video ${videoId}`);
-          // Use our helper function to fix the thumbnail path
           e.currentTarget.src = `/api/videos/${videoId}/thumbnail?forcesvg=true&t=${Date.now()}`;
         }}
       />

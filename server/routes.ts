@@ -2147,6 +2147,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return sendSvgPlaceholder(res, video.contentType);
       }
       
+      // Special handling for YouTube embeds - extract YouTube ID and redirect to thumbnail
+      if (video.contentType === 'embed' && video.embedCode && 
+          (video.embedCode.includes('youtube.com') || video.embedCode.includes('youtu.be'))) {
+        // Extract YouTube video ID from embed code with multiple pattern matching
+        const ytMatch = video.embedCode.match(/(?:youtube\.com\/embed\/|youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+        if (ytMatch && ytMatch[1]) {
+          const youtubeId = ytMatch[1];
+          
+          // Use high quality thumbnail with fallback to medium quality
+          // We'll try to fetch and detect if maxresdefault exists, but we'll use the standard thumbnail as a safe option
+          const youtubeThumbnailUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+          
+          console.log(`Redirecting to YouTube thumbnail for video ${videoId}: ${youtubeThumbnailUrl}`);
+          return res.redirect(youtubeThumbnailUrl);
+        }
+      }
+      
       // Disable caching for all thumbnail responses to ensure freshness
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Pragma', 'no-cache');
