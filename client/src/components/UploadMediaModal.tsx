@@ -247,11 +247,17 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           const formData = new FormData();
           formData.append('file', selectedFile);
           
+          console.log('Starting MP4 file upload to /api/upload/file');
           // Upload the file first
           const fileUploadResponse = await fetch('/api/upload/file', {
             method: 'POST',
             body: formData,
             credentials: 'include',
+            // Add timeout and retry options for large uploads
+            signal: AbortSignal.timeout(120000), // 2 minute timeout
+          }).catch(error => {
+            console.error('Network error during MP4 file upload:', error);
+            throw new Error(`Network error during upload: ${error.message}`);
           });
           
           if (!fileUploadResponse.ok) {
@@ -448,11 +454,17 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
             const formData = new FormData();
             formData.append('file', selectedFile);
             
+            console.log('Starting file upload to /api/upload/file');
             // Upload the file first
             const fileUploadResponse = await fetch('/api/upload/file', {
               method: 'POST',
               body: formData,
               credentials: 'include',
+              // Add timeout and retry options for large uploads
+              signal: AbortSignal.timeout(120000), // 2 minute timeout
+            }).catch(error => {
+              console.error('Network error during file upload:', error);
+              throw new Error(`Network error during upload: ${error.message}`);
             });
             
             if (!fileUploadResponse.ok) {
@@ -595,12 +607,16 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
       }
       
       // Upload the form data to the server
+      console.log('Submitting video metadata to /api/videos/upload');
       const response = await fetch('/api/videos/upload', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        // Add a longer timeout for large data payloads (especially base64 images)
+        signal: AbortSignal.timeout(60000), // 1 minute timeout
         body: JSON.stringify({
+
           title,
           description,
           aiGenerator: aiGenerator === "Other" ? customAiGenerator : aiGenerator,
