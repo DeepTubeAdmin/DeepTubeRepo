@@ -145,7 +145,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
 
   // Handle preview click
   const handlePreview = () => {
-    if (onPreview) onPreview(video.id);
+    window.location.href = `/media/${video.id}`;
   };
 
   useEffect(() => {
