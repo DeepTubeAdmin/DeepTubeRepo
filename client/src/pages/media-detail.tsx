@@ -510,18 +510,22 @@ export default function MediaDetail() {
             <h2 className="text-lg font-bold mb-4">Related Content</h2>
             <div className="space-y-4">
               {/* Fetch related content based on content type, tags, etc */}
-              {useQuery({
-                queryKey: [`/api/videos/${id}/related`],
-                enabled: !!id,
-                select: (data: Video[]) => data?.slice(0, 6)
-              }).data?.map((relatedVideo) => (
-                <div key={relatedVideo.id} className="w-full">
-                  <VideoCard 
-                    video={relatedVideo}
-                    compact={true}
-                  />
-                </div>
-              ))}
+              {(() => {
+                const { data: relatedVideos } = useQuery({
+                  queryKey: [`/api/videos/${id}/related`],
+                  enabled: !!id,
+                  select: (data: Video[]) => data?.slice(0, 6)
+                });
+                
+                return relatedVideos?.map((relatedVideo) => (
+                  <div key={relatedVideo.id} className="w-full">
+                    <VideoCard 
+                      video={relatedVideo}
+                      compact={true}
+                    />
+                  </div>
+                ));
+              })()}
             </div>
           </div>
         </div>
