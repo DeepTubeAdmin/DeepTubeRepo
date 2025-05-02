@@ -279,7 +279,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           </div>
         )}
         
-        {/* Video previews only for video type with valid videoUrl on hover */}
+        {/* Video previews with enhanced format support */}
         {video.contentType === 'video' && video.videoUrl && (
           <div className="absolute inset-0 w-full h-full">
             {isHovered ? (
@@ -288,9 +288,17 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
                 poster={checkThumbnail(video.thumbnail || '', video.id)}
                 isHovered={isHovered}
                 className="w-full h-full object-cover"
-                previewDuration={60} // Play continuously instead of just 5 seconds
+                previewDuration={60}
+                width="100%"
+                height="100%"
               />
-            ) : null}
+            ) : (
+              <img 
+                src={checkThumbnail(video.thumbnail || '', video.id)}
+                alt={video.title}
+                className="w-full h-full object-cover"
+              />
+            )}
           </div>
         )}
         

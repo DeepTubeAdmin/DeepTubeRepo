@@ -87,11 +87,15 @@ export default function VideoPreview({
     const video = videoRef.current;
     video.muted = true;
     video.playsInline = true;
-    video.preload = "auto"; // Changed from metadata to auto for better preview experience
-
-    // Ensure these attributes are set in HTML as well
+    video.preload = "auto";
+    video.loop = true; // Enable looping for smoother preview
+    
+    // Force attributes for mobile compatibility
     video.setAttribute('muted', 'true');
     video.setAttribute('playsinline', 'true');
+    video.setAttribute('webkit-playsinline', 'true');
+    video.setAttribute('x5-playsinline', 'true');
+    video.setAttribute('x5-video-player-type', 'h5');
 
     console.log(`VideoPreview: initializing video for ${src.substring(0, 30)}...`);
 
