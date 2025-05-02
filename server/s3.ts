@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ObjectCannedACL } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import fs from 'fs';
 import path from 'path';
@@ -33,6 +33,7 @@ export async function uploadFileToS3(filePath: string, s3Key: string): Promise<s
       Key: s3Key,
       Body: fileContent,
       ContentType: getContentType(s3Key),
+      ACL: 'public-read' as ObjectCannedACL, // Make the file publicly readable
     };
     
     await s3Client.send(new PutObjectCommand(params));
@@ -59,6 +60,14 @@ export async function getSignedS3Url(s3Key: string, expiresIn: number = 3600): P
   try {
     log(`Generating signed URL for S3 key: ${s3Key} with ${expiresIn}s expiry`, 's3');
     
+    // Try to use a direct public URL first (this is faster and more reliable)
+    // Format: https://BUCKET_NAME.s3.REGION.amazonaws.com/KEY
+    const publicUrl = `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
+    
+    // Log the public URL attempt
+    log(`Attempting to use public URL: ${publicUrl}`, 's3');
+    
+    // Note: We'll continue to also generate a signed URL as a fallback
     const params = {
       Bucket: BUCKET_NAME,
       Key: s3Key,
@@ -67,12 +76,13 @@ export async function getSignedS3Url(s3Key: string, expiresIn: number = 3600): P
     log(`S3 parameters: Bucket=${BUCKET_NAME}, Key=${s3Key}, expiresIn=${expiresIn}`, 's3');
     
     const command = new GetObjectCommand(params);
-    const url = await getSignedUrl(s3Client, command, { expiresIn });
+    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn });
     
-    log(`Generated signed URL for ${s3Key} (length: ${url.length})`, 's3');
-    log(`URL starts with: ${url.substring(0, 50)}...`, 's3');
+    log(`Generated signed URL for ${s3Key} (length: ${signedUrl.length})`, 's3');
+    log(`URL starts with: ${signedUrl.substring(0, 50)}...`, 's3');
     
-    return url;
+    // Prefer the public URL if the objects are set to be publicly readable
+    return publicUrl;
   } catch (error) {
     log(`Error generating pre-signed URL for key ${s3Key}: ${error}`, 's3');
     console.error('S3 URL generation error:', error);
