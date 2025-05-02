@@ -290,8 +290,12 @@ export default function InfiniteContentFeed({
     const [isHovering, setIsHovering] = useState(false);
 
     const handleClick = () => {
+      console.log('ImageCard: handleClick called for image', image.id);
       if (onPreview) {
+        console.log('ImageCard: Calling onPreview with image ID', image.id);
         onPreview(image.id);
+      } else {
+        console.log('ImageCard: onPreview prop is not provided');
       }
     };
 

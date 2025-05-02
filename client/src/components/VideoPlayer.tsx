@@ -711,8 +711,15 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
     }
   };
   
+  // Use a simpler Dialog implementation to avoid potential issues
+  console.log('VideoPlayer render with isOpen:', isOpen, 'videoId:', videoId);
+  
+  if (!isOpen) {
+    return null;
+  }
+  
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
+    <Dialog open={true} onOpenChange={(open) => !open && handleCloseDialog()}>
       <DialogTitle className="sr-only">Media viewer</DialogTitle>
       <DialogContent className="sm:max-w-5xl md:max-w-6xl lg:max-w-7xl max-h-[95vh] overflow-y-auto w-[95vw] bg-[#1a1a1a] border-gray-800 p-0">
         <div className="absolute top-4 right-4 z-10">
