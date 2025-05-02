@@ -28,15 +28,15 @@ async function generateFFmpegThumbnail(videoUrl: string): Promise<Buffer> {
   if (!videoUrl) {
     throw new Error('No video URL provided');
   }
-  
+
   // Create a temporary file for the output
   const tempDir = os.tmpdir();
   const outputPath = path.join(tempDir, `thumbnail-${Date.now()}.jpg`);
-  
+
   try {
     console.log(`Generating FFmpeg thumbnail from ${videoUrl}`);
     console.log(`Output will be saved to ${outputPath}`);
-    
+
     // First get the actual video URL if it's an S3 path
     let finalVideoUrl = videoUrl;
     if (videoUrl.startsWith('/api/s3/')) {
@@ -64,38 +64,38 @@ async function generateFFmpegThumbnail(videoUrl: string): Promise<Buffer> {
       '-frames:v', '1', // Extract one frame
       outputPath // Output path
     ];
-    
+
     // Execute FFmpeg
     const { stdout, stderr } = await execFileAsync('ffmpeg', ffmpegArgs);
     console.log('FFmpeg stdout:', stdout);
     console.log('FFmpeg stderr:', stderr);
-    
+
     // Check if the output file exists
     await accessAsync(outputPath);
-    
+
     // Read the thumbnail into a buffer
     const thumbnailBuffer = await readFileAsync(outputPath);
-    
+
     // Clean up the temporary file
     await unlinkAsync(outputPath).catch(err => {
       console.error(`Error cleaning up temporary file ${outputPath}:`, err);
     });
-    
+
     if (thumbnailBuffer.length === 0) {
       throw new Error('FFmpeg generated a zero-byte file');
     }
-    
+
     console.log(`Successfully generated ${thumbnailBuffer.length} byte thumbnail`);
     return thumbnailBuffer;
   } catch (error) {
     console.error(`Error generating FFmpeg thumbnail:`, error);
-    
+
     // Clean up the temporary file if something went wrong
     try {
       await accessAsync(outputPath);
       await unlinkAsync(outputPath);
     } catch {}
-    
+
     throw error;
   }
 }
@@ -110,16 +110,16 @@ export function generateSvgPlaceholder(contentType = 'video'): string {
   const normalizedType = contentType === 'videos' ? 'video' : 
                         contentType === 'images' ? 'image' : 
                         contentType;
-  
+
   // Default colors
   const bgColor = '#0f172a';  // Dark blueish background
   const textColor = '#f59e0b'; // Orange text
   const textOutline = '#000000'; // Black outline
-  
+
   // Icon and text based on content type
   let icon = '';
   let label = '';
-  
+
   switch (normalizedType) {
     case 'video':
       icon = `<path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm-6 2v-2h12v2H6zm6 2l6-3v6l-6-3z" fill="${textColor}" stroke="${textOutline}" stroke-width="0.5" />`;
@@ -137,7 +137,7 @@ export function generateSvgPlaceholder(contentType = 'video'): string {
       icon = `<circle cx="12" cy="12" r="8" fill="${textColor}" stroke="${textOutline}" stroke-width="0.5" />`;
       label = 'DeepTube Content';
   }
-  
+
   // Create the SVG
   return `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
     <rect width="800" height="450" fill="${bgColor}" />
@@ -165,7 +165,6 @@ async function thumbnailExistsInS3(s3Key: string): Promise<boolean> {
   }
 }
 
-// No need for duplicate declarations since we already have accessAsync
 
 /**
  * Generate a thumbnail for a video or image and store it directly in S3
@@ -183,7 +182,7 @@ export async function generateAndStoreS3Thumbnail(
 ): Promise<string> {
   // S3 key for this thumbnail
   const s3Key = `thumbnails/video-${videoId}.jpg`;
-  
+
   // Check if the thumbnail already exists in S3
   try {
     const exists = await thumbnailExistsInS3(s3Key);
@@ -195,7 +194,7 @@ export async function generateAndStoreS3Thumbnail(
     // Continue if error checking - we'll try to generate a new thumbnail
     console.log(`Error checking if thumbnail exists: ${String(error)}`);
   }
-  
+
   // Handle YouTube embeds
   if (contentType === 'embed' && youtubeId) {
     try {
@@ -204,25 +203,25 @@ export async function generateAndStoreS3Thumbnail(
       if (!youtubeThumbnailUrl) {
         throw new Error("YouTube thumbnail URL is empty");
       }
-      
+
       const response = await fetch(youtubeThumbnailUrl);
-      
+
       if (response.ok) {
         // Get the image data as an array buffer
         const arrayBuffer = await response.arrayBuffer();
-        
+
         // Create a binary string from the array buffer
         const binaryString = Array.from(new Uint8Array(arrayBuffer))
           .map(byte => String.fromCharCode(byte))
           .join('');
-        
+
         // Upload to S3 as binary data
         await uploadStringToS3(
           binaryString, 
           s3Key, 
           'image/jpeg'
         );
-        
+
         console.log(`Successfully uploaded YouTube thumbnail for ${videoId} to S3`);
         return s3Key;
       } else {
@@ -233,22 +232,22 @@ export async function generateAndStoreS3Thumbnail(
       // Fall through to SVG generation
     }
   }
-  
+
   // Handle videos - use FFmpeg to generate a thumbnail
   if ((contentType === 'video' || contentType === 'videos') && sourceUrl) {
     try {
       console.log(`Generating FFmpeg thumbnail for video ID ${videoId} from ${sourceUrl}`);
-      
+
       // Generate the thumbnail using FFmpeg
       const thumbnailBuffer = await generateFFmpegThumbnail(sourceUrl);
-      
+
       // Upload the thumbnail to S3
       await uploadStringToS3(
         thumbnailBuffer, 
         s3Key, 
         'image/jpeg'
       );
-      
+
       console.log(`Successfully uploaded FFmpeg-generated thumbnail for ${videoId} to S3`);
       return s3Key;
     } catch (error) {
@@ -256,7 +255,7 @@ export async function generateAndStoreS3Thumbnail(
       // Fall through to SVG generation
     }
   }
-  
+
   // Handle images - use the image directly if it's a URL
   if ((contentType === 'image' || contentType === 'images') && sourceUrl && sourceUrl.startsWith('http')) {
     try {
@@ -264,25 +263,25 @@ export async function generateAndStoreS3Thumbnail(
       if (!sourceUrl) {
         throw new Error("Source URL is empty");
       }
-      
+
       const response = await fetch(sourceUrl);
-      
+
       if (response.ok) {
         // Get the image data as an array buffer
         const arrayBuffer = await response.arrayBuffer();
-        
+
         // Create a binary string from the array buffer
         const binaryString = Array.from(new Uint8Array(arrayBuffer))
           .map(byte => String.fromCharCode(byte))
           .join('');
-        
+
         // Upload to S3 as binary data
         await uploadStringToS3(
           binaryString, 
           s3Key, 
           'image/jpeg'
         );
-        
+
         console.log(`Successfully uploaded image for ${videoId} to S3`);
         return s3Key;
       } else {
@@ -293,19 +292,19 @@ export async function generateAndStoreS3Thumbnail(
       // Fall through to SVG generation
     }
   }
-  
+
   // If we can't generate a real thumbnail, use an SVG placeholder
   try {
     // Generate an SVG placeholder
     const svg = generateSvgPlaceholder(contentType);
-    
+
     // Upload the SVG as the thumbnail
     await uploadStringToS3(
       svg, 
       s3Key, 
       'image/svg+xml'
     );
-    
+
     console.log(`Successfully uploaded SVG placeholder for ${videoId} to S3`);
     return s3Key;
   } catch (error) {
