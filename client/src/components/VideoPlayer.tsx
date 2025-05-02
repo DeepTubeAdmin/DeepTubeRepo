@@ -248,25 +248,134 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
         // Log when YouTube iframe is loaded
         console.log('YouTube embed loaded for video ID:', youtubeId);
         
-        // Add a fallback message if the iframe doesn't work
+        // Track loading state for proper debugging
+        let iframeLoadAttempted = false;
+        
+        // Function to handle YouTube API errors
+        const handleYouTubeError = (errorMessage: string) => {
+          console.warn(`YouTube embed error: ${errorMessage}`);
+          containerRef.innerHTML = `
+            <div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);color:white;text-align:center;padding:20px;">
+              <div>
+                <p style="margin-bottom:15px;">${errorMessage}</p>
+                <a href="https://www.youtube.com/watch?v=${youtubeId}" target="_blank" rel="noopener noreferrer" 
+                  style="display:inline-block;background:#cc0000;color:white;padding:10px 20px;border-radius:4px;text-decoration:none;font-weight:bold;">
+                  Watch on YouTube
+                </a>
+              </div>
+            </div>
+          `;
+        };
+        
+        // Function to check if YouTube player API is loaded
+        const checkYouTubeAPI = () => {
+          if (typeof window.YT !== 'undefined' && window.YT.Player) {
+            try {
+              // Destroy any existing player
+              const extContainerRef = containerRef as unknown as ExtendedHTMLElement;
+              if (extContainerRef._youtubePlayer) {
+                extContainerRef._youtubePlayer.destroy();
+              }
+              
+              // Create a new player with event handlers
+              const iframe = containerRef.querySelector('iframe');
+              if (!iframe) {
+                console.error('No iframe found for YouTube player');
+                return;
+              }
+              
+              // Cast the containerRef to our extended type
+              const extendedContainer = containerRef as unknown as ExtendedHTMLElement;
+              
+              extendedContainer._youtubePlayer = new window.YT.Player(iframe, {
+                events: {
+                  onReady: (event: any) => {
+                    console.log('YouTube player ready:', youtubeId);
+                    // Try to start playing
+                    try { event.target.playVideo(); } catch (e) { console.error('Error playing:', e); }
+                  },
+                  onStateChange: (event: any) => {
+                    console.log('YouTube player state change:', event.data);
+                    // -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (video cued)
+                    if (event.data === 1) {
+                      console.log('YouTube video is successfully playing');
+                    }
+                  },
+                  onError: (event: any) => {
+                    // YouTube error codes:
+                    // 2 – The request contains an invalid parameter value
+                    // 5 – The requested content cannot be played in an HTML5 player
+                    // 100 – The video requested was not found
+                    // 101 – The video requested does not allow playback in embedded players
+                    // 150 – Same as 101, just different error code
+                    
+                    const errorCode = event.data;
+                    let errorMessage = 'An unknown error occurred loading the YouTube video.';
+                    
+                    if (errorCode === 101 || errorCode === 150) {
+                      errorMessage = 'This YouTube video cannot be embedded due to the owner\'s restrictions.';
+                    } else if (errorCode === 100) {
+                      errorMessage = 'The YouTube video could not be found. It may have been removed.';
+                    } else if (errorCode === 5) {
+                      errorMessage = 'This YouTube video cannot be played in the embedded player.';
+                    }
+                    
+                    console.error(`YouTube Error ${errorCode}: ${errorMessage}`);
+                    handleYouTubeError(errorMessage);
+                  }
+                }
+              });
+              
+              // Add cleanup function
+              const extContainer = containerRef as unknown as ExtendedHTMLElement;
+              extContainer._cleanup = () => {
+                if (extContainer._youtubePlayer) {
+                  try {
+                    extContainer._youtubePlayer.destroy();
+                  } catch (e) {
+                    console.error('Error destroying YouTube player:', e);
+                  }
+                  extContainer._youtubePlayer = null;
+                }
+              };
+              
+            } catch (e) {
+              console.error('Error initializing YouTube player:', e);
+              handleYouTubeError('Failed to initialize the YouTube player.');
+            }
+          } else if (!iframeLoadAttempted) {
+            // Wait for YouTube API to be available
+            setTimeout(checkYouTubeAPI, 1000);
+          }
+        };
+        
+        // Start checking when iframe is loaded
+        const iframe = containerRef.querySelector('iframe');
+        if (iframe) {
+          iframe.addEventListener('load', () => {
+            iframeLoadAttempted = true;
+            checkYouTubeAPI();
+          });
+        }
+        
+        // Also set a timeout as fallback
         setTimeout(() => {
           // Check if the iframe is still empty or not working
           const iframe = containerRef.querySelector('iframe');
           if (!iframe || !iframe.contentWindow) {
             console.warn('YouTube embed iframe is not loading properly, adding direct link');
-            containerRef.innerHTML += `
-              <div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);color:white;text-align:center;padding:20px;">
-                <div>
-                  <p style="margin-bottom:15px;">YouTube video could not be embedded due to browser restrictions.</p>
-                  <a href="https://www.youtube.com/watch?v=${youtubeId}" target="_blank" rel="noopener noreferrer" 
-                    style="display:inline-block;background:#cc0000;color:white;padding:10px 20px;border-radius:4px;text-decoration:none;font-weight:bold;">
-                    Watch on YouTube
-                  </a>
-                </div>
-              </div>
-            `;
+            handleYouTubeError('YouTube video could not be embedded due to browser restrictions.');
+          } else if (!iframeLoadAttempted) {
+            iframeLoadAttempted = true;
+            checkYouTubeAPI();
           }
         }, 3000); // Wait 3 seconds to check if iframe loaded
+        
+        // Set up a global listener for YouTube API errors
+        window.onYouTubeIframeAPIReady = () => {
+          console.log('YouTube iframe API is ready');
+          checkYouTubeAPI();
+        };
       } else {
         // Fallback: use the server-provided embed code
         containerRef.innerHTML = video.embedCode;
@@ -351,9 +460,21 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
     }
   }, [isOpen, video]);
 
-  // Define window with webkitAudioContext for TypeScript
-  interface WindowWithWebkitAudio extends Window {
+  // Define window with YouTube and webkitAudioContext for TypeScript
+  interface WindowWithExtensions extends Window {
     webkitAudioContext: typeof AudioContext;
+    YT?: {
+      Player: new (element: HTMLIFrameElement | string, options: any) => any;
+      PlayerState?: {
+        UNSTARTED: number;
+        ENDED: number;
+        PLAYING: number;
+        PAUSED: number;
+        BUFFERING: number;
+        CUED: number;
+      };
+    };
+    onYouTubeIframeAPIReady?: () => void;
   }
   
   // Define extended video element with added properties
@@ -366,6 +487,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
   // Interface for container element with cleanup function
   interface ExtendedHTMLElement extends HTMLElement {
     _cleanup?: () => void;
+    _youtubePlayer?: any;
   }
 
   // Effect to cleanup video elements when dialog closes
@@ -534,17 +656,19 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
               // Create audio context after metadata is loaded
               try {
                 // Create new audio context for isolated audio control
-                audioCtx = new (window.AudioContext || (window as unknown as WindowWithWebkitAudio).webkitAudioContext)();
-                mediaSource = audioCtx.createMediaElementSource(videoEl);
-                gainNode = audioCtx.createGain();
-                mediaSource.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                console.log('🔊 Created dedicated audio context for better control');
-                
-                // Store references to audio elements for cleanup using type assertion
-                (videoEl as ExtendedHTMLVideoElement)._audioContext = audioCtx;
-                (videoEl as ExtendedHTMLVideoElement)._mediaSource = mediaSource;
-                (videoEl as ExtendedHTMLVideoElement)._gainNode = gainNode;
+                audioCtx = new ((window as WindowWithExtensions).AudioContext || (window as WindowWithExtensions).webkitAudioContext)();
+                if (audioCtx) {
+                  mediaSource = audioCtx.createMediaElementSource(videoEl);
+                  gainNode = audioCtx.createGain();
+                  mediaSource.connect(gainNode);
+                  gainNode.connect(audioCtx.destination);
+                  console.log('🔊 Created dedicated audio context for better control');
+                  
+                  // Store references to audio elements for cleanup using type assertion
+                  (videoEl as ExtendedHTMLVideoElement)._audioContext = audioCtx;
+                  (videoEl as ExtendedHTMLVideoElement)._mediaSource = mediaSource;
+                  (videoEl as ExtendedHTMLVideoElement)._gainNode = gainNode;
+                }
               } catch (e) {
                 console.error('Error creating audio context:', e);
               }
