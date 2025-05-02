@@ -1628,6 +1628,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Created new video with ID:", video.id, video.title);
       
+      // Generate a thumbnail for the video if it's a video and has a URL
+      // Import the module only when needed to avoid circular dependencies
+      if ((contentType === "video" || contentType === "videos") && videoUrl) {
+        try {
+          console.log(`Generating thumbnail for new video upload: ${video.id} with URL ${videoUrl}`);
+          // Import the thumbnail generator function
+          const { generateAndStoreS3Thumbnail } = await import('./generateThumbnail');
+          
+          // Generate the thumbnail
+          const s3Key = await generateAndStoreS3Thumbnail(
+            video.id,
+            contentType,
+            videoUrl
+          );
+          
+          // Update the video record with the thumbnail path
+          await dbStorage.updateVideo(video.id, { 
+            thumbnail: `/api/videos/${video.id}/thumbnail` 
+          });
+          
+          console.log(`Successfully generated thumbnail for new video: ${video.id}`);
+        } catch (thumbnailError) {
+          // Just log the error but don't fail the upload
+          console.error(`Error generating thumbnail for video ${video.id}:`, thumbnailError);
+        }
+      }
+      
+      // For YouTube embeds, extract thumbnail from YouTube
+      if (contentType === "embed" && embedCode && embedCode.includes('youtube.com/embed/')) {
+        try {
+          // Extract YouTube video ID
+          const youtubeIdMatch = embedCode.match(/youtube\.com\/embed\/([^\/?&]+)/);
+          if (youtubeIdMatch && youtubeIdMatch[1]) {
+            const youtubeId = youtubeIdMatch[1];
+            console.log(`Extracting YouTube thumbnail for video ${video.id} with YouTube ID ${youtubeId}`);
+            
+            // Import the thumbnail generator
+            const { generateAndStoreS3Thumbnail } = await import('./generateThumbnail');
+            
+            // Generate the thumbnail using YouTube ID
+            const s3Key = await generateAndStoreS3Thumbnail(
+              video.id,
+              "embed",
+              null,
+              youtubeId
+            );
+            
+            // Update the video record with the thumbnail path
+            await dbStorage.updateVideo(video.id, { 
+              thumbnail: `/api/videos/${video.id}/thumbnail` 
+            });
+            
+            console.log(`Successfully extracted YouTube thumbnail for video ${video.id}`);
+          }
+        } catch (youtubeThumbnailError) {
+          console.error(`Error extracting YouTube thumbnail for video ${video.id}:`, youtubeThumbnailError);
+        }
+      }
+      
       res.status(201).json(video);
     } catch (error) {
       console.error("Error uploading video:", error);
@@ -1673,6 +1732,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Upload file to S3
       let s3Key;
       let s3Url;
+      let thumbnailPath = null;
       
       try {
         // Use a consistent S3 key derived from the local path
@@ -1685,6 +1745,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         s3Url = `/api/s3/${s3Key}`;
         
         console.log(`File uploaded to S3: ${s3Key}`);
+        
+        // For videos, try to generate a thumbnail immediately after upload
+        if (isVideo) {
+          try {
+            // We'll create a placeholder videoId for the thumbnail generation
+            // It will be replaced when the actual video entry is created
+            const tempVideoId = Date.now();
+            console.log(`Generating temporary thumbnail for uploaded video with temp ID: ${tempVideoId}`);
+            
+            // Import the thumbnail generator on demand to avoid circular dependencies
+            const { generateAndStoreS3Thumbnail } = await import('./generateThumbnail');
+            
+            // Use the S3 URL to generate the thumbnail
+            await generateAndStoreS3Thumbnail(
+              tempVideoId,
+              'video',
+              s3Url
+            );
+            
+            // Set the thumbnail path to be used in the response
+            // This will be a temporary thumbnail based on the temp ID
+            thumbnailPath = `/api/videos/${tempVideoId}/thumbnail`;
+            console.log(`Generated temporary thumbnail for uploaded video: ${thumbnailPath}`);
+          } catch (thumbnailError) {
+            console.error("Error generating thumbnail for uploaded video:", thumbnailError);
+            // Continue even if thumbnail generation fails
+          }
+        }
       } catch (s3Error) {
         console.error("Error uploading to S3:", s3Error);
         // Continue with local file if S3 upload fails
@@ -1704,7 +1792,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filePath: file.path,
         url: s3Url || localPublicUrl,
         contentType: isVideo ? 'video' : 'image',
-        s3Key: s3Key // Include S3 key for reference
+        s3Key: s3Key, // Include S3 key for reference
+        thumbnail: thumbnailPath // Include thumbnail path if generated
       });
       
     } catch (error) {
