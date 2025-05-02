@@ -37,6 +37,8 @@ const GenericVideoEmbed = ({
 }: GenericVideoEmbedProps) => {
   const [aspectRatioValue, setAspectRatioValue] = useState<number>(0);
   const [embedUrl, setEmbedUrl] = useState<string>('');
+  const [error, setError] = useState<string>('');
+  const [videoId, setVideoId] = useState<string>('');
 
   useEffect(() => {
     // Parse aspect ratio string (e.g. "16:9")
@@ -64,24 +66,50 @@ const GenericVideoEmbed = ({
     } else if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
       // Handle YouTube URLs
       let youtubeId = '';
-      if (videoUrl.includes('youtu.be/')) {
-        youtubeId = videoUrl.split('youtu.be/')[1]?.split(/[?&]/)[0] || '';
-      } else if (videoUrl.includes('youtube.com/watch')) {
-        youtubeId = new URLSearchParams(videoUrl.split('?')[1]).get('v') || '';
-      } else if (videoUrl.includes('youtube.com/embed/')) {
-        youtubeId = videoUrl.split('youtube.com/embed/')[1]?.split(/[?&]/)[0] || '';
-      }
       
-      if (youtubeId) {
-        const params = new URLSearchParams({
-          autoplay: autoplay ? '1' : '0',
-          loop: loop ? '1' : '0',
-          rel: '0', // Don't show related videos
-          modestbranding: '1', // Reduce YouTube branding
-          enablejsapi: '1', // Enable JavaScript API
-          origin: window.location.origin, // Add origin to prevent cross-origin issues
-        });
-        setEmbedUrl(`https://www.youtube.com/embed/${youtubeId}?${params.toString()}`);
+      // Clear previous error
+      setError('');
+      
+      try {
+        if (videoUrl.includes('youtu.be/')) {
+          youtubeId = videoUrl.split('youtu.be/')[1]?.split(/[?&]/)[0] || '';
+        } else if (videoUrl.includes('youtube.com/watch')) {
+          const queryPart = videoUrl.split('?')[1];
+          if (queryPart) {
+            youtubeId = new URLSearchParams(queryPart).get('v') || '';
+          }
+        } else if (videoUrl.includes('youtube.com/embed/')) {
+          youtubeId = videoUrl.split('youtube.com/embed/')[1]?.split(/[?&]/)[0] || '';
+        }
+        
+        if (!youtubeId) {
+          throw new Error('Could not extract YouTube video ID');
+        }
+        
+        // Store the video ID for error handling
+        setVideoId(youtubeId);
+        
+        // Build the parameter string in a more robust way
+        const host = window.location.host;
+        const protocol = window.location.protocol;
+        const origin = `${protocol}//${host}`;
+        
+        // Create a simple string array of parameters instead of using URLSearchParams
+        // This avoids issues with encoding and is more reliable
+        const params = [
+          'rel=0',                  // Don't show related videos
+          'enablejsapi=1',          // Enable JavaScript API
+          'modestbranding=1',       // Reduce YouTube branding
+          'playsinline=1',          // Play inline on mobile devices
+          autoplay ? 'autoplay=1' : '', // Autoplay when requested
+          loop ? 'loop=1' : '',     // Loop when requested
+          `origin=${encodeURIComponent(origin)}` // Set origin for postMessage API
+        ].filter(Boolean).join('&');
+        
+        setEmbedUrl(`https://www.youtube.com/embed/${youtubeId}?${params}`);
+      } catch (err) {
+        console.error('Error processing YouTube URL:', err);
+        setError('Could not load YouTube video. The URL format may be invalid.');
       }
     } else if (videoUrl.startsWith('/api/s3/') || videoUrl.includes('amazonaws.com') || videoUrl.includes('.mp4') || videoUrl.includes('video/mp4')) {
       // For S3 or direct MP4 URLs, we'll use a video element instead of an iframe
@@ -93,6 +121,32 @@ const GenericVideoEmbed = ({
     }
   }, [videoUrl, aspectRatio, autoplay, loop, showTitle, showByline, showPortrait]);
 
+  // Handle error state
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center p-4 bg-slate-900 text-white rounded-md min-h-[200px]">
+        <div className="text-red-500 mb-3">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <div className="text-center mb-4">{error}</div>
+        {videoId && (
+          <a 
+            href={`https://www.youtube.com/watch?v=${videoId}`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors"
+          >
+            Watch on YouTube
+          </a>
+        )}
+      </div>
+    );
+  }
+  
   if (!embedUrl) {
     return <div className="flex items-center justify-center p-4">Loading video...</div>;
   }

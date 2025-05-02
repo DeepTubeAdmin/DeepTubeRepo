@@ -256,10 +256,17 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
         }
         
         // Add an event listener to detect when the YouTube API is loaded
-        const script = document.createElement('script');
-        script.src = 'https://www.youtube.com/iframe_api';
-        script.async = true;
-        document.head.appendChild(script);
+        // Check if the script already exists to avoid duplicate loading
+        if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
+          const script = document.createElement('script');
+          script.src = 'https://www.youtube.com/iframe_api';
+          script.async = true;
+          script.onerror = () => {
+            console.error('Failed to load YouTube iframe API');
+            handleYouTubeError('Failed to load YouTube player API. Please try again later.');
+          };
+          document.head.appendChild(script);
+        }
         
         // Log when YouTube iframe is loaded
         console.log('YouTube embed loaded for video ID:', youtubeId);
@@ -383,7 +390,15 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
             handleYouTubeError('YouTube video could not be embedded due to browser restrictions.');
           } else if (!iframeLoadAttempted) {
             iframeLoadAttempted = true;
-            checkYouTubeAPI();
+            
+            // If YouTube API isn't available, provide fallback
+            if (typeof win.YT === 'undefined' || !win.YT.Player) {
+              console.warn('YouTube API not available after timeout, using basic iframe');
+              // Keep the iframe but don't attempt to use the API
+              // This will still allow basic playback functionality without API features
+            } else {
+              checkYouTubeAPI();
+            }
           }
         }, 3000); // Wait 3 seconds to check if iframe loaded
         
