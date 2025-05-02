@@ -119,8 +119,10 @@ export default function Home() {
   }, [showFilterMenu]);
 
   const handlePreview = (videoId: number) => {
+    console.log('Home: handlePreview called with videoId:', videoId);
     setSelectedVideoId(videoId);
     setIsPlayerOpen(true);
+    console.log('Home: isPlayerOpen set to true');
   };
 
   const handleWishlist = (videoId: number) => {

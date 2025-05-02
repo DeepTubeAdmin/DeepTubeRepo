@@ -128,8 +128,12 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
   };
 
   const handlePreview = () => {
+    console.log('VideoCard: handlePreview called for video', video.id);
     if (onPreview) {
+      console.log('VideoCard: Calling onPreview with video ID', video.id);
       onPreview(video.id);
+    } else {
+      console.log('VideoCard: onPreview prop is not provided');
     }
   };
 
