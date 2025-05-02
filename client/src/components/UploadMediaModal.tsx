@@ -259,9 +259,18 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
             throw new Error(errorData.error || `Failed to upload ${contentType} file`);
           }
           
-          // Get the file URL from the response
-          const fileData = await fileUploadResponse.json();
-          console.log("File upload successful:", fileData);
+          // Get the file URL from the response (careful to only parse JSON once)
+          let fileData;
+          try {
+            const responseText = await fileUploadResponse.text();
+            console.log("Raw response text:", responseText);
+            fileData = JSON.parse(responseText);
+            console.log("File upload successful:", fileData);
+          } catch (error) {
+            const parseError = error as Error;
+            console.error("Failed to parse response as JSON:", parseError);
+            throw new Error(`Error parsing server response: ${parseError.message}`);
+          }
           
           // Check if file was uploaded to Vimeo (our server modification sends video to Vimeo)
           if (fileData.vimeoId) {
@@ -451,9 +460,18 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
               throw new Error(errorData.error || `Failed to upload ${contentType} file`);
             }
             
-            // Get the file URL from the response
-            const fileData = await fileUploadResponse.json();
-            console.log("File upload successful:", fileData);
+            // Get the file URL from the response (careful to only parse JSON once)
+            let fileData;
+            try {
+              const responseText = await fileUploadResponse.text();
+              console.log("Raw response text:", responseText);
+              fileData = JSON.parse(responseText);
+              console.log("File upload successful:", fileData);
+            } catch (error) {
+              const parseError = error as Error;
+              console.error("Failed to parse response as JSON:", parseError);
+              throw new Error(`Error parsing server response: ${parseError.message}`);
+            }
             
             // Check if file was uploaded to Vimeo (our server modification sends video to Vimeo)
             if (fileData.vimeoId) {
