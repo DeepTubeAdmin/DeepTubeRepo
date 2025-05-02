@@ -9,7 +9,8 @@ import { insertCategorySchema, insertVideoSchema, type Video, type Category, typ
 import * as vimeoService from "./vimeo";
 import multer from "multer";
 import path from "path";
-import fs from "fs";
+import fs from "fs/promises";
+import fsSync from "fs";
 import { fileURLToPath } from 'url';
 import { getSignedS3Url, uploadFileToS3, deleteFileFromS3, localPathToS3Key, urlPathToS3Key } from "./s3";
 import { WebSocketServer } from 'ws';
@@ -20,20 +21,20 @@ const __dirname = path.dirname(__filename);
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, '../uploads/');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+if (!fsSync.existsSync(uploadsDir)) {
+  fsSync.mkdirSync(uploadsDir, { recursive: true });
 }
 
 // Specific directory for videos
 const videosDir = path.join(uploadsDir, 'videos');
-if (!fs.existsSync(videosDir)) {
-  fs.mkdirSync(videosDir, { recursive: true });
+if (!fsSync.existsSync(videosDir)) {
+  fsSync.mkdirSync(videosDir, { recursive: true });
 }
 
 // Specific directory for images
 const imagesDir = path.join(uploadsDir, 'images');
-if (!fs.existsSync(imagesDir)) {
-  fs.mkdirSync(imagesDir, { recursive: true });
+if (!fsSync.existsSync(imagesDir)) {
+  fsSync.mkdirSync(imagesDir, { recursive: true });
 }
 
 // Configure multer for file uploads
@@ -1092,8 +1093,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!isVideo && !isImage) {
         // Clean up the file if it's not a supported type
-        if (fs.existsSync(file.path)) {
-          fs.unlinkSync(file.path);
+        if (fsSync.existsSync(file.path)) {
+          fsSync.unlinkSync(file.path);
         }
         return res.status(400).json({ 
           error: "Unsupported file type. Please upload video or image files only." 
@@ -1145,8 +1146,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error handling file upload:", error);
       
       // Clean up the file on error
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
+      if (req.file && fsSync.existsSync(req.file.path)) {
+        fsSync.unlinkSync(req.file.path);
       }
       
       res.status(500).json({ error: "Failed to process file upload" });
@@ -1430,8 +1431,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (videoPath.startsWith('data:')) {
           // For base64 videos - can't generate thumbnails from these directly
           // Fallback to a generic thumbnail without text
-          res.setHeader('Content-Type', 'text/html');
-          return res.sendFile(path.resolve('./public/default-video-thumbnail.html'));
+          res.setHeader('Content-Type', 'image/svg+xml');
+          return res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
         } else if (videoPath.startsWith('http')) {
           // Remote URL - try to use a frame grab from S3 if already exists
           try {
@@ -1439,8 +1440,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.redirect(signedUrl);
           } catch (s3Error) {
             // If S3 thumbnail doesn't exist, fallback to a better placeholder
-            res.setHeader('Content-Type', 'text/html');
-            return res.sendFile(path.resolve('./public/default-video-thumbnail.html'));
+            res.setHeader('Content-Type', 'image/svg+xml');
+            return res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
           }
         } else {
           // Local file path - clean it up if needed
@@ -1520,21 +1521,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Generate a generic video/image thumbnail based on content type
       if (video.contentType === 'video') {
-        res.setHeader('Content-Type', 'text/html');
-        return res.sendFile(path.resolve('./public/default-video-thumbnail.html'));
+        res.setHeader('Content-Type', 'image/svg+xml');
+        return res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
       } else if (video.contentType === 'image') {
-        res.setHeader('Content-Type', 'text/html');
-        return res.sendFile(path.resolve('./public/default-video-thumbnail.html'));
+        res.setHeader('Content-Type', 'image/svg+xml');
+        return res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
       } else {
-        res.setHeader('Content-Type', 'text/html');
-        return res.sendFile(path.resolve('./public/default-video-thumbnail.html'));
+        res.setHeader('Content-Type', 'image/svg+xml');
+        return res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
       }
       
     } catch (error) {
       console.error("Error generating thumbnail:", error);
       // Fall back to a generic placeholder without text
-      res.setHeader('Content-Type', 'text/html');
-      return res.sendFile(path.resolve('./public/default-video-thumbnail.html'));
+      res.setHeader('Content-Type', 'image/svg+xml');
+      return res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
     }
   });
 
@@ -1874,8 +1875,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         // Clean up temporary file
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
+        if (fsSync.existsSync(filePath)) {
+          fsSync.unlinkSync(filePath);
         }
         
         // If categoryId is provided, create a video record in our database
@@ -1923,8 +1924,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(result);
       } catch (uploadError) {
         // Clean up temporary file on error
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
+        if (fsSync.existsSync(filePath)) {
+          fsSync.unlinkSync(filePath);
         }
         throw uploadError;
       }
