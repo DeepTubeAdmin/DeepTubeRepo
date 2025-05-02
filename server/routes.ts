@@ -12,7 +12,7 @@ import path from "path";
 import fs from "fs/promises";
 import fsSync from "fs";
 import { fileURLToPath } from 'url';
-import { getSignedS3Url, uploadFileToS3, deleteFileFromS3, localPathToS3Key, urlPathToS3Key } from "./s3";
+import { getSignedS3Url, uploadFileToS3, uploadStringToS3, deleteFileFromS3, localPathToS3Key, urlPathToS3Key } from "./s3";
 import { WebSocketServer } from 'ws';
 
 // Get directory paths in ES modules
@@ -1769,9 +1769,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
     } catch (error) {
       console.error("Error generating thumbnail:", error);
-      // Fall back to a generic placeholder without text
+      // Simple SVG placeholder directly in the response
+      const placeholderSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="225" viewBox="0 0 400 225">
+  <rect width="400" height="225" fill="#111" />
+  <circle cx="200" cy="112.5" r="50" fill="#222" />
+  <polygon points="185,90 185,135 225,112.5" fill="#f97316" stroke="#000" stroke-width="2" />
+</svg>
+`;
+      
       res.setHeader('Content-Type', 'image/svg+xml');
-      return res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
+      return res.send(placeholderSvg);
     }
   });
 
