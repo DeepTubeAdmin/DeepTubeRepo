@@ -223,7 +223,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const s3Key = `thumbnails/video-${image.id}.jpg`;
             
             // Upload to S3 with base64 encoding
-            await uploadStringToS3(base64Data, s3Key, 'image/jpeg', { encoding: 'base64' });
+            const buffer = Buffer.from(base64Data, 'base64');
+            const binaryString = buffer.toString('binary');
+            await uploadStringToS3(binaryString, s3Key, 'image/jpeg');
             
             // Update the database to use the thumbnail endpoint
             await dbStorage.updateVideo(image.id, {
