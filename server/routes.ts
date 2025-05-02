@@ -113,6 +113,70 @@ const upload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Test endpoint for S3 access
+  // Endpoint to fix thumbnails content-type by content type
+  app.get('/api/fix-thumbnails-all', async (req, res) => {
+    try {
+      // Get all videos
+      const videos = await dbStorage.getVideos(1000);
+      console.log(`Retrieved ${videos.length} videos for thumbnail fixing`);
+      
+      const results = [];
+      
+      // Process each video
+      for (let i = 0; i < videos.length; i++) {
+        const video = videos[i];
+        try {
+          // Determine content type for appropriate SVG
+          let contentType = video.contentType || 'video';
+          
+          // Normalize content type
+          if (contentType === 'images') contentType = 'image';
+          if (contentType === 'videos') contentType = 'video';
+          
+          // Get SVG for the content type
+          const placeholderSvg = getPlaceholderSvg(contentType);
+          
+          // S3 key for the thumbnail
+          const s3Key = `thumbnails/video-${video.id}.jpg`;
+          
+          // Upload SVG placeholder with correct content type
+          await uploadStringToS3(placeholderSvg, s3Key, 'image/svg+xml');
+          
+          console.log(`Fixed thumbnail for ${video.id}: ${video.title} (${contentType})`);
+          
+          results.push({
+            id: video.id,
+            title: video.title,
+            contentType,
+            success: true
+          });
+        } catch (error) {
+          console.error(`Error fixing thumbnail for video ${video.id}:`, error);
+          results.push({
+            id: video.id,
+            title: video.title,
+            success: false,
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
+      }
+      
+      return res.json({
+        success: true,
+        totalProcessed: videos.length,
+        results
+      });
+    } catch (error) {
+      console.error('Error fixing thumbnails:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fix thumbnails',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Endpoint to fix a single thumbnail
   app.get('/api/fix-thumbnail/:videoId', async (req, res) => {
     try {
       const videoId = parseInt(req.params.videoId);
