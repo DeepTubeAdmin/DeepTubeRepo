@@ -1645,7 +1645,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const relativePath = file.path.split('uploads/')[1]; // Gets "videos/video-123456.mp4" or "images/image-123456.jpg"
       const localPublicUrl = `/uploads/${relativePath}`;
       
-      // Upload the file to S3
+      // IMPORTANT: For videos, we should send them to Vimeo; for images, we send to S3
+      if (isVideo) {
+        // For videos, redirect to the Vimeo upload service
+        console.log("Video detected, redirecting to Vimeo upload service");
+        try {
+          // Get vimeo service
+          const vimeoService = await import('./vimeo');
+          
+          // Use a default name based on file name if not provided
+          const name = file.originalname.replace(/\.[^/.]+$/, "") || "Untitled Video";
+          
+          // Upload to Vimeo
+          const result = await vimeoService.uploadVideo(
+            file.path,
+            name,
+            "", // No description by default
+            "anybody" // Public by default
+          );
+          
+          // Clean up temporary file after successful Vimeo upload
+          if (fsSync.existsSync(file.path)) {
+            fsSync.unlinkSync(file.path);
+          }
+          
+          console.log(`Video successfully uploaded to Vimeo with ID: ${result.videoId}`);
+          
+          // Return the Vimeo info
+          return res.status(201).json({
+            fileName: file.originalname,
+            fileType: file.mimetype,
+            fileSize: file.size,
+            contentType: 'video',
+            vimeoId: result.videoId,
+            vimeoUri: result.uri,
+            url: `https://vimeo.com/${result.videoId}`
+          });
+        } catch (vimeoError) {
+          console.error("Error uploading to Vimeo:", vimeoError);
+          
+          // If Vimeo upload fails, we'll continue with S3 as fallback
+          console.log("Vimeo upload failed, falling back to S3");
+        }
+      }
+      
+      // For images (or videos if Vimeo failed), upload to S3
       let s3Key;
       let s3Url;
       
