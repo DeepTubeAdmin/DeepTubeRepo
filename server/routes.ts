@@ -40,11 +40,20 @@ function getPlaceholderSvg(contentType = 'video') {
 
 // Helper to send SVG placeholder
 function sendSvgPlaceholder(res: Response, contentType = 'video') {
+  // Log the content type being requested to help debug
+  console.log(`Generating SVG placeholder for content type: ${contentType}`);
+  
+  // Normalize content type for proper placeholder selection
+  let normalizedType = 'video';
+  if (contentType === 'image' || contentType === 'images') {
+    normalizedType = 'image';
+  }
+  
   res.setHeader('Content-Type', 'image/svg+xml');
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
-  return res.send(getPlaceholderSvg(contentType));
+  return res.send(getPlaceholderSvg(normalizedType));
 }
 import { WebSocketServer } from 'ws';
 
@@ -1784,8 +1793,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Generate a generic video/image thumbnail based on content type
-      console.log(`Serving SVG placeholder by content type for ${videoId}: ${video.contentType}`);
-      return sendSvgPlaceholder(res, video.contentType);
+      // Map 'videos' to 'video' and 'images' to 'image' for consistent SVG generation
+      let displayContentType = video.contentType;
+      if (displayContentType === 'videos') displayContentType = 'video';
+      if (displayContentType === 'images') displayContentType = 'image';
+      
+      console.log(`Serving SVG placeholder by content type for ${videoId}: ${displayContentType}`);
+      return sendSvgPlaceholder(res, displayContentType);
       
     } catch (error) {
       console.error("Error generating thumbnail:", error);
