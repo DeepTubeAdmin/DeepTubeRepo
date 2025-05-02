@@ -59,12 +59,33 @@ export function youtubeUrlToEmbedCode(url: string, autoplay: boolean = false): s
   // Note: We add different parameters for different contexts
   // Always include origin parameter to avoid cross-origin issues with YouTube API
   // Use a dynamic origin based on current window location
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'deeptube.replit.app';
+  const host = typeof window !== 'undefined' ? window.location.host : 'deeptube.replit.app';
+  const protocol = typeof window !== 'undefined' ? window.location.protocol : 'https:';
+  const origin = `${protocol}//${host}`;
   
+  // Build a simple parameter string without URLSearchParams (which can cause issues)
+  const params = [
+    'rel=0',                  // Don't show related videos
+    'enablejsapi=1',          // Enable JavaScript API
+    'modestbranding=1',       // Reduce YouTube branding
+    'playsinline=1',          // Play inline on mobile devices
+    'iv_load_policy=3',       // Don't show annotations
+    'controls=1',             // Show video controls 
+    `origin=${encodeURIComponent(origin)}` // Set origin for postMessage API
+  ];
+  
+  // Add autoplay param if requested
+  if (autoplay) {
+    params.push('autoplay=1');
+    // On desktop, we unmute but on mobile we need to start muted for autoplay to work
+    params.push('mute=0');
+  }
+  
+  // Construct the embed code
   return `<iframe 
     width="100%" 
     height="100%" 
-    src="https://www.youtube.com/embed/${videoId}?rel=0&enablejsapi=1${autoplay ? '&autoplay=1' : '&mute=1'}&origin=${origin}" 
+    src="https://www.youtube.com/embed/${videoId}?${params.join('&')}" 
     title="YouTube video player" 
     frameborder="0" 
     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 

@@ -224,9 +224,25 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
           containerRef.innerHTML = embedCode;
         } else {
           // Fallback to direct approach if the function fails
+          const host = window.location.host || 'deeptube.replit.app';
+          const protocol = window.location.protocol || 'https:';
+          const origin = `${protocol}//${host}`;
+          
+          // Create a simple parameter string without URLSearchParams (to avoid encoding issues)
+          const params = [
+            'rel=0',                  // Don't show related videos
+            'enablejsapi=1',          // Enable JavaScript API
+            'modestbranding=1',       // Reduce YouTube branding
+            'playsinline=1',          // Play inline on mobile devices
+            'autoplay=1',             // Autoplay when possible
+            'controls=1',             // Show video controls
+            'mute=0',                 // Try to unmute (needed to satisfy autoplay)
+            `origin=${encodeURIComponent(origin)}` // Set origin for postMessage API
+          ].join('&');
+          
           containerRef.innerHTML = `
             <iframe 
-              src="https://www.youtube.com/embed/${youtubeId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&origin=${window.location.origin}" 
+              src="https://www.youtube.com/embed/${youtubeId}?${params}" 
               width="100%" 
               height="100%" 
               style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:4px;" 
