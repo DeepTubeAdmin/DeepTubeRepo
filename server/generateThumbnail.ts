@@ -74,20 +74,39 @@ export async function generateAndStoreS3Thumbnail(
         videoUrl = data.url;
       }
 
+      // First get the actual video URL if using S3 API endpoint
+      let finalVideoUrl = videoUrl;
+      if (videoUrl.startsWith('/api/s3/')) {
+        const response = await fetch(`http://localhost:3000${videoUrl}?getUrl=true`);
+        const data = await response.json();
+        finalVideoUrl = data.url;
+      }
+
       // Download the video to temp file
-      const response = await fetch(videoUrl);
+      const response = await fetch(finalVideoUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch video: ${response.status} ${response.statusText}`);
+      }
       const buffer = Buffer.from(await response.arrayBuffer());
       await fs.promises.writeFile(tempVideo, buffer);
 
-      // Generate thumbnail using FFmpeg
+      console.log(`Generating thumbnail from video file: ${tempVideo}`);
+
+      // Generate thumbnail using FFmpeg with more detailed parameters
       await execFileAsync('ffmpeg', [
         '-y',
         '-i', tempVideo,
         '-ss', '00:00:01.000',
         '-vframes', '1',
         '-vf', 'scale=800:450:force_original_aspect_ratio=decrease,pad=800:450:(ow-iw)/2:(oh-ih)/2',
+        '-f', 'image2',
+        '-quality', '100',
         tempThumb
       ]);
+
+      // Verify the thumbnail was created
+      await fs.promises.access(tempThumb);
+      console.log(`Thumbnail generated successfully at: ${tempThumb}`);
 
       // Read the generated thumbnail
       const thumbBuffer = await fs.promises.readFile(tempThumb);
