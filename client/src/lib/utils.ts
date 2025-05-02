@@ -144,20 +144,22 @@ export function getRedditThumbnailUrl(subreddit: string): string {
 }
 
 /**
- * Helper function to properly handle S3 URLs with retry logic
- * @param url URL string that could be an S3 API endpoint or a regular URL
+ * Helper function to properly handle S3 URLs and thumbnail URLs with retry logic
+ * @param url URL string that could be an S3 API endpoint, thumbnail URL, or a regular URL
  * @param maxRetries Maximum number of retry attempts (default: 3)
  * @returns The correctly processed URL
  */
 export async function fetchS3Url(url: string | null, maxRetries: number = 3): Promise<string | null> {
   if (!url) return null;
   
-  // If it's not an S3 URL, return as is
-  if (!url.startsWith('/api/s3/')) {
+  console.log('fetchS3Url called with:', url);
+  
+  // For direct URLs that aren't API calls, return as is
+  if (!url.startsWith('/api/s3/') && !url.includes('/api/videos/') && !url.includes('thumbnail')) {
     return url;
   }
   
-  // For S3 URLs, implement retry with exponential backoff
+  // For S3 URLs and thumbnail URLs, implement retry with exponential backoff
   let retries = 0;
   let lastError: Error | null = null;
   
@@ -166,32 +168,56 @@ export async function fetchS3Url(url: string | null, maxRetries: number = 3): Pr
       // Add a cache-busting parameter to avoid browser cache issues
       const cacheBuster = `_t=${Date.now()}`;
       const separator = url.includes('?') ? '&' : '?';
-      const urlWithCacheBuster = `${url}${separator}getUrl=true&${cacheBuster}`;
+      let urlWithCacheBuster = `${url}${separator}${cacheBuster}`;
       
-      console.log(`Fetching S3 URL (attempt ${retries + 1}/${maxRetries + 1}):`, url);
+      // For S3 URLs, add the getUrl parameter
+      if (url.startsWith('/api/s3/')) {
+        urlWithCacheBuster = `${url}${separator}getUrl=true&${cacheBuster}`;
+      }
+      
+      console.log(`Fetching URL (attempt ${retries + 1}/${maxRetries + 1}):`, url);
       
       const response = await fetch(urlWithCacheBuster, {
         headers: {
-          'Accept': 'application/json',
           'Cache-Control': 'no-cache'
         }
       });
       
+      // Handle redirects (common for thumbnail endpoints)
+      if (response.redirected) {
+        console.log('Redirected to:', response.url);
+        return response.url;
+      }
+      
       if (!response.ok) {
-        throw new Error(`Failed to fetch S3 URL: ${response.status} ${response.statusText}`);
+        throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
       }
       
-      const data = await response.json();
+      // Check content type to determine how to handle the response
+      const contentType = response.headers.get('content-type');
       
-      if (!data.url) {
-        throw new Error('Invalid S3 response: missing URL');
+      if (contentType && contentType.includes('application/json')) {
+        // Handle JSON response (typical for S3 API)
+        const data = await response.json();
+        
+        if (!data.url) {
+          throw new Error('Invalid API response: missing URL');
+        }
+        
+        console.log('Successfully resolved to URL from JSON response');
+        return data.url;
+      } else if (contentType && (contentType.includes('image/') || contentType.includes('video/'))) {
+        // Direct media content - use the URL directly
+        console.log('Successfully received direct media content');
+        return response.url;
+      } else {
+        // Other response types - use the URL directly
+        console.log('Successfully received response, using URL directly');
+        return response.url;
       }
-      
-      console.log('Successfully resolved S3 URL');
-      return data.url;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.error(`Error fetching S3 URL (attempt ${retries + 1}/${maxRetries + 1}):`, lastError);
+      console.error(`Error fetching URL (attempt ${retries + 1}/${maxRetries + 1}):`, lastError);
       
       // Only retry if we haven't exceeded max retries
       if (retries < maxRetries) {
@@ -207,7 +233,7 @@ export async function fetchS3Url(url: string | null, maxRetries: number = 3): Pr
   }
   
   // All retries failed, but we'll still return the original URL as fallback
-  console.warn('All S3 URL fetch attempts failed, falling back to original URL');
+  console.warn('All URL fetch attempts failed, falling back to original URL');
   return url;
 }
 

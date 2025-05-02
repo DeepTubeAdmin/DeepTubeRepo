@@ -27,35 +27,38 @@ export default function VideoPreview({
   const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
   const [isLoadingUrl, setIsLoadingUrl] = useState(false);
   
-  // Resolve S3 URL if needed
+  // Resolve S3 URL or thumbnail URL if needed
   useEffect(() => {
     let isMounted = true;
     let retryTimeout: ReturnType<typeof setTimeout>;
     
     async function resolveVideoUrl() {
-      // Only process S3 URLs
-      if (!src.startsWith('/api/s3/') && !src.includes('s3.amazonaws.com')) {
+      // Process URLs that might need resolution (S3 or thumbnail URLs)
+      if (!src.startsWith('/api/s3/') && 
+          !src.includes('s3.amazonaws.com') && 
+          !src.includes('/api/videos/') && 
+          !src.includes('thumbnail')) {
         setResolvedUrl(src);
         return;
       }
       
       try {
         setIsLoadingUrl(true);
-        console.log('VideoPreview: Resolving S3 URL for:', src);
+        console.log('VideoPreview: Resolving URL for:', src);
         const url = await fetchS3Url(src, 2); // Try up to 2 times
         
         if (!isMounted) return;
         
         if (url) {
           setResolvedUrl(url);
-          console.log('VideoPreview: Successfully resolved S3 URL to:', url.substring(0, 50) + '...');
+          console.log('VideoPreview: Successfully resolved URL to:', url.substring(0, 50) + '...');
         } else {
           throw new Error('Failed to resolve video URL');
         }
       } catch (err) {
         if (!isMounted) return;
         
-        console.error('VideoPreview: Error resolving S3 URL:', err);
+        console.error('VideoPreview: Error resolving URL:', err);
         // Fallback to direct URL
         setResolvedUrl(src);
         setHasError(true);
