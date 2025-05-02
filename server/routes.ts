@@ -395,6 +395,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.get('/api/fix-image-thumbnails', async (req, res) => {
+    try {
+      // Import the fix-all-image-thumbnails module
+      const { default: fixAllImageThumbnails } = await import('./fix-all-image-thumbnails.js');
+      
+      // Run the fix process
+      console.log('Starting image thumbnails fix process...');
+      const results = await fixAllImageThumbnails();
+      
+      // Return the results
+      return res.json({
+        success: true,
+        results
+      });
+    } catch (error) {
+      console.error('Error fixing image thumbnails:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fix image thumbnails',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   app.get('/api/fix-thumbnails-all', async (req, res) => {
     try {
       // Get all videos
