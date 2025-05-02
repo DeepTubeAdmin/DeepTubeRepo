@@ -1776,7 +1776,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
     } catch (error) {
       console.error("Error generating thumbnail:", error);
-      console.log(`Serving SVG placeholder due to error for video ${videoId}`);
+      console.log(`Serving SVG placeholder due to error`);
       return sendSvgPlaceholder(res);
     }
   });

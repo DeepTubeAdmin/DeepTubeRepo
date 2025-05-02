@@ -17,8 +17,12 @@ async function fixAllThumbnails() {
   console.log('Starting thumbnail fix process...');
   
   try {
+    // Log the video retrieval parameters
+    console.log('Getting videos with sortBy: newest, contentType: all');
+    
     // Get all videos, sorting by newest first
-    const videos = await dbStorage.getVideos(100, 'all', 0, 'newest');
+    // Note: dbStorage.getVideos(limit, contentType, offset, sortBy)
+    const videos = await dbStorage.getVideos();
     console.log(`Retrieved ${videos.length} videos. First few IDs: [ ${videos.slice(0, 3).map(v => v.id)} ]`);
     
     console.log(`Found ${videos.length} videos to process`);
