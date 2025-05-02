@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
+import { checkThumbnail } from "@/lib/checkThumbnail";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import Layout from "@/components/Layout";
@@ -157,9 +158,13 @@ export default function MyVideosPage() {
               <Card key={video.id} className="overflow-hidden hover:shadow-md transition-shadow">
                 <div className="relative h-48">
                   <img 
-                    src={video.thumbnail} 
+                    src={checkThumbnail(video.thumbnail || '', video.id)} 
                     alt={video.title} 
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.error(`Error loading thumbnail for video ${video.id}`);
+                      e.currentTarget.src = `/api/videos/${video.id}/thumbnail?forcesvg=true&t=${Date.now()}`;
+                    }}
                   />
                   <div className="absolute top-2 right-2">
                     {getContentTypeIcon(video.contentType)}

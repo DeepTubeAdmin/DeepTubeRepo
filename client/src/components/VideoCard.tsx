@@ -329,7 +329,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
             {isHovered ? (
               <VideoPreview
                 src={video.videoUrl}
-                poster={video.thumbnail || `/api/videos/${video.id}/thumbnail`}
+                poster={checkThumbnail(video.thumbnail || '', video.id)}
                 isHovered={isHovered}
                 className="w-full h-full object-cover"
                 previewDuration={60} // Play continuously instead of just 5 seconds
