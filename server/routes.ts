@@ -2495,6 +2495,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Set up preflight handling for all S3 routes
+  app.options("/api/s3/:key(*)", (req, res) => {
+    // Set CORS headers to allow cross-origin requests
+    res.set({
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, Range',
+      'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Content-Type',
+      'Access-Control-Max-Age': '86400', // 24 hours cache
+      'Cross-Origin-Resource-Policy': 'cross-origin'
+    });
+    
+    res.status(204).end();
+  });
+
   // S3 file serving endpoint
   app.get("/api/s3/:key(*)", async (req, res) => {
     try {
@@ -2503,6 +2518,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid S3 key" });
       }
       
+      console.log("S3 request for key:", key, "getUrl param:", req.query.getUrl);
+      
       // Get signed URL with short expiry to avoid abuse
       const signedUrl = await getSignedS3Url(key, 3600); // 1 hour expiry
       
@@ -2510,12 +2527,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.set({
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, Range',
+        'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Content-Type',
         'Cross-Origin-Resource-Policy': 'cross-origin'
       });
       
       // Return a JSON response for the key fetching endpoint
       if (req.query.getUrl === 'true') {
+        console.log("Returning signed URL for key:", key, "(first 50 chars):", signedUrl.substring(0, 50) + "...");
         return res.json({ url: signedUrl });
       }
       

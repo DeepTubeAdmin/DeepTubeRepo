@@ -57,17 +57,39 @@ export async function uploadFileToS3(filePath: string, s3Key: string): Promise<s
  */
 export async function getSignedS3Url(s3Key: string, expiresIn: number = 3600): Promise<string> {
   try {
+    log(`Generating signed URL for S3 key: ${s3Key} with ${expiresIn}s expiry`, 's3');
+    
     const params = {
       Bucket: BUCKET_NAME,
       Key: s3Key,
     };
     
+    log(`S3 parameters: Bucket=${BUCKET_NAME}, Key=${s3Key}, expiresIn=${expiresIn}`, 's3');
+    
     const command = new GetObjectCommand(params);
     const url = await getSignedUrl(s3Client, command, { expiresIn });
     
+    log(`Generated signed URL for ${s3Key} (length: ${url.length})`, 's3');
+    log(`URL starts with: ${url.substring(0, 50)}...`, 's3');
+    
     return url;
   } catch (error) {
-    log(`Error generating pre-signed URL: ${error}`, 's3');
+    log(`Error generating pre-signed URL for key ${s3Key}: ${error}`, 's3');
+    console.error('S3 URL generation error:', error);
+    
+    // Attempt to provide more detailed error information
+    if (error instanceof Error) {
+      log(`Error name: ${error.name}, message: ${error.message}`, 's3');
+      console.error(`S3 error details - Name: ${error.name}, Message: ${error.message}`);
+      
+      if ('$metadata' in error) {
+        // @ts-ignore - AWS SDK error type
+        const metadata = error.$metadata;
+        log(`Error metadata: ${JSON.stringify(metadata)}`, 's3');
+        console.error('S3 error metadata:', metadata);
+      }
+    }
+    
     throw error;
   }
 }

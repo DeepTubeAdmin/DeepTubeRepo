@@ -22,25 +22,41 @@ export default function S3ImageComponent({
 
   useEffect(() => {
     let isMounted = true;
+    let retryTimeout: ReturnType<typeof setTimeout>;
     
     async function resolveImageUrl() {
       try {
         setLoading(true);
         
-        // Only fetch S3 URL if it's an S3 URL
-        if (imageUrl.startsWith('/api/s3/')) {
-          const url = await fetchS3Url(imageUrl);
-          if (isMounted) setResolvedUrl(url);
+        // Attempt to resolve URL with retry logic built into fetchS3Url
+        console.log('S3ImageComponent: Resolving URL for:', imageUrl);
+        const url = await fetchS3Url(imageUrl, 3); // Try up to 3 times
+        
+        if (!isMounted) return;
+        
+        if (url) {
+          setResolvedUrl(url);
+          if (url.startsWith('http')) {
+            console.log('S3ImageComponent: Successfully resolved URL:', url.substring(0, 50) + '...');
+          }
         } else {
-          // Otherwise use the original URL
-          if (isMounted) setResolvedUrl(imageUrl);
+          throw new Error('Failed to resolve image URL');
         }
       } catch (err) {
-        if (isMounted) {
-          console.error('Error resolving image URL:', err);
-          setError(err instanceof Error ? err : new Error(String(err)));
-          if (onError) onError(err);
+        if (!isMounted) return;
+        
+        console.error('S3ImageComponent: Error resolving image URL:', err);
+        setError(err instanceof Error ? err : new Error(String(err)));
+        
+        // For non-S3 URLs, try again once more after a delay (may be a temporary network issue)
+        if (!imageUrl.startsWith('/api/s3/')) {
+          console.log('S3ImageComponent: Will retry regular URL in 2 seconds');
+          retryTimeout = setTimeout(() => {
+            if (isMounted) setResolvedUrl(imageUrl);
+          }, 2000);
         }
+        
+        if (onError) onError(err);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -50,6 +66,7 @@ export default function S3ImageComponent({
     
     return () => {
       isMounted = false;
+      if (retryTimeout) clearTimeout(retryTimeout);
     };
   }, [imageUrl, onError]);
 
