@@ -4,7 +4,7 @@
  */
 export function checkThumbnail(thumbnailUrl: string, videoId: number): string {
   // If no thumbnail is provided, use our API endpoint
-  if (!thumbnailUrl || thumbnailUrl === 'null' || thumbnailUrl === 'undefined') {
+  if (!thumbnailUrl || thumbnailUrl === 'null' || thumbnailUrl === 'undefined' || thumbnailUrl === '') {
     return `/api/videos/${videoId}/thumbnail`;
   }
   
@@ -13,21 +13,7 @@ export function checkThumbnail(thumbnailUrl: string, videoId: number): string {
     return thumbnailUrl;
   }
   
-  // For YouTube thumbnails, leave them as is
-  if (thumbnailUrl.includes('youtube.com') || thumbnailUrl.includes('img.youtube.com')) {
-    return thumbnailUrl;
-  }
-  
-  // For S3 URLs, leave them as is
-  if (thumbnailUrl.includes('amazonaws.com') || thumbnailUrl.includes('deeptubebucket')) {
-    return thumbnailUrl;
-  }
-  
-  // If it's pointing to a relative path, fix it
-  if (thumbnailUrl.startsWith('./') || (thumbnailUrl.startsWith('/') && !thumbnailUrl.startsWith('/api/'))) {
-    return `/api/videos/${videoId}/thumbnail`;
-  }
-  
-  // Return the original URL for other valid URLs
-  return thumbnailUrl;
+  // For now, we'll use our reliable endpoint for all videos except those with complete URLs
+  // This is the safest approach until we diagnose what's happening with S3 thumbnails
+  return `/api/videos/${videoId}/thumbnail`;
 }
