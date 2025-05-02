@@ -241,7 +241,10 @@ export async function generateAndStoreS3Thumbnail(
       // Generate the thumbnail using FFmpeg
       const thumbnailBuffer = await generateFFmpegThumbnail(sourceUrl);
 
-      // Upload the thumbnail to S3
+      // Upload directly to S3 thumbnails folder
+      console.log(`Uploading FFmpeg thumbnail to S3 at: ${s3Key}`);
+
+      // Upload to S3
       await uploadStringToS3(
         thumbnailBuffer, 
         s3Key, 
