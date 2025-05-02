@@ -77,16 +77,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Video not found" });
       }
       
-      // Path to local SVG placeholder
-      const placeholderPath = path.resolve('./public/default-video-thumbnail.svg');
+      // Simple SVG placeholder directly in the code
+      const placeholderSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="225" viewBox="0 0 400 225">
+  <rect width="400" height="225" fill="#111" />
+  <circle cx="200" cy="112.5" r="50" fill="#222" />
+  <polygon points="185,90 185,135 225,112.5" fill="#f97316" stroke="#000" stroke-width="2" />
+</svg>
+`;
       
       // Define S3 key for video thumbnail
       const s3Key = `thumbnails/video-${videoId}.jpg`;
       
       console.log(`Fixing thumbnail for video ${videoId} by uploading to ${s3Key}`);
       
-      // Upload the SVG placeholder to S3 with public-read ACL
-      await uploadFileToS3(placeholderPath, s3Key);
+      // Upload the SVG placeholder to S3 as a string with public-read ACL
+      await uploadStringToS3(placeholderSvg, s3Key, 'image/svg+xml');
       
       // Update the video record to use our thumbnail endpoint
       await dbStorage.updateVideo(videoId, { 

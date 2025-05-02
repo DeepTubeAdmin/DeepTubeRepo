@@ -40,12 +40,37 @@ export async function uploadFileToS3(filePath: string, s3Key: string): Promise<s
     
     log(`Successfully uploaded file to S3: ${s3Key}`, 's3');
     
-    // After successful upload, we can remove the local file to save space
-    fs.unlinkSync(filePath);
-    
     return s3Key;
   } catch (error) {
     log(`Error uploading file to S3: ${error}`, 's3');
+    throw error;
+  }
+}
+
+/**
+ * Upload a string directly to S3
+ * @param content String content to upload
+ * @param s3Key Key for the file in S3
+ * @param contentType Content type (e.g., 'image/svg+xml')
+ * @returns The S3 URL for the uploaded file
+ */
+export async function uploadStringToS3(content: string, s3Key: string, contentType: string): Promise<string> {
+  try {
+    const params = {
+      Bucket: BUCKET_NAME,
+      Key: s3Key,
+      Body: content,
+      ContentType: contentType,
+      ACL: 'public-read' as ObjectCannedACL, // Make the file publicly readable
+    };
+    
+    await s3Client.send(new PutObjectCommand(params));
+    
+    log(`Successfully uploaded string to S3: ${s3Key}`, 's3');
+    
+    return s3Key;
+  } catch (error) {
+    log(`Error uploading string to S3: ${error}`, 's3');
     throw error;
   }
 }
