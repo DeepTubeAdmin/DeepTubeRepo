@@ -9,6 +9,8 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import os from 'os';
+import fs from 'fs';
+import path from 'path';
 import { uploadStringToS3 } from './s3';
 
 const execFileAsync = promisify(execFile);
@@ -59,28 +61,27 @@ export async function generateAndStoreS3Thumbnail(
   // Handle videos - use FFmpeg with direct streaming
   if ((contentType === 'video' || contentType === 'videos') && sourceUrl) {
     try {
-      // Stream FFmpeg output directly to S3
-      const ffmpegProcess = execFile('ffmpeg', [
+      // Create temp file for thumbnail
+      const tempDir = os.tmpdir();
+      const tempThumb = path.join(tempDir, `thumb-${Date.now()}.jpg`);
+
+      await execFileAsync('ffmpeg', [
         '-y',
         '-i', sourceUrl,
         '-ss', '00:00:01.000',
         '-vframes', '1',
-        '-f', 'image2pipe',
-        '-vf', 'scale=800:450',
-        'pipe:1'
+        '-vf', 'scale=800:450:force_original_aspect_ratio=decrease,pad=800:450:(ow-iw)/2:(oh-ih)/2',
+        tempThumb
       ]);
 
-      // Get the output as a buffer
-      let chunks: Buffer[] = [];
-      ffmpegProcess.stdout?.on('data', (chunk) => chunks.push(chunk));
+      // Read the generated thumbnail
+      const buffer = await fs.promises.readFile(tempThumb);
 
-      await new Promise((resolve, reject) => {
-        ffmpegProcess.on('close', resolve);
-        ffmpegProcess.on('error', reject);
-      });
-
-      const buffer = Buffer.concat(chunks);
+      // Upload to S3
       await uploadStringToS3(buffer, s3Key, 'image/jpeg');
+
+      // Cleanup
+      await fs.promises.unlink(tempThumb);
       return s3Key;
     } catch (error) {
       console.error(`Error generating FFmpeg thumbnail: ${String(error)}`);
