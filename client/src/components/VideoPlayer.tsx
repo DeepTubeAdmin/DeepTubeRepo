@@ -9,6 +9,7 @@ import { Loader2, ThumbsUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import EmergencyVideoPlayer from './EmergencyVideoPlayer';
 import S3VideoPlayer from './S3VideoPlayer';
+import S3ImageComponent from './S3ImageComponent';
 import { 
   extractYoutubeVideoId, 
   extractYoutubeIdFromEmbed,
@@ -780,8 +781,19 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                   {/* Add AI watermark for all videos */}
                   <AIWatermark position="bottom-right" size="medium" />
                   
-                  {/* Improved MP4 video handling with EmergencyVideoPlayer for guaranteed cleanup */}
-                  {video.videoUrl.includes('.mp4') || video.videoUrl.includes('video/mp4') || video.videoUrl.startsWith('/uploads/') ? (
+                  {/* Use the specialized S3VideoPlayer component for S3 URLs */}
+                  {video.videoUrl.startsWith('/api/s3/') ? (
+                    <div className="w-full h-full">
+                      <S3VideoPlayer
+                        videoUrl={video.videoUrl}
+                        title={video.title}
+                        autoPlay={true}
+                        loop={false}
+                        className="w-full h-full"
+                        onError={(e) => console.error(`Error playing S3 video:`, e)}
+                      />
+                    </div>
+                  ) : video.videoUrl.includes('.mp4') || video.videoUrl.includes('video/mp4') || video.videoUrl.startsWith('/uploads/') ? (
                     <div className="w-full h-full">
                       <EmergencyVideoPlayer
                         src={video.videoUrl}
@@ -829,24 +841,32 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                   
                   {/* Check for data URLs which are usually properly formatted images */}
                   {video.imageUrl ? (
-                    <img 
-                      src={video.imageUrl} 
-                      alt={video.title} 
-                      className="max-h-[70vh] object-contain"
-                      onError={(e) => {
-                        console.error("Error loading image");
-                        const imgEl = e.currentTarget;
-                        imgEl.style.display = 'none';
-                        
-                        // Add error message if possible
-                        if (imgEl.parentElement) {
-                          const errorDiv = document.createElement('div');
-                          errorDiv.className = 'bg-red-600/20 border border-red-600 rounded-md p-4 text-center';
-                          errorDiv.textContent = 'Image could not be loaded. It may be in an unsupported format.';
-                          imgEl.parentElement.appendChild(errorDiv);
-                        }
-                      }}
-                    />
+                    video.imageUrl.startsWith('/api/s3/') ? (
+                      <S3ImageComponent 
+                        imageUrl={video.imageUrl} 
+                        alt={video.title}
+                        className="max-h-[70vh] object-contain"
+                      />
+                    ) : (
+                      <img 
+                        src={video.imageUrl} 
+                        alt={video.title} 
+                        className="max-h-[70vh] object-contain"
+                        onError={(e) => {
+                          console.error("Error loading image");
+                          const imgEl = e.currentTarget;
+                          imgEl.style.display = 'none';
+                          
+                          // Add error message if possible
+                          if (imgEl.parentElement) {
+                            const errorDiv = document.createElement('div');
+                            errorDiv.className = 'bg-red-600/20 border border-red-600 rounded-md p-4 text-center';
+                            errorDiv.textContent = 'Image could not be loaded. It may be in an unsupported format.';
+                            imgEl.parentElement.appendChild(errorDiv);
+                          }
+                        }}
+                      />
+                    )
                   ) : (
                     <div className="text-red-500">Image data not available</div>
                   )}
