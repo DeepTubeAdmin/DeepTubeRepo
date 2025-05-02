@@ -61,18 +61,32 @@ export async function generateAndStoreS3Thumbnail(
   // Handle videos - use FFmpeg with direct streaming
   if ((contentType === 'video' || contentType === 'videos') && sourceUrl) {
     try {
-      // Create temp file for thumbnail
+      // Create temp files for both video and thumbnail
       const tempDir = os.tmpdir();
+      const tempVideo = path.join(tempDir, `video-${Date.now()}.mp4`);
       const tempThumb = path.join(tempDir, `thumb-${Date.now()}.jpg`);
 
+      // First download the video to temp file if it's a URL
+      if (sourceUrl.startsWith('http')) {
+        const response = await fetch(sourceUrl);
+        const buffer = Buffer.from(await response.arrayBuffer());
+        await fs.promises.writeFile(tempVideo, buffer);
+      }
+
+      // Generate thumbnail using the local video file
       await execFileAsync('ffmpeg', [
         '-y',
-        '-i', sourceUrl,
+        '-i', sourceUrl.startsWith('http') ? tempVideo : sourceUrl,
         '-ss', '00:00:01.000',
         '-vframes', '1',
         '-vf', 'scale=800:450:force_original_aspect_ratio=decrease,pad=800:450:(ow-iw)/2:(oh-ih)/2',
         tempThumb
       ]);
+
+      // Clean up temp video file if we created one
+      if (sourceUrl.startsWith('http')) {
+        await fs.promises.unlink(tempVideo);
+      }
 
       // Read the generated thumbnail
       const buffer = await fs.promises.readFile(tempThumb);
