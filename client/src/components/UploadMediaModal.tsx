@@ -278,78 +278,10 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
             throw new Error(`Error parsing server response: ${parseError.message}`);
           }
           
-          // Check if file was uploaded to Vimeo (our server modification sends video to Vimeo)
-          if (fileData.vimeoId) {
-            console.log("Video was uploaded to Vimeo with ID:", fileData.vimeoId);
-            console.log("Full Vimeo upload response:", fileData);
-            
-            // Create a video entry in our database with the Vimeo information
-            try {
-              console.log("Creating database entry with Vimeo data");
-              const videoData = {
-                title,
-                description,
-                aiGenerator: aiGenerator === "Other" ? customAiGenerator : aiGenerator,
-                prompt,
-                categoryId,
-                contentType: 'video',
-                thumbnail: null, // Vimeo will generate this
-                videoUrl: fileData.url, // This should be the Vimeo URL
-                embedCode: `https://vimeo.com/${fileData.vimeoId}`,
-                resolution: "HD",
-                duration: 0,
-                credits: 0
-              };
-              
-              console.log("Submitting video data to API:", videoData);
-              
-              const response = await fetch('/api/videos/upload', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(videoData),
-                credentials: 'include',
-              });
-              
-              if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `Failed to create video entry`);
-              }
-              
-              // Show success message
-              toast({
-                title: "Upload successful",
-                description: `Your video has been uploaded to Vimeo and is being processed`,
-              });
-              
-              // Reset form
-              setTitle("");
-              setAiGenerator("");
-              setCustomAiGenerator("");
-              setShowCustomAiGenerator(false);
-              setPrompt("");
-              setDescription("");
-              setCategoryId("");
-              setSelectedFile(null);
-              setIsUploading(false);
-              onClose();
-              
-              return; // Exit early as we've completed the full upload process
-            } catch (error) {
-              console.error("Error creating video entry:", error);
-              toast({
-                title: "Upload partially successful",
-                description: "Your video was uploaded to Vimeo but we couldn't create an entry in our database. Please try again.",
-                variant: "destructive",
-              });
-              
-              setIsUploading(false);
-              return;
-            }
-          }
+          // All files are now uploaded to S3
+          console.log("File was uploaded to S3:", fileData);
+          console.log("Full S3 upload response:", fileData);
           
-          // If not uploaded to Vimeo (fallback to S3)
           // Store the URL for the video
           videoUrl = fileData.url;
           
@@ -485,78 +417,8 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
               throw new Error(`Error parsing server response: ${parseError.message}`);
             }
             
-            // Check if file was uploaded to Vimeo (our server modification sends video to Vimeo)
-            if (fileData.vimeoId) {
-              console.log("Video was uploaded to Vimeo with ID:", fileData.vimeoId);
-              console.log("Full Vimeo upload response:", fileData);
-              
-              // Create a video entry in our database with the Vimeo information
-              try {
-                console.log("Creating database entry with Vimeo data");
-                const videoData = {
-                  title,
-                  description,
-                  aiGenerator: aiGenerator === "Other" ? customAiGenerator : aiGenerator,
-                  prompt,
-                  categoryId,
-                  contentType: 'video',
-                  thumbnail: null, // Vimeo will generate this
-                  videoUrl: fileData.url, // This should be the Vimeo URL
-                  embedCode: `https://vimeo.com/${fileData.vimeoId}`,
-                  resolution: "HD",
-                  duration: 0,
-                  credits: 0
-                };
-                
-                console.log("Submitting video data to API:", videoData);
-                
-                const response = await fetch('/api/videos/upload', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify(videoData),
-                  credentials: 'include',
-                });
-                
-                if (!response.ok) {
-                  const errorData = await response.json();
-                  throw new Error(errorData.error || `Failed to create video entry`);
-                }
-                
-                // Show success message
-                toast({
-                  title: "Upload successful",
-                  description: `Your video has been uploaded to Vimeo and is being processed`,
-                });
-                
-                // Reset form
-                setTitle("");
-                setAiGenerator("");
-                setCustomAiGenerator("");
-                setShowCustomAiGenerator(false);
-                setPrompt("");
-                setDescription("");
-                setCategoryId("");
-                setSelectedFile(null);
-                setIsUploading(false);
-                onClose();
-                
-                return; // Exit early as we've completed the full upload process
-              } catch (error) {
-                console.error("Error creating video entry:", error);
-                toast({
-                  title: "Upload partially successful",
-                  description: "Your video was uploaded to Vimeo but we couldn't create an entry in our database. Please try again.",
-                  variant: "destructive",
-                });
-                
-                setIsUploading(false);
-                return;
-              }
-            }
-            
-            // If not uploaded to Vimeo (fallback to S3)
+            // File is now uploaded to S3
+            console.log("Video was uploaded to S3:", fileData);
             // Store the URL for the video
             videoUrl = fileData.url;
           } catch (error) {
