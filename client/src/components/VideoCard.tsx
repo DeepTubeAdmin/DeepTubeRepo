@@ -32,67 +32,57 @@ function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailIma
     // but start with the SVG placeholder already showing
     isMountedRef.current = true;
     
-    // Set a timeout to avoid overloading the server with simultaneous requests
-    const timeoutId = setTimeout(() => {
-      // For already resolved thumbnails like YouTube, use them directly
-      if (thumbnail && (thumbnail.includes('youtube.com/vi/') || 
-                           thumbnail.includes('img.youtube.com'))) {
-        if (isMountedRef.current) {
-          setImgSrc(thumbnail);
-        }
-        return;
-      }
+    // For already resolved thumbnails like YouTube, use them directly
+    if (thumbnail && (thumbnail.includes('youtube.com/vi/') || 
+                       thumbnail.includes('img.youtube.com'))) {
+      setImgSrc(thumbnail);
+      return;
+    }
+    
+    // If this is a Vimeo embed, let's use the SVG placeholder
+    if (contentType === 'embed') {
+      return; // SVG placeholder is already set
+    }
+    
+    // Use a unique timestamp to act as a cache buster
+    const timestamp = Date.now();
+    
+    // For actual videos we want to check if S3 thumbnails are available
+    if (contentType === 'video') {
+      // Set loading state immediately
+      setIsLoading(true);
       
-      // For other thumbnails, try to load from S3/server
-      if (isMountedRef.current && contentType === 'video') {
-        // Try to fetch the thumbnail without showing a loading state
-        // since we're already showing a placeholder
-        const directPath = `/api/videos/${videoId}/thumbnail?t=${Date.now()}`;
-        
-        // Only set loading if we don't already have a thumbnail
-        setIsLoading(true);
-        
-        fetch(directPath, {
-          method: 'GET',
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
-        })
-        .then(response => {
-          if (!isMountedRef.current) return null;
-          
-          if (response.redirected) {
-            // If redirected to S3, use that URL
-            return response.url;
-          } else if (response.headers.get('content-type')?.includes('image/svg')) {
-            // If we got an SVG, continue using our placeholder (which is already set)
-            return null;
-          } else {
-            // Otherwise use the direct path
-            return directPath;
-          }
-        })
-        .then(url => {
-          if (!isMountedRef.current || !url) return;
-          
-          // Set the image source to the resolved URL
-          setImgSrc(url);
-        })
-        .catch(() => {
-          // On error, keep using the SVG placeholder (which is already set)
-        })
-        .finally(() => {
-          if (isMountedRef.current) {
-            setIsLoading(false);
-          }
-        });
-      }
-    }, videoId % 10 * 100); // Stagger requests to avoid overwhelming the server
+      // We'll try to load the true image directly
+      // The server will redirect to S3 if available
+      const img = new Image();
+      
+      // Create a URL with a unique timestamp to avoid caching
+      const thumbnailUrl = `/api/videos/${videoId}/thumbnail?nocache=${timestamp}`;
+      
+      // Set up event handlers before setting src
+      img.onload = () => {
+        if (isMountedRef.current) {
+          // If loaded successfully, update the src
+          setImgSrc(thumbnailUrl);
+          setIsLoading(false);
+        }
+      };
+      
+      img.onerror = () => {
+        if (isMountedRef.current) {
+          // If failed to load, keep using the SVG placeholder
+          // which is already set
+          setIsLoading(false);
+          console.error(`Failed to load thumbnail for video ${videoId}`);
+        }
+      };
+      
+      // Start loading the image
+      img.src = thumbnailUrl;
+    }
     
     return () => {
       isMountedRef.current = false;
-      clearTimeout(timeoutId);
     };
   }, [videoId, thumbnail, contentType]);
   
