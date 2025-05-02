@@ -13,11 +13,21 @@ export function checkThumbnail(thumbnailUrl: string, videoId: number): string {
     return thumbnailUrl;
   }
   
-  // If it's pointing to a relative path that doesn't exist or an invalid URL, fix it
-  if (thumbnailUrl.startsWith('./') || thumbnailUrl.startsWith('/')) {
+  // For YouTube thumbnails, leave them as is
+  if (thumbnailUrl.includes('youtube.com') || thumbnailUrl.includes('img.youtube.com')) {
+    return thumbnailUrl;
+  }
+  
+  // For S3 URLs, leave them as is
+  if (thumbnailUrl.includes('amazonaws.com') || thumbnailUrl.includes('deeptubebucket')) {
+    return thumbnailUrl;
+  }
+  
+  // If it's pointing to a relative path, fix it
+  if (thumbnailUrl.startsWith('./') || (thumbnailUrl.startsWith('/') && !thumbnailUrl.startsWith('/api/'))) {
     return `/api/videos/${videoId}/thumbnail`;
   }
   
-  // Return the original URL for valid remote URLs
+  // Return the original URL for other valid URLs
   return thumbnailUrl;
 }
