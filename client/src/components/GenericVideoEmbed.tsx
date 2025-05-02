@@ -78,6 +78,8 @@ const GenericVideoEmbed = ({
           loop: loop ? '1' : '0',
           rel: '0', // Don't show related videos
           modestbranding: '1', // Reduce YouTube branding
+          enablejsapi: '1', // Enable JavaScript API
+          origin: window.location.origin, // Add origin to prevent cross-origin issues
         });
         setEmbedUrl(`https://www.youtube.com/embed/${youtubeId}?${params.toString()}`);
       }
@@ -123,11 +125,12 @@ const GenericVideoEmbed = ({
         <div style={{ position: 'relative', paddingBottom: `${aspectRatioValue}%`, height: 0, overflow: 'hidden' }}>
           <iframe
             src={embedUrl}
-            allow="autoplay; fullscreen; picture-in-picture"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             frameBorder="0"
             allowFullScreen
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
             title={title}
+            loading="lazy"
           />
           <AIWatermark position="bottom-right" size="medium" />
         </div>
@@ -138,10 +141,11 @@ const GenericVideoEmbed = ({
             src={embedUrl}
             width={width}
             height={height === 'auto' ? (aspectRatioValue ? `${aspectRatioValue}%` : undefined) : height}
-            allow="autoplay; fullscreen; picture-in-picture"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             frameBorder="0"
             allowFullScreen
             title={title}
+            loading="lazy"
           />
           <AIWatermark position="bottom-right" size="medium" />
         </div>

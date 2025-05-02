@@ -293,7 +293,9 @@ export default function MediaDetail() {
               {media.contentType === 'video' && (
                 <div className="aspect-video">
                   <GenericVideoEmbed 
-                    videoUrl={media.vimeoId ? `https://vimeo.com/${media.vimeoId}` : (media.videoUrl || '')}
+                    videoUrl={media.vimeoId ? `https://vimeo.com/${media.vimeoId}` : 
+                             media.videoUrl ? media.videoUrl : 
+                             ''}
                     title={media.title}
                     responsive={true}
                     autoplay={true}
@@ -319,10 +321,12 @@ export default function MediaDetail() {
                       className="w-full h-full"
                       dangerouslySetInnerHTML={{
                         __html: media.embedCode.includes('autoplay=1')
-                          ? media.embedCode
+                          ? media.embedCode.includes('origin=') 
+                            ? media.embedCode 
+                            : media.embedCode.replace(/src="([^"]+)"/, `src="$1&origin=${window.location.origin}"`)
                           : media.embedCode
-                              .replace(/src="([^"]+)"/, 'src="$1?autoplay=1"')
-                              .replace(/src="([^"]+)\?([^"]*)"/, 'src="$1?autoplay=1&$2"')
+                              .replace(/src="([^"]+)"/, `src="$1?autoplay=1&enablejsapi=1&origin=${window.location.origin}"`)
+                              .replace(/src="([^"]+)\?([^"]*)"/, `src="$1?autoplay=1&enablejsapi=1&origin=${window.location.origin}&$2"`)
                       }}
                     />
                   ) : (
