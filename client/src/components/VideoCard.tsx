@@ -44,60 +44,86 @@ function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailIma
       return; // SVG placeholder is already set
     }
     
-    // Use a unique timestamp to act as a cache buster
-    const timestamp = Date.now();
-    
-    // For actual videos we want to check if S3 thumbnails are available
-    if (contentType === 'video') {
+    // For actual videos, try to use direct S3 URLs first, then fall back to our API
+    if (contentType === 'video' || contentType === 'image') {
       // Set loading state immediately
       setIsLoading(true);
       
-      // Use XMLHttpRequest which will properly follow redirects
-      const xhr = new XMLHttpRequest();
-      xhr.open('GET', `/api/videos/${videoId}/thumbnail?nocache=${timestamp}`, true);
-      xhr.responseType = 'blob';
+      // First try the direct S3 URL format
+      const s3Key = `thumbnails/video-${videoId}.jpg`;
+      const bucketName = process.env.VITE_AWS_BUCKET_NAME || 'deeptubebucket';
+      const region = process.env.VITE_AWS_REGION || 'us-east-2';
+      const s3Url = `https://${bucketName}.s3.${region}.amazonaws.com/${s3Key}`;
       
-      // Setup handlers
-      xhr.onload = function() {
+      console.log(`Trying direct S3 URL: ${s3Url}`);
+      
+      // Try to load the image directly from S3
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      img.onload = function() {
         if (!isMountedRef.current) return;
+        console.log(`S3 direct URL loaded successfully for video ${videoId}`);
+        setImgSrc(s3Url);
+        setIsLoading(false);
+      };
+      
+      img.onerror = function() {
+        if (!isMountedRef.current) return;
+        console.log(`S3 direct URL failed, falling back to API for video ${videoId}`);
         
-        if (xhr.status >= 200 && xhr.status < 300) {
-          // Create a blob URL from the response
-          const blob = xhr.response;
-          const contentType = xhr.getResponseHeader('content-type');
+        // If direct S3 URL fails, fall back to our API endpoint
+        // Use XMLHttpRequest which will properly follow redirects
+        const timestamp = Date.now();
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', `/api/videos/${videoId}/thumbnail?nocache=${timestamp}`, true);
+        xhr.responseType = 'blob';
+        
+        // Setup handlers
+        xhr.onload = function() {
+          if (!isMountedRef.current) return;
           
-          // Only use the response if it's an image and not SVG
-          if (contentType && contentType.includes('image/') && !contentType.includes('svg')) {
-            const objectUrl = URL.createObjectURL(blob);
-            console.log(`Created object URL for video ${videoId} thumbnail:`, objectUrl);
-            setImgSrc(objectUrl);
+          if (xhr.status >= 200 && xhr.status < 300) {
+            // Create a blob URL from the response
+            const blob = xhr.response;
+            const contentType = xhr.getResponseHeader('content-type');
+            
+            // Only use the response if it's an image and not SVG
+            if (contentType && contentType.includes('image/') && !contentType.includes('svg')) {
+              const objectUrl = URL.createObjectURL(blob);
+              console.log(`Created object URL for video ${videoId} thumbnail:`, objectUrl);
+              setImgSrc(objectUrl);
+            } else {
+              console.log(`Received SVG or non-image for video ${videoId}, keeping placeholder`);
+            }
           } else {
-            console.log(`Received SVG or non-image for video ${videoId}, keeping placeholder`);
+            console.error(`Error loading thumbnail for video ${videoId}: Status ${xhr.status}`);
           }
-        } else {
-          console.error(`Error loading thumbnail for video ${videoId}: Status ${xhr.status}`);
-        }
+          
+          setIsLoading(false);
+        };
         
-        setIsLoading(false);
+        xhr.onerror = function() {
+          if (!isMountedRef.current) return;
+          console.error(`Network error loading thumbnail for video ${videoId}`);
+          setIsLoading(false);
+        };
+        
+        xhr.ontimeout = function() {
+          if (!isMountedRef.current) return;
+          console.error(`Timeout loading thumbnail for video ${videoId}`);
+          setIsLoading(false);
+        };
+        
+        // Set timeout to 8 seconds
+        xhr.timeout = 8000;
+        
+        // Send the request
+        xhr.send();
       };
       
-      xhr.onerror = function() {
-        if (!isMountedRef.current) return;
-        console.error(`Network error loading thumbnail for video ${videoId}`);
-        setIsLoading(false);
-      };
-      
-      xhr.ontimeout = function() {
-        if (!isMountedRef.current) return;
-        console.error(`Timeout loading thumbnail for video ${videoId}`);
-        setIsLoading(false);
-      };
-      
-      // Set timeout to 8 seconds
-      xhr.timeout = 8000;
-      
-      // Send the request
-      xhr.send();
+      // Start loading the S3 URL
+      img.src = s3Url;
     }
     
     return () => {
