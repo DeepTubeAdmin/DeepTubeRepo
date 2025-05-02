@@ -251,6 +251,7 @@ export default function AdminPage() {
             <TabsTrigger value="pending" className="flex-1">Pending Review</TabsTrigger>
             <TabsTrigger value="content" className="flex-1">Reported Content</TabsTrigger>
             <TabsTrigger value="users" className="flex-1">User Management</TabsTrigger>
+            <TabsTrigger value="system" className="flex-1">System Tools</TabsTrigger>
           </TabsList>
           
           <TabsContent value="pending" className="py-4">
@@ -437,6 +438,129 @@ export default function AdminPage() {
                     </Table>
                   )}
                 </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="system" className="py-4">
+            <Card className="bg-gray-900 border-gray-800">
+              <CardHeader>
+                <CardTitle>System Tools</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Maintenance and troubleshooting tools for the platform
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* Thumbnail Regeneration */}
+                  <div className="p-4 border border-gray-800 rounded-lg">
+                    <h3 className="text-lg font-medium text-white mb-2">Thumbnail Management</h3>
+                    <p className="text-gray-400 mb-4">Fix problems with thumbnails that aren't displaying correctly</p>
+                    
+                    <div className="flex flex-col space-y-4">
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-300 mb-2">Image Content Thumbnails</h4>
+                        <div className="flex items-center space-x-4">
+                          <Button 
+                            variant="default" 
+                            onClick={async () => {
+                              try {
+                                const response = await fetch('/api/fix-image-thumbnails');
+                                const data = await response.json();
+                                toast({
+                                  title: 'Thumbnail Fix Complete',
+                                  description: `Successfully fixed ${data.results.success} image thumbnails`,
+                                  variant: 'default'
+                                });
+                              } catch (error) {
+                                console.error('Error fixing image thumbnails:', error);
+                                toast({
+                                  title: 'Error',
+                                  description: 'Failed to fix image thumbnails',
+                                  variant: 'destructive'
+                                });
+                              }
+                            }}
+                          >
+                            Fix Image Thumbnails
+                          </Button>
+                          <p className="text-sm text-gray-400">Regenerates thumbnails for all image content</p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-300 mb-2">All Content Thumbnails</h4>
+                        <div className="flex items-center space-x-4">
+                          <Button 
+                            variant="outline" 
+                            onClick={async () => {
+                              try {
+                                const response = await fetch('/api/fix-thumbnails-all');
+                                const data = await response.json();
+                                toast({
+                                  title: 'Thumbnails Fixed',
+                                  description: `Successfully processed ${data.totalProcessed} thumbnails`,
+                                  variant: 'default'
+                                });
+                              } catch (error) {
+                                console.error('Error fixing all thumbnails:', error);
+                                toast({
+                                  title: 'Error',
+                                  description: 'Failed to fix all thumbnails',
+                                  variant: 'destructive'
+                                });
+                              }
+                            }}
+                          >
+                            Reset All Thumbnails
+                          </Button>
+                          <p className="text-sm text-gray-400">Resets all thumbnails to default placeholders</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* AWS S3 Connection Test */}
+                  <div className="p-4 border border-gray-800 rounded-lg">
+                    <h3 className="text-lg font-medium text-white mb-2">AWS S3 Connection</h3>
+                    <p className="text-gray-400 mb-4">Test connection to AWS S3 storage</p>
+                    
+                    <div className="flex items-center space-x-4">
+                      <Button 
+                        variant="outline" 
+                        onClick={async () => {
+                          try {
+                            const response = await fetch('/api/test-s3-access');
+                            const data = await response.json();
+                            if (data.success) {
+                              toast({
+                                title: 'S3 Connection Successful',
+                                description: `Uploaded test file: ${data.key}`,
+                                variant: 'default'
+                              });
+                            } else {
+                              toast({
+                                title: 'S3 Connection Failed',
+                                description: data.message || 'Unknown error',
+                                variant: 'destructive'
+                              });
+                            }
+                          } catch (error) {
+                            console.error('Error testing S3 connection:', error);
+                            toast({
+                              title: 'Error',
+                              description: 'Failed to test S3 connection',
+                              variant: 'destructive'
+                            });
+                          }
+                        }}
+                      >
+                        Test S3 Connection
+                      </Button>
+                      <p className="text-sm text-gray-400">Verifies AWS S3 credentials and bucket access</p>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
