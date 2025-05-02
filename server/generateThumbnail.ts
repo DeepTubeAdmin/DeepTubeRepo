@@ -37,16 +37,31 @@ async function generateFFmpegThumbnail(videoUrl: string): Promise<Buffer> {
     console.log(`Generating FFmpeg thumbnail from ${videoUrl}`);
     console.log(`Output will be saved to ${outputPath}`);
     
+    // First get the actual video URL if it's an S3 path
+    let finalVideoUrl = videoUrl;
+    if (videoUrl.startsWith('/api/s3/')) {
+      try {
+        const response = await fetch(`http://0.0.0.0:5000${videoUrl}?getUrl=true`);
+        const data = await response.json();
+        finalVideoUrl = data.url;
+      } catch (error) {
+        console.error('Error resolving S3 URL:', error);
+        throw error;
+      }
+    }
+
+    console.log(`Using FFmpeg with source URL: ${finalVideoUrl}`);
+
     // Use FFmpeg to extract a good frame from the video
     const ffmpegArgs = [
       '-y', // Overwrite output files without asking
       '-ss', '00:00:01.000', // Seek to 1 second
-      '-i', videoUrl, // Input file
+      '-i', finalVideoUrl, // Input file
       '-vframes', '1', // Extract exactly one frame
-      '-q:v', '1', // Maximum quality
+      '-q:v', '2', // High quality (1-31, lower is better)
       '-f', 'image2', // Force image2 format
       '-vf', 'scale=800:450:force_original_aspect_ratio=decrease,pad=800:450:(ow-iw)/2:(oh-ih)/2', // Resize to 16:9
-      '-an', // No audio
+      '-frames:v', '1', // Extract one frame
       outputPath // Output path
     ];
     
