@@ -17,142 +17,105 @@ interface ThumbnailImageProps {
 
 // Component to handle thumbnail loading with proper S3 URL resolution
 function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailImageProps) {
-  const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const [usingSvg, setUsingSvg] = useState(false);
+  // Simplified implementation with fewer states and better error handling
+  const [imgSrc, setImgSrc] = useState<string>(
+    // Use placeholder directly to avoid loading spinner
+    `/api/videos/${videoId}/thumbnail?forcesvg=true&t=${Date.now()}`
+  );
+  const [isLoading, setIsLoading] = useState(false);
   
   // Reference to track if the component is still mounted
   const isMountedRef = useRef(true);
   
   useEffect(() => {
-    // Reset state when input props change
-    setIsLoading(true);
-    setHasError(false);
-    setUsingSvg(false);
-    setRetryCount(0);
+    // When the component mounts, try to get a real thumbnail
+    // but start with the SVG placeholder already showing
+    isMountedRef.current = true;
     
-    let timeoutId: ReturnType<typeof setTimeout>;
-    
-    async function resolveThumbnailUrl() {
-      try {
-        // For YouTube videos, use the thumbnail directly
-        if (contentType === 'embed' && thumbnail && thumbnail.includes('youtube.com/vi/')) {
-          console.log(`ThumbnailImage: Using YouTube thumbnail directly for video ${videoId}`);
-          setResolvedUrl(thumbnail);
-          setIsLoading(false);
-          return;
-        }
-        
-        // First try direct S3 path
-        const directS3Path = `/api/videos/${videoId}/thumbnail?cachebust=${Date.now()}`;
-        console.log(`ThumbnailImage: Resolving URL for video ${videoId} using: ${directS3Path}`);
-        
-        // Attempt to resolve the URL (which could be S3 or thumbnail endpoint)
-        // Disable caching
-        const response = await fetch(directS3Path, {
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          },
-          cache: 'no-store'
-        });
-        
-        if (!isMountedRef.current) return;
-        
-        if (response.redirected) {
-          console.log(`ThumbnailImage: Got S3 redirect for video ${videoId}:`, 
-            response.url.substring(0, 60) + '...');
-          setResolvedUrl(response.url);
-        } else if (response.headers.get('content-type')?.includes('image/svg')) {
-          // If our endpoint returned SVG, that means no actual thumbnail was found
-          console.log(`ThumbnailImage: Got SVG response for video ${videoId}, using placeholder`);          
-          setUsingSvg(true);
-          setResolvedUrl(`/api/videos/${videoId}/thumbnail?forcesvg=true&t=${Date.now()}`);
-        } else {
-          // We got some other direct response, use it
-          console.log(`ThumbnailImage: Got direct response for video ${videoId}`);
-          setResolvedUrl(directS3Path);
-        }
-      } catch (err) {
-        if (!isMountedRef.current) return;
-        
-        console.error(`ThumbnailImage: Error resolving URL for video ${videoId}:`, err);
-        
-        // If we've tried multiple times and still failed, use the SVG
-        if (retryCount >= 2) {
-          console.log(`ThumbnailImage: Max retries reached for video ${videoId}, using SVG placeholder`);
-          setUsingSvg(true);
-          setResolvedUrl(`/api/videos/${videoId}/thumbnail?forcesvg=true&t=${Date.now()}`);
-        } else {
-          // Otherwise, increment retry count and try again after a delay
-          setRetryCount(prev => prev + 1);
-          timeoutId = setTimeout(() => {
-            if (isMountedRef.current) {
-              resolveThumbnailUrl();
-            }
-          }, 500 * Math.pow(2, retryCount)); // Exponential backoff
-        }
-      } finally {
+    // Set a timeout to avoid overloading the server with simultaneous requests
+    const timeoutId = setTimeout(() => {
+      // For already resolved thumbnails like YouTube, use them directly
+      if (thumbnail && (thumbnail.includes('youtube.com/vi/') || 
+                           thumbnail.includes('img.youtube.com'))) {
         if (isMountedRef.current) {
-          // Slight delay before showing to avoid flickering during URL resolution
-          timeoutId = setTimeout(() => {
-            setIsLoading(false);
-          }, 100);
+          setImgSrc(thumbnail);
         }
+        return;
       }
-    }
-    
-    resolveThumbnailUrl();
+      
+      // For other thumbnails, try to load from S3/server
+      if (isMountedRef.current && contentType === 'video') {
+        // Try to fetch the thumbnail without showing a loading state
+        // since we're already showing a placeholder
+        const directPath = `/api/videos/${videoId}/thumbnail?t=${Date.now()}`;
+        
+        // Only set loading if we don't already have a thumbnail
+        setIsLoading(true);
+        
+        fetch(directPath, {
+          method: 'GET',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        })
+        .then(response => {
+          if (!isMountedRef.current) return null;
+          
+          if (response.redirected) {
+            // If redirected to S3, use that URL
+            return response.url;
+          } else if (response.headers.get('content-type')?.includes('image/svg')) {
+            // If we got an SVG, continue using our placeholder (which is already set)
+            return null;
+          } else {
+            // Otherwise use the direct path
+            return directPath;
+          }
+        })
+        .then(url => {
+          if (!isMountedRef.current || !url) return;
+          
+          // Set the image source to the resolved URL
+          setImgSrc(url);
+        })
+        .catch(() => {
+          // On error, keep using the SVG placeholder (which is already set)
+        })
+        .finally(() => {
+          if (isMountedRef.current) {
+            setIsLoading(false);
+          }
+        });
+      }
+    }, videoId % 10 * 100); // Stagger requests to avoid overwhelming the server
     
     return () => {
       isMountedRef.current = false;
-      if (timeoutId) clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
     };
-  }, [videoId, thumbnail, contentType, retryCount]);
+  }, [videoId, thumbnail, contentType]);
   
-  // When the component unmounts
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-  
-  if (isLoading) {
-    // While loading, show a subtle loading indicator
-    return (
-      <div className="w-full h-full absolute inset-0 bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-t-orange-500 border-orange-500/30 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-  
-  if (hasError || !resolvedUrl) {
-    // On error, return our SVG placeholder
-    return (
+  // Always show the image with the current imgSrc state
+  // (either placeholder or actual thumbnail)
+  return (
+    <>
+      {isLoading && (
+        <div className="w-full h-full absolute inset-0 bg-black/20 flex items-center justify-center z-10">
+          <div className="w-8 h-8 border-2 border-t-orange-500 border-orange-500/30 rounded-full animate-spin"></div>
+        </div>
+      )}
       <img 
-        src={`/api/videos/${videoId}/thumbnail?forcesvg=true`}
+        src={imgSrc} 
         alt={title} 
         className="w-full h-full object-cover absolute inset-0" 
+        onError={(e) => {
+          // If the image fails to load, fall back to our SVG placeholder
+          console.error(`ThumbnailImage: Error loading thumbnail for video ${videoId}`);
+          e.currentTarget.src = `/api/videos/${videoId}/thumbnail?forcesvg=true&t=${Date.now()}`;
+        }}
       />
-    );
-  }
-  
-  // Successfully resolved thumbnail URL
-  return (
-    <img 
-      src={resolvedUrl} 
-      alt={title} 
-      className="w-full h-full object-cover absolute inset-0" 
-      onError={(e) => {
-        // If the resolved URL fails to load, fall back to the dynamic SVG endpoint
-        console.error(`ThumbnailImage: Error loading resolved thumbnail for video ${videoId}`);
-        setUsingSvg(true);
-        e.currentTarget.src = `/api/videos/${videoId}/thumbnail?forcesvg=true&t=${Date.now()}`;
-      }}
-    />
+    </>
   );
 }
 
