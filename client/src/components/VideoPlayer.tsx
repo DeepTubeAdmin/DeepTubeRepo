@@ -169,6 +169,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
     
     console.log("VideoPlayer: Processing embed code", { 
       isRedditEmbed: video.embedCode ? isRedditEmbed(video.embedCode) : false,
+      hasYoutube: video.embedCode ? video.embedCode.includes('youtube.com') : false,
       embedLength: video.embedCode.length
     });
     
@@ -179,16 +180,13 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
     // Clear previous content
     containerRef.innerHTML = '';
     
-    // Always use the server-provided embed code first
-    // The server has already handled adding autoplay parameters
-    // This ensures all the YouTube iframe attributes are properly set
-    containerRef.innerHTML = video.embedCode;
+    // Check if it's a YouTube embed
+    const hasYouTube = video.embedCode.includes('youtube.com/embed/') || 
+                      video.embedCode.includes('youtu.be/') || 
+                      video.embedCode.includes('youtube.com/watch');
     
-    // Check if it's a YouTube embed but doesn't have autoplay for some reason
-    const hasYouTube = video.embedCode.includes('youtube.com/embed/');
-    const hasAutoplay = video.embedCode.includes('autoplay=1');
-    
-    if (hasYouTube && !hasAutoplay) {
+    // Always prioritize fixing YouTube embeds
+    if (hasYouTube) {
       // Try to extract YouTube ID using different methods
       let youtubeId = null;
       
@@ -215,20 +213,44 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
       if (youtubeId) {
         console.log("VideoPlayer: Creating YouTube embed with ID:", youtubeId);
         
-        // Create a direct iframe with autoplay enabled
+        // Create a direct iframe with important attributes for autoplay
         containerRef.innerHTML = `
           <iframe 
-            src="https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=0&rel=0" 
+            src="https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=0&rel=0&modestbranding=1" 
             width="100%" 
             height="100%" 
             style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:4px;" 
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
             allowfullscreen 
+            frameborder="0"
             title="${video.title || 'YouTube video'}"
           ></iframe>
         `;
+        
+        // Add a fallback message if the iframe doesn't work
+        setTimeout(() => {
+          // Check if the iframe is still empty or not working
+          const iframe = containerRef.querySelector('iframe');
+          if (!iframe || !iframe.contentWindow) {
+            console.warn('YouTube embed iframe is not loading properly, adding direct link');
+            containerRef.innerHTML += `
+              <div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);color:white;text-align:center;padding:20px;">
+                <div>
+                  <p style="margin-bottom:15px;">YouTube video could not be embedded due to browser restrictions.</p>
+                  <a href="https://www.youtube.com/watch?v=${youtubeId}" target="_blank" rel="noopener noreferrer" 
+                    style="display:inline-block;background:#cc0000;color:white;padding:10px 20px;border-radius:4px;text-decoration:none;font-weight:bold;">
+                    Watch on YouTube
+                  </a>
+                </div>
+              </div>
+            `;
+          }
+        }, 3000); // Wait 3 seconds to check if iframe loaded
+      } else {
+        // Fallback: use the server-provided embed code
+        containerRef.innerHTML = video.embedCode;
       }
-    }
+    } 
     // Next, check if it's a Reddit embed
     else if (video.embedCode.includes('reddit.com')) {
       console.log("VideoPlayer: Creating Reddit embed");
@@ -327,99 +349,91 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
 
   // Effect to cleanup video elements when dialog closes
   useEffect(() => {
-    // Clean up when component unmounts
+    // Only setup cleanup when the player is open
+    if (!isOpen) return;
+    
+    // Return cleanup function that runs when component unmounts or dependencies change
     return () => {
-      if (!isOpen) {
-        console.log('VideoPlayer: Automatic emergency cleanup on unmount');
-        
-        // Create a safety timer that will run after normal cleanup
-        const safetyTimer = setTimeout(() => {
-          console.log('🚨 EXECUTING GLOBAL MEDIA SHUTDOWN 🚨');
-          
-          try {
-            // Find all video containers with custom cleanup
-            const containers = document.querySelectorAll('.video-player-container');
-            containers.forEach(container => {
-              const extendedContainer = container as ExtendedHTMLElement;
-              if (extendedContainer._cleanup && typeof extendedContainer._cleanup === 'function') {
-                try {
-                  extendedContainer._cleanup();
-                  console.log('Called custom cleanup handler on container');
-                } catch (err) {
-                  console.error('Error in custom cleanup:', err);
-                }
-              }
-            });
-            
-            // Close all audio contexts in the document
-            const videoElements = document.querySelectorAll('video');
-            videoElements.forEach(video => {
-              const extendedVideo = video as ExtendedHTMLVideoElement;
-              if (extendedVideo._audioContext) {
-                try {
-                  if (extendedVideo._gainNode) {
-                    extendedVideo._gainNode.disconnect();
-                  }
-                  if (extendedVideo._mediaSource) {
-                    extendedVideo._mediaSource.disconnect();
-                  }
-                  if (extendedVideo._audioContext && extendedVideo._audioContext.state !== 'closed') {
-                    extendedVideo._audioContext.close();
-                    console.log('Closed audio context from video element');
-                  }
-                } catch (e) {
-                  console.error('Error closing audio context:', e);
-                }
-              }
-              
-              // Basic video cleanup
-              try {
-                video.pause();
-                video.muted = true;
-                video.volume = 0;
-                if (video.hasAttribute('src')) video.removeAttribute('src');
-                video.load();
-              } catch (e) {
-                console.error('Error in basic video cleanup:', e);
-              }
-            });
-            
-            // Also clean up audio elements
-            const audioElements = document.querySelectorAll('audio');
-            audioElements.forEach(audio => {
-              try {
-                audio.pause();
-                audio.muted = true;
-                audio.volume = 0;
-                if (audio.hasAttribute('src')) audio.removeAttribute('src');
-                audio.load();
-              } catch (e) {
-                console.error('Error cleaning up audio element:', e);
-              }
-            });
-            
-            // Clear iframes that could contain media
-            document.querySelectorAll('iframe').forEach(iframe => {
-              if (iframe.parentNode && iframe.src && (
-                iframe.src.includes('youtube') || 
-                iframe.src.includes('vimeo') || 
-                iframe.src.includes('video') || 
-                iframe.src.includes('audio') ||
-                iframe.src.includes('embed')
-              )) {
-                iframe.parentNode.removeChild(iframe);
-                console.log('Removed iframe with possible media content');
-              }
-            });
-          } catch (finalError) {
-            console.error('Global media shutdown failed:', finalError);
+      console.log('VideoPlayer: EMERGENCY SHUTDOWN OF ALL MEDIA');
+      
+      try {
+        // Find all video containers with custom cleanup
+        const containers = document.querySelectorAll('.video-player-container');
+        containers.forEach(container => {
+          const extendedContainer = container as ExtendedHTMLElement;
+          if (extendedContainer._cleanup && typeof extendedContainer._cleanup === 'function') {
+            try {
+              extendedContainer._cleanup();
+              console.log('Called custom cleanup handler on container');
+            } catch (err) {
+              console.error('Error in custom cleanup:', err);
+            }
           }
-        }, 100); // Short timeout to allow normal cleanup to work first
+        });
         
-        // Return cleanup function
-        return () => clearTimeout(safetyTimer);
+        // Close all audio contexts in the document
+        const videoElements = document.querySelectorAll('video');
+        videoElements.forEach(video => {
+          const extendedVideo = video as ExtendedHTMLVideoElement;
+          if (extendedVideo._audioContext) {
+            try {
+              if (extendedVideo._gainNode) {
+                extendedVideo._gainNode.disconnect();
+              }
+              if (extendedVideo._mediaSource) {
+                extendedVideo._mediaSource.disconnect();
+              }
+              if (extendedVideo._audioContext && extendedVideo._audioContext.state !== 'closed') {
+                extendedVideo._audioContext.close();
+                console.log('Closed audio context from video element');
+              }
+            } catch (e) {
+              console.error('Error closing audio context:', e);
+            }
+          }
+          
+          // Basic video cleanup
+          try {
+            video.pause();
+            video.muted = true;
+            video.volume = 0;
+            if (video.hasAttribute('src')) video.removeAttribute('src');
+            video.load();
+          } catch (e) {
+            console.error('Error in basic video cleanup:', e);
+          }
+        });
+        
+        // Also clean up audio elements
+        const audioElements = document.querySelectorAll('audio');
+        audioElements.forEach(audio => {
+          try {
+            audio.pause();
+            audio.muted = true;
+            audio.volume = 0;
+            if (audio.hasAttribute('src')) audio.removeAttribute('src');
+            audio.load();
+          } catch (e) {
+            console.error('Error cleaning up audio element:', e);
+          }
+        });
+        
+        // Clear iframes that could contain media
+        document.querySelectorAll('iframe').forEach(iframe => {
+          if (iframe.parentNode && iframe.src && (
+            iframe.src.includes('youtube') || 
+            iframe.src.includes('vimeo') || 
+            iframe.src.includes('video') || 
+            iframe.src.includes('audio') ||
+            iframe.src.includes('embed')
+          )) {
+            iframe.parentNode.removeChild(iframe);
+            console.log('Removed iframe with possible media content');
+          }
+        });
+      } catch (finalError) {
+        console.error('Global media shutdown failed:', finalError);
       }
-      return undefined;
     };
   }, [isOpen]);
 
