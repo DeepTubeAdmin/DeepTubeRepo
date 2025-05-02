@@ -1785,12 +1785,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Generate a generic video/image thumbnail based on content type
       console.log(`Serving SVG placeholder by content type for ${videoId}: ${video.contentType}`);
-      return sendSvgPlaceholder(res);
+      return sendSvgPlaceholder(res, video.contentType);
       
     } catch (error) {
       console.error("Error generating thumbnail:", error);
       console.log(`Serving SVG placeholder due to error`);
-      return sendSvgPlaceholder(res);
+      return sendSvgPlaceholder(res, 'unknown');
     }
   });
 
