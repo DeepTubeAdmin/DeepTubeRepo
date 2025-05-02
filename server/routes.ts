@@ -1972,7 +1972,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if ((video.contentType === 'image' || video.contentType === 'images') && video.imageUrl) {
         // If the image is an actual URL and not a base64 or placeholder
         if (video.imageUrl.startsWith('http') && !video.imageUrl.includes('placehold.co')) {
-          console.log(`Redirecting to actual image URL for image content ${videoId}: ${video.imageUrl}`);
+          console.log(`Processing image URL for content ${videoId}: ${video.imageUrl}`);
           
           // Check if the URL is directly accessible (not S3)
           if (!video.imageUrl.includes('amazonaws.com')) {
@@ -1980,31 +1980,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else {
             // For S3 URLs, we need to proxy them
             try {
-              // Get the data and stream it through our server
-              const https = await import('https');
-              console.log(`Proxying external image URL for ${videoId}`);
+              // Parse the S3 URL to get the key
+              const s3UrlMatch = video.imageUrl.match(/https:\/\/([^.]+)\.s3\.([^.]+)\.amazonaws\.com\/(.*)/i);
               
-              const proxyRequest = https.get(video.imageUrl, (proxyRes) => {
-                if (proxyRes.statusCode === 200) {
-                  // Set appropriate content type
-                  res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'image/jpeg');
-                  // Pipe the response directly to our response
-                  proxyRes.pipe(res);
-                } else {
-                  // If request fails, fall back to SVG
-                  console.error(`Proxy request failed with status ${proxyRes.statusCode}`);
+              if (s3UrlMatch && s3UrlMatch.length >= 4) {
+                const s3Key = s3UrlMatch[3]; // The key part of the URL
+                const s3KeyForThumbnail = `thumbnails/video-${videoId}.jpg`;
+                
+                console.log(`Using S3 key for ${videoId}: Original=${s3Key}, Thumbnail=${s3KeyForThumbnail}`);
+                
+                // We'll try both the original key and the thumbnail key
+                try {
+                  // Get the data and stream it through our server
+                  const https = await import('https');
+                  console.log(`Proxying S3 image URL for ${videoId}`);
+                  
+                  const proxyRequest = https.get(video.imageUrl, (proxyRes) => {
+                    if (proxyRes.statusCode === 200) {
+                      // Set appropriate content type
+                      res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'image/jpeg');
+                      // Pipe the response directly to our response
+                      proxyRes.pipe(res);
+                    } else if (proxyRes.statusCode === 403 || proxyRes.statusCode === 404) {
+                      // If Access Denied or Not Found, we need to try a different approach
+                      console.log(`S3 access failed with status ${proxyRes.statusCode}, generating SVG placeholder`);
+                      // Check if we need to upload an image based on the content
+                      const displayContentType = video.contentType === 'images' ? 'image' : video.contentType;
+                      if (displayContentType === 'image' && video.imageUrl && video.imageUrl.startsWith('http')) {
+                        console.log(`For ${videoId}: Need to upload image from URL to S3`);
+                        // We should upload this to S3 in the background
+                        setTimeout(async () => {
+                          try {
+                            // Use imageUrl directly to get the image
+                            const imageResponse = await fetch(video.imageUrl, { method: 'GET' });
+                            if (imageResponse.ok) {
+                              const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+                              // Upload to S3 using the standard thumbnail key pattern
+                              const s3UploadResult = await uploadStringToS3(
+                                imageBuffer.toString('base64'), 
+                                s3KeyForThumbnail, 
+                                'image/jpeg'
+                              );
+                              console.log(`Successfully uploaded image for ${videoId} to S3 as ${s3KeyForThumbnail}`);
+                            }
+                          } catch (uploadErr) {
+                            console.error(`Failed to upload image for ${videoId} to S3:`, uploadErr);
+                          }
+                        }, 100);
+                      }
+                      return sendSvgPlaceholder(res, displayContentType);
+                    } else {
+                      // For other errors, just use the placeholder
+                      console.error(`Proxy request failed with status ${proxyRes.statusCode}`);
+                      return sendSvgPlaceholder(res, video.contentType);
+                    }
+                  });
+                  
+                  proxyRequest.on('error', (error) => {
+                    console.error(`Error proxying image: ${error.message}`);
+                    return sendSvgPlaceholder(res, video.contentType);
+                  });
+                  
+                  return; // This is important - we need to exit here since the response is handled asynchronously
+                } catch (proxyError) {
+                  console.error('Error proxying S3 image URL:', proxyError);
                   return sendSvgPlaceholder(res, video.contentType);
                 }
-              });
-              
-              proxyRequest.on('error', (error) => {
-                console.error(`Error proxying image: ${error.message}`);
+              } else {
+                console.error('Invalid S3 URL format:', video.imageUrl);
                 return sendSvgPlaceholder(res, video.contentType);
-              });
-              
-              return; // This is important - we need to exit here since the response is handled asynchronously
+              }
             } catch (error) {
-              console.error('Error proxying image URL:', error);
+              console.error('Error processing S3 URL:', error);
               return sendSvgPlaceholder(res, video.contentType);
             }
           }
