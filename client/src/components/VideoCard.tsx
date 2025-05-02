@@ -51,8 +51,8 @@ function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailIma
       
       // First try the direct S3 URL format
       const s3Key = `thumbnails/video-${videoId}.jpg`;
-      const bucketName = process.env.VITE_AWS_BUCKET_NAME || 'deeptubebucket';
-      const region = process.env.VITE_AWS_REGION || 'us-east-2';
+      const bucketName = 'deeptubebucket'; // Hardcoded for now
+      const region = 'us-east-2'; // Hardcoded for now
       const s3Url = `https://${bucketName}.s3.${region}.amazonaws.com/${s3Key}`;
       
       console.log(`Trying direct S3 URL: ${s3Url}`);
