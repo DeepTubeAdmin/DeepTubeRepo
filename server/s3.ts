@@ -81,8 +81,11 @@ export async function getSignedS3Url(s3Key: string, expiresIn: number = 3600): P
     log(`Generated signed URL for ${s3Key} (length: ${signedUrl.length})`, 's3');
     log(`URL starts with: ${signedUrl.substring(0, 50)}...`, 's3');
     
-    // Prefer the public URL if the objects are set to be publicly readable
-    return publicUrl;
+    // Return both URLs for flexible usage on the server side
+    return {
+      publicUrl,
+      signedUrl
+    }[process.env.USE_SIGNED_URLS ? 'signedUrl' : 'publicUrl'];
   } catch (error) {
     log(`Error generating pre-signed URL for key ${s3Key}: ${error}`, 's3');
     console.error('S3 URL generation error:', error);

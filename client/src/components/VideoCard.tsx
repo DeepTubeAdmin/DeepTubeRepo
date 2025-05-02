@@ -61,7 +61,16 @@ function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailIma
       const img = new Image();
       img.crossOrigin = 'anonymous';
       
+      // Set a timeout to limit how long we wait for S3 image to load
+      const s3LoadTimeout = setTimeout(() => {
+        if (!isMountedRef.current) return;
+        console.log(`S3 direct URL timed out for video ${videoId}, using placeholder`);
+        setImgSrc(`/api/videos/${videoId}/thumbnail?forcesvg=true&t=${Date.now()}`);
+        setIsLoading(false);
+      }, 3000); // 3 second timeout
+      
       img.onload = function() {
+        clearTimeout(s3LoadTimeout);
         if (!isMountedRef.current) return;
         console.log(`S3 direct URL loaded successfully for video ${videoId}`);
         setImgSrc(s3Url);
@@ -69,6 +78,7 @@ function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailIma
       };
       
       img.onerror = function() {
+        clearTimeout(s3LoadTimeout);
         if (!isMountedRef.current) return;
         console.log(`S3 direct URL failed, falling back to API for video ${videoId}`);
         
