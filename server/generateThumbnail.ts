@@ -6,15 +6,83 @@
  */
 
 import { uploadStringToS3, getSignedS3Url } from './s3';
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
+// Promisified versions of functions
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 const readFileAsync = promisify(fs.readFile);
 const unlinkAsync = promisify(fs.unlink);
+const accessAsync = promisify(fs.access);
+
+/**
+ * Generate a thumbnail from a video using FFmpeg
+ * @param videoUrl URL of the video file (can be local path or HTTP URL)
+ * @returns Buffer containing the thumbnail image
+ */
+async function generateFFmpegThumbnail(videoUrl: string): Promise<Buffer> {
+  if (!videoUrl) {
+    throw new Error('No video URL provided');
+  }
+  
+  // Create a temporary file for the output
+  const tempDir = os.tmpdir();
+  const outputPath = path.join(tempDir, `thumbnail-${Date.now()}.jpg`);
+  
+  try {
+    console.log(`Generating FFmpeg thumbnail from ${videoUrl}`);
+    console.log(`Output will be saved to ${outputPath}`);
+    
+    // Use FFmpeg to extract a frame at 2 seconds
+    const ffmpegArgs = [
+      '-y', // Overwrite output files without asking
+      '-ss', '2', // Seek to 2 seconds
+      '-i', videoUrl, // Input file
+      '-vframes', '1', // Extract exactly one frame
+      '-q:v', '2', // High quality (lower number = higher quality, range 1-31)
+      '-f', 'image2', // Force image2 format
+      '-vf', 'scale=800:450:force_original_aspect_ratio=decrease,pad=800:450:(ow-iw)/2:(oh-ih)/2', // Resize to 16:9 with padding
+      outputPath // Output path
+    ];
+    
+    // Execute FFmpeg
+    const { stdout, stderr } = await execFileAsync('ffmpeg', ffmpegArgs);
+    console.log('FFmpeg stdout:', stdout);
+    console.log('FFmpeg stderr:', stderr);
+    
+    // Check if the output file exists
+    await accessAsync(outputPath);
+    
+    // Read the thumbnail into a buffer
+    const thumbnailBuffer = await readFileAsync(outputPath);
+    
+    // Clean up the temporary file
+    await unlinkAsync(outputPath).catch(err => {
+      console.error(`Error cleaning up temporary file ${outputPath}:`, err);
+    });
+    
+    if (thumbnailBuffer.length === 0) {
+      throw new Error('FFmpeg generated a zero-byte file');
+    }
+    
+    console.log(`Successfully generated ${thumbnailBuffer.length} byte thumbnail`);
+    return thumbnailBuffer;
+  } catch (error) {
+    console.error(`Error generating FFmpeg thumbnail:`, error);
+    
+    // Clean up the temporary file if something went wrong
+    try {
+      await accessAsync(outputPath);
+      await unlinkAsync(outputPath);
+    } catch {}
+    
+    throw error;
+  }
+}
 
 /**
  * Generate an SVG thumbnail placeholder for specific content types
@@ -81,64 +149,9 @@ async function thumbnailExistsInS3(s3Key: string): Promise<boolean> {
   }
 }
 
-/**
- * Generate a thumbnail from a video using FFmpeg
- * @param videoUrl URL of the video file (can be local path or HTTP URL)
- * @returns Buffer containing the thumbnail image
- */
-async function generateFFmpegThumbnail(videoUrl: string): Promise<Buffer> {
-  // Create a temporary file path for the thumbnail
-  const tempDir = os.tmpdir();
-  const thumbnailPath = path.join(tempDir, `thumbnail-${Date.now()}.jpg`);
-  
-  try {
-    console.log(`Generating thumbnail from video: ${videoUrl}`);
-    console.log(`Temporary thumbnail path: ${thumbnailPath}`);
-    
-    // Determine if this is a remote or local URL
-    const isRemoteUrl = videoUrl.startsWith('http');
-    
-    // For remote URLs, we need to handle them differently
-    const ffmpegCommand = isRemoteUrl
-      ? `ffmpeg -y -i "${videoUrl}" -ss 00:00:02 -vframes 1 -vf "scale=800:450:force_original_aspect_ratio=decrease,pad=800:450:(ow-iw)/2:(oh-ih)/2" -q:v 2 "${thumbnailPath}"`
-      : `ffmpeg -y -i "${videoUrl}" -ss 00:00:02 -vframes 1 -vf "scale=800:450:force_original_aspect_ratio=decrease,pad=800:450:(ow-iw)/2:(oh-ih)/2" -q:v 2 "${thumbnailPath}"`;
-    
-    console.log(`Executing FFmpeg command: ${ffmpegCommand}`);
-    
-    const { stdout, stderr } = await execAsync(ffmpegCommand);
-    console.log('FFmpeg stdout:', stdout);
-    console.log('FFmpeg stderr:', stderr);
-    
-    // Check if the thumbnail was created successfully
-    if (!fs.existsSync(thumbnailPath)) {
-      throw new Error(`Failed to generate thumbnail: File ${thumbnailPath} not created`);
-    }
-    
-    // Read the generated thumbnail
-    const thumbnailBuffer = await readFileAsync(thumbnailPath);
-    console.log(`Read thumbnail file: ${thumbnailPath} (size: ${thumbnailBuffer.length} bytes)`);
-    
-    // Clean up the temporary file
-    await unlinkAsync(thumbnailPath);
-    console.log(`Deleted temporary thumbnail file: ${thumbnailPath}`);
-    
-    return thumbnailBuffer;
-  } catch (error) {
-    console.error(`Error generating FFmpeg thumbnail: ${String(error)}`);
-    
-    // Try to clean up if file exists and an error occurred
-    if (fs.existsSync(thumbnailPath)) {
-      try {
-        await unlinkAsync(thumbnailPath);
-        console.log(`Cleaned up thumbnail file after error: ${thumbnailPath}`);
-      } catch (cleanupError) {
-        console.error(`Error cleaning up thumbnail: ${String(cleanupError)}`);
-      }
-    }
-    
-    throw error;
-  }
-}
+// Additional Node.js utilities needed for file operations
+const fsAccess = promisify(fs.access);
+const fsUnlink = promisify(fs.unlink);
 
 /**
  * Generate a thumbnail for a video or image and store it directly in S3
