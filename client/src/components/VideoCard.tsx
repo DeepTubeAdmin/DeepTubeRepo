@@ -18,133 +18,21 @@ interface ThumbnailImageProps {
 
 // Component to handle thumbnail loading with proper S3 URL resolution
 function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailImageProps) {
-  // Start with a valid thumbnail URL using our helper function
-  const initialThumbnail = thumbnail ? checkThumbnail(thumbnail, videoId) : `/api/videos/${videoId}/thumbnail`;
+  // Use our helper function to get a reliable thumbnail URL
+  const reliableThumbnail = thumbnail ? checkThumbnail(thumbnail, videoId) : `/api/videos/${videoId}/thumbnail?t=${Date.now()}`;
   
-  // Set the initial state to our validated thumbnail
-  const [imgSrc, setImgSrc] = useState<string>(initialThumbnail);
+  // Set the state to our validated thumbnail URL
+  const [imgSrc, setImgSrc] = useState<string>(reliableThumbnail);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Reference to track if the component is still mounted
-  const isMountedRef = useRef(true);
-  
+  // Simple loading state for visibility
   useEffect(() => {
-    // When the component mounts, try to get a real thumbnail
-    // but start with the SVG placeholder already showing
-    isMountedRef.current = true;
-    
-    // For already resolved thumbnails like YouTube, use them directly
-    if (thumbnail && (thumbnail.includes('youtube.com/vi/') || 
-                       thumbnail.includes('img.youtube.com'))) {
-      setImgSrc(thumbnail);
-      return;
-    }
-    
-    // If this is a Vimeo embed, let's use the SVG placeholder
-    if (contentType === 'embed') {
-      return; // SVG placeholder is already set
-    }
-    
-    // For actual videos, try to use direct S3 URLs first, then fall back to our API
-    if (contentType === 'video' || contentType === 'image') {
-      // Set loading state immediately
-      setIsLoading(true);
-      
-      // First try the direct S3 URL format
-      const s3Key = `thumbnails/video-${videoId}.jpg`;
-      // Use hardcoded values for bucket and region to avoid process.env access in the browser
-      const bucketName = 'deeptubebucket';
-      const region = 'us-east-2';
-      const s3Url = `https://${bucketName}.s3.${region}.amazonaws.com/${s3Key}`;
-      
-      console.log(`Trying direct S3 URL: ${s3Url}`);
-      
-      // Try to load the image directly from S3
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      
-      // Set a timeout to limit how long we wait for S3 image to load
-      const s3LoadTimeout = setTimeout(() => {
-        if (!isMountedRef.current) return;
-        console.log(`S3 direct URL timed out for video ${videoId}, using placeholder`);
-        setImgSrc(`/api/videos/${videoId}/thumbnail?forcesvg=true&t=${Date.now()}`);
-        setIsLoading(false);
-      }, 3000); // 3 second timeout
-      
-      img.onload = function() {
-        clearTimeout(s3LoadTimeout);
-        if (!isMountedRef.current) return;
-        console.log(`S3 direct URL loaded successfully for video ${videoId}`);
-        setImgSrc(s3Url);
-        setIsLoading(false);
-      };
-      
-      img.onerror = function() {
-        clearTimeout(s3LoadTimeout);
-        if (!isMountedRef.current) return;
-        console.log(`S3 direct URL failed, falling back to API for video ${videoId}`);
-        
-        // If direct S3 URL fails, fall back to our API endpoint
-        // Use XMLHttpRequest which will properly follow redirects
-        const timestamp = Date.now();
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', `/api/videos/${videoId}/thumbnail?nocache=${timestamp}`, true);
-        xhr.responseType = 'blob';
-        
-        // Setup handlers
-        xhr.onload = function() {
-          if (!isMountedRef.current) return;
-          
-          if (xhr.status >= 200 && xhr.status < 300) {
-            // Create a blob URL from the response
-            const blob = xhr.response;
-            const contentType = xhr.getResponseHeader('content-type');
-            
-            // Only use the response if it's an image and not SVG
-            if (contentType && contentType.includes('image/') && !contentType.includes('svg')) {
-              const objectUrl = URL.createObjectURL(blob);
-              console.log(`Created object URL for video ${videoId} thumbnail:`, objectUrl);
-              setImgSrc(objectUrl);
-            } else {
-              console.log(`Received SVG or non-image for video ${videoId}, keeping placeholder`);
-            }
-          } else {
-            console.error(`Error loading thumbnail for video ${videoId}: Status ${xhr.status}`);
-          }
-          
-          setIsLoading(false);
-        };
-        
-        xhr.onerror = function() {
-          if (!isMountedRef.current) return;
-          console.error(`Network error loading thumbnail for video ${videoId}`);
-          setIsLoading(false);
-        };
-        
-        xhr.ontimeout = function() {
-          if (!isMountedRef.current) return;
-          console.error(`Timeout loading thumbnail for video ${videoId}`);
-          setIsLoading(false);
-        };
-        
-        // Set timeout to 8 seconds
-        xhr.timeout = 8000;
-        
-        // Send the request
-        xhr.send();
-      };
-      
-      // Start loading the S3 URL
-      img.src = s3Url;
-    }
-    
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, [videoId, thumbnail, contentType]);
+    setIsLoading(true);
+    const timer = setTimeout(() => setIsLoading(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
   
   // Always show the image with the current imgSrc state
-  // (either placeholder or actual thumbnail)
   return (
     <>
       {isLoading && (

@@ -13,7 +13,12 @@ export function checkThumbnail(thumbnailUrl: string, videoId: number): string {
     return thumbnailUrl;
   }
   
-  // For now, we'll use our reliable endpoint for all videos except those with complete URLs
-  // This is the safest approach until we diagnose what's happening with S3 thumbnails
-  return `/api/videos/${videoId}/thumbnail`;
+  // If it's a YouTube URL, use it directly
+  if (thumbnailUrl.includes('youtube.com/') || thumbnailUrl.includes('img.youtube.com/')) {
+    return thumbnailUrl;
+  }
+  
+  // For all other cases, use our reliable API endpoint that proxies the S3 content
+  // Add a cache buster to ensure we get fresh content
+  return `/api/videos/${videoId}/thumbnail?t=${Date.now()}`;
 }
