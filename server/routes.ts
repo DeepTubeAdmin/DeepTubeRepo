@@ -1352,6 +1352,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/videos/:id/thumbnail", async (req, res) => {
     try {
       const videoId = parseInt(req.params.id);
+      const forceSvg = req.query.forcesvg === 'true';
+      
       // Make sure the naming convention is consistent between local and S3
       const thumbnailPath = `./thumbnails/video-${videoId}.jpg`;
       const s3Key = `thumbnails/video-${videoId}.jpg`;
@@ -1365,6 +1367,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const video = await dbStorage.getVideoById(videoId);
       if (!video) {
         return res.status(404).json({ error: "Video not found" });
+      }
+      
+      // If forceSvg is true, immediately return SVG placeholder
+      if (forceSvg) {
+        console.log(`Serving SVG placeholder for video ${videoId} (forced)`);
+        res.setHeader('Content-Type', 'image/svg+xml');
+        return res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
       }
       
       // Log video information for debugging

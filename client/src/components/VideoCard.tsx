@@ -8,6 +8,100 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import VideoPreview from "./VideoPreview";
 
+interface ThumbnailImageProps {
+  videoId: number;
+  thumbnail: string | null;
+  title: string;
+  contentType: string;
+}
+
+// Component to handle thumbnail loading with proper S3 URL resolution
+function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailImageProps) {
+  const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  
+  useEffect(() => {
+    let isMounted = true;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    
+    async function resolveThumbnailUrl() {
+      try {
+        // Calculate the URL we'll use for the thumbnail
+        const effectiveUrl = thumbnail || `/api/videos/${videoId}/thumbnail`;
+        console.log(`ThumbnailImage: resolving URL for video ${videoId}:`, effectiveUrl);
+        
+        // Attempt to resolve the URL (which could be S3 or thumbnail endpoint)
+        const resolvedThumbnailUrl = await fetchS3Url(effectiveUrl, 3);
+        
+        if (!isMounted) return;
+        
+        if (resolvedThumbnailUrl) {
+          console.log(`ThumbnailImage: resolved URL for video ${videoId}:`, 
+            resolvedThumbnailUrl.substring(0, 50) + '...');
+          setResolvedUrl(resolvedThumbnailUrl);
+        } else {
+          throw new Error('Failed to resolve thumbnail URL');
+        }
+      } catch (err) {
+        if (!isMounted) return;
+        
+        console.error(`ThumbnailImage: error resolving URL for video ${videoId}:`, err);
+        setHasError(true);
+      } finally {
+        if (isMounted) {
+          // Slight delay before showing to avoid flickering during URL resolution
+          timeoutId = setTimeout(() => {
+            setIsLoading(false);
+          }, 100);
+        }
+      }
+    }
+    
+    resolveThumbnailUrl();
+    
+    return () => {
+      isMounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [videoId, thumbnail]);
+  
+  if (isLoading) {
+    // While loading, show a subtle loading indicator
+    return (
+      <div className="w-full h-full absolute inset-0 bg-black flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-t-orange-500 border-orange-500/30 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+  
+  if (hasError || !resolvedUrl) {
+    // On error, return our SVG placeholder
+    return (
+      <img 
+        src={`/api/videos/${videoId}/thumbnail?forcesvg=true`}
+        alt={title} 
+        className="w-full h-full object-cover absolute inset-0" 
+      />
+    );
+  }
+  
+  // Successfully resolved thumbnail URL
+  return (
+    <img 
+      src={resolvedUrl} 
+      alt={title} 
+      className="w-full h-full object-cover absolute inset-0" 
+      onError={(e) => {
+        // If the resolved URL fails to load, fall back to the dynamic SVG endpoint
+        console.error(`ThumbnailImage: Error loading resolved thumbnail for video ${videoId}`);
+        e.currentTarget.src = `/api/videos/${videoId}/thumbnail?forcesvg=true`;
+      }}
+    />
+  );
+}
+
+
 interface VideoCardProps {
   video: Video;
   onPreview?: (videoId: number) => void;
@@ -156,26 +250,11 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
     >
       <div className="thumbnail-container relative overflow-hidden aspect-video h-52 sm:h-56 md:h-60 lg:h-64">
         {/* Always show thumbnail as base layer for all content types */}
-        <img 
-          src={
-            // If we have a thumbnail, use it
-            video.thumbnail ? video.thumbnail :
-            // Otherwise use our dynamic API endpoint for thumbnail generation
-            `/api/videos/${video.id}/thumbnail`
-          } 
-          alt={video.title} 
-          className="w-full h-full object-cover absolute inset-0" 
-          onError={(e) => {
-            // If thumbnail fails, fall back to a generic video or image placeholder
-            console.error(`Error loading thumbnail for video ${video.id}`);
-            if (video.contentType === 'video') {
-              e.currentTarget.src = `https://placehold.co/400x225/222/444?text=Video+Preview`;
-            } else if (video.contentType === 'image') {
-              e.currentTarget.src = `https://placehold.co/400x225/222/444?text=Image+Preview`;
-            } else {
-              e.currentTarget.src = `https://placehold.co/400x225/222/444?text=Media+Preview`;
-            }
-          }}
+        <ThumbnailImage 
+          videoId={video.id}
+          thumbnail={video.thumbnail} 
+          title={video.title}
+          contentType={video.contentType}
         />
             
         {/* Video previews only for video type with valid videoUrl on hover */}
