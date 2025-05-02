@@ -8,11 +8,13 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Loader2, ThumbsUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import EmergencyVideoPlayer from './EmergencyVideoPlayer';
+import S3VideoPlayer from './S3VideoPlayer';
 import { 
   extractYoutubeVideoId, 
   extractYoutubeIdFromEmbed,
   isRedditEmbed,
-  extractRedditInfo 
+  extractRedditInfo,
+  fetchS3Url
 } from '@/lib/utils';
 
 interface VideoPlayerProps {

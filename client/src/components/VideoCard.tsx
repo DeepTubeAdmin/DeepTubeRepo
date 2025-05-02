@@ -2,7 +2,8 @@ import { Heart, Play, ThumbsUp } from "lucide-react";
 import { Video } from "@shared/schema";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
-import { formatNumber, extractYoutubeIdFromEmbed } from "@/lib/utils";
+import { formatNumber, extractYoutubeIdFromEmbed, fetchS3Url } from "@/lib/utils";
+import S3VideoPlayer from "./S3VideoPlayer";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import VideoPreview from "./VideoPreview";
@@ -170,17 +171,11 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         {/* Video previews only for video type with valid videoUrl on hover */}
         {video.contentType === 'video' && isHovered && video.videoUrl && (
           <div className="absolute inset-0 w-full h-full">
-            <video 
-              src={video.videoUrl}
-              autoPlay
-              muted
-              playsInline
-              loop={true}
-              crossOrigin="anonymous"
-              className="w-full h-full object-cover"
+            <S3VideoPlayer
+              videoUrl={video.videoUrl}
+              title={video.title}
               onError={(e) => {
                 console.error(`Error loading video: ${video.videoUrl}`, e);
-                e.currentTarget.style.display = "none";
               }}
             />
           </div>
