@@ -290,24 +290,13 @@ export default function MediaDetail() {
           <div className="lg:col-span-2">
             {/* Media display section */}
             <div className="bg-[#121212] rounded-md overflow-hidden mb-4">
-              {media.contentType === 'video' && media.vimeoId && (
+              {media.contentType === 'video' && (
                 <div className="aspect-video">
                   <GenericVideoEmbed 
-                    videoUrl={`https://vimeo.com/${media.vimeoId}`}
+                    videoUrl={media.vimeoId ? `https://vimeo.com/${media.vimeoId}` : media.videoUrl}
                     title={media.title}
                     responsive={true}
                     autoplay={true}
-                  />
-                </div>
-              )}
-              
-              {media.contentType === 'video' && media.videoUrl && !media.vimeoId && (
-                <div className="aspect-video flex items-center justify-center">
-                  <video 
-                    src={media.videoUrl} 
-                    controls 
-                    className="w-full h-full" 
-                    autoPlay
                   />
                 </div>
               )}

@@ -81,8 +81,12 @@ const GenericVideoEmbed = ({
         });
         setEmbedUrl(`https://www.youtube.com/embed/${youtubeId}?${params.toString()}`);
       }
+    } else if (videoUrl.startsWith('/api/s3/') || videoUrl.includes('amazonaws.com') || videoUrl.includes('.mp4') || videoUrl.includes('video/mp4')) {
+      // For S3 or direct MP4 URLs, we'll use a video element instead of an iframe
+      // Setting a special marker to identify this as a direct video URL
+      setEmbedUrl(`direct:${videoUrl}`);
     } else {
-      // For other URLs, just use the video URL directly
+      // For other URLs, just use the URL directly
       setEmbedUrl(videoUrl);
     }
   }, [videoUrl, aspectRatio, autoplay, loop, showTitle, showByline, showPortrait]);
@@ -91,9 +95,31 @@ const GenericVideoEmbed = ({
     return <div className="flex items-center justify-center p-4">Loading video...</div>;
   }
 
+  // Check if it's a direct video URL
+  const isDirectVideo = embedUrl.startsWith('direct:');
+  const directVideoUrl = isDirectVideo ? embedUrl.substring(7) : '';
+
   return (
     <div className={`video-embed ${className}`} style={{ width: typeof width === 'number' ? `${width}px` : width }}>
-      {responsive ? (
+      {isDirectVideo ? (
+        // Render a native video player for direct video URLs (S3, MP4)
+        <div className={responsive ? 'relative w-full' : 'relative'} 
+          style={responsive ? { paddingBottom: `${aspectRatioValue}%` } : {}}
+        >
+          <video 
+            src={directVideoUrl}
+            controls
+            autoPlay={autoplay}
+            loop={loop}
+            poster={undefined}
+            className={responsive ? 'absolute top-0 left-0 w-full h-full' : ''}
+            width={responsive ? '100%' : width}
+            height={responsive ? '100%' : height}
+          />
+          <AIWatermark position="bottom-right" size="medium" />
+        </div>
+      ) : responsive ? (
+        // Responsive iframe for non-direct videos
         <div style={{ position: 'relative', paddingBottom: `${aspectRatioValue}%`, height: 0, overflow: 'hidden' }}>
           <iframe
             src={embedUrl}
@@ -106,6 +132,7 @@ const GenericVideoEmbed = ({
           <AIWatermark position="bottom-right" size="medium" />
         </div>
       ) : (
+        // Fixed size iframe for non-direct videos
         <div className="relative">
           <iframe
             src={embedUrl}
