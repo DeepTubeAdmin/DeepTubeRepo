@@ -250,6 +250,20 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           contentType={video.contentType}
         />
             
+        {/* Image preview handling */}
+        {(video.contentType === 'image' || video.contentType === 'images') && video.imageUrl && (
+          <div className="absolute inset-0 w-full h-full">
+            <img 
+              src={video.imageUrl}
+              alt={video.title}
+              className={`w-full h-full object-cover transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+              onError={(e) => {
+                e.currentTarget.src = video.thumbnail || `/api/videos/${video.id}/thumbnail`;
+              }}
+            />
+          </div>
+        )}
+
         {/* Video previews only for video type with valid videoUrl on hover */}
         {video.contentType === 'video' && video.videoUrl && (
           <div className="absolute inset-0 w-full h-full">
