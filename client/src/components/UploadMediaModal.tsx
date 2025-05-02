@@ -6,15 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, Loader2, Image as ImageIcon, Video as VideoIcon, Link as LinkIcon } from "lucide-react";
 import { SimpleDialog } from "@/components/ui/simple-dialog";
-import { 
-  youtubeUrlToEmbedCode, 
-  extractYoutubeVideoId, 
-  getYoutubeThumbnailUrl,
+import {
   isRedditEmbed,
   extractRedditInfo,
   getRedditThumbnailUrl,
   redditUrlToEmbedCode
 } from "@/lib/utils";
+
+import {
+  youtubeUrlToEmbedCode,
+  extractYoutubeVideoId,
+  getYoutubeThumbnailUrl
+} from "@/lib/youtubeUtils";
 import {
   Select,
   SelectContent,
