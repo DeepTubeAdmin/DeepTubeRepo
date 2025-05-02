@@ -17,7 +17,8 @@ import {
 } from '@/lib/utils';
 import {
   extractYoutubeVideoId,
-  extractYoutubeIdFromEmbed
+  extractYoutubeIdFromEmbed,
+  youtubeUrlToEmbedCode
 } from '@/lib/youtubeUtils';
 
 interface VideoPlayerProps {
@@ -217,20 +218,25 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
       if (youtubeId) {
         console.log("VideoPlayer: Creating YouTube embed with ID:", youtubeId);
         
-        // Create a direct iframe with important attributes for autoplay
-        // Using more reliable parameters for playback
-        containerRef.innerHTML = `
-          <iframe 
-            src="https://www.youtube.com/embed/${youtubeId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&origin=${window.location.origin}" 
-            width="100%" 
-            height="100%" 
-            style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:4px;" 
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-            allowfullscreen 
-            frameborder="0"
-            title="${video.title || 'YouTube video'}"
-          ></iframe>
-        `;
+        // Use our centralized function to generate a consistent embed
+        const embedCode = youtubeUrlToEmbedCode(`https://www.youtube.com/watch?v=${youtubeId}`, true);
+        if (embedCode) {
+          containerRef.innerHTML = embedCode;
+        } else {
+          // Fallback to direct approach if the function fails
+          containerRef.innerHTML = `
+            <iframe 
+              src="https://www.youtube.com/embed/${youtubeId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&origin=${window.location.origin}" 
+              width="100%" 
+              height="100%" 
+              style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:4px;" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+              allowfullscreen 
+              frameborder="0"
+              title="${video.title || 'YouTube video'}"
+            ></iframe>
+          `;
+        }
         
         // Add an event listener to detect when the YouTube API is loaded
         const script = document.createElement('script');

@@ -293,7 +293,7 @@ export default function MediaDetail() {
               {media.contentType === 'video' && (
                 <div className="aspect-video">
                   <GenericVideoEmbed 
-                    videoUrl={media.vimeoId ? `https://vimeo.com/${media.vimeoId}` : media.videoUrl}
+                    videoUrl={media.vimeoId ? `https://vimeo.com/${media.vimeoId}` : (media.videoUrl || '')}
                     title={media.title}
                     responsive={true}
                     autoplay={true}
