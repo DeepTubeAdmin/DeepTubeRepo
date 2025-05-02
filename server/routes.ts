@@ -2505,6 +2505,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get signed URL with short expiry to avoid abuse
       const signedUrl = await getSignedS3Url(key, 3600); // 1 hour expiry
+      
+      // Set CORS headers to allow cross-origin requests
+      res.set({
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Cross-Origin-Resource-Policy': 'cross-origin'
+      });
+      
+      // Return a JSON response for the key fetching endpoint
+      if (req.query.getUrl === 'true') {
+        return res.json({ url: signedUrl });
+      }
+      
+      // Otherwise redirect
       res.redirect(signedUrl);
     } catch (error) {
       console.error("Error serving S3 file:", error);

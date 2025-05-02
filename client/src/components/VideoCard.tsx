@@ -176,6 +176,7 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
               muted
               playsInline
               loop={true}
+              crossOrigin="anonymous"
               className="w-full h-full object-cover"
               onError={(e) => {
                 console.error(`Error loading video: ${video.videoUrl}`, e);
