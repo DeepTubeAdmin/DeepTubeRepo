@@ -48,7 +48,14 @@ export function checkThumbnail(thumbnailUrl: string, videoId: number): string {
   }
   
   // Direct image URL handling
-  if (thumbnailUrl.startsWith('data:image/') || thumbnailUrl.startsWith('http')) {
+  if (thumbnailUrl.startsWith('data:image/') || 
+      thumbnailUrl.startsWith('http') || 
+      thumbnailUrl.startsWith('https')) {
+    return thumbnailUrl;
+  }
+  
+  // Handle S3 URLs
+  if (thumbnailUrl.includes('s3.amazonaws.com')) {
     return thumbnailUrl;
   }
   

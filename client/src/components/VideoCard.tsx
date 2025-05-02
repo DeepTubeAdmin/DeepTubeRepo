@@ -268,9 +268,13 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         {(video.contentType === 'image' || video.contentType === 'images') && (
           <div className="absolute inset-0 w-full h-full">
             <img 
-              src={checkThumbnail(video.imageUrl || video.thumbnail || '', video.id)}
+              src={video.imageUrl || checkThumbnail(video.thumbnail || '', video.id)}
               alt={video.title}
-              className="w-full h-full object-cover"
+              className={`w-full h-full object-cover transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-100'}`}
+              onError={(e) => {
+                console.error(`Failed to load image for ${video.id}, falling back to thumbnail`);
+                e.currentTarget.src = checkThumbnail(video.thumbnail || '', video.id);
+              }}
             />
           </div>
         )}
