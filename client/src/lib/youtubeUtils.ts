@@ -58,14 +58,18 @@ export function youtubeUrlToEmbedCode(url: string, autoplay: boolean = false): s
   
   // Note: We add different parameters for different contexts
   // Always include origin parameter to avoid cross-origin issues with YouTube API
+  // Use a dynamic origin based on current window location
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'deeptube.replit.app';
+  
   return `<iframe 
     width="100%" 
     height="100%" 
-    src="https://www.youtube.com/embed/${videoId}?rel=0&enablejsapi=1${autoplay ? '&autoplay=1' : '&mute=1'}&origin=deeptube.replit.app" 
+    src="https://www.youtube.com/embed/${videoId}?rel=0&enablejsapi=1${autoplay ? '&autoplay=1' : '&mute=1'}&origin=${origin}" 
     title="YouTube video player" 
     frameborder="0" 
     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
     allowfullscreen 
+    loading="lazy"
     style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
   ></iframe>`;
 }

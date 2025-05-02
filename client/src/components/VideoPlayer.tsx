@@ -230,9 +230,10 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
               width="100%" 
               height="100%" 
               style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:4px;" 
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
               allowfullscreen 
               frameborder="0"
+              loading="lazy"
               title="${video.title || 'YouTube video'}"
             ></iframe>
           `;
