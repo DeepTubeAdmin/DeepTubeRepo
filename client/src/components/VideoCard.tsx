@@ -282,23 +282,15 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         {/* Video previews with enhanced format support */}
         {video.contentType === 'video' && video.videoUrl && (
           <div className="absolute inset-0 w-full h-full">
-            {isHovered ? (
-              <VideoPreview
-                src={video.videoUrl}
-                poster={checkThumbnail(video.thumbnail || '', video.id)}
-                isHovered={isHovered}
-                className="w-full h-full object-cover"
-                previewDuration={60}
-                width="100%"
-                height="100%"
-              />
-            ) : (
-              <img 
-                src={checkThumbnail(video.thumbnail || '', video.id)}
-                alt={video.title}
-                className="w-full h-full object-cover"
-              />
-            )}
+            <VideoPreview
+              src={video.videoUrl}
+              poster={checkThumbnail(video.thumbnail || '', video.id)}
+              isHovered={isHovered}
+              className="w-full h-full object-cover"
+              previewDuration={5}
+              width="100%"
+              height="100%"
+            />
           </div>
         )}
         
