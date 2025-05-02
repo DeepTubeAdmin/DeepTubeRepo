@@ -37,15 +37,16 @@ async function generateFFmpegThumbnail(videoUrl: string): Promise<Buffer> {
     console.log(`Generating FFmpeg thumbnail from ${videoUrl}`);
     console.log(`Output will be saved to ${outputPath}`);
     
-    // Use FFmpeg to extract a frame at 2 seconds
+    // Use FFmpeg to extract a good frame from the video
     const ffmpegArgs = [
       '-y', // Overwrite output files without asking
-      '-ss', '2', // Seek to 2 seconds
+      '-ss', '00:00:01.000', // Seek to 1 second
       '-i', videoUrl, // Input file
       '-vframes', '1', // Extract exactly one frame
-      '-q:v', '2', // High quality (lower number = higher quality, range 1-31)
+      '-q:v', '1', // Maximum quality
       '-f', 'image2', // Force image2 format
-      '-vf', 'scale=800:450:force_original_aspect_ratio=decrease,pad=800:450:(ow-iw)/2:(oh-ih)/2', // Resize to 16:9 with padding
+      '-vf', 'scale=800:450:force_original_aspect_ratio=decrease,pad=800:450:(ow-iw)/2:(oh-ih)/2', // Resize to 16:9
+      '-an', // No audio
       outputPath // Output path
     ];
     
