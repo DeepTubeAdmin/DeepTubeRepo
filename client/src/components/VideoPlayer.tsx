@@ -11,12 +11,14 @@ import EmergencyVideoPlayer from './EmergencyVideoPlayer';
 import S3VideoPlayer from './S3VideoPlayer';
 import S3ImageComponent from './S3ImageComponent';
 import { 
-  extractYoutubeVideoId, 
-  extractYoutubeIdFromEmbed,
   isRedditEmbed,
   extractRedditInfo,
   fetchS3Url
 } from '@/lib/utils';
+import {
+  extractYoutubeVideoId,
+  extractYoutubeIdFromEmbed
+} from '@/lib/youtubeUtils';
 
 interface VideoPlayerProps {
   videoId?: number;
@@ -180,10 +182,12 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
     // Clear previous content
     containerRef.innerHTML = '';
     
-    // Check if it's a YouTube embed
+    // Check if it's a YouTube embed - Enhanced detection with more URL formats
     const hasYouTube = video.embedCode.includes('youtube.com/embed/') || 
                       video.embedCode.includes('youtu.be/') || 
-                      video.embedCode.includes('youtube.com/watch');
+                      video.embedCode.includes('youtube.com/watch') ||
+                      video.embedCode.includes('youtube.com/shorts/') ||
+                      video.embedCode.includes('youtube.com/v/');
     
     // Always prioritize fixing YouTube embeds
     if (hasYouTube) {
@@ -214,9 +218,10 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
         console.log("VideoPlayer: Creating YouTube embed with ID:", youtubeId);
         
         // Create a direct iframe with important attributes for autoplay
+        // Using more reliable parameters for playback
         containerRef.innerHTML = `
           <iframe 
-            src="https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=0&rel=0&modestbranding=1" 
+            src="https://www.youtube.com/embed/${youtubeId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&origin=${window.location.origin}" 
             width="100%" 
             height="100%" 
             style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:4px;" 
@@ -226,6 +231,15 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
             title="${video.title || 'YouTube video'}"
           ></iframe>
         `;
+        
+        // Add an event listener to detect when the YouTube API is loaded
+        const script = document.createElement('script');
+        script.src = 'https://www.youtube.com/iframe_api';
+        script.async = true;
+        document.head.appendChild(script);
+        
+        // Log when YouTube iframe is loaded
+        console.log('YouTube embed loaded for video ID:', youtubeId);
         
         // Add a fallback message if the iframe doesn't work
         setTimeout(() => {
