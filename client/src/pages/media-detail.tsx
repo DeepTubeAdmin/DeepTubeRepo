@@ -508,9 +508,20 @@ export default function MediaDetail() {
           {/* Sidebar column */}
           <div>
             <h2 className="text-lg font-bold mb-4">Related Content</h2>
-            {/* Related content would go here - we'll implement this in another task */}
-            <div className="text-center py-6 bg-[#1a1a1a] rounded-md">
-              <p className="text-gray-400">Related content coming soon</p>
+            <div className="space-y-4">
+              {/* Fetch related content based on content type, tags, etc */}
+              {useQuery({
+                queryKey: [`/api/videos/${id}/related`],
+                enabled: !!id,
+                select: (data: Video[]) => data?.slice(0, 6)
+              }).data?.map((relatedVideo) => (
+                <div key={relatedVideo.id} className="w-full">
+                  <VideoCard 
+                    video={relatedVideo}
+                    compact={true}
+                  />
+                </div>
+              ))}
             </div>
           </div>
         </div>

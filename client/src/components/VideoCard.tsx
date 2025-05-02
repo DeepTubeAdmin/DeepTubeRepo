@@ -100,7 +100,7 @@ interface VideoCardProps {
   onWishlist?: (videoId: number) => void;
 }
 
-export default function VideoCard({ video, onPreview, onWishlist }: VideoCardProps) {
+export default function VideoCard({ video, onPreview, onWishlist, compact = false }: VideoCardProps & { compact?: boolean }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
