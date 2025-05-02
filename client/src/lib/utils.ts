@@ -143,6 +143,31 @@ export function getRedditThumbnailUrl(subreddit: string): string {
   return `https://placehold.co/400x225?text=r/${subreddit}`;
 }
 
+/**
+ * Helper function to properly handle S3 URLs
+ * @param url URL string that could be an S3 API endpoint or a regular URL
+ * @returns The correctly processed URL
+ */
+export async function fetchS3Url(url: string | null): Promise<string | null> {
+  if (!url) return null;
+  
+  // If it's an S3 URL from our API endpoint, make a direct fetch to get the signed URL
+  if (url.startsWith('/api/s3/')) {
+    try {
+      const response = await fetch(`${url}?getUrl=true`);
+      if (!response.ok) throw new Error('Failed to fetch S3 URL');
+      const data = await response.json();
+      return data.url;
+    } catch (error) {
+      console.error('Error fetching S3 URL:', error);
+      return url; // Fall back to the original URL
+    }
+  }
+  
+  // Otherwise return as is
+  return url;
+}
+
 // Convert a Reddit URL to an embed code
 export function redditUrlToEmbedCode(url: string): string | null {
   if (!url || !url.includes('reddit.com/r/')) return null;
