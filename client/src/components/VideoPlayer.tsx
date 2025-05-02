@@ -330,9 +330,9 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
     }
   }, [isOpen, video]);
 
-  // Define AudioContext for TypeScript
-  interface AudioContextType extends AudioContext {
-    webkitAudioContext?: any;
+  // Define window with webkitAudioContext for TypeScript
+  interface WindowWithWebkitAudio extends Window {
+    webkitAudioContext: typeof AudioContext;
   }
   
   // Define extended video element with added properties
@@ -513,17 +513,17 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
               // Create audio context after metadata is loaded
               try {
                 // Create new audio context for isolated audio control
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                audioCtx = new (window.AudioContext || (window as unknown as WindowWithWebkitAudio).webkitAudioContext)();
                 mediaSource = audioCtx.createMediaElementSource(videoEl);
                 gainNode = audioCtx.createGain();
                 mediaSource.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
                 console.log('🔊 Created dedicated audio context for better control');
                 
-                // Store references to audio elements for cleanup
-                videoEl._audioContext = audioCtx;
-                videoEl._mediaSource = mediaSource;
-                videoEl._gainNode = gainNode;
+                // Store references to audio elements for cleanup using type assertion
+                (videoEl as ExtendedHTMLVideoElement)._audioContext = audioCtx;
+                (videoEl as ExtendedHTMLVideoElement)._mediaSource = mediaSource;
+                (videoEl as ExtendedHTMLVideoElement)._gainNode = gainNode;
               } catch (e) {
                 console.error('Error creating audio context:', e);
               }
@@ -578,7 +578,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
             });
             
             // Special lifecycle handlers for this component
-            el._cleanup = () => {
+            (el as unknown as ExtendedHTMLElement)._cleanup = () => {
               console.log('🧹 Running specialized video cleanup');
               if (videoEl) {
                 // Stop video playback
