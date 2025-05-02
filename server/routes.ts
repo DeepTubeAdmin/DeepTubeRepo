@@ -1353,11 +1353,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const videoId = parseInt(req.params.id);
       const forceSvg = req.query.forcesvg === 'true';
+      const cacheBust = req.query.cachebust || req.query.t;
       
       // Make sure the naming convention is consistent between local and S3
       const thumbnailPath = `./thumbnails/video-${videoId}.jpg`;
       const s3Key = `thumbnails/video-${videoId}.jpg`;
       const fs = await import('fs/promises');
+      const fsSync = await import('fs');
       const { execFile } = await import('child_process');
       const util = await import('util');
       const execFilePromise = util.promisify(execFile);
@@ -1373,8 +1375,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (forceSvg) {
         console.log(`Serving SVG placeholder for video ${videoId} (forced)`);
         res.setHeader('Content-Type', 'image/svg+xml');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         return res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
       }
+      
+      // Disable caching for all thumbnail responses to ensure freshness
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       
       // Log video information for debugging
       console.log(`Generating thumbnail for video ${videoId}:`); 
