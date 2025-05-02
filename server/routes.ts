@@ -539,31 +539,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/test-vimeo-connection', async (req, res) => {
     try {
-      // We're using the vimeo wrapper from server/vimeo.ts
-      const { getVideo } = await import('./vimeo');
+      // Import the client directly to properly test the account connection
+      const vimeoClient = (await import('./vimeo')).default;
       
-      // Try to get a simple video to test the connection
-      try {
-        // Use a very simple request to test connection
-        const videoData = await getVideo('1084537');
+      // Test the connection by getting account info
+      vimeoClient.request({
+        method: 'GET',
+        path: '/me'
+      }, (error: any, body: any, statusCode: number) => {
+        if (error) {
+          console.error('Vimeo connection test failed:', error);
+          return res.status(500).json({
+            success: false,
+            message: 'Vimeo connection test failed',
+            error: error.message || String(error)
+          });
+        }
         
         return res.json({
           success: true,
           message: 'Vimeo connection test successful',
           user: {
-            name: 'Vimeo API',
-            link: 'https://vimeo.com/',
-            account_type: 'Connected successfully'
+            name: body?.name || 'Unknown',
+            uri: body?.uri || '',
+            link: body?.link || 'https://vimeo.com/',
+            account_type: body?.account_type || 'Connected'
           }
         });
-      } catch (vimeoError) {
-        console.error('Vimeo API connection test failed:', vimeoError);
-        return res.status(500).json({
-          success: false,
-          message: 'Vimeo connection test failed',
-          error: vimeoError instanceof Error ? vimeoError.message : String(vimeoError)
-        });
-      }
+      });
     } catch (error) {
       console.error('Error testing Vimeo connection:', error);
       return res.status(500).json({
