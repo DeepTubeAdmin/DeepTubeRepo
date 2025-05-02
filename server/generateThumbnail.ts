@@ -66,36 +66,39 @@ export async function generateAndStoreS3Thumbnail(
       const tempVideo = path.join(tempDir, `video-${Date.now()}.mp4`);
       const tempThumb = path.join(tempDir, `thumb-${Date.now()}.jpg`);
 
-      // First download the video to temp file if it's a URL
-      if (sourceUrl.startsWith('http')) {
-        const response = await fetch(sourceUrl);
-        const buffer = Buffer.from(await response.arrayBuffer());
-        await fs.promises.writeFile(tempVideo, buffer);
+      // If it's an S3 API URL, get the actual S3 URL first
+      let videoUrl = sourceUrl;
+      if (sourceUrl.startsWith('/api/s3/')) {
+        const response = await fetch(`http://localhost:3000${sourceUrl}?getUrl=true`);
+        const data = await response.json();
+        videoUrl = data.url;
       }
 
-      // Generate thumbnail using the local video file
+      // Download the video to temp file
+      const response = await fetch(videoUrl);
+      const buffer = Buffer.from(await response.arrayBuffer());
+      await fs.promises.writeFile(tempVideo, buffer);
+
+      // Generate thumbnail using FFmpeg
       await execFileAsync('ffmpeg', [
         '-y',
-        '-i', sourceUrl.startsWith('http') ? tempVideo : sourceUrl,
+        '-i', tempVideo,
         '-ss', '00:00:01.000',
         '-vframes', '1',
         '-vf', 'scale=800:450:force_original_aspect_ratio=decrease,pad=800:450:(ow-iw)/2:(oh-ih)/2',
         tempThumb
       ]);
 
-      // Clean up temp video file if we created one
-      if (sourceUrl.startsWith('http')) {
-        await fs.promises.unlink(tempVideo);
-      }
-
       // Read the generated thumbnail
-      const buffer = await fs.promises.readFile(tempThumb);
+      const thumbBuffer = await fs.promises.readFile(tempThumb);
 
       // Upload to S3
-      await uploadStringToS3(buffer, s3Key, 'image/jpeg');
+      await uploadStringToS3(thumbBuffer, s3Key, 'image/jpeg');
 
-      // Cleanup
+      // Cleanup temp files
+      await fs.promises.unlink(tempVideo);
       await fs.promises.unlink(tempThumb);
+
       return s3Key;
     } catch (error) {
       console.error(`Error generating FFmpeg thumbnail: ${String(error)}`);
