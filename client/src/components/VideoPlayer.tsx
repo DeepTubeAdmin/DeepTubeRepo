@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'wouter';
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import VimeoEmbed from './VimeoEmbed';
+import GenericVideoEmbed from './GenericVideoEmbed';
 import AIWatermark from './AIWatermark';
 import { Video } from '@shared/schema';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -748,8 +748,8 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
             <div className="bg-black relative">
               {video.vimeoId ? (
                 <div className="relative">
-                  <VimeoEmbed
-                    videoId={video.vimeoId}
+                  <GenericVideoEmbed
+                    videoUrl={`https://vimeo.com/${video.vimeoId}`}
                     title={video.title}
                     autoplay={true}
                     loop={false}
@@ -758,7 +758,6 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                     showByline={false}
                     showPortrait={false}
                   />
-                  <AIWatermark position="bottom-right" size="medium" />
                 </div>
               ) : video.contentType === 'embed' && video.embedCode ? (
                 <div className="aspect-video w-full">

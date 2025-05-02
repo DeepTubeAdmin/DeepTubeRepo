@@ -1554,7 +1554,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         videoUrl: vimeoId ? `https://vimeo.com/${vimeoId}` : videoUrl,
         preview: null,
         resolution,
-        duration: vimeoDetails?.duration || duration,
+        duration: videoDurationSeconds,
         contentType,
         categoryId: parseInt(categoryId),
         vimeoId,
