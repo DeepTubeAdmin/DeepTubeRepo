@@ -114,6 +114,110 @@ const upload = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Test endpoint for S3 access
   // Endpoint to fix thumbnails content-type by content type
+  app.get('/api/update-image-thumbnails', async (req, res) => {
+    try {
+      // Get all image content
+      const videos = await dbStorage.getVideos(1000, 'image');
+      console.log(`Retrieved ${videos.length} images to update thumbnails`);
+      
+      const results = [];
+      let successCount = 0;
+      
+      // Process each image
+      for (let i = 0; i < videos.length; i++) {
+        const video = videos[i];
+        try {
+          // Skip if no image URL
+          if (!video.imageUrl) {
+            results.push({
+              id: video.id,
+              title: video.title,
+              success: false,
+              error: 'No image URL available'
+            });
+            continue;
+          }
+          
+          // If it's a URL already, use it as the thumbnail
+          if (video.imageUrl.startsWith('http')) {
+            // Update the video record to use the image URL as thumbnail
+            await dbStorage.updateVideo(video.id, { 
+              thumbnail: video.imageUrl 
+            });
+            
+            console.log(`Updated thumbnail for image ${video.id}: Using actual image URL`);
+            
+            results.push({
+              id: video.id,
+              title: video.title,
+              success: true,
+              action: 'Used image URL'
+            });
+            
+            successCount++;
+          } 
+          // Handle base64 images
+          else if (video.imageUrl.startsWith('data:image')) {
+            // These should already be handled correctly in the thumbnail endpoint
+            results.push({
+              id: video.id,
+              title: video.title,
+              success: true,
+              action: 'Base64 image (handled by endpoint)'
+            });
+            
+            successCount++;
+          }
+          // SVG placeholder as fallback
+          else {
+            // No usable image, use placeholder
+            const placeholderSvg = getPlaceholderSvg('image');
+            const s3Key = `thumbnails/video-${video.id}.jpg`;
+            await uploadStringToS3(placeholderSvg, s3Key, 'image/svg+xml');
+            
+            // Update the video record to use our thumbnail endpoint
+            await dbStorage.updateVideo(video.id, { 
+              thumbnail: `/api/videos/${video.id}/thumbnail` 
+            });
+            
+            console.log(`Updated thumbnail for image ${video.id}: Using SVG placeholder`);
+            
+            results.push({
+              id: video.id,
+              title: video.title,
+              success: true,
+              action: 'Used SVG placeholder'
+            });
+            
+            successCount++;
+          }
+        } catch (error) {
+          console.error(`Error updating image thumbnail for ${video.id}:`, error);
+          results.push({
+            id: video.id,
+            title: video.title,
+            success: false,
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
+      }
+      
+      return res.json({
+        success: true,
+        totalProcessed: videos.length,
+        successCount,
+        results
+      });
+    } catch (error) {
+      console.error('Error updating image thumbnails:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update image thumbnails',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   app.get('/api/fix-thumbnails-all', async (req, res) => {
     try {
       // Get all videos
@@ -1860,6 +1964,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await dbStorage.updateVideo(videoId, { thumbnail: youtubeThumbnailUrl });
           
           return res.redirect(youtubeThumbnailUrl);
+        }
+      }
+      
+      // For image content, check if we have the image URL to use
+      if ((video.contentType === 'image' || video.contentType === 'images') && video.imageUrl) {
+        // If the image is an actual URL and not a base64 or placeholder
+        if (video.imageUrl.startsWith('http') && !video.imageUrl.includes('placehold.co')) {
+          console.log(`Redirecting to actual image URL for image content ${videoId}: ${video.imageUrl}`);
+          return res.redirect(video.imageUrl);
         }
       }
       
