@@ -299,17 +299,19 @@ export default function MediaDetail() {
                     title={media.title}
                     responsive={true}
                     autoplay={true}
+                    aiGenerator={media.aiGenerator}
                   />
                 </div>
               )}
               
               {media.contentType === 'image' && media.imageUrl && (
-                <div className="flex items-center justify-center bg-black">
+                <div className="flex items-center justify-center bg-black relative">
                   <img 
                     src={media.imageUrl} 
                     alt={media.title} 
                     className="max-w-full max-h-[70vh]" 
                   />
+                  <AIWatermark aiGenerator={media.aiGenerator} position="bottom-right" size="medium" />
                 </div>
               )}
               

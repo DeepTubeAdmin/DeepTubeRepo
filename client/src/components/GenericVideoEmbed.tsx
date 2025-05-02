@@ -15,6 +15,7 @@ interface GenericVideoEmbedProps {
   aspectRatio?: string;
   responsive?: boolean;
   className?: string;
+  aiGenerator?: string | null;
 }
 
 /**
