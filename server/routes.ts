@@ -1397,10 +1397,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (video.thumbnail && !video.thumbnail.includes("placehold.co") && !video.thumbnail.startsWith("data:")) {
         // If thumbnail is internal API route, serve the file directly instead of redirecting
         if (video.thumbnail === `/api/videos/${videoId}/thumbnail`) {
-          // Try S3 first, then fallback to local file
+          // Try S3 first, but proxy the request instead of redirecting
           try {
             const signedUrl = await getSignedS3Url(s3Key);
-            return res.redirect(signedUrl);
+            console.log(`Proxying S3 image instead of redirecting for ${videoId}`);
+            
+            // Get the data and stream it through our server
+            const https = await import('https');
+            const http = await import('http');
+            const protocol = signedUrl.startsWith('https:') ? https : http;
+            
+            const proxyRequest = protocol.get(signedUrl, (proxyRes) => {
+              if (proxyRes.statusCode === 200) {
+                // Set appropriate content type
+                res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'image/jpeg');
+                // Pipe the S3 response directly to our response
+                proxyRes.pipe(res);
+              } else {
+                // If S3 request fails, fall back to SVG
+                console.error(`S3 proxy request failed with status ${proxyRes.statusCode}`);
+                res.setHeader('Content-Type', 'image/svg+xml');
+                res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
+              }
+            });
+            
+            proxyRequest.on('error', (error) => {
+              console.error(`Error proxying S3 image: ${error.message}`);
+              res.setHeader('Content-Type', 'image/svg+xml');
+              res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
+            });
+            
+            return; // This is important - we need to exit here since the response is handled asynchronously
           } catch (s3Error) {
             // S3 failed, fallback to local file
             try {
@@ -1422,10 +1449,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If we have a thumbnail already generated, serve it
       try {
-        // Try S3 first
+        // Try S3 first, but use our new proxy method
         try {
           const signedUrl = await getSignedS3Url(s3Key);
-          return res.redirect(signedUrl);
+          console.log(`Proxying S3 image instead of redirecting for ${videoId} (second case)`);
+          
+          // Get the data and stream it through our server
+          const https = await import('https');
+          const http = await import('http');
+          const protocol = signedUrl.startsWith('https:') ? https : http;
+          
+          const proxyRequest = protocol.get(signedUrl, (proxyRes) => {
+            if (proxyRes.statusCode === 200) {
+              // Set appropriate content type
+              res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'image/jpeg');
+              // Pipe the S3 response directly to our response
+              proxyRes.pipe(res);
+            } else {
+              // If S3 request fails, fall back to local file if available
+              console.error(`S3 proxy request failed with status ${proxyRes.statusCode}`);
+              try {
+                fs.access(thumbnailPath).then(() => {
+                  res.sendFile(path.resolve(thumbnailPath));
+                }).catch(() => {
+                  res.setHeader('Content-Type', 'image/svg+xml');
+                  res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
+                });
+              } catch {
+                res.setHeader('Content-Type', 'image/svg+xml');
+                res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
+              }
+            }
+          });
+          
+          proxyRequest.on('error', (error) => {
+            console.error(`Error proxying S3 image: ${error.message}`);
+            try {
+              fs.access(thumbnailPath).then(() => {
+                res.sendFile(path.resolve(thumbnailPath));
+              }).catch(() => {
+                res.setHeader('Content-Type', 'image/svg+xml');
+                res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
+              });
+            } catch {
+              res.setHeader('Content-Type', 'image/svg+xml');
+              res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
+            }
+          });
+          
+          return; // This is important - we need to exit here since the response is handled asynchronously
         } catch (s3Error) {
           // S3 failed, try local file
           try {
@@ -1456,7 +1528,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Remote URL - try to use a frame grab from S3 if already exists
           try {
             const signedUrl = await getSignedS3Url(s3Key);
-            return res.redirect(signedUrl);
+            console.log(`Proxying S3 image instead of redirecting for ${videoId} (remote URL case)`);
+            
+            // Get the data and stream it through our server
+            const https = await import('https');
+            const http = await import('http');
+            const protocol = signedUrl.startsWith('https:') ? https : http;
+            
+            const proxyRequest = protocol.get(signedUrl, (proxyRes) => {
+              if (proxyRes.statusCode === 200) {
+                // Set appropriate content type
+                res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'image/jpeg');
+                // Pipe the S3 response directly to our response
+                proxyRes.pipe(res);
+              } else {
+                // If S3 request fails, fall back to SVG
+                console.error(`S3 proxy request failed with status ${proxyRes.statusCode}`);
+                res.setHeader('Content-Type', 'image/svg+xml');
+                res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
+              }
+            });
+            
+            proxyRequest.on('error', (error) => {
+              console.error(`Error proxying S3 image: ${error.message}`);
+              res.setHeader('Content-Type', 'image/svg+xml');
+              res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
+            });
+            
+            return; // This is important - we need to exit here since the response is handled asynchronously
           } catch (s3Error) {
             // If S3 thumbnail doesn't exist, fallback to a better placeholder
             res.setHeader('Content-Type', 'image/svg+xml');
