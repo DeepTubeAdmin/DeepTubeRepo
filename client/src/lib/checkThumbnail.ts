@@ -47,6 +47,11 @@ export function checkThumbnail(thumbnailUrl: string, videoId: number): string {
     }
   }
   
+  // Direct image URL handling
+  if (thumbnailUrl.startsWith('data:image/') || thumbnailUrl.startsWith('http')) {
+    return thumbnailUrl;
+  }
+  
   // For all other cases, use our reliable API endpoint
   // Add a cache buster to ensure we get fresh content
   return `/api/videos/${videoId}/thumbnail?t=${Date.now()}`;

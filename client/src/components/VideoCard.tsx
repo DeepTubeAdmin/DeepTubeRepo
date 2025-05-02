@@ -264,6 +264,17 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
           </div>
         )}
 
+        {/* Image content handling */}
+        {(video.contentType === 'image' || video.contentType === 'images') && (
+          <div className="absolute inset-0 w-full h-full">
+            <img 
+              src={checkThumbnail(video.imageUrl || video.thumbnail || '', video.id)}
+              alt={video.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+        
         {/* Video previews only for video type with valid videoUrl on hover */}
         {video.contentType === 'video' && video.videoUrl && (
           <div className="absolute inset-0 w-full h-full">
