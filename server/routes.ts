@@ -1622,8 +1622,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/upload/file", isAuthenticated, upload.single('file'), async (req, res) => {
     try {
       ensureUser(req);
+      console.log("=== File upload started ====");
       
       if (!req.file) {
+        console.log("ERROR: No file uploaded");
         return res.status(400).json({ error: "No file uploaded" });
       }
       
@@ -1631,11 +1633,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isVideo = file.mimetype.startsWith('video/');
       const isImage = file.mimetype.startsWith('image/');
       
+      console.log(`File upload details:\n- Name: ${file.originalname}\n- Type: ${file.mimetype}\n- Size: ${file.size} bytes\n- Is video: ${isVideo}\n- Is image: ${isImage}`);
+      
       if (!isVideo && !isImage) {
         // Clean up the file if it's not a supported type
         if (fsSync.existsSync(file.path)) {
           fsSync.unlinkSync(file.path);
         }
+        console.log("ERROR: Unsupported file type");
         return res.status(400).json({ 
           error: "Unsupported file type. Please upload video or image files only." 
         });
@@ -1650,13 +1655,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // For videos, redirect to the Vimeo upload service
         console.log("Video detected, redirecting to Vimeo upload service");
         try {
+          console.log("Importing Vimeo service module...");
           // Get vimeo service
           const vimeoService = await import('./vimeo');
+          console.log("Vimeo service module imported successfully");
           
           // Use a default name based on file name if not provided
           const name = file.originalname.replace(/\.[^/.]+$/, "") || "Untitled Video";
+          console.log(`Using video name: ${name}`);
           
           // Upload to Vimeo
+          console.log(`Starting Vimeo upload for file: ${file.path}`);
           const result = await vimeoService.uploadVideo(
             file.path,
             name,
@@ -1664,15 +1673,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             "anybody" // Public by default
           );
           
+          console.log("Vimeo upload result:", JSON.stringify(result, null, 2));
+          
           // Clean up temporary file after successful Vimeo upload
           if (fsSync.existsSync(file.path)) {
             fsSync.unlinkSync(file.path);
+            console.log(`Temporary file removed: ${file.path}`);
           }
           
           console.log(`Video successfully uploaded to Vimeo with ID: ${result.videoId}`);
           
           // Return the Vimeo info
-          return res.status(201).json({
+          const responseData = {
             fileName: file.originalname,
             fileType: file.mimetype,
             fileSize: file.size,
@@ -1680,7 +1692,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             vimeoId: result.videoId,
             vimeoUri: result.uri,
             url: `https://vimeo.com/${result.videoId}`
-          });
+          };
+          
+          console.log("Sending Vimeo upload response:", JSON.stringify(responseData, null, 2));
+          return res.status(201).json(responseData);
         } catch (vimeoError) {
           console.error("Error uploading to Vimeo:", vimeoError);
           

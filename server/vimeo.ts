@@ -40,27 +40,43 @@ export const uploadVideo = (
   description: string,
   privacy: 'anybody' | 'password' | 'disable' | 'nobody' | 'unlisted' = 'anybody'
 ): Promise<any> => {
+  console.log(`[Vimeo] Starting upload for file: ${filePath}`);
+  console.log(`[Vimeo] Video name: ${name}, privacy: ${privacy}`);
+  
   return new Promise((resolve, reject) => {
-    client.upload(
-      filePath,
-      {
-        name,
-        description,
-        privacy: {
-          view: privacy,
+    try {
+      client.upload(
+        filePath,
+        {
+          name,
+          description,
+          privacy: {
+            view: privacy,
+          },
         },
-      },
-      (uri) => {
-        // Video URI is returned on successful upload
-        resolve({ uri, videoId: uri.split('/').pop() });
-      },
-      (error) => {
-        reject(error);
-      },
-      () => {
-        // Progress callback (optional)
-      }
-    );
+        (uri) => {
+          // Video URI is returned on successful upload
+          console.log(`[Vimeo] Upload successful! URI: ${uri}`);
+          const videoId = uri.split('/').pop();
+          console.log(`[Vimeo] Extracted video ID: ${videoId}`);
+          resolve({ uri, videoId });
+        },
+        (error) => {
+          console.error(`[Vimeo] Upload error:`, error);
+          reject(error);
+        },
+        (bytesUploaded, bytesTotal) => {
+          // Progress callback
+          const percentage = Math.round((bytesUploaded / bytesTotal) * 100);
+          if (percentage % 10 === 0) { // Log every 10%
+            console.log(`[Vimeo] Upload progress: ${percentage}% (${bytesUploaded}/${bytesTotal} bytes)`);
+          }
+        }
+      );
+    } catch (error) {
+      console.error('[Vimeo] Error during upload setup:', error);
+      reject(error);
+    }
   });
 };
 
