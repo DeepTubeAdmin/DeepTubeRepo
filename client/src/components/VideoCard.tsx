@@ -3,6 +3,7 @@ import { Video } from "@shared/schema";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { formatNumber, extractYoutubeIdFromEmbed, fetchS3Url } from "@/lib/utils";
+import { checkThumbnail } from "@/lib/checkThumbnail";
 import S3VideoPlayer from "./S3VideoPlayer";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -17,11 +18,11 @@ interface ThumbnailImageProps {
 
 // Component to handle thumbnail loading with proper S3 URL resolution
 function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailImageProps) {
-  // Simplified implementation with fewer states and better error handling
-  const [imgSrc, setImgSrc] = useState<string>(
-    // Use placeholder directly to avoid loading spinner
-    `/api/videos/${videoId}/thumbnail?forcesvg=true&t=${Date.now()}`
-  );
+  // Start with a valid thumbnail URL using our helper function
+  const initialThumbnail = thumbnail ? checkThumbnail(thumbnail, videoId) : `/api/videos/${videoId}/thumbnail`;
+  
+  // Set the initial state to our validated thumbnail
+  const [imgSrc, setImgSrc] = useState<string>(initialThumbnail);
   const [isLoading, setIsLoading] = useState(false);
   
   // Reference to track if the component is still mounted
@@ -158,6 +159,7 @@ function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailIma
         onError={(e) => {
           // If the image fails to load, fall back to our SVG placeholder
           console.error(`ThumbnailImage: Error loading thumbnail for video ${videoId}`);
+          // Use our helper function to fix the thumbnail path
           e.currentTarget.src = `/api/videos/${videoId}/thumbnail?forcesvg=true&t=${Date.now()}`;
         }}
       />
