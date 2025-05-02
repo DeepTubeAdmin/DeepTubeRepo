@@ -14,8 +14,21 @@ import fsSync from "fs";
 import { fileURLToPath } from 'url';
 import { getSignedS3Url, uploadFileToS3, uploadStringToS3, deleteFileFromS3, localPathToS3Key, urlPathToS3Key } from "./s3";
 
-// Generate placeholder SVG for videos
-function getPlaceholderSvg() {
+// Generate placeholder SVG for videos and images
+function getPlaceholderSvg(contentType = 'video') {
+  // For image content, show a different placeholder
+  if (contentType === 'image') {
+    return `
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="225" viewBox="0 0 400 225">
+  <rect width="400" height="225" fill="#111" />
+  <rect x="150" y="62.5" width="100" height="100" fill="#222" />
+  <circle cx="200" cy="92.5" r="10" fill="#f97316" />
+  <rect x="175" y="112.5" width="50" height="30" fill="#333" />
+</svg>
+`;
+  }
+  
+  // Default video placeholder with play button
   return `
 <svg xmlns="http://www.w3.org/2000/svg" width="400" height="225" viewBox="0 0 400 225">
   <rect width="400" height="225" fill="#111" />
@@ -26,12 +39,12 @@ function getPlaceholderSvg() {
 }
 
 // Helper to send SVG placeholder
-function sendSvgPlaceholder(res: Response) {
+function sendSvgPlaceholder(res: Response, contentType = 'video') {
   res.setHeader('Content-Type', 'image/svg+xml');
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
-  return res.send(getPlaceholderSvg());
+  return res.send(getPlaceholderSvg(contentType));
 }
 import { WebSocketServer } from 'ws';
 
