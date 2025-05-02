@@ -55,14 +55,14 @@ export async function uploadFileToS3(filePath: string, s3Key: string): Promise<s
  * @param options Additional options (e.g., { encoding: 'base64' })
  * @returns The S3 URL for the uploaded file
  */
-export async function uploadStringToS3(content: string, s3Key: string, contentType: string, options?: { encoding?: string }): Promise<string> {
+export async function uploadStringToS3(content: string | Buffer, s3Key: string, contentType: string, options?: { encoding?: string }): Promise<string> {
   try {
     // Handle base64 encoded content if specified
     let body = content;
     
-    if (options?.encoding === 'base64') {
+    if (options?.encoding === 'base64' && typeof content === 'string') {
       // For base64 content, convert to Buffer
-      body = Buffer.from(content, 'base64');
+      body = Buffer.from(content as string, 'base64');
       log(`Converting base64 content to Buffer for ${s3Key}`, 's3');
     }
     
