@@ -1673,7 +1673,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If forceSvg is true, immediately return SVG placeholder
       if (forceSvg) {
         console.log(`Serving SVG placeholder for video ${videoId} (forced)`);
-        return sendSvgPlaceholder(res);
+        // Use the content type to determine which placeholder to show
+        return sendSvgPlaceholder(res, video.contentType);
       }
       
       // Disable caching for all thumbnail responses to ensure freshness
@@ -1768,7 +1769,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   res.sendFile(path.resolve(thumbnailPath));
                 }).catch(() => {
                   res.setHeader('Content-Type', 'image/svg+xml');
-                  res.sendFile(path.resolve('./public/default-video-thumbnail.svg'));
+                  return sendSvgPlaceholder(res, video.contentType);
                 });
               } catch {
                 res.setHeader('Content-Type', 'image/svg+xml');
