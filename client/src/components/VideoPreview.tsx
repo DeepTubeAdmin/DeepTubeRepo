@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { fetchS3Url } from '@/lib/utils';
 
 interface VideoPreviewProps {
   src: string;
@@ -23,6 +24,8 @@ export default function VideoPreview({
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
+  const [isLoadingUrl, setIsLoadingUrl] = useState(false);
   
   // Debug logs to track component state
   useEffect(() => {

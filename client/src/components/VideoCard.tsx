@@ -173,15 +173,17 @@ export default function VideoCard({ video, onPreview, onWishlist }: VideoCardPro
         />
             
         {/* Video previews only for video type with valid videoUrl on hover */}
-        {video.contentType === 'video' && isHovered && video.videoUrl && (
+        {video.contentType === 'video' && video.videoUrl && (
           <div className="absolute inset-0 w-full h-full">
-            <S3VideoPlayer
-              videoUrl={video.videoUrl}
-              title={video.title}
-              onError={(e) => {
-                console.error(`Error loading video: ${video.videoUrl}`, e);
-              }}
-            />
+            {isHovered ? (
+              <VideoPreview
+                src={video.videoUrl}
+                poster={video.thumbnail || `/api/videos/${video.id}/thumbnail`}
+                isHovered={isHovered}
+                className="w-full h-full object-cover"
+                previewDuration={60} // Play continuously instead of just 5 seconds
+              />
+            ) : null}
           </div>
         )}
         
