@@ -6,7 +6,7 @@ import { randomBytes } from "crypto";
 import { sendPasswordResetEmail } from "./sendgrid";
 import { z } from "zod";
 import { insertCategorySchema, insertVideoSchema, type Video, type Category, type InsertLike } from "@shared/schema";
-import * as vimeoService from "./vimeo";
+// Vimeo service no longer used as we've migrated to S3
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
@@ -2427,52 +2427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Vimeo Integration Routes
-  
-  // Get user's Vimeo videos
-  app.get("/api/vimeo/videos", isAuthenticated, async (req, res) => {
-    try {
-      const page = parseInt(req.query.page as string) || 1;
-      const perPage = parseInt(req.query.perPage as string) || 10;
-      
-      const videos = await vimeoService.getUserVideos(page, perPage);
-      res.json(videos);
-    } catch (error) {
-      console.error("Error fetching Vimeo videos:", error);
-      res.status(500).json({ error: "Failed to fetch videos" });
-    }
-  });
-  
-  // Get a specific Vimeo video
-  app.get("/api/vimeo/videos/:id", async (req, res) => {
-    try {
-      const videoId = req.params.id;
-      const video = await vimeoService.getVideo(videoId);
-      res.json(video);
-    } catch (error) {
-      console.error("Error fetching Vimeo video:", error);
-      res.status(500).json({ error: "Failed to fetch video" });
-    }
-  });
-  
-  // Search Vimeo videos
-  app.get("/api/vimeo/search", async (req, res) => {
-    try {
-      const query = req.query.q as string;
-      const page = parseInt(req.query.page as string) || 1;
-      const perPage = parseInt(req.query.perPage as string) || 10;
-      
-      if (!query) {
-        return res.status(400).json({ error: "Search query is required" });
-      }
-      
-      const results = await vimeoService.searchVideos(query, page, perPage);
-      res.json(results);
-    } catch (error) {
-      console.error("Error searching Vimeo videos:", error);
-      res.status(500).json({ error: "Failed to search videos" });
-    }
-  });
+  // Video/image API routes
   
   // Video/Image detail endpoint
   app.get("/api/videos/:id", async (req, res) => {
@@ -2713,91 +2668,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Upload a video to Vimeo
-  app.post("/api/vimeo/upload", isAuthenticated, upload.single("video"), async (req, res) => {
-    try {
-      ensureUser(req);
-      
-      if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
-      }
-      
-      const { name, description, privacy, categoryId, aiGenerator, prompt } = req.body;
-      
-      if (!name) {
-        return res.status(400).json({ error: "Video name is required" });
-      }
-      
-      const filePath = req.file.path;
-      
-      try {
-        const result = await vimeoService.uploadVideo(
-          filePath, 
-          name, 
-          description || "", 
-          privacy as any || "anybody"
-        );
-        
-        // Clean up temporary file
-        if (fsSync.existsSync(filePath)) {
-          fsSync.unlinkSync(filePath);
-        }
-        
-        // If categoryId is provided, create a video record in our database
-        if (categoryId && result.videoId) {
-          try {
-            // Get video data from Vimeo to extract thumbnail and duration
-            const vimeoVideo = await vimeoService.getVideo(result.videoId);
-            const thumbnail = vimeoService.getThumbnail(vimeoVideo);
-            
-            // Calculate duration in seconds
-            const duration = vimeoVideo.duration || 0;
-            
-            // Create a video record
-            const video = await dbStorage.createVideo({
-              title: name,
-              description: description || "",
-              aiGenerator: aiGenerator || null,
-              prompt: prompt || null,
-              thumbnail: thumbnail || "https://placehold.co/400x225?text=Video",
-              videoUrl: `https://vimeo.com/${result.videoId}`,
-              contentType: "video",
-              resolution: "HD",
-              duration,
-              categoryId: parseInt(categoryId),
-              vimeoId: result.videoId,
-              credits: 0, // Default to 0 credits for free content
-              preview: null,
-            });
-            
-            // Return both Vimeo result and our video record
-            return res.json({
-              ...result,
-              video
-            });
-          } catch (dbError) {
-            console.error("Error saving video to database:", dbError);
-            // Still return the Vimeo result even if database save fails
-            return res.json({
-              ...result,
-              dbError: "Failed to save video to database, but Vimeo upload was successful"
-            });
-          }
-        }
-        
-        res.json(result);
-      } catch (uploadError) {
-        // Clean up temporary file on error
-        if (fsSync.existsSync(filePath)) {
-          fsSync.unlinkSync(filePath);
-        }
-        throw uploadError;
-      }
-    } catch (error) {
-      console.error("Error uploading to Vimeo:", error);
-      res.status(500).json({ error: "Failed to upload video" });
-    }
-  });
+  // Video uploads are now handled by the /api/videos/upload endpoint
   
   // Endpoint to get current user's uploaded videos
   app.get("/api/user/videos", isAuthenticated, async (req, res) => {
