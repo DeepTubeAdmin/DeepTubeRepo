@@ -8,9 +8,9 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import os from 'os';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { uploadStringToS3 } from './s3';
 
 const execFileAsync = promisify(execFile);
@@ -26,104 +26,83 @@ export async function generateAndStoreS3Thumbnail(
   // Handle YouTube embeds
   if (contentType === 'embed' && youtubeId) {
     try {
-      const youtubeThumbnailUrl = `https://img.youtube.com/vi/${youtubeId}/0.jpg`;
+      const youtubeThumbnailUrl = `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
       const response = await fetch(youtubeThumbnailUrl);
-
-      if (response.ok) {
-        const arrayBuffer = await response.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-
-        await uploadStringToS3(buffer, s3Key, 'image/jpeg');
-        return s3Key;
-      }
+      const buffer = Buffer.from(await response.arrayBuffer());
+      await uploadStringToS3(buffer, s3Key, 'image/jpeg');
+      return s3Key;
     } catch (error) {
-      console.error(`Error generating YouTube thumbnail: ${String(error)}`);
+      console.error('YouTube thumbnail generation failed:', error);
     }
   }
 
   // Handle direct images
-  if ((contentType === 'image' || contentType === 'images') && sourceUrl && sourceUrl.startsWith('http')) {
+  if ((contentType === 'image' || contentType === 'images') && sourceUrl) {
     try {
       const response = await fetch(sourceUrl);
-
-      if (response.ok) {
-        const arrayBuffer = await response.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-
-        await uploadStringToS3(buffer, s3Key, 'image/jpeg');
-        return s3Key;
-      }
+      const buffer = Buffer.from(await response.arrayBuffer());
+      await uploadStringToS3(buffer, s3Key, 'image/jpeg');
+      return s3Key;
     } catch (error) {
-      console.error(`Error processing image: ${String(error)}`);
+      console.error('Image processing failed:', error);
     }
   }
 
-  // Handle videos - use FFmpeg with direct streaming
+  // Handle videos
   if ((contentType === 'video' || contentType === 'videos') && sourceUrl) {
     try {
-      // Create temp files for both video and thumbnail
       const tempDir = os.tmpdir();
       const tempVideo = path.join(tempDir, `video-${Date.now()}.mp4`);
       const tempThumb = path.join(tempDir, `thumb-${Date.now()}.jpg`);
 
-      // If it's an S3 API URL, get the actual S3 URL first
+      // Get the actual video URL if it's an S3 API URL
       let videoUrl = sourceUrl;
       if (sourceUrl.startsWith('/api/s3/')) {
         const response = await fetch(`http://localhost:3000${sourceUrl}?getUrl=true`);
+        if (!response.ok) throw new Error(`Failed to resolve S3 URL: ${response.statusText}`);
         const data = await response.json();
         videoUrl = data.url;
       }
 
-      // First get the actual video URL if using S3 API endpoint
-      let finalVideoUrl = videoUrl;
-      if (videoUrl.startsWith('/api/s3/')) {
-        const response = await fetch(`http://localhost:3000${videoUrl}?getUrl=true`);
-        const data = await response.json();
-        finalVideoUrl = data.url;
-      }
+      // Download video file
+      console.log('Downloading video from:', videoUrl);
+      const videoResponse = await fetch(videoUrl);
+      if (!videoResponse.ok) throw new Error(`Failed to download video: ${videoResponse.statusText}`);
+      const videoBuffer = await videoResponse.arrayBuffer();
+      await fs.promises.writeFile(tempVideo, Buffer.from(videoBuffer));
 
-      // Download the video to temp file
-      const response = await fetch(finalVideoUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch video: ${response.status} ${response.statusText}`);
-      }
-      const buffer = Buffer.from(await response.arrayBuffer());
-      await fs.promises.writeFile(tempVideo, buffer);
-
-      console.log(`Generating thumbnail from video file: ${tempVideo}`);
-
-      // Generate thumbnail using FFmpeg with simplified parameters
+      // Generate thumbnail
+      console.log('Generating thumbnail using FFmpeg');
       await execFileAsync('ffmpeg', [
-        '-y',                   // Overwrite output files without asking
-        '-i', tempVideo,        // Input file
-        '-vf', 'select=eq(n\\,0)', // Select first frame
-        '-vframes', '1',        // Extract one frame only
-        '-aspect', '16:9',      // Force 16:9 aspect ratio 
-        '-s', '800x450',        // Scale to desired size
-        tempThumb              // Output file
+        '-y',
+        '-i', tempVideo,
+        '-vf', 'select=eq(n\\,0)',
+        '-vframes', '1',
+        '-aspect', '16:9',
+        '-s', '800x450',
+        tempThumb
       ]);
 
-      // Verify the thumbnail was created
+      // Verify thumbnail was created
       await fs.promises.access(tempThumb);
-      console.log(`Thumbnail generated successfully at: ${tempThumb}`);
+      console.log('Thumbnail generated successfully');
 
-      // Read the generated thumbnail
+      // Read and upload thumbnail
       const thumbBuffer = await fs.promises.readFile(tempThumb);
-
-      // Upload to S3
       await uploadStringToS3(thumbBuffer, s3Key, 'image/jpeg');
 
-      // Cleanup temp files
+      // Cleanup
       await fs.promises.unlink(tempVideo);
       await fs.promises.unlink(tempThumb);
 
       return s3Key;
     } catch (error) {
-      console.error(`Error generating FFmpeg thumbnail: ${String(error)}`);
+      console.error('Video thumbnail generation failed:', error);
+      throw error;
     }
   }
 
-  // If all else fails, generate an SVG placeholder
+  // Fallback to SVG placeholder
   const svg = generateSvgPlaceholder(contentType);
   await uploadStringToS3(svg, s3Key, 'image/svg+xml');
   return s3Key;
