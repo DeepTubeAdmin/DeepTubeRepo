@@ -537,6 +537,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/test-vimeo-connection', async (req, res) => {
+    try {
+      // Import the vimeo client
+      const vimeoClient = (await import('./vimeo.ts')).default;
+      
+      // Test the connection by getting user info
+      vimeoClient.request({
+        method: 'GET',
+        path: '/me'
+      }, (error: any, body: any, statusCode: number) => {
+        if (error) {
+          console.error('Vimeo connection test failed:', error);
+          return res.status(500).json({
+            success: false,
+            message: 'Vimeo connection test failed',
+            error: error.message || String(error)
+          });
+        }
+        
+        return res.json({
+          success: true,
+          message: 'Vimeo connection test successful',
+          user: {
+            name: body.name,
+            uri: body.uri,
+            link: body.link,
+            account_type: body.account_type
+          },
+          statusCode
+        });
+      });
+    } catch (error) {
+      console.error('Error testing Vimeo connection:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error testing Vimeo connection',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   app.get('/api/test-s3-access', async (req, res) => {
     try {
       const testFilePath = path.resolve('./public/default-video-thumbnail.svg');
