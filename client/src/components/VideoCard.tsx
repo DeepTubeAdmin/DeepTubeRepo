@@ -52,33 +52,52 @@ function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailIma
       // Set loading state immediately
       setIsLoading(true);
       
-      // We'll try to load the true image directly
-      // The server will redirect to S3 if available
-      const img = new Image();
+      // Use XMLHttpRequest which will properly follow redirects
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', `/api/videos/${videoId}/thumbnail?nocache=${timestamp}`, true);
+      xhr.responseType = 'blob';
       
-      // Create a URL with a unique timestamp to avoid caching
-      const thumbnailUrl = `/api/videos/${videoId}/thumbnail?nocache=${timestamp}`;
-      
-      // Set up event handlers before setting src
-      img.onload = () => {
-        if (isMountedRef.current) {
-          // If loaded successfully, update the src
-          setImgSrc(thumbnailUrl);
-          setIsLoading(false);
+      // Setup handlers
+      xhr.onload = function() {
+        if (!isMountedRef.current) return;
+        
+        if (xhr.status >= 200 && xhr.status < 300) {
+          // Create a blob URL from the response
+          const blob = xhr.response;
+          const contentType = xhr.getResponseHeader('content-type');
+          
+          // Only use the response if it's an image and not SVG
+          if (contentType && contentType.includes('image/') && !contentType.includes('svg')) {
+            const objectUrl = URL.createObjectURL(blob);
+            console.log(`Created object URL for video ${videoId} thumbnail:`, objectUrl);
+            setImgSrc(objectUrl);
+          } else {
+            console.log(`Received SVG or non-image for video ${videoId}, keeping placeholder`);
+          }
+        } else {
+          console.error(`Error loading thumbnail for video ${videoId}: Status ${xhr.status}`);
         }
+        
+        setIsLoading(false);
       };
       
-      img.onerror = () => {
-        if (isMountedRef.current) {
-          // If failed to load, keep using the SVG placeholder
-          // which is already set
-          setIsLoading(false);
-          console.error(`Failed to load thumbnail for video ${videoId}`);
-        }
+      xhr.onerror = function() {
+        if (!isMountedRef.current) return;
+        console.error(`Network error loading thumbnail for video ${videoId}`);
+        setIsLoading(false);
       };
       
-      // Start loading the image
-      img.src = thumbnailUrl;
+      xhr.ontimeout = function() {
+        if (!isMountedRef.current) return;
+        console.error(`Timeout loading thumbnail for video ${videoId}`);
+        setIsLoading(false);
+      };
+      
+      // Set timeout to 8 seconds
+      xhr.timeout = 8000;
+      
+      // Send the request
+      xhr.send();
     }
     
     return () => {
