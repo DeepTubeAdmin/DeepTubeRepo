@@ -1429,8 +1429,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (videoPath.startsWith('data:')) {
           // For base64 videos - can't generate thumbnails from these directly
-          // Fallback to a generic thumbnail for videos rather than text
-          return res.redirect(`https://placehold.co/800x450/222/444?text=Video+Preview`);
+          // Fallback to a generic thumbnail without text
+          res.setHeader('Content-Type', 'text/html');
+          return res.sendFile(path.resolve('./public/default-video-thumbnail.html'));
         } else if (videoPath.startsWith('http')) {
           // Remote URL - try to use a frame grab from S3 if already exists
           try {
@@ -1438,7 +1439,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.redirect(signedUrl);
           } catch (s3Error) {
             // If S3 thumbnail doesn't exist, fallback to a better placeholder
-            return res.redirect(`https://placehold.co/800x450/222/444?text=Video+Preview`);
+            res.setHeader('Content-Type', 'text/html');
+            return res.sendFile(path.resolve('./public/default-video-thumbnail.html'));
           }
         } else {
           // Local file path - clean it up if needed
@@ -1518,17 +1520,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Generate a generic video/image thumbnail based on content type
       if (video.contentType === 'video') {
-        return res.redirect(`https://placehold.co/800x450/222/444?text=Video+Preview`);
+        res.setHeader('Content-Type', 'text/html');
+        return res.sendFile(path.resolve('./public/default-video-thumbnail.html'));
       } else if (video.contentType === 'image') {
-        return res.redirect(`https://placehold.co/800x450/222/444?text=Image+Preview`);
+        res.setHeader('Content-Type', 'text/html');
+        return res.sendFile(path.resolve('./public/default-video-thumbnail.html'));
       } else {
-        return res.redirect(`https://placehold.co/800x450/222/444?text=Media+Preview`);
+        res.setHeader('Content-Type', 'text/html');
+        return res.sendFile(path.resolve('./public/default-video-thumbnail.html'));
       }
       
     } catch (error) {
       console.error("Error generating thumbnail:", error);
       // Fall back to a generic placeholder without text
-      res.redirect("https://placehold.co/800x450/222/444?text=Video+Preview");
+      res.setHeader('Content-Type', 'text/html');
+      return res.sendFile(path.resolve('./public/default-video-thumbnail.html'));
     }
   });
 
