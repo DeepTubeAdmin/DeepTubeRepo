@@ -45,19 +45,33 @@ function getPlaceholderSvg(contentType = 'video') {
 // Helper to send SVG placeholder
 function sendSvgPlaceholder(res: Response, contentType = 'video') {
   // Log the content type being requested to help debug
-  console.log(`Generating SVG placeholder for content type: ${contentType}`);
+  console.log(`Serving SVG placeholder for content type: ${contentType}`);
   
   // Normalize content type for proper placeholder selection
   let normalizedType = 'video';
+  let svgFile = './public/default-video-thumbnail.svg';
+  
   if (contentType === 'image' || contentType === 'images') {
     normalizedType = 'image';
+    svgFile = './public/default-image-thumbnail.svg';
+  } else if (contentType === 'embed') {
+    normalizedType = 'embed';
+    svgFile = './public/default-embed-thumbnail.svg';
   }
   
   res.setHeader('Content-Type', 'image/svg+xml');
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
-  return res.send(getPlaceholderSvg(normalizedType));
+  
+  try {
+    // Use the file-based SVGs we created
+    return res.sendFile(path.resolve(svgFile));
+  } catch (error) {
+    // Fall back to the inline SVG if file access fails
+    console.error(`Error serving SVG file ${svgFile}:`, error);
+    return res.send(getPlaceholderSvg(normalizedType));
+  }
 }
 import { WebSocketServer } from 'ws';
 
