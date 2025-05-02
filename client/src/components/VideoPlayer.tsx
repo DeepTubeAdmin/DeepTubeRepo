@@ -109,6 +109,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl w-[95vw] max-h-[95vh] p-0 bg-black border-none overflow-hidden">
+        <DialogTitle className="sr-only">{video?.title || 'Video Player'}</DialogTitle>
         <div className="relative w-full h-full flex flex-col overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center h-[50vh]">
@@ -136,7 +137,8 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                 {video.contentType === 'video' && video.videoUrl && (
                   <S3VideoPlayer 
                     videoUrl={video.videoUrl} 
-                    containerClassName="h-full" 
+                    title={video.title}
+                    className="h-full" 
                   />
                 )}
                 
@@ -148,9 +150,9 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                       className="max-h-[80vh] max-w-full object-contain"
                     />
                     
-                    {video.ai_generator && (
+                    {video.aiGenerator && (
                       <AIWatermark 
-                        generator={video.ai_generator}
+                        aiGenerator={video.aiGenerator}
                         position="bottom-right"
                         size="large"
                       />
@@ -205,10 +207,10 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
                   </div>
                 )}
                 
-                {video.ai_generator && (
+                {video.aiGenerator && (
                   <div className="mt-2 text-sm">
                     <span className="text-muted-foreground">AI Generator: </span>
-                    <span className="text-primary">{video.ai_generator}</span>
+                    <span className="text-primary">{video.aiGenerator}</span>
                   </div>
                 )}
                 

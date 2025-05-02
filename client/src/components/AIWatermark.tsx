@@ -1,11 +1,15 @@
 import React from 'react';
 
 interface AIWatermarkProps {
+  aiGenerator?: string;
+  generator?: string; // For backward compatibility
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   size?: 'small' | 'medium' | 'large';
 }
 
 export default function AIWatermark({ 
+  aiGenerator,
+  generator,
   position = 'bottom-right', 
   size = 'medium' 
 }: AIWatermarkProps) {
@@ -24,12 +28,15 @@ export default function AIWatermark({
     'large': 'text-2xl',
   };
 
+  // Use aiGenerator if provided, fall back to generator prop or just show 'AI'
+  const generatorName = aiGenerator || generator || 'AI';
+  
   return (
     <div 
       className={`absolute ${positionClasses[position]} ${sizeClasses[size]} text-primary font-extrabold z-50 pointer-events-none`}
       style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}
     >
-      AI
+      {generatorName}
     </div>
   );
 }

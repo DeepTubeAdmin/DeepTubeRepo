@@ -24,6 +24,7 @@ interface GenericVideoEmbedProps {
  */
 const GenericVideoEmbed = ({
   videoUrl,
+  html,
   title = 'Video player',
   width = '100%',
   height = 'auto',
@@ -46,6 +47,19 @@ const GenericVideoEmbed = ({
     const [width, height] = aspectRatio.split(':').map(Number);
     if (width && height) {
       setAspectRatioValue((height / width) * 100);
+    }
+
+    // If we receive HTML directly, use that instead of processing a URL
+    if (html) {
+      // Just set a dummy URL to indicate we have content
+      setEmbedUrl('html-content');
+      return;
+    }
+    
+    // Early return if no videoUrl provided
+    if (!videoUrl) {
+      setError('No video URL provided');
+      return;
     }
 
     // Parse the video URL to determine the source type
@@ -120,7 +134,7 @@ const GenericVideoEmbed = ({
       // For other URLs, just use the URL directly
       setEmbedUrl(videoUrl);
     }
-  }, [videoUrl, aspectRatio, autoplay, loop, showTitle, showByline, showPortrait]);
+  }, [videoUrl, html, aspectRatio, autoplay, loop, showTitle, showByline, showPortrait]);
 
   // Handle error state
   if (error) {
@@ -156,6 +170,24 @@ const GenericVideoEmbed = ({
   const isDirectVideo = embedUrl.startsWith('direct:');
   const directVideoUrl = isDirectVideo ? embedUrl.substring(7) : '';
 
+  // If we have direct HTML content, render it in a container with proper aspect ratio
+  if (html && embedUrl === 'html-content') {
+    return (
+      <div className={`video-embed ${className}`} style={{ width: typeof width === 'number' ? `${width}px` : width }}>
+        <div 
+          className={responsive ? 'relative w-full' : 'relative'}
+          style={responsive ? { paddingBottom: `${aspectRatioValue}%` } : {}}
+        >
+          <div 
+            className={responsive ? 'absolute top-0 left-0 w-full h-full' : ''}
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+          <AIWatermark position="bottom-right" size="medium" />
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className={`video-embed ${className}`} style={{ width: typeof width === 'number' ? `${width}px` : width }}>
       {isDirectVideo ? (
