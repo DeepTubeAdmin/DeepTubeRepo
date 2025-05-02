@@ -1,36 +1,43 @@
-// Test script to regenerate thumbnails for all videos
+
+// Test script for thumbnail system improvements
 import fetch from 'node-fetch';
 
-async function regenerateAllThumbnails() {
+async function testThumbnailSystem() {
   try {
-    // Get all videos
-    const response = await fetch('http://localhost:5000/api/videos');
-    const videos = await response.json();
+    console.log('Starting thumbnail system tests...\n');
     
-    console.log(`Found ${videos.length} videos to process`);
+    // Test 1: Basic thumbnail retrieval
+    console.log('Test 1: Basic thumbnail retrieval');
+    const response = await fetch('http://0.0.0.0:5000/api/videos/1/thumbnail');
+    console.log(`Status: ${response.status}`);
+    console.log(`Content-Type: ${response.headers.get('content-type')}`);
     
-    // Process each video
-    for (const video of videos) {
-      console.log(`Processing video ${video.id}: ${video.title}`);
-      
-      try {
-        // Call the regenerate endpoint
-        const regenerateResponse = await fetch(`http://localhost:5000/api/regenerate-thumbnail/${video.id}`);
-        const result = await regenerateResponse.json();
-        
-        console.log(`Result for ${video.id}: ${result.success ? 'Success' : 'Failed'}`);
-      } catch (error) {
-        console.error(`Error regenerating thumbnail for video ${video.id}:`, error.message);
-      }
-      
-      // Wait a bit between requests to avoid overloading the server
-      await new Promise(resolve => setTimeout(resolve, 500));
+    // Test 2: S3 URL caching
+    console.log('\nTest 2: S3 URL caching');
+    const start = Date.now();
+    await Promise.all([
+      fetch('http://0.0.0.0:5000/api/videos/1/thumbnail'),
+      fetch('http://0.0.0.0:5000/api/videos/1/thumbnail')
+    ]);
+    console.log(`Cache test completed in ${Date.now() - start}ms`);
+    
+    // Test 3: Different content types
+    console.log('\nTest 3: Content type handling');
+    const types = ['video', 'image', 'embed'];
+    for (const type of types) {
+      const typeResponse = await fetch(`http://0.0.0.0:5000/api/fix-thumbnails-all?type=${type}`);
+      console.log(`${type}: ${typeResponse.status}`);
     }
     
-    console.log('Thumbnail regeneration complete!');
+    // Test 4: Error handling
+    console.log('\nTest 4: Error handling');
+    const errorResponse = await fetch('http://0.0.0.0:5000/api/videos/999999/thumbnail');
+    console.log(`Invalid ID test: ${errorResponse.status}`);
+    
+    console.log('\nTesting completed!');
   } catch (error) {
-    console.error('Error fetching videos:', error);
+    console.error('Test failed:', error);
   }
 }
 
-regenerateAllThumbnails();
+testThumbnailSystem();
