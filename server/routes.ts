@@ -1351,7 +1351,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/videos/:id/thumbnail", async (req, res) => {
     try {
       const videoId = parseInt(req.params.id);
-      const thumbnailPath = `./thumbnails/video_${videoId}.jpg`;
+      // Make sure the naming convention is consistent between local and S3
+      const thumbnailPath = `./thumbnails/video-${videoId}.jpg`;
       const s3Key = `thumbnails/video-${videoId}.jpg`;
       const fs = await import('fs/promises');
       const { execFile } = await import('child_process');
