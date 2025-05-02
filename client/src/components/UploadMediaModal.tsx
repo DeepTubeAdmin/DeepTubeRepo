@@ -263,6 +263,34 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           const fileData = await fileUploadResponse.json();
           console.log("File upload successful:", fileData);
           
+          // Check if file was uploaded to Vimeo (our server modification sends video to Vimeo)
+          if (fileData.vimeoId) {
+            console.log("Video was uploaded to Vimeo with ID:", fileData.vimeoId);
+            
+            // For Vimeo uploads, we'll use a different approach
+            // Instead of continuing with the /api/videos/upload endpoint,
+            // we'll show success message and close the modal since the file is already fully processed
+            toast({
+              title: "Upload successful",
+              description: `Your video has been uploaded to Vimeo and is being processed`,
+            });
+            
+            // Reset form
+            setTitle("");
+            setAiGenerator("");
+            setCustomAiGenerator("");
+            setShowCustomAiGenerator(false);
+            setPrompt("");
+            setDescription("");
+            setCategoryId("");
+            setSelectedFile(null);
+            setIsUploading(false);
+            onClose();
+            
+            return; // Exit early as we've completed the full upload process
+          }
+          
+          // If not uploaded to Vimeo (fallback to S3)
           // Store the URL for the video
           videoUrl = fileData.url;
           
@@ -383,6 +411,34 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
             const fileData = await fileUploadResponse.json();
             console.log("File upload successful:", fileData);
             
+            // Check if file was uploaded to Vimeo (our server modification sends video to Vimeo)
+            if (fileData.vimeoId) {
+              console.log("Video was uploaded to Vimeo with ID:", fileData.vimeoId);
+              
+              // For Vimeo uploads, we'll use a different approach
+              // Instead of continuing with the /api/videos/upload endpoint,
+              // we'll show success message and close the modal since the file is already fully processed
+              toast({
+                title: "Upload successful",
+                description: `Your video has been uploaded to Vimeo and is being processed`,
+              });
+              
+              // Reset form
+              setTitle("");
+              setAiGenerator("");
+              setCustomAiGenerator("");
+              setShowCustomAiGenerator(false);
+              setPrompt("");
+              setDescription("");
+              setCategoryId("");
+              setSelectedFile(null);
+              setIsUploading(false);
+              onClose();
+              
+              return; // Exit early as we've completed the full upload process
+            }
+            
+            // If not uploaded to Vimeo (fallback to S3)
             // Store the URL for the video
             videoUrl = fileData.url;
           } catch (error) {
