@@ -252,7 +252,7 @@ export default function InfiniteContentFeed({
     
     // Now render the items with ads in the right places
     return itemsToRender.map(({ item, hasAd }, i) => (
-      <React.Fragment key={`video-container-${item.id}`}>
+      <div key={`video-container-${item.id}`} className="video-container">
         <VideoCard
           key={`video-${item.id}`}
           video={item}
@@ -275,7 +275,7 @@ export default function InfiniteContentFeed({
             />
           );
         })()}
-      </React.Fragment>
+      </div>
     ));
   };
   
