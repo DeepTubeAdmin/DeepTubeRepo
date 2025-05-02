@@ -92,16 +92,15 @@ export async function generateAndStoreS3Thumbnail(
 
       console.log(`Generating thumbnail from video file: ${tempVideo}`);
 
-      // Generate thumbnail using FFmpeg with more detailed parameters
+      // Generate thumbnail using FFmpeg with simplified parameters
       await execFileAsync('ffmpeg', [
-        '-y',
-        '-i', tempVideo,
-        '-ss', '00:00:01.000',
-        '-vframes', '1',
-        '-vf', 'scale=800:450:force_original_aspect_ratio=decrease,pad=800:450:(ow-iw)/2:(oh-ih)/2',
-        '-f', 'image2',
-        '-quality', '100',
-        tempThumb
+        '-y',                   // Overwrite output files without asking
+        '-i', tempVideo,        // Input file
+        '-vf', 'select=eq(n\\,0)', // Select first frame
+        '-vframes', '1',        // Extract one frame only
+        '-aspect', '16:9',      // Force 16:9 aspect ratio 
+        '-s', '800x450',        // Scale to desired size
+        tempThumb              // Output file
       ]);
 
       // Verify the thumbnail was created
