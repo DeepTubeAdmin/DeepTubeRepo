@@ -517,6 +517,48 @@ export default function AdminPage() {
                           <p className="text-sm text-gray-400">Resets all thumbnails to default placeholders</p>
                         </div>
                       </div>
+
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-300 mb-2">FFmpeg Video Thumbnails</h4>
+                        <div className="flex items-center space-x-4">
+                          <Button 
+                            variant="secondary" 
+                            onClick={async () => {
+                              try {
+                                toast({
+                                  title: 'Starting FFmpeg Thumbnail Generation',
+                                  description: 'This process may take a while for many videos',
+                                  variant: 'default'
+                                });
+                                
+                                const response = await fetch('/api/regenerate-video-thumbnails', {
+                                  method: 'GET',
+                                  headers: {
+                                    'Content-Type': 'application/json'
+                                  }
+                                });
+                                const data = await response.json();
+                                
+                                toast({
+                                  title: 'FFmpeg Thumbnail Generation Complete',
+                                  description: `Successfully regenerated ${data.success} video thumbnails. Failed: ${data.failed}`,
+                                  variant: 'default'
+                                });
+                              } catch (error) {
+                                console.error('Error generating FFmpeg thumbnails:', error);
+                                toast({
+                                  title: 'Error',
+                                  description: 'Failed to generate FFmpeg thumbnails',
+                                  variant: 'destructive'
+                                });
+                              }
+                            }}
+                          >
+                            Regenerate Video Thumbnails
+                          </Button>
+                          <p className="text-sm text-gray-400">Uses FFmpeg to extract frames at 2-second mark from videos</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
