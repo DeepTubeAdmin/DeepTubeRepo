@@ -1,68 +1,59 @@
-import { S3Client, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
-import { uploadStringToS3 } from './s3';
-import { promisify } from 'util';
-import { execFile } from 'child_process';
-import fs from 'fs/promises';
-import fetch from 'node-fetch';
-import path from 'path';
-import os from 'os';
-import { log } from './vite';
+/**
+ * Thumbnail generation utilities for DeepTube
+ * 
+ * This module handles all thumbnail generation and S3 storage operations,
+ * eliminating the need for local file operations and improving reliability.
+ */
 
-const execFilePromise = promisify(execFile);
-
-const BUCKET_NAME = process.env.AWS_BUCKET_NAME;
-const s3Client = new S3Client({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
-});
+import { uploadStringToS3, getSignedS3Url } from './s3';
 
 /**
  * Generate an SVG thumbnail placeholder for specific content types
  * @param contentType video, image, or embed
  * @returns SVG markup as a string
  */
-export function generateSvgPlaceholder(contentType = 'video') {
+export function generateSvgPlaceholder(contentType = 'video'): string {
+  // Normalize the content type
   const normalizedType = contentType === 'videos' ? 'video' : 
-                         contentType === 'images' ? 'image' : 
-                         contentType;
-
-  // Create SVG icon based on content type
-  if (normalizedType === 'image') {
-    // Image placeholder with a photo icon
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
-      <rect width="800" height="450" fill="#1e293b" />
-      <g transform="translate(350, 175)">
-        <rect x="-50" y="-50" width="100" height="100" rx="10" fill="none" stroke="#f97316" stroke-width="8"/>
-        <circle cx="20" cy="-20" r="15" fill="#f97316"/>
-        <path d="M-40,40 L10,-10 L50,30 L50,40 L-40,40 Z" fill="#f97316"/>
-      </g>
-      <text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" fill="#f97316" stroke="#000" stroke-width="1">AI Generated Image</text>
-    </svg>`;
-  } else if (normalizedType === 'embed') {
-    // Embed placeholder with an external link icon
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
-      <rect width="800" height="450" fill="#1e293b" />
-      <g transform="translate(350, 175)">
-        <rect x="-50" y="-50" width="100" height="100" rx="10" fill="none" stroke="#f97316" stroke-width="8"/>
-        <path d="M-20,-20 L30,-20 L30,30 L-20,30 L-20,-20 Z" fill="none" stroke="#f97316" stroke-width="8"/>
-        <path d="M10,-20 L40,-50 M40,-50 L40,-20 M40,-50 L10,-50" fill="none" stroke="#f97316" stroke-width="8"/>
-      </g>
-      <text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" fill="#f97316" stroke="#000" stroke-width="1">Embedded Content</text>
-    </svg>`;
-  } else {
-    // Default video placeholder with a play button icon
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
-      <rect width="800" height="450" fill="#1e293b" />
-      <g transform="translate(350, 175)">
-        <circle cx="0" cy="0" r="60" fill="none" stroke="#f97316" stroke-width="8"/>
-        <polygon points="-15,-30 -15,30 35,0" fill="#f97316"/>
-      </g>
-      <text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" fill="#f97316" stroke="#000" stroke-width="1">AI Generated Video</text>
-    </svg>`;
+                        contentType === 'images' ? 'image' : 
+                        contentType;
+  
+  // Default colors
+  const bgColor = '#0f172a';  // Dark blueish background
+  const textColor = '#f59e0b'; // Orange text
+  const textOutline = '#000000'; // Black outline
+  
+  // Icon and text based on content type
+  let icon = '';
+  let label = '';
+  
+  switch (normalizedType) {
+    case 'video':
+      icon = `<path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm-6 2v-2h12v2H6zm6 2l6-3v6l-6-3z" fill="${textColor}" stroke="${textOutline}" stroke-width="0.5" />`;
+      label = 'AI-Generated Video';
+      break;
+    case 'image':
+      icon = `<path d="M4 4h16v16H4V4zm2 2v12h12V6H6zm8 10v-6h2v6h-2zm-7 0v-3h2v3H7zm3 0v-5h2v5h-2z" fill="${textColor}" stroke="${textOutline}" stroke-width="0.5" />`;
+      label = 'AI-Generated Image';
+      break;
+    case 'embed':
+      icon = `<path d="M10 15l-5-5 5-5m4 0l5 5-5 5" fill="none" stroke="${textColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />`;
+      label = 'Embedded Content';
+      break;
+    default:
+      icon = `<circle cx="12" cy="12" r="8" fill="${textColor}" stroke="${textOutline}" stroke-width="0.5" />`;
+      label = 'DeepTube Content';
   }
+  
+  // Create the SVG
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+    <rect width="800" height="450" fill="${bgColor}" />
+    <g transform="translate(400, 225) scale(7)">
+      ${icon}
+    </g>
+    <rect x="0" y="370" width="800" height="80" fill="${bgColor}" opacity="0.7" />
+    <text x="400" y="420" font-family="Arial, sans-serif" font-size="24" text-anchor="middle" fill="${textColor}" stroke="${textOutline}" stroke-width="0.7" paint-order="stroke">${label}</text>
+  </svg>`;
 }
 
 /**
@@ -72,14 +63,11 @@ export function generateSvgPlaceholder(contentType = 'video') {
  */
 async function thumbnailExistsInS3(s3Key: string): Promise<boolean> {
   try {
-    const command = new HeadObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: s3Key,
-    });
-    
-    await s3Client.send(command);
+    // Try to get a signed URL - this will throw if the object doesn't exist
+    await getSignedS3Url(s3Key);
     return true;
   } catch (error) {
+    // Error means the object doesn't exist
     return false;
   }
 }
@@ -89,130 +77,121 @@ async function thumbnailExistsInS3(s3Key: string): Promise<boolean> {
  * @param videoId The ID of the video or image
  * @param contentType The type of content (video, image, embed)
  * @param sourceUrl The URL of the source video or image (optional)
+ * @param youtubeId YouTube video ID for embed content (optional)
  * @returns The S3 key of the generated thumbnail
  */
 export async function generateAndStoreS3Thumbnail(
   videoId: number,
   contentType: string,
-  sourceUrl?: string | null,
-  youtubeId?: string | null,
+  sourceUrl: string | null = null,
+  youtubeId: string | null = null
 ): Promise<string> {
+  // S3 key for this thumbnail
   const s3Key = `thumbnails/video-${videoId}.jpg`;
   
-  // Check if thumbnail already exists in S3
-  const exists = await thumbnailExistsInS3(s3Key);
-  if (exists) {
-    log(`Thumbnail already exists in S3: ${s3Key}`, 's3');
-    return s3Key;
+  // Check if the thumbnail already exists in S3
+  try {
+    const exists = await thumbnailExistsInS3(s3Key);
+    if (exists) {
+      console.log(`Thumbnail for ${videoId} already exists in S3`);
+      return s3Key;
+    }
+  } catch (error) {
+    // Continue if error checking - we'll try to generate a new thumbnail
+    console.log(`Error checking if thumbnail exists: ${String(error)}`);
   }
   
-  // For YouTube embeds, use YouTube thumbnail
+  // Handle YouTube embeds
   if (contentType === 'embed' && youtubeId) {
-    const youtubeThumbnailUrl = `https://img.youtube.com/vi/${youtubeId}/0.jpg`;
     try {
+      // Fetch the YouTube thumbnail
+      const youtubeThumbnailUrl = `https://img.youtube.com/vi/${youtubeId}/0.jpg`;
+      if (!youtubeThumbnailUrl) {
+        throw new Error("YouTube thumbnail URL is empty");
+      }
+      
       const response = await fetch(youtubeThumbnailUrl);
+      
       if (response.ok) {
-        const buffer = Buffer.from(await response.arrayBuffer());
-        await uploadStringToS3(buffer.toString('base64'), s3Key, 'image/jpeg');
-        log(`Successfully uploaded YouTube thumbnail to S3: ${s3Key}`, 's3');
+        // Get the image data as an array buffer
+        const arrayBuffer = await response.arrayBuffer();
+        
+        // Create a binary string from the array buffer
+        const binaryString = Array.from(new Uint8Array(arrayBuffer))
+          .map(byte => String.fromCharCode(byte))
+          .join('');
+        
+        // Upload to S3 as binary data
+        await uploadStringToS3(
+          binaryString, 
+          s3Key, 
+          'image/jpeg'
+        );
+        
+        console.log(`Successfully uploaded YouTube thumbnail for ${videoId} to S3`);
         return s3Key;
+      } else {
+        throw new Error(`YouTube thumbnail fetch failed: ${response.status}`);
       }
     } catch (error) {
-      log(`Error getting YouTube thumbnail: ${error}`, 's3');
-      // Fall through to generate SVG placeholder
+      console.error(`Error generating YouTube thumbnail: ${String(error)}`);
+      // Fall through to SVG generation
     }
   }
   
-  // For images, upload the image directly if available
+  // Handle images - use the image directly if it's a URL
   if ((contentType === 'image' || contentType === 'images') && sourceUrl && sourceUrl.startsWith('http')) {
     try {
+      // Fetch the image
+      if (!sourceUrl) {
+        throw new Error("Source URL is empty");
+      }
+      
       const response = await fetch(sourceUrl);
+      
       if (response.ok) {
-        const buffer = Buffer.from(await response.arrayBuffer());
-        await uploadStringToS3(buffer.toString('base64'), s3Key, 'image/jpeg');
-        log(`Successfully uploaded image thumbnail to S3: ${s3Key}`, 's3');
+        // Get the image data as an array buffer
+        const arrayBuffer = await response.arrayBuffer();
+        
+        // Create a binary string from the array buffer
+        const binaryString = Array.from(new Uint8Array(arrayBuffer))
+          .map(byte => String.fromCharCode(byte))
+          .join('');
+        
+        // Upload to S3 as binary data
+        await uploadStringToS3(
+          binaryString, 
+          s3Key, 
+          'image/jpeg'
+        );
+        
+        console.log(`Successfully uploaded image for ${videoId} to S3`);
         return s3Key;
-      }
-    } catch (error) {
-      log(`Error uploading image to S3: ${error}`, 's3');
-      // Fall through to generate SVG placeholder
-    }
-  }
-  
-  // For videos, generate a thumbnail using FFmpeg if the video is available locally
-  if ((contentType === 'video' || contentType === 'videos') && sourceUrl) {
-    try {
-      // Create a temporary directory for processing
-      const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'thumb-'));
-      const tempVideoPath = path.join(tempDir, 'video.mp4');
-      const tempThumbnailPath = path.join(tempDir, 'thumbnail.jpg');
-      
-      // If sourceUrl is a remote URL, download it first
-      if (sourceUrl.startsWith('http')) {
-        const response = await fetch(sourceUrl);
-        if (response.ok) {
-          const buffer = Buffer.from(await response.arrayBuffer());
-          await fs.writeFile(tempVideoPath, buffer);
-        } else {
-          throw new Error(`Failed to download video: ${response.status}`);
-        }
-      } else if (sourceUrl.startsWith('data:video')) {
-        // Handle base64 data URLs
-        const base64Data = sourceUrl.split(',')[1];
-        const buffer = Buffer.from(base64Data, 'base64');
-        await fs.writeFile(tempVideoPath, buffer);
       } else {
-        // Assume it's a local file path
-        try {
-          await fs.copyFile(sourceUrl, tempVideoPath);
-        } catch (copyError) {
-          throw new Error(`Failed to copy video file: ${copyError.message}`);
-        }
-      }
-      
-      // Use FFmpeg to generate a thumbnail
-      try {
-        await execFilePromise('ffmpeg', [
-          '-i', tempVideoPath,
-          '-ss', '00:00:01.000',
-          '-vframes', '1',
-          '-vf', 'scale=800:450',
-          '-y',
-          tempThumbnailPath
-        ]);
-        
-        // Read the generated thumbnail and upload to S3
-        const thumbnailData = await fs.readFile(tempThumbnailPath);
-        await uploadStringToS3(thumbnailData.toString('base64'), s3Key, 'image/jpeg');
-        log(`Successfully generated and uploaded video thumbnail to S3: ${s3Key}`, 's3');
-        
-        // Clean up temporary files
-        await fs.rm(tempDir, { recursive: true, force: true });
-        return s3Key;
-      } catch (ffmpegError) {
-        log(`Error generating thumbnail with FFmpeg: ${ffmpegError}`, 's3');
-        await fs.rm(tempDir, { recursive: true, force: true });
-        // Fall through to generate SVG placeholder
+        throw new Error(`Image fetch failed: ${response.status}`);
       }
     } catch (error) {
-      log(`Error processing video for thumbnail: ${error}`, 's3');
-      // Fall through to generate SVG placeholder
+      console.error(`Error generating image thumbnail: ${String(error)}`);
+      // Fall through to SVG generation
     }
   }
   
-  // If we reach here, we need to create an SVG placeholder
+  // If we can't generate a real thumbnail, use an SVG placeholder
   try {
-    const normalizedType = 
-      contentType === 'videos' ? 'video' : 
-      contentType === 'images' ? 'image' : 
-      contentType;
+    // Generate an SVG placeholder
+    const svg = generateSvgPlaceholder(contentType);
     
-    const svgPlaceholder = generateSvgPlaceholder(normalizedType);
-    await uploadStringToS3(svgPlaceholder, s3Key, 'image/svg+xml');
-    log(`Uploaded SVG placeholder to S3 for ${videoId} with content type ${contentType}`, 's3');
+    // Upload the SVG as the thumbnail
+    await uploadStringToS3(
+      svg, 
+      s3Key, 
+      'image/svg+xml'
+    );
+    
+    console.log(`Successfully uploaded SVG placeholder for ${videoId} to S3`);
     return s3Key;
   } catch (error) {
-    log(`Error uploading SVG placeholder to S3: ${error}`, 's3');
-    throw new Error(`Failed to generate thumbnail: ${error.message}`);
+    console.error(`Error generating SVG placeholder: ${String(error)}`);
+    throw error;
   }
 }
