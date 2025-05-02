@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import AIWatermark from './AIWatermark';
 
 interface GenericVideoEmbedProps {
-  videoUrl: string;
+  videoUrl?: string;
+  html?: string;
   title?: string;
   width?: string | number;
   height?: string | number;

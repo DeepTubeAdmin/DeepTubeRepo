@@ -63,6 +63,8 @@ export function youtubeUrlToEmbedCode(url: string, autoplay: boolean = false): s
   const protocol = typeof window !== 'undefined' ? window.location.protocol : 'https:';
   const origin = `${protocol}//${host}`;
   
+  console.log(`youtubeUrlToEmbedCode: Using origin ${origin} for YouTube embed`);
+  
   // Build a simple parameter string without URLSearchParams (which can cause issues)
   const params = [
     'rel=0',                  // Don't show related videos
@@ -77,11 +79,14 @@ export function youtubeUrlToEmbedCode(url: string, autoplay: boolean = false): s
   // Add autoplay param if requested
   if (autoplay) {
     params.push('autoplay=1');
-    // On desktop, we unmute but on mobile we need to start muted for autoplay to work
+    // For player in popup we want to start unmuted
     params.push('mute=0');
+  } else {
+    // For preview/thumbnail we want to start muted
+    params.push('mute=1');
   }
   
-  // Construct the embed code
+  // Construct the embed code - ensure we're consistent with all embeds
   return `<iframe 
     width="100%" 
     height="100%" 
