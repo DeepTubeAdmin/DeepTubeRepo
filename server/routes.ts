@@ -1469,14 +1469,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Generating thumbnail for ${videoPath} to ${thumbnailPath}`);
             
             try {
-              // Take a screenshot at 1 second into the video
-              await execFilePromise('ffmpeg', [
-                '-i', videoPath,
-                '-ss', '00:00:01.000',
-                '-vframes', '1',
-                '-vf', 'scale=800:450',
-                thumbnailPath
-              ]);
+              // More robust thumbnail generation with multiple fallback positions
+              // and added verbose logging for debugging
+              console.log(`Running FFmpeg command to generate thumbnail from ${videoPath}`); 
+              
+              // First try 1 second in
+              try {
+                await execFilePromise('ffmpeg', [
+                  '-i', videoPath,
+                  '-ss', '00:00:01.000',
+                  '-vframes', '1',
+                  '-vf', 'scale=800:450',
+                  '-y', // Overwrite if exists
+                  thumbnailPath
+                ]);
+                
+                console.log(`FFmpeg successfully generated thumbnail at position 1s`);
+              } catch (err1) {
+                console.error(`Failed to generate thumbnail at 1s:`, err1);
+                
+                // Try 3 seconds in if 1s fails
+                try {
+                  await execFilePromise('ffmpeg', [
+                    '-i', videoPath,
+                    '-ss', '00:00:03.000',
+                    '-vframes', '1',
+                    '-vf', 'scale=800:450',
+                    '-y',
+                    thumbnailPath
+                  ]);
+                  
+                  console.log(`FFmpeg successfully generated thumbnail at position 3s`);
+                } catch (err2) {
+                  console.error(`Failed to generate thumbnail at 3s too:`, err2);
+                  
+                  // Last attempt with simpler command
+                  await execFilePromise('ffmpeg', [
+                    '-i', videoPath,
+                    '-vframes', '1',
+                    '-vf', 'scale=800:450',
+                    '-y',
+                    thumbnailPath
+                  ]);
+                }
+              }
               
               console.log(`Successfully generated thumbnail for video ${videoId}`);
               

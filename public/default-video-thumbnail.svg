@@ -1,5 +1,26 @@
 <svg width="800" height="450" xmlns="http://www.w3.org/2000/svg">
-  <rect width="800" height="450" fill="#222" />
-  <circle cx="400" cy="225" r="50" fill="rgba(0, 0, 0, 0.7)" />
-  <path d="M385 200 L385 250 L430 225 Z" fill="#ff7700" />
+  <!-- Background gradient for a more professional look -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#181818" />
+      <stop offset="100%" style="stop-color:#0f0f0f" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main background -->
+  <rect width="800" height="450" fill="url(#bg)" />
+  
+  <!-- Stylish grid pattern -->
+  <path d="M0 90 L800 90 M0 180 L800 180 M0 270 L800 270 M0 360 L800 360 M160 0 L160 450 M320 0 L320 450 M480 0 L480 450 M640 0 L640 450" stroke="#333" stroke-width="1" opacity="0.3" />
+  
+  <!-- Play button with glow effect -->
+  <circle cx="400" cy="225" r="60" fill="rgba(0, 0, 0, 0.6)" />
+  <circle cx="400" cy="225" r="55" fill="rgba(30, 30, 30, 0.9)" stroke="#ff7700" stroke-width="2" />
+  
+  <!-- Play icon -->
+  <path d="M380 195 L380 255 L440 225 Z" fill="#ff7700" />
+  
+  <!-- Text label -->
+  <rect x="280" y="320" width="240" height="40" rx="5" fill="rgba(0, 0, 0, 0.7)" />
+  <text x="400" y="345" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">Preview Video</text>
 </svg>
