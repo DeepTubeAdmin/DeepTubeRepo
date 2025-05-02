@@ -1100,22 +1100,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Generate a path that can be accessed via the /uploads static route
+      // Generate a local path that can be accessed via the /uploads static route (for backward compatibility)
       const relativePath = file.path.split('uploads/')[1]; // Gets "videos/video-123456.mp4" or "images/image-123456.jpg"
-      const publicUrl = `/uploads/${relativePath}`;
+      const localPublicUrl = `/uploads/${relativePath}`;
+      
+      // Upload the file to S3
+      let s3Key;
+      let s3Url;
+      
+      try {
+        // Use a consistent S3 key derived from the local path
+        s3Key = localPathToS3Key(file.path);
+        
+        // Upload to S3
+        await uploadFileToS3(file.path, s3Key);
+        
+        // Generate the API endpoint URL that will serve the file via signed S3 URL
+        s3Url = `/api/s3/${s3Key}`;
+        
+        console.log(`File uploaded to S3: ${s3Key}`);
+      } catch (s3Error) {
+        console.error("Error uploading to S3:", s3Error);
+        // Continue with local file if S3 upload fails
+        console.log("Falling back to local storage");
+      }
       
       console.log(`File uploaded: ${file.originalname} (${file.mimetype}) - Size: ${file.size}b`);
       console.log(`Stored at: ${file.path}`);
-      console.log(`Public URL: ${publicUrl}`);
+      console.log(`Public URL: ${s3Url || localPublicUrl}`);
       
       // Return the file info including the public accessible URL
+      // Prefer S3 URL if available, otherwise use local URL
       res.status(201).json({
         fileName: file.originalname,
         fileType: file.mimetype,
         fileSize: file.size,
         filePath: file.path,
-        url: publicUrl,
-        contentType: isVideo ? 'video' : 'image'
+        url: s3Url || localPublicUrl,
+        contentType: isVideo ? 'video' : 'image',
+        s3Key: s3Key // Include S3 key for reference
       });
       
     } catch (error) {
@@ -1329,6 +1352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const videoId = parseInt(req.params.id);
       const thumbnailPath = `./thumbnails/video_${videoId}.jpg`;
+      const s3Key = `thumbnails/video-${videoId}.jpg`;
       const fs = await import('fs/promises');
       const { execFile } = await import('child_process');
       const util = await import('util');
@@ -1352,15 +1376,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (video.thumbnail && !video.thumbnail.includes("placehold.co") && !video.thumbnail.startsWith("data:")) {
         // If thumbnail is internal API route, serve the file directly instead of redirecting
         if (video.thumbnail === `/api/videos/${videoId}/thumbnail`) {
+          // Try S3 first, then fallback to local file
           try {
-            // Check if the cached thumbnail file exists
-            await fs.access(thumbnailPath);
-            // Serve it directly
-            return res.sendFile(path.resolve(thumbnailPath));
-          } catch (err) {
-            // If not yet generated, don't redirect to avoid loops
-            console.log(`Thumbnail reference exists but file doesn't, regenerating for ${videoId}`);
-            // Continue with normal processing
+            const signedUrl = await getSignedS3Url(s3Key);
+            return res.redirect(signedUrl);
+          } catch (s3Error) {
+            // S3 failed, fallback to local file
+            try {
+              // Check if the cached thumbnail file exists locally
+              await fs.access(thumbnailPath);
+              // Serve it directly
+              return res.sendFile(path.resolve(thumbnailPath));
+            } catch (err) {
+              // If not yet generated, don't redirect to avoid loops
+              console.log(`Thumbnail reference exists but file doesn't, regenerating for ${videoId}`);
+              // Continue with normal processing
+            }
           }
         } else {
           // For external URLs, redirect
@@ -1370,11 +1401,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If we have a thumbnail already generated, serve it
       try {
-        await fs.access(thumbnailPath);
-        // If file exists, serve it
-        return res.sendFile(path.resolve(thumbnailPath));
+        // Try S3 first
+        try {
+          const signedUrl = await getSignedS3Url(s3Key);
+          return res.redirect(signedUrl);
+        } catch (s3Error) {
+          // S3 failed, try local file
+          try {
+            await fs.access(thumbnailPath);
+            // If file exists, serve it
+            return res.sendFile(path.resolve(thumbnailPath));
+          } catch (fsErr) {
+            // Local file doesn't exist either
+            throw fsErr; // Rethrow to be caught by outer catch
+          }
+        }
       } catch (err) {
-        // File doesn't exist, continue to generate it
+        // Neither S3 nor local file exists, continue to generate it
         console.log(`Thumbnail doesn't exist yet for video ${videoId}, generating now...`);
       }
       
@@ -1432,6 +1475,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ]);
               
               console.log(`Successfully generated thumbnail for video ${videoId}`);
+              
+              // Upload the thumbnail to S3
+              try {
+                await uploadFileToS3(thumbnailPath, s3Key);
+                console.log(`Uploaded thumbnail to S3: ${s3Key}`);
+              } catch (s3Error) {
+                console.error(`Failed to upload thumbnail to S3: ${s3Error}`);
+                // Continue even if S3 upload fails
+              }
               
               // Update the video record with the thumbnail path
               await dbStorage.updateVideo(videoId, { thumbnail: `/api/videos/${videoId}/thumbnail` });
@@ -2443,6 +2495,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // S3 file serving endpoint
+  app.get("/api/s3/:key(*)", async (req, res) => {
+    try {
+      const key = req.params.key;
+      if (!key) {
+        return res.status(400).json({ error: "Invalid S3 key" });
+      }
+      
+      // Get signed URL with short expiry to avoid abuse
+      const signedUrl = await getSignedS3Url(key, 3600); // 1 hour expiry
+      res.redirect(signedUrl);
+    } catch (error) {
+      console.error("Error serving S3 file:", error);
+      res.status(404).json({ error: "File not found or inaccessible" });
+    }
+  });
+
   const httpServer = createServer(app);
+  
+  // Add WebSocket support
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  wss.on('connection', (ws) => {
+    console.log('WebSocket client connected');
+    
+    ws.on('message', (message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        console.log('WebSocket message received:', data);
+        
+        // Handle different message types here
+        if (data.type === 'ping') {
+          ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
+        }
+      } catch (error) {
+        console.error('Error processing WebSocket message:', error);
+      }
+    });
+    
+    ws.on('close', () => {
+      console.log('WebSocket client disconnected');
+    });
+  });
+
   return httpServer;
 }
