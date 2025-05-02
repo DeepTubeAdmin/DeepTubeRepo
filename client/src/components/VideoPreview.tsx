@@ -27,6 +27,51 @@ export default function VideoPreview({
   const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
   const [isLoadingUrl, setIsLoadingUrl] = useState(false);
   
+  // Resolve S3 URL if needed
+  useEffect(() => {
+    let isMounted = true;
+    let retryTimeout: ReturnType<typeof setTimeout>;
+    
+    async function resolveVideoUrl() {
+      // Only process S3 URLs
+      if (!src.startsWith('/api/s3/') && !src.includes('s3.amazonaws.com')) {
+        setResolvedUrl(src);
+        return;
+      }
+      
+      try {
+        setIsLoadingUrl(true);
+        console.log('VideoPreview: Resolving S3 URL for:', src);
+        const url = await fetchS3Url(src, 2); // Try up to 2 times
+        
+        if (!isMounted) return;
+        
+        if (url) {
+          setResolvedUrl(url);
+          console.log('VideoPreview: Successfully resolved S3 URL to:', url.substring(0, 50) + '...');
+        } else {
+          throw new Error('Failed to resolve video URL');
+        }
+      } catch (err) {
+        if (!isMounted) return;
+        
+        console.error('VideoPreview: Error resolving S3 URL:', err);
+        // Fallback to direct URL
+        setResolvedUrl(src);
+        setHasError(true);
+      } finally {
+        if (isMounted) setIsLoadingUrl(false);
+      }
+    }
+    
+    resolveVideoUrl();
+    
+    return () => {
+      isMounted = false;
+      if (retryTimeout) clearTimeout(retryTimeout);
+    };
+  }, [src]);
+
   // Debug logs to track component state
   useEffect(() => {
     console.log(`VideoPreview for ${src.substring(0, 30)}... - isHovered: ${isHovered}, isLoaded: ${isLoaded}, isPlaying: ${isPlaying}`);
@@ -202,12 +247,29 @@ export default function VideoPreview({
     };
   }, [isLoaded, previewDuration, src]);
   
-  if (hasError) {
+  // Show loading state during URL resolution
+  if (isLoadingUrl) {
+    return (
+      <div className="relative w-full h-full">
+        <img 
+          src={poster} 
+          alt="Video thumbnail" 
+          className={`w-full h-full object-cover ${className}`}
+        />
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+          <div className="w-6 h-6 border-2 border-t-primary border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state with poster image
+  if (hasError || !resolvedUrl) {
     return (
       <img 
         src={poster} 
         alt="Video thumbnail" 
-        className={className}
+        className={`w-full h-full object-cover ${className}`}
         style={{ width, height }}
       />
     );
@@ -222,23 +284,25 @@ export default function VideoPreview({
         className={`absolute inset-0 w-full h-full object-cover ${className}`}
       />
       
-      {/* Video element that plays on hover */}
+      {/* Video element that plays on hover - use the resolved URL */}
       <video
         ref={videoRef}
         className={`absolute inset-0 w-full h-full object-cover ${isHovered ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300 ${className}`}
-        src={src}
+        src={resolvedUrl}
         muted
         playsInline
         preload="auto"
         loop={false}
       />
       
-      {/* Debug overlay */}
-      <div className="absolute bottom-0 left-0 bg-black/70 text-white text-xs p-1 z-50">
-        {isHovered ? 'Hovered' : 'Not Hovered'} | 
-        {isLoaded ? 'Loaded' : 'Loading'} | 
-        {isPlaying ? 'Playing' : 'Paused'}
-      </div>
+      {/* Playback icon shown when video is hovered but not yet playing */}
+      {isHovered && !isPlaying && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="bg-black/50 rounded-full p-3">
+            <div className="w-5 h-5 border-t-2 border-r-2 border-white animate-spin rounded-full"></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
