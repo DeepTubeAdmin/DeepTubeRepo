@@ -1,5 +1,5 @@
 // Test script to regenerate thumbnails for all videos
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 async function regenerateAllThumbnails() {
   try {

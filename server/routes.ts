@@ -1648,6 +1648,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Thumbnail generation endpoint
+  // SVG placeholder endpoint
+  app.get("/api/placeholder-svg/:type", async (req, res) => {
+    try {
+      const contentType = req.params.type || 'unknown';
+      // Import the SVG generator
+      const { generateSvgPlaceholder } = await import('./generateThumbnail');
+      
+      // Generate the SVG
+      const svg = generateSvgPlaceholder(contentType);
+      
+      // Send it back
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for a day
+      return res.send(svg);
+    } catch (error) {
+      console.error('Error generating SVG placeholder:', error);
+      // Fallback to a simple SVG
+      const fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+        <rect width="100%" height="100%" fill="#0f172a"/>
+        <text x="50%" y="50%" font-family="Arial" font-size="24" fill="#f59e0b" text-anchor="middle">
+          DeepTube Thumbnail
+        </text>
+      </svg>`;
+      res.setHeader('Content-Type', 'image/svg+xml');
+      return res.send(fallbackSvg);
+    }
+  });
+  
   // Test endpoint for thumbnail generation
   app.get("/api/regenerate-thumbnail/:id", async (req, res) => {
     try {
