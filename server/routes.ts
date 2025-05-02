@@ -66,6 +66,82 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Test endpoint for S3 access
+  app.get('/api/fix-thumbnail/:videoId', async (req, res) => {
+    try {
+      const videoId = parseInt(req.params.videoId);
+      
+      // Get the video
+      const video = await dbStorage.getVideoById(videoId);
+      if (!video) {
+        return res.status(404).json({ error: "Video not found" });
+      }
+      
+      // Path to local SVG placeholder
+      const placeholderPath = path.resolve('./public/default-video-thumbnail.svg');
+      
+      // Define S3 key for video thumbnail
+      const s3Key = `thumbnails/video-${videoId}.jpg`;
+      
+      console.log(`Fixing thumbnail for video ${videoId} by uploading to ${s3Key}`);
+      
+      // Upload the SVG placeholder to S3 with public-read ACL
+      await uploadFileToS3(placeholderPath, s3Key);
+      
+      // Update the video record to use our thumbnail endpoint
+      await dbStorage.updateVideo(videoId, { 
+        thumbnail: `/api/videos/${videoId}/thumbnail` 
+      });
+      
+      // Get a direct URL to the new S3 object
+      const s3Url = await getSignedS3Url(s3Key);
+      
+      return res.json({
+        success: true,
+        message: `Successfully fixed thumbnail for video ${videoId}`,
+        url: s3Url,
+        videoId,
+        s3Key
+      });
+    } catch (error) {
+      console.error('Error fixing thumbnail:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fix thumbnail',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  app.get('/api/test-s3-access', async (req, res) => {
+    try {
+      const testFilePath = path.resolve('./public/default-video-thumbnail.svg');
+      const s3Key = `test-thumbnail-${Date.now()}.svg`;
+      
+      console.log(`Testing S3 access by uploading ${testFilePath} to ${s3Key}`);
+      
+      // Upload the file to S3
+      await uploadFileToS3(testFilePath, s3Key);
+      
+      // Get the URL
+      const s3Url = await getSignedS3Url(s3Key);
+      
+      return res.json({
+        success: true,
+        message: 'Successfully uploaded test file to S3',
+        url: s3Url,
+        key: s3Key
+      });
+    } catch (error) {
+      console.error('Error testing S3 access:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to test S3 access',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   // These middleware declarations will be used and the duplicates below will be removed
   // Search API endpoint
   app.get('/api/search', async (req, res) => {
