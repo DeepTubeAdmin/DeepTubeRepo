@@ -1650,61 +1650,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const relativePath = file.path.split('uploads/')[1]; // Gets "videos/video-123456.mp4" or "images/image-123456.jpg"
       const localPublicUrl = `/uploads/${relativePath}`;
       
-      // IMPORTANT: For videos, we should send them to Vimeo; for images, we send to S3
-      if (isVideo) {
-        // For videos, redirect to the Vimeo upload service
-        console.log("Video detected, redirecting to Vimeo upload service");
-        try {
-          console.log("Importing Vimeo service module...");
-          // Get vimeo service
-          const vimeoService = await import('./vimeo');
-          console.log("Vimeo service module imported successfully");
-          
-          // Use a default name based on file name if not provided
-          const name = file.originalname.replace(/\.[^/.]+$/, "") || "Untitled Video";
-          console.log(`Using video name: ${name}`);
-          
-          // Upload to Vimeo
-          console.log(`Starting Vimeo upload for file: ${file.path}`);
-          const result = await vimeoService.uploadVideo(
-            file.path,
-            name,
-            "", // No description by default
-            "anybody" // Public by default
-          );
-          
-          console.log("Vimeo upload result:", JSON.stringify(result, null, 2));
-          
-          // Clean up temporary file after successful Vimeo upload
-          if (fsSync.existsSync(file.path)) {
-            fsSync.unlinkSync(file.path);
-            console.log(`Temporary file removed: ${file.path}`);
-          }
-          
-          console.log(`Video successfully uploaded to Vimeo with ID: ${result.videoId}`);
-          
-          // Return the Vimeo info
-          const responseData = {
-            fileName: file.originalname,
-            fileType: file.mimetype,
-            fileSize: file.size,
-            contentType: 'video',
-            vimeoId: result.videoId,
-            vimeoUri: result.uri,
-            url: `https://vimeo.com/${result.videoId}`
-          };
-          
-          console.log("Sending Vimeo upload response:", JSON.stringify(responseData, null, 2));
-          return res.status(201).json(responseData);
-        } catch (vimeoError) {
-          console.error("Error uploading to Vimeo:", vimeoError);
-          
-          // If Vimeo upload fails, we'll continue with S3 as fallback
-          console.log("Vimeo upload failed, falling back to S3");
-        }
-      }
+      // For both videos and images, we'll always upload to S3
+      console.log("File will be stored in S3");
       
-      // For images (or videos if Vimeo failed), upload to S3
+      // Upload file to S3
       let s3Key;
       let s3Url;
       
