@@ -537,45 +537,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/test-vimeo-connection', async (req, res) => {
-    try {
-      // Import the client directly to properly test the account connection
-      const vimeoClient = (await import('./vimeo')).default;
-      
-      // Test the connection by getting account info
-      vimeoClient.request({
-        method: 'GET',
-        path: '/me'
-      }, (error: any, body: any, statusCode: number) => {
-        if (error) {
-          console.error('Vimeo connection test failed:', error);
-          return res.status(500).json({
-            success: false,
-            message: 'Vimeo connection test failed',
-            error: error.message || String(error)
-          });
-        }
-        
-        return res.json({
-          success: true,
-          message: 'Vimeo connection test successful',
-          user: {
-            name: body?.name || 'Unknown',
-            uri: body?.uri || '',
-            link: body?.link || 'https://vimeo.com/',
-            account_type: body?.account_type || 'Connected'
-          }
-        });
-      });
-    } catch (error) {
-      console.error('Error testing Vimeo connection:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Error testing Vimeo connection',
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
+  // The Vimeo connection test endpoint has been removed as we've migrated to AWS S3
 
   app.get('/api/test-s3-access', async (req, res) => {
     try {
@@ -1574,16 +1536,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // If Vimeo ID is provided, try to get video details from Vimeo
-      let vimeoDetails = null;
-      if (vimeoId) {
-        try {
-          vimeoDetails = await vimeoService.getVideo(vimeoId);
-        } catch (vimeoError) {
-          console.error("Error fetching Vimeo video details:", vimeoError);
-          // Continue with upload even if Vimeo fetch fails
-        }
-      }
+      // Vimeo integration has been removed as we've migrated to AWS S3
+      // We still support the vimeoId field for compatibility with existing data
+      let videoDurationSeconds = duration || 0;
       
       // Debug the request - see what's happening
       console.log("DEBUG - Creating video with userId:", req.user.id);

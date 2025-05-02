@@ -561,46 +561,7 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* Vimeo Connection Test */}
-                  <div className="p-4 border border-gray-800 rounded-lg">
-                    <h3 className="text-lg font-medium text-white mb-2">Vimeo Connection</h3>
-                    <p className="text-gray-400 mb-4">Test connection to Vimeo API</p>
-                    
-                    <div className="flex items-center space-x-4">
-                      <Button 
-                        variant="outline" 
-                        onClick={async () => {
-                          try {
-                            const response = await fetch('/api/test-vimeo-connection');
-                            const data = await response.json();
-                            if (data.success) {
-                              toast({
-                                title: 'Vimeo Connection Successful',
-                                description: `Connected to account: ${data.user.name} (${data.user.account_type})`,
-                                variant: 'default'
-                              });
-                            } else {
-                              toast({
-                                title: 'Vimeo Connection Failed',
-                                description: data.message || 'Unknown error',
-                                variant: 'destructive'
-                              });
-                            }
-                          } catch (error) {
-                            console.error('Error testing Vimeo connection:', error);
-                            toast({
-                              title: 'Error',
-                              description: 'Failed to test Vimeo connection',
-                              variant: 'destructive'
-                            });
-                          }
-                        }}
-                      >
-                        Test Vimeo Connection
-                      </Button>
-                      <p className="text-sm text-gray-400">Verifies Vimeo API credentials and account access</p>
-                    </div>
-                  </div>
+                  {/* S3 connection testing is handled by the card above */}
                 </div>
               </CardContent>
             </Card>
