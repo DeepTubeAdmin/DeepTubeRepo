@@ -1973,7 +1973,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // If the image is an actual URL and not a base64 or placeholder
         if (video.imageUrl.startsWith('http') && !video.imageUrl.includes('placehold.co')) {
           console.log(`Redirecting to actual image URL for image content ${videoId}: ${video.imageUrl}`);
-          return res.redirect(video.imageUrl);
+          
+          // Check if the URL is directly accessible (not S3)
+          if (!video.imageUrl.includes('amazonaws.com')) {
+            return res.redirect(video.imageUrl);
+          } else {
+            // For S3 URLs, we need to proxy them
+            try {
+              // Get the data and stream it through our server
+              const https = await import('https');
+              console.log(`Proxying external image URL for ${videoId}`);
+              
+              const proxyRequest = https.get(video.imageUrl, (proxyRes) => {
+                if (proxyRes.statusCode === 200) {
+                  // Set appropriate content type
+                  res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'image/jpeg');
+                  // Pipe the response directly to our response
+                  proxyRes.pipe(res);
+                } else {
+                  // If request fails, fall back to SVG
+                  console.error(`Proxy request failed with status ${proxyRes.statusCode}`);
+                  return sendSvgPlaceholder(res, video.contentType);
+                }
+              });
+              
+              proxyRequest.on('error', (error) => {
+                console.error(`Error proxying image: ${error.message}`);
+                return sendSvgPlaceholder(res, video.contentType);
+              });
+              
+              return; // This is important - we need to exit here since the response is handled asynchronously
+            } catch (error) {
+              console.error('Error proxying image URL:', error);
+              return sendSvgPlaceholder(res, video.contentType);
+            }
+          }
         }
       }
       
