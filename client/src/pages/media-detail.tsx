@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useLocation } from "wouter";
+import { useParams, useLocation, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Video, Comment } from "@shared/schema";
 import Layout from "@/components/Layout";
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Heart, Flag, Share, MessageSquare, ThumbsUp, Flag as FlagIcon } from "lucide-react";
-import VimeoEmbed from "@/components/VimeoEmbed";
+import GenericVideoEmbed from "@/components/GenericVideoEmbed";
 import MiniFooter from "@/components/MiniFooter";
 import SEO from "@/components/SEO";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -292,8 +292,9 @@ export default function MediaDetail() {
             <div className="bg-[#121212] rounded-md overflow-hidden mb-4">
               {media.contentType === 'video' && media.vimeoId && (
                 <div className="aspect-video">
-                  <VimeoEmbed 
-                    videoId={media.vimeoId}
+                  <GenericVideoEmbed 
+                    videoUrl={`https://vimeo.com/${media.vimeoId}`}
+                    title={media.title}
                     responsive={true}
                     autoplay={true}
                   />
