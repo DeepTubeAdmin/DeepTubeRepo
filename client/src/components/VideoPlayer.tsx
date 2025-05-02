@@ -5,7 +5,7 @@ import VimeoEmbed from './VimeoEmbed';
 import AIWatermark from './AIWatermark';
 import { Video } from '@shared/schema';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Loader2, ThumbsUp } from 'lucide-react';
+import { Loader2, ThumbsUp, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import EmergencyVideoPlayer from './EmergencyVideoPlayer';
 import S3VideoPlayer from './S3VideoPlayer';
@@ -711,24 +711,26 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
     }
   };
   
-  // Use a simpler Dialog implementation to avoid potential issues
+  // Create a basic, direct modal implementation instead of using the Dialog component
   console.log('VideoPlayer render with isOpen:', isOpen, 'videoId:', videoId);
   
   if (!isOpen) {
     return null;
   }
-  
+
   return (
-    <Dialog open={true} onOpenChange={(open) => !open && handleCloseDialog()}>
-      <DialogTitle className="sr-only">Media viewer</DialogTitle>
-      <DialogContent className="sm:max-w-5xl md:max-w-6xl lg:max-w-7xl max-h-[95vh] overflow-y-auto w-[95vw] bg-[#1a1a1a] border-gray-800 p-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={handleCloseDialog}>
+      <div 
+        className="sm:max-w-5xl md:max-w-6xl lg:max-w-7xl max-h-[95vh] overflow-y-auto w-[95vw] bg-[#1a1a1a] border border-gray-800 rounded-lg relative" 
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="absolute top-4 right-4 z-10">
           <button 
             onClick={handleCloseDialog}
             className="bg-black/60 hover:bg-black/80 text-white rounded-full w-10 h-10 flex items-center justify-center"
             aria-label="Close"
           >
-            <i className="fas fa-times"></i>
+            <X className="h-6 w-6" />
           </button>
         </div>
         
@@ -990,7 +992,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
             <p>No content available</p>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
