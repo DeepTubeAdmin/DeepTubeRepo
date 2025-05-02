@@ -1,6 +1,6 @@
 import { Heart, Play, ThumbsUp } from "lucide-react";
 import { Video } from "@shared/schema";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { formatNumber, extractYoutubeIdFromEmbed } from "@/lib/utils";
 import { checkThumbnail } from "@/lib/checkThumbnail";
