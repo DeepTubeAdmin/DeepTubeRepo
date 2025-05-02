@@ -269,7 +269,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
         
         // Function to check if YouTube player API is loaded
         const checkYouTubeAPI = () => {
-          if (typeof window.YT !== 'undefined' && window.YT.Player) {
+          if (typeof win.YT !== 'undefined' && win.YT.Player) {
             try {
               // Destroy any existing player
               const extContainerRef = containerRef as unknown as ExtendedHTMLElement;
@@ -287,7 +287,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
               // Cast the containerRef to our extended type
               const extendedContainer = containerRef as unknown as ExtendedHTMLElement;
               
-              extendedContainer._youtubePlayer = new window.YT.Player(iframe, {
+              extendedContainer._youtubePlayer = new win.YT.Player(iframe, {
                 events: {
                   onReady: (event: any) => {
                     console.log('YouTube player ready:', youtubeId);
@@ -372,7 +372,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
         }, 3000); // Wait 3 seconds to check if iframe loaded
         
         // Set up a global listener for YouTube API errors
-        window.onYouTubeIframeAPIReady = () => {
+        win.onYouTubeIframeAPIReady = () => {
           console.log('YouTube iframe API is ready');
           checkYouTubeAPI();
         };
@@ -461,8 +461,9 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
   }, [isOpen, video]);
 
   // Define window with YouTube and webkitAudioContext for TypeScript
-  interface WindowWithExtensions extends Window {
+  interface WindowWithExtensions {
     webkitAudioContext: typeof AudioContext;
+    AudioContext: typeof AudioContext; 
     YT?: {
       Player: new (element: HTMLIFrameElement | string, options: any) => any;
       PlayerState?: {
@@ -476,6 +477,9 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
     };
     onYouTubeIframeAPIReady?: () => void;
   }
+  
+  // Use type assertion for window object
+  const win = window as unknown as WindowWithExtensions;
   
   // Define extended video element with added properties
   interface ExtendedHTMLVideoElement extends HTMLVideoElement {
@@ -656,7 +660,7 @@ export default function VideoPlayer({ videoId, isOpen, onClose }: VideoPlayerPro
               // Create audio context after metadata is loaded
               try {
                 // Create new audio context for isolated audio control
-                audioCtx = new ((window as WindowWithExtensions).AudioContext || (window as WindowWithExtensions).webkitAudioContext)();
+                audioCtx = new (win.AudioContext || win.webkitAudioContext)();
                 if (audioCtx) {
                   mediaSource = audioCtx.createMediaElementSource(videoEl);
                   gainNode = audioCtx.createGain();
