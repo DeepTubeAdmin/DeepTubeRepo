@@ -1,0 +1,168 @@
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import fs from 'fs';
+import path from 'path';
+import { log } from './vite';
+
+if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY || !process.env.AWS_REGION || !process.env.AWS_BUCKET_NAME) {
+  throw new Error('AWS credentials not found in environment variables');
+}
+
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+});
+
+const BUCKET_NAME = process.env.AWS_BUCKET_NAME;
+
+/**
+ * Upload a file to S3
+ * @param filePath Local file path
+ * @param s3Key Key for the file in S3
+ * @returns The S3 URL for the uploaded file
+ */
+export async function uploadFileToS3(filePath: string, s3Key: string): Promise<string> {
+  try {
+    const fileContent = fs.readFileSync(filePath);
+    
+    const params = {
+      Bucket: BUCKET_NAME,
+      Key: s3Key,
+      Body: fileContent,
+      ContentType: getContentType(s3Key),
+    };
+    
+    await s3Client.send(new PutObjectCommand(params));
+    
+    log(`Successfully uploaded file to S3: ${s3Key}`, 's3');
+    
+    // After successful upload, we can remove the local file to save space
+    fs.unlinkSync(filePath);
+    
+    return s3Key;
+  } catch (error) {
+    log(`Error uploading file to S3: ${error}`, 's3');
+    throw error;
+  }
+}
+
+/**
+ * Generate a pre-signed URL for an S3 object
+ * @param s3Key Key for the file in S3
+ * @param expiresIn Expiration time in seconds (default 3600 = 1 hour)
+ * @returns Pre-signed URL for the S3 object
+ */
+export async function getSignedS3Url(s3Key: string, expiresIn: number = 3600): Promise<string> {
+  try {
+    const params = {
+      Bucket: BUCKET_NAME,
+      Key: s3Key,
+    };
+    
+    const command = new GetObjectCommand(params);
+    const url = await getSignedUrl(s3Client, command, { expiresIn });
+    
+    return url;
+  } catch (error) {
+    log(`Error generating pre-signed URL: ${error}`, 's3');
+    throw error;
+  }
+}
+
+/**
+ * Delete a file from S3
+ * @param s3Key Key for the file in S3
+ */
+export async function deleteFileFromS3(s3Key: string): Promise<void> {
+  try {
+    const params = {
+      Bucket: BUCKET_NAME,
+      Key: s3Key,
+    };
+    
+    await s3Client.send(new DeleteObjectCommand(params));
+    
+    log(`Successfully deleted file from S3: ${s3Key}`, 's3');
+  } catch (error) {
+    log(`Error deleting file from S3: ${error}`, 's3');
+    throw error;
+  }
+}
+
+/**
+ * Determine the content type based on file extension
+ * @param filename File name or path
+ * @returns Content type string
+ */
+function getContentType(filename: string): string {
+  const ext = path.extname(filename).toLowerCase();
+  
+  switch (ext) {
+    case '.jpg':
+    case '.jpeg':
+      return 'image/jpeg';
+    case '.png':
+      return 'image/png';
+    case '.gif':
+      return 'image/gif';
+    case '.mp4':
+      return 'video/mp4';
+    case '.webm':
+      return 'video/webm';
+    case '.mp3':
+      return 'audio/mpeg';
+    default:
+      return 'application/octet-stream';
+  }
+}
+
+/**
+ * Get S3 resource path for building URLs
+ * @param s3Key Key for the file in S3
+ * @returns URL path for access to the S3 object
+ */
+export function getS3ResourcePath(s3Key: string): string {
+  return `/api/s3/${s3Key}`;
+}
+
+/**
+ * Convert a local storage path to S3 key
+ * @param localPath Local file path
+ * @returns S3 key
+ */
+export function localPathToS3Key(localPath: string): string {
+  // Remove leading slash if present
+  if (localPath.startsWith('/')) {
+    localPath = localPath.substring(1);
+  }
+  
+  // Remove '/uploads/' prefix if present
+  if (localPath.startsWith('uploads/')) {
+    localPath = localPath.substring(8);
+  }
+  
+  return localPath;
+}
+
+/**
+ * Convert a URL path to S3 key
+ * @param urlPath URL path
+ * @returns S3 key
+ */
+export function urlPathToS3Key(urlPath: string): string {
+  // Handle paths like /api/videos/1/thumbnail or /uploads/images/file.jpg
+  const thumbnailMatch = urlPath.match(/\/api\/videos\/(\d+)\/thumbnail/);
+  
+  if (thumbnailMatch) {
+    return `thumbnails/video-${thumbnailMatch[1]}.jpg`;
+  }
+  
+  if (urlPath.startsWith('/uploads/')) {
+    return urlPath.substring(9); // Remove '/uploads/' prefix
+  }
+  
+  return urlPath;
+}
