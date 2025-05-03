@@ -313,7 +313,7 @@ export default function MediaDetail() {
                     alt={media.title} 
                     className="max-w-full max-h-[70vh]" 
                   />
-                  <AIWatermark aiGenerator={media.aiGenerator} position="bottom-right" size="medium" />
+                  {media.aiGenerator && <AIWatermark aiGenerator={media.aiGenerator} position="bottom-right" size="medium" />}
                 </div>
               )}
               
