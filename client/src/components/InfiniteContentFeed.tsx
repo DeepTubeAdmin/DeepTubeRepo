@@ -238,15 +238,22 @@ export default function InfiniteContentFeed({
     }, 0);
 
     // Analyze the items to find out where ads will be placed - every 7 videos
+    // But not within the first 3 rows for the featured sections
     block.items.forEach((item: TypeVideo, itemIndex: number) => {
       const globalVideoIndex = blockStartIndex + itemIndex;
-      const shouldShowAd = globalVideoIndex > 0 && (globalVideoIndex + 1) % 7 === 0;
-
+      
+      // Don't show ads within the special blocks to maintain clean 3-row layout
+      const isSpecialBlock = blockPosition === 0 || blockPosition === 1 || blockPosition === 2;
+      const isWithinThreeRows = isSpecialBlock && itemIndex < getItemsForThreeRows('videos');
+      
+      // Only show ads after every 7th video and not within the first 3 rows of special blocks
+      const shouldShowAd = !isWithinThreeRows && globalVideoIndex > 0 && (globalVideoIndex + 1) % 7 === 0;
+      
       preparedItems.push({
         item,
         hasAd: shouldShowAd
       });
-
+      
       if (shouldShowAd) {
         itemsWithAdIndices.push(itemIndex);
       }
@@ -501,7 +508,7 @@ export default function InfiniteContentFeed({
               >
                 {showSectionTitle && <h3 className="text-2xl font-bold mb-6">{sectionTitle}</h3>}
                 <div className={`grid auto-rows-auto ${block.type === 'videos' ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'}`}>
-                  {block.type === 'videos' && renderVideoBlock(block, index, block.id)}
+                  {block.type === 'videos' && renderVideoBlock(block, index, index)}
                   {block.type === 'images' && renderImageBlock(block, index)}
                 </div>
               </section>
