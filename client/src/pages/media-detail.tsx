@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Heart, Flag, Share, MessageSquare, ThumbsUp, Flag as FlagIcon, Twitter, Facebook, Linkedin, Link as LinkIcon, Copy, X as XIcon } from "lucide-react";
+import { Heart, Flag, Share, MessageSquare, ThumbsUp, Flag as FlagIcon, Twitter, Facebook, Linkedin, Link as LinkIcon, Copy, X as XIcon, Terminal } from "lucide-react";
 import GenericVideoEmbed from "@/components/GenericVideoEmbed";
 import MiniFooter from "@/components/MiniFooter";
 import SEO from "@/components/SEO";
@@ -445,22 +445,22 @@ export default function MediaDetail() {
               <div className="flex justify-between items-center mb-4">
                 <div className="text-sm text-gray-400">
                   <div className="flex items-center space-x-2">
-                    {media.aiGenerator && (
-                      <>
-                        <span className="text-orange-500">{media.aiGenerator}</span>
-                        <span className="text-gray-500">•</span>
-                      </>
-                    )}
-                    <span>Added {new Date(media.createdAt).toLocaleDateString()}</span>
                     {uploaderUsername && (
                       <>
-                        <span className="text-gray-500">•</span>
                         <Link 
                           to={`/user/${uploaderUsername}`} 
                           className="text-orange-500 hover:text-orange-400 hover:underline"
                         >
                           {uploaderUsername}
                         </Link>
+                        <span className="text-gray-500">•</span>
+                      </>
+                    )}
+                    <span>Added {new Date(media.createdAt).toLocaleDateString()}</span>
+                    {media.aiGenerator && (
+                      <>
+                        <span className="text-gray-500">•</span>
+                        <span className="text-orange-500">{media.aiGenerator}</span>
                       </>
                     )}
                   </div>
@@ -503,27 +503,25 @@ export default function MediaDetail() {
                 </div>
               </div>
               
-              {/* Description and Prompt section - without the box container */}
-              <div className="mt-4 mb-6">
+              {/* Description and Prompt section - redesigned */}
+              <div className="mt-6 mb-8 space-y-4">
+                {/* Description */}
                 {media.description && (
-                  <p className="text-gray-300 mb-3">{media.description}</p>
+                  <div className="border-l-4 border-orange-500 pl-4 py-1">
+                    <p className="text-white">{media.description}</p>
+                  </div>
                 )}
                 
-                <div className="flex flex-wrap gap-4 mt-2">
-                  {media.aiGenerator && (
-                    <div className="flex items-center">
-                      <span className="text-sm font-semibold text-gray-400 mr-2">AI Generator:</span>
-                      <span className="text-orange-500">{media.aiGenerator}</span>
+                {/* Prompt info in a better layout */}
+                {media.prompt && (
+                  <div className="bg-[#0c0c0c] p-4 rounded-md border border-[#222]">
+                    <div className="flex items-center mb-2">
+                      <Terminal className="h-4 w-4 text-orange-500 mr-2" />
+                      <span className="text-sm font-semibold text-gray-300">Prompt</span>
                     </div>
-                  )}
-                  
-                  {media.prompt && (
-                    <div className="flex-1">
-                      <span className="text-sm font-semibold text-gray-400 mr-2">Prompt:</span>
-                      <span className="text-gray-300">{media.prompt}</span>
-                    </div>
-                  )}
-                </div>
+                    <p className="text-gray-300 text-sm">{media.prompt}</p>
+                  </div>
+                )}
               </div>
             </div>
             
