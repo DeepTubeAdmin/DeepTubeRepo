@@ -37,18 +37,6 @@ export default function VideoGrid({
   };
 
   // Create a dynamic class that adjusts to screen width
-  const [columnClass, setColumnClass] = useState(getColumnClass());
-  
-  // Update column class when window is resized
-  useEffect(() => {
-    const handleResize = () => {
-      setColumnClass(getColumnClass());
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  
   return (
     <section className="mb-8">
       {/* Pornhub-style heading with "view more" link */}
@@ -61,8 +49,8 @@ export default function VideoGrid({
         )}
       </div>
       
-      {/* Video grid */}
-      <div className={`grid ${columnClass} gap-4 w-full`}>
+      {/* Video grid with responsive columns */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 max-w-[2400px] mx-auto">
         {filteredVideos.map((video) => (
           <VideoCard
             key={video.id}
