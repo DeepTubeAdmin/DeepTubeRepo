@@ -25,16 +25,28 @@ export default function VideoGrid({
   
   // Create a function to get the optimal column count based on available width
   // Increased column counts to match our increased items per row in the API
-  const getColumnClass = () => {
-    // Get window width
-    if (typeof window === 'undefined') return 'grid-cols-1';
+  const [columnClass, setColumnClass] = useState('grid-cols-3'); // Default to 3 columns
+  
+  // Update column class based on window resize
+  useEffect(() => {
+    const updateColumnClass = () => {
+      // Get window width
+      const width = window.innerWidth;
+      if (width < 640) setColumnClass('grid-cols-1'); // Mobile
+      else if (width < 768) setColumnClass('grid-cols-2'); // Small tablets
+      else if (width < 1024) setColumnClass('grid-cols-3'); // Large tablets/small desktop
+      else setColumnClass('grid-cols-3'); // Desktop sizes - restricting to 3 per row for YouTube-like appearance
+    };
     
-    const width = window.innerWidth;
-    if (width < 640) return 'grid-cols-1'; // Mobile
-    if (width < 768) return 'grid-cols-2'; // Small tablets
-    if (width < 1024) return 'grid-cols-3'; // Large tablets/small desktop
-    return 'grid-cols-3'; // Desktop sizes - restricting to 3 per row for YouTube-like appearance
-  };
+    // Set initial value
+    updateColumnClass();
+    
+    // Add event listener
+    window.addEventListener('resize', updateColumnClass);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', updateColumnClass);
+  }, []);
 
   // Create a dynamic class that adjusts to screen width
   return (
@@ -50,7 +62,7 @@ export default function VideoGrid({
       </div>
       
       {/* Video grid with responsive columns */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 max-w-[2400px] mx-auto">
+      <div className={`grid ${columnClass} gap-4 max-w-[2400px] mx-auto`}>
         {filteredVideos.map((video) => (
           <VideoCard
             key={video.id}
