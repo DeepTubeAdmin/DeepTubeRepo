@@ -1198,10 +1198,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use cached categories
       const allCategories = cachedCategories;
       
-      // Create pattern of 3 video blocks followed by 1 image block (repeating)
+      // Create pattern of 5 video blocks followed by 1 image block (repeating)
+      // This results in a higher ratio of videos to images throughout the feed
       for (let i = 0; i < pageSize; i++) {
         const blockId = baseIndex + i;
-        const blockType = i % 4 < 3 ? 'videos' : 'images';
+        const blockType = i % 6 < 5 ? 'videos' : 'images';
         
         // Define our row size constant for reuse between blocks
         // Videos are 3 per row (with special cases for first two blocks - 9 videos each), images are 4 per row
