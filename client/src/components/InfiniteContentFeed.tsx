@@ -874,7 +874,7 @@ export default function InfiniteContentFeed({
   }, [contentBlocks]); // Re-run when content blocks change
 
   return (
-    <div ref={containerRef} className="content-feed-container space-y-6"> {/* Add consistent vertical spacing with space-y-6 */}
+    <div ref={containerRef} className="content-feed content-feed-container space-y-6"> {/* Add consistent vertical spacing with space-y-6 */}
       {isInitialLoad ? (
         <div className="py-20 flex justify-center">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -998,12 +998,12 @@ export default function InfiniteContentFeed({
             return (
               <section 
                 key={`${block.type}-${block.id}`} 
-                className={sectionClasses}
+                className={`content-block ${sectionClasses}`}
                 style={sectionStyle}
               >
                 {showSectionTitle && <h3 className="section-title text-2xl font-bold mb-6">{sectionTitle}</h3>}
                 <div 
-                  className={`grid auto-rows-auto gap-6 ${block.type === 'videos' ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'}`}
+                  className={`grid-layout grid auto-rows-auto gap-6 ${block.type === 'videos' ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'}`}
                   style={{ 
                     gap: '24px', // Enforce consistent gap size via inline style
                     rowGap: '24px', // Explicitly set row gap
