@@ -35,8 +35,9 @@ export default function ImageGallery({
     const width = window.innerWidth;
     if (width < 640) return 'grid-cols-1'; // Mobile
     if (width < 768) return 'grid-cols-2'; // Small tablets
-    if (width < 1024) return 'grid-cols-3'; // Large tablets 
-    return 'grid-cols-4'; // Desktop sizes - exactly 4 per row for images
+    if (width < 1024) return 'grid-cols-3'; // Large tablets/small desktop
+    if (width < 1536) return 'grid-cols-3'; // Desktop
+    return 'grid-cols-4'; // Large screens - 4 per row for images
   };
 
   // Create a dynamic class that adjusts to screen width

@@ -33,9 +33,10 @@ export default function VideoGrid({
       // Get window width
       const width = window.innerWidth;
       if (width < 640) setColumnClass('grid-cols-1'); // Mobile
-      else if (width < 768) setColumnClass('grid-cols-2'); // Small tablets
-      else if (width < 1024) setColumnClass('grid-cols-3'); // Large tablets/small desktop
-      else setColumnClass('grid-cols-3'); // Desktop sizes - restricting to 3 per row for YouTube-like appearance
+      else if (width < 768) setColumnClass('grid-cols-1'); // Small tablets
+      else if (width < 1024) setColumnClass('grid-cols-2'); // Large tablets/small desktop
+      else if (width < 1536) setColumnClass('grid-cols-2'); // Desktop
+      else setColumnClass('grid-cols-3'); // Large screens - 3 per row
     };
     
     // Set initial value
