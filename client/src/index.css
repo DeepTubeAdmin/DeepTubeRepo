@@ -408,3 +408,39 @@
 .payment-method.selected {
   @apply border-primary;
 }
+
+/* Improved spacing for content blocks */
+.content-feed {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+}
+
+.content-feed .content-block {
+  margin-top: 0;
+  padding-top: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.content-feed .content-block:not(:first-child) {
+  margin-top: 0;
+}
+
+.content-feed .grid-item {
+  padding: 0 12px;
+  margin-bottom: 24px;
+}
+
+.content-feed .grid-layout {
+  gap: 24px !important;
+  row-gap: 24px !important;
+  column-gap: 24px !important;
+  margin-bottom: 24px;
+}
+
+/* Fix for section 3 gap */
+.content-feed .content-block:nth-child(3) ~ .content-block {
+  margin-top: -24px;
+}

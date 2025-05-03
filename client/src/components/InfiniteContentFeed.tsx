@@ -97,7 +97,7 @@ export default function InfiniteContentFeed({
 
       observer.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && hasMore) {
-          // Immediately apply spacing fixes at the boundary, before load
+          // Immediately apply spacing fixes at the boundary, before loading new content
           if (containerRef.current) {
             const popularSection = containerRef.current.querySelector('.popular-content');
             
