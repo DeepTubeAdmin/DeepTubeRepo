@@ -22,10 +22,10 @@ export default function VideoGrid({
 }: VideoGridProps) {
   // No longer filtering out images
   const filteredVideos = videos;
-  
+
   // Create a function to get the optimal column count based on available width
   const [columnClass, setColumnClass] = useState('grid-cols-2'); // Default to 2 columns
-  
+
   // Update column class based on window resize
   useEffect(() => {
     const updateColumnClass = () => {
@@ -37,13 +37,13 @@ export default function VideoGrid({
       else if (width < 1536) setColumnClass('grid-cols-2'); // Desktop
       else setColumnClass('grid-cols-2'); // Large screens - 2 per row (changed from 3)
     };
-    
+
     // Set initial value
     updateColumnClass();
-    
+
     // Add event listener
     window.addEventListener('resize', updateColumnClass);
-    
+
     // Cleanup
     return () => window.removeEventListener('resize', updateColumnClass);
   }, []);
@@ -60,9 +60,9 @@ export default function VideoGrid({
           </Link>
         )}
       </div>
-      
+
       {/* Video grid with responsive columns */}
-      <div className={`grid ${columnClass} gap-4 max-w-[2400px] mx-auto`}>
+      <div className={`grid ${columnClass} gap-6 auto-rows-fr grid-flow-dense max-w-[2400px] mx-auto`}>
         {filteredVideos.map((video) => (
           <VideoCard
             key={video.id}
@@ -71,7 +71,7 @@ export default function VideoGrid({
             onWishlist={onWishlist}
           />
         ))}
-        
+
         {/* Remove placeholder logic to allow natural grid flow */}
       </div>
     </section>
