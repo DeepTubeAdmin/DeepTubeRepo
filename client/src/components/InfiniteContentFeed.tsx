@@ -736,25 +736,25 @@ export default function InfiniteContentFeed({
       
       /* Special handling for dynamically loaded sections */
       .content-feed-container section.dynamically-loaded {
-        margin-top: -24px !important;
-        padding-top: 0 !important;
+        margin-top: 0 !important;
+        padding-top: 24px !important; /* Add proper padding for spacing */
         position: relative !important;
         z-index: 1 !important;
       }
       
       /* Fix for the first dynamically loaded section */
       .content-feed-container section:last-of-type:not(.popular-content) + section.dynamically-loaded {
-        margin-top: -24px !important;
-        padding-top: 0 !important;
+        margin-top: 0 !important;
+        padding-top: 24px !important; /* Add proper padding for spacing */
       }
       
       /* Critical fix for the loading indicator */
       .content-feed-container .loading-indicator {
-        margin: -24px 0 0 0 !important;
-        padding: 12px 0 !important;
+        margin: 0 !important;
+        padding: 24px 0 !important; /* Match the spacing of thumbnails */
         position: relative !important;
         z-index: 1 !important;
-        height: 48px !important;
+        height: 72px !important; /* Taller to accommodate padding */
       }
       
       /* Make sure there's no gap when new sections are appended */
@@ -980,7 +980,8 @@ export default function InfiniteContentFeed({
               // Dynamically loaded blocks after page 1 need special styling
               sectionStyle = {
                 ...blockStyles,
-                marginTop: '-24px',
+                marginTop: '0',
+                paddingTop: '24px', // Add proper spacing between blocks
                 position: 'relative',
                 zIndex: 1
               };
@@ -1024,9 +1025,9 @@ export default function InfiniteContentFeed({
               ref={loadingRef} 
               className="loading-indicator flex justify-center" 
               style={{ 
-                margin: '-24px 0 0 0', // Negative top margin to eliminate gap
-                padding: '12px 0', 
-                height: '48px',
+                margin: '0', 
+                padding: '24px 0', /* Match the spacing of thumbnails */
+                height: '72px', /* Taller to accommodate padding */
                 overflow: 'hidden',
                 position: 'relative',
                 zIndex: 1
