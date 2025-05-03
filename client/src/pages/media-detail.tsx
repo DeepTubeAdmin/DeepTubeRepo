@@ -6,6 +6,7 @@ import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Heart, Flag, Share, MessageSquare, ThumbsUp, Flag as FlagIcon } from "lucide-react";
@@ -418,10 +419,65 @@ export default function MediaDetail() {
                     <span>{isLiked ? 'Liked' : 'Like'}</span>
                   </Button>
                   
-                  <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-                    <Share className="w-5 h-5 mr-1" />
-                    <span>Share</span>
-                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                        <Share className="w-5 h-5 mr-1" />
+                        <span>Share</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-[#1a1a1a] border-[#333]">
+                      <DialogHeader>
+                        <DialogTitle>Share Content</DialogTitle>
+                        <DialogDescription>
+                          Share this content with others
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="flex items-center space-x-2">
+                          <Input 
+                            readOnly 
+                            value={`https://deeptube.co/media/${id}`}
+                            className="bg-[#121212] border-[#333]"
+                          />
+                          <Button
+                            onClick={() => {
+                              navigator.clipboard.writeText(`https://deeptube.co/media/${id}`);
+                              toast({
+                                title: "Link copied",
+                                description: "The link has been copied to your clipboard",
+                              });
+                            }}
+                          >
+                            Copy
+                          </Button>
+                        </div>
+                        <div className="flex justify-center space-x-4">
+                          <Button
+                            variant="outline"
+                            className="border-[#444]"
+                            onClick={() => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(`https://deeptube.co/media/${id}`)}&text=${encodeURIComponent(media.title)}`, '_blank')}
+                          >
+                            Twitter
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="border-[#444]"
+                            onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`https://deeptube.co/media/${id}`)}`, '_blank')}
+                          >
+                            Facebook
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="border-[#444]"
+                            onClick={() => window.open(`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(`https://deeptube.co/media/${id}`)}&title=${encodeURIComponent(media.title)}`, '_blank')}
+                          >
+                            LinkedIn
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                   
                   <Button 
                     variant="ghost" 
