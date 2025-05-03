@@ -91,7 +91,7 @@ export async function uploadStringToS3(content: string | Buffer, s3Key: string, 
  * @param expiresIn Expiration time in seconds (default 3600 = 1 hour)
  * @returns Pre-signed URL for the S3 object
  */
-export async function getSignedS3Url(s3Key: string, expiresIn: number = 3600): Promise<string> {
+export async function getSignedS3Url(s3Key: string, expiresIn: number = 86400): Promise<string> { // 24 hour expiry
   try {
     log(`Generating signed URL for S3 key: ${s3Key} with ${expiresIn}s expiry`, 's3');
     

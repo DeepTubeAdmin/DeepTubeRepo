@@ -89,7 +89,7 @@ export default function VideoPreview({
     video.playsInline = true;
     video.preload = "auto";
     video.loop = true; // Enable looping for smoother preview
-    
+
     // Force attributes for mobile compatibility
     video.setAttribute('muted', 'true');
     video.setAttribute('playsinline', 'true');
