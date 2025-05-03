@@ -265,13 +265,44 @@ export default function InfiniteContentFeed({
       // Ensure the item has all required properties
       return item && item.item && typeof item.item.id === 'number';
     });
+    
+    // Make sure we have enough items to fill the grid nicely
+    // For videos, calculate the needed count based on the screen width
+    // Videos are displayed in a 1-column grid on small screens, 2-column on larger screens
+    let columnsCount = 2; // Default for medium/large screens
+    if (window.innerWidth < 768) {
+      columnsCount = 1;
+    }
+    
+    // Ensure the items count is a multiple of the columns count to avoid blank spaces
+    // But only do this for the specific titled sections (blocks 0-2), not for infinite scroll
+    if (blockPosition <= 2 && itemsToRender.length > 0) { 
+      const idealCount = Math.ceil(itemsToRender.length / columnsCount) * columnsCount;
+      
+      // Add filler items if needed by repeating existing items
+      if (itemsToRender.length < idealCount) {
+        const missingCount = idealCount - itemsToRender.length;
+        const fillerItems = [];
+        
+        for (let i = 0; i < missingCount; i++) {
+          // Copy an existing item as filler
+          const original = itemsToRender[i % itemsToRender.length];
+          fillerItems.push({
+            item: original.item,
+            hasAd: false // Don't add ads for filler items
+          });
+        }
+        
+        itemsToRender = [...itemsToRender, ...fillerItems];
+      }
+    }
 
     // Now render the items with ads in the right places
-    return itemsToRender.map(({ item, hasAd }, i) => (
-      <div key={`video-container-${item.id}`} className="video-container">
+    return itemsToRender.map(({ item, hasAd }, index) => (
+      <div key={`video-container-${item.id}-${index}`} className="video-container">
         <ErrorBoundary fallback={<div className="bg-black/80 rounded-md aspect-video flex items-center justify-center text-orange-500">Content Unavailable</div>}>
           <VideoCard
-            key={`video-${item.id}`}
+            key={`video-${item.id}-${index}`}
             video={item}
             onPreview={onPreview}
             onWishlist={onWishlist}
@@ -288,7 +319,7 @@ export default function InfiniteContentFeed({
           }, 0);
           return (
             <AdvertisementCard 
-              key={`ad-after-${item.id}`}
+              key={`ad-after-${item.id}-${index}`}
               ad={ad} 
               contentType="videos" // Mark this as a video type advertisement
             />
@@ -338,11 +369,41 @@ export default function InfiniteContentFeed({
       return item && item.item && typeof item.item.id === 'number';
     });
     
-    return itemsToRender.map(({ item, hasAd }) => (
-      <div key={`image-container-${item.id}`} className="image-container">
+    // Make sure we have enough items to fill the grid nicely
+    // Calculate the needed count based on the screen width
+    // Images are displayed in a 2-column grid on small screens, 3-column on medium, 4-column on large
+    let columnsCount = 4; // Default for large screens
+    if (window.innerWidth < 768) {
+      columnsCount = 2;
+    } else if (window.innerWidth < 1024) {
+      columnsCount = 3;
+    }
+    
+    // Ensure the items count is a multiple of the columns count to avoid blank spaces
+    const idealCount = Math.ceil(itemsToRender.length / columnsCount) * columnsCount;
+    
+    // Add filler items if needed by repeating existing items
+    if (itemsToRender.length > 0 && itemsToRender.length < idealCount) {
+      const missingCount = idealCount - itemsToRender.length;
+      const fillerItems = [];
+      
+      for (let i = 0; i < missingCount; i++) {
+        // Copy an existing item as filler
+        const original = itemsToRender[i % itemsToRender.length];
+        fillerItems.push({
+          item: original.item,
+          hasAd: false // Don't add ads for filler items
+        });
+      }
+      
+      itemsToRender = [...itemsToRender, ...fillerItems];
+    }
+    
+    return itemsToRender.map(({ item, hasAd }, index) => (
+      <div key={`image-container-${item.id}-${index}`} className="image-container">
         <ErrorBoundary fallback={<div className="bg-black/80 rounded-md aspect-[3/4] flex items-center justify-center text-orange-500">Image Unavailable</div>}>
           <ImageCard
-            key={`image-${item.id}`}
+            key={`image-${item.id}-${index}`}
             image={item}
             onPreview={onPreview}
             onWishlist={onWishlist}
@@ -359,7 +420,7 @@ export default function InfiniteContentFeed({
           }, 0);
           return (
             <AdvertisementCard 
-              key={`ad-after-image-${item.id}`}
+              key={`ad-after-image-${item.id}-${index}`}
               ad={ad} 
               contentType="images" // Mark this as an image type advertisement
             />

@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import { useState, useEffect, useRef } from "react";
 // Import loader component
 import { Loader2 } from "lucide-react";
+import ErrorBoundary from "./ErrorBoundary";
 
 type Video = TypeVideo;
 
@@ -26,7 +27,6 @@ export default function VideoGrid({
 }: VideoGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [failedThumbnails, setFailedThumbnails] = useState<number[]>([]);
   const [visibleVideos, setVisibleVideos] = useState<Video[]>([]);
   const [columnCount, setColumnCount] = useState(2); // Default to 2 columns
   const [columnClass, setColumnClass] = useState('grid-cols-2');
@@ -34,46 +34,44 @@ export default function VideoGrid({
   // Force exactly 3 rows of content
   const rowCount = 3;
   
-  // Filter out videos with failed thumbnails when needed
+  // Use valid videos only and handle video loading
   useEffect(() => {
-    // Remove any videos with failed thumbnails from the visible set
-    const filteredVideos = videos.filter(video => !failedThumbnails.includes(video.id));
+    // Ensure we have valid video entries
+    const validVideos = videos.filter(video => {
+      return video && typeof video.id === 'number' && video.thumbnail;
+    });
     
-    // Calculate items to show (3 rows * columns)
-    const itemsToShow = Math.min(filteredVideos.length, columnCount * rowCount);
+    // Calculate how many items we need to fill the grid completely
+    const neededCount = columnCount * rowCount;
     
-    // Set the videos to be shown
-    setVisibleVideos(filteredVideos.slice(0, itemsToShow));
+    // If we don't have enough videos to fill the grid completely
+    let videosToShow = [];
+    
+    if (validVideos.length === 0) {
+      // No valid videos at all
+      setVisibleVideos([]);
+    } else if (validVideos.length >= neededCount) {
+      // We have enough videos to fill the grid
+      videosToShow = validVideos.slice(0, neededCount);
+      setVisibleVideos(videosToShow);
+    } else {
+      // Not enough videos to fill the grid, repeat as needed
+      // Create an array of the necessary size by repeating videos
+      videosToShow = [];
+      for (let i = 0; i < neededCount; i++) {
+        videosToShow.push(validVideos[i % validVideos.length]);
+      }
+      setVisibleVideos(videosToShow);
+    }
     
     // After loading content, mark as loaded
     const timer = setTimeout(() => setIsLoading(false), 500);
     return () => clearTimeout(timer);
-  }, [videos, failedThumbnails, columnCount]);
-  
-  // Handle thumbnail loading failures
-  const handleThumbnailError = (videoId: number) => {
-    if (!failedThumbnails.includes(videoId)) {
-      setFailedThumbnails(prev => [...prev, videoId]);
-      
-      // Trigger grid reflow
-      if (gridRef.current) {
-        // Use requestAnimationFrame to ensure the DOM has updated
-        requestAnimationFrame(() => {
-          gridRef.current?.dispatchEvent(new Event('reflow'));
-        });
-      }
-    }
-  };
-  
-  // Generate array of indices for proper grid layout
-  const totalGridSpots = columnCount * rowCount;
-  const visibleCount = visibleVideos.length;
-  const gridIndices = Array.from({ length: totalGridSpots }, (_, i) => i < visibleCount ? i : -1);
+  }, [videos, columnCount]);
 
-  // Update column class based on window resize
+  // Update column count based on screen width
   useEffect(() => {
     const updateColumnClass = () => {
-      // Get window width
       const width = window.innerWidth;
       if (width < 640) {
         setColumnClass('grid-cols-1');
@@ -110,7 +108,7 @@ export default function VideoGrid({
   // Create a dynamic class that adjusts to screen width
   return (
     <section className="mb-8">
-      {/* Pornhub-style heading with "view more" link */}
+      {/* Heading with "view more" link */}
       <div className="flex justify-between items-center mb-3">
         <h2 className="text-lg font-bold uppercase">{title}</h2>
         {showViewAll && visibleVideos.length > 0 && (
@@ -126,25 +124,31 @@ export default function VideoGrid({
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
-        // Video grid with responsive columns and error handling
+        // Video grid with guaranteed complete rows and error handling
         <div 
           ref={gridRef}
-          className={`grid ${columnClass} gap-6 auto-rows-fr grid-flow-dense max-w-[2400px] mx-auto`}
-          // Listen for reflow events to handle grid adjustments after failures
-          onAnimationEnd={() => console.log('Grid animation completed')}
+          className={`grid ${columnClass} gap-6 auto-rows-fr max-w-[2400px] mx-auto`}
         >
-          {gridIndices.map(idx => 
-            idx >= 0 ? (
+          {visibleVideos.map((video, index) => (
+            <ErrorBoundary 
+              key={`${video.id}-${index}`}
+              fallback={
+                <div className="bg-black/80 rounded-md aspect-video flex items-center justify-center text-orange-500 h-full">
+                  <div className="text-center p-4">
+                    <div className="text-3xl mb-2">⚠️</div>
+                    <div>Content Unavailable</div>
+                  </div>
+                </div>
+              }
+            >
               <VideoCard
-                key={visibleVideos[idx].id}
-                video={visibleVideos[idx]}
+                key={`video-${video.id}-${index}`}
+                video={video}
                 onPreview={onPreview}
                 onWishlist={onWishlist}
               />
-            ) : (
-              <div key={`empty-${-idx-1}`} className="hidden" />
-            )
-          )}
+            </ErrorBoundary>
+          ))}
         </div>
       )}
     </section>
