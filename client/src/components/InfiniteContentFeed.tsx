@@ -236,18 +236,18 @@ export default function InfiniteContentFeed({
       }
     });
     
-    // Special case for first two blocks (9 videos each) and regular blocks (3 videos per row)
-    const isSpecialBlock = blockPosition === 0 || blockPosition === 1;
-    const maxItemsToShow = isSpecialBlock ? 9 : 3; // 9 for special blocks, 3 for regular blocks
-    
-    // Adjust the items to ensure we don't exceed the limit when ads are included
-    const totalItemsWithAds = preparedItems.length + itemsWithAdIndices.length;
+    // We now don't impose a strict limit on the number of videos
+    // But we ensure that the number of videos is appropriate for the layout
     let itemsToRender = preparedItems;
     
-    // If adding ads would exceed our limit, trim the content items to make room
-    if (totalItemsWithAds > maxItemsToShow) {
-      const itemsToRemove = totalItemsWithAds - maxItemsToShow;
-      itemsToRender = preparedItems.slice(0, preparedItems.length - itemsToRemove);
+    // If this is one of the titled sections (first three), we want to ensure clean layout
+    // with an even number of videos for the 2-column grid
+    const isSpecialBlock = blockPosition === 0 || blockPosition === 1 || blockPosition === 2;
+    
+    if (isSpecialBlock && itemsToRender.length % 2 !== 0) {
+      // If we have an odd number of videos, remove the last one to make it even
+      // This prevents having a blank space at the end of the grid
+      itemsToRender = itemsToRender.slice(0, itemsToRender.length - 1);
     }
     
     // Now render the items with ads in the right places
@@ -282,43 +282,68 @@ export default function InfiniteContentFeed({
   
   // Function to render image blocks with ad control
   const renderImageBlock = (block: any, blockIndex: number) => {
-    return block.items.map((item: TypeVideo, i: number) => {
-      // For image blocks, place an ad after every 15th image
-      const blockStartIndex = contentBlocks.slice(0, blockIndex).reduce((count, prevBlock) => {
-        return prevBlock.type === 'images' ? count + prevBlock.items.length : count;
-      }, 0);
-      
+    // Prepare items with ad markers
+    const preparedItems: { item: TypeVideo; hasAd: boolean }[] = [];
+    
+    // Calculate start index for the current block's images
+    const blockStartIndex = contentBlocks.slice(0, blockIndex).reduce((count, prevBlock) => {
+      return prevBlock.type === 'images' ? count + prevBlock.items.length : count;
+    }, 0);
+    
+    // Mark which items should have ads
+    block.items.forEach((item: TypeVideo, i: number) => {
       const globalImageIndex = blockStartIndex + i;
       const shouldShowAd = globalImageIndex > 0 && (globalImageIndex + 1) % 15 === 0;
       
-      return (
-        <div key={`image-container-${item.id}`} className="image-container">
-          <ImageCard
-            key={`image-${item.id}`}
-            image={item}
-            onPreview={onPreview}
-            onWishlist={onWishlist}
-          />
-          
-          {/* Insert advertisement if needed */}
-          {shouldShowAd && (() => {
-            // Get a random ad and track it in displayedAds
-            const ad = getRandomAd();
-            // Add this ad ID to be processed in the useEffect
-            setTimeout(() => {
-              setDisplayedAds(prev => [...prev, ad.id]);
-            }, 0);
-            return (
-              <AdvertisementCard 
-                key={`ad-after-image-${item.id}`}
-                ad={ad} 
-                contentType="images" // Mark this as an image type advertisement
-              />
-            );
-          })()}
-        </div>
-      );
+      preparedItems.push({
+        item,
+        hasAd: shouldShowAd
+      });
     });
+    
+    // For image grid, we want to ensure the number of items fits nicely in the grid
+    // Our grid is 3 columns on medium screens and 4 columns on large screens
+    let itemsToRender = preparedItems;
+    
+    // If this is one of the titled sections, ensure clean layout for the grid
+    const isSpecialBlock = blockIndex < 3;
+    
+    if (isSpecialBlock) {
+      // Make sure the count is a multiple of 4 (for large screens) or 3 (for medium screens)
+      // By default, we'll optimize for 4-column layout (large screens)
+      const remainder = itemsToRender.length % 4;
+      if (remainder !== 0) {
+        itemsToRender = itemsToRender.slice(0, itemsToRender.length - remainder);
+      }
+    }
+    
+    return itemsToRender.map(({ item, hasAd }) => (
+      <div key={`image-container-${item.id}`} className="image-container">
+        <ImageCard
+          key={`image-${item.id}`}
+          image={item}
+          onPreview={onPreview}
+          onWishlist={onWishlist}
+        />
+        
+        {/* Insert advertisement if needed */}
+        {hasAd && (() => {
+          // Get a random ad and track it in displayedAds
+          const ad = getRandomAd();
+          // Add this ad ID to be processed in the useEffect
+          setTimeout(() => {
+            setDisplayedAds(prev => [...prev, ad.id]);
+          }, 0);
+          return (
+            <AdvertisementCard 
+              key={`ad-after-image-${item.id}`}
+              ad={ad} 
+              contentType="images" // Mark this as an image type advertisement
+            />
+          );
+        })()}
+      </div>
+    ));
   };
   
   // Image card component specifically for images in the infinite feed
@@ -439,26 +464,29 @@ export default function InfiniteContentFeed({
             if (index === 0) {
               sectionTitle = "Trending Now";
               showSectionTitle = true;
-              // Show 3 rows for Trending Now
-              if (block.items.length > 3) {
-                // Keep only the first 9 items (3 rows of 3)
-                block.items = block.items.slice(0, 9);
+              // Make sure we have even number of videos for grid layout
+              if (block.items.length > 0 && block.type === 'videos') {
+                // Ensure we have an even number of items for 2-column grid (no blank spaces)
+                const itemCount = Math.min(10, block.items.length);
+                block.items = block.items.slice(0, itemCount);
               }
             } else if (index === 1) {
               sectionTitle = "Recently Uploaded Videos";
               showSectionTitle = true;
-              // Show 3 rows for Recently Uploaded
-              if (block.items.length > 3) {
-                // Keep only the first 9 items (3 rows of 3)
-                block.items = block.items.slice(0, 9);
+              // Make sure we have even number of videos for grid layout
+              if (block.items.length > 0 && block.type === 'videos') {
+                // Ensure we have an even number of items for 2-column grid (no blank spaces)
+                const itemCount = Math.min(10, block.items.length);
+                block.items = block.items.slice(0, itemCount);
               }
             } else if (index === 2 && block.type === 'videos') {
               sectionTitle = "Featured Content";
               showSectionTitle = true;
-              // Show 3 rows for Featured Content
-              if (block.items.length > 3) {
-                // Keep only the first 9 items (3 rows of 3)
-                block.items = block.items.slice(0, 9);
+              // Make sure we have even number of videos for grid layout
+              if (block.items.length > 0) {
+                // Ensure we have an even number of items for 2-column grid (no blank spaces)
+                const itemCount = Math.min(10, block.items.length);
+                block.items = block.items.slice(0, itemCount);
               }
             }
             
