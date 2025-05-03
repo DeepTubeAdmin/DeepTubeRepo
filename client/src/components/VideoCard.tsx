@@ -19,75 +19,127 @@ interface ThumbnailImageProps {
 function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailImageProps) {
   // Extract YouTube ID for embeds
   const [youtubeId, setYoutubeId] = useState<string | null>(null);
-
+  // Track loading and error states
+  const [imgSrc, setImgSrc] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [loadAttemptTime, setLoadAttemptTime] = useState(Date.now());
+  const maxRetries = 3;
+  
   // Get YouTube ID for embed content types
   useEffect(() => {
     if (contentType === 'embed' && thumbnail &&
       (thumbnail.includes('youtube.com') || thumbnail.includes('youtu.be'))) {
       // Try to parse YouTube ID from the thumbnail URL
-      const ytMatch = thumbnail.match(/(?:youtube\.com\/vi\/|img\.youtube\.com\/vi\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-      if (ytMatch && ytMatch[1]) {
-        setYoutubeId(ytMatch[1]);
+      const patterns = [
+        /(?:youtube\.com\/vi\/|img\.youtube\.com\/vi\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+        /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+        /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/
+      ];
+      
+      for (const pattern of patterns) {
+        const match = thumbnail.match(pattern);
+        if (match && match[1]) {
+          setYoutubeId(match[1]);
+          break;
+        }
       }
     }
   }, [contentType, thumbnail]);
 
-  // Default to our API endpoint with a cache buster
-  let reliableThumbnail = thumbnail ? checkThumbnail(thumbnail, videoId) : `/api/videos/${videoId}/thumbnail?t=${Date.now()}`;
-
-  // Override for YouTube embeds - use direct YouTube image URL
-  if (contentType === 'embed' && youtubeId) {
-    reliableThumbnail = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
-  }
-
-  // Set the state to our validated thumbnail URL
-  const [imgSrc, setImgSrc] = useState<string>(reliableThumbnail);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Update imgSrc when reliableThumbnail changes
-  useEffect(() => {
-    setImgSrc(reliableThumbnail);
-  }, [reliableThumbnail]);
-
-  // Simple loading state for visibility
+  // Initialize thumbnail source with a reliable method
   useEffect(() => {
     setIsLoading(true);
-    const timer = setTimeout(() => setIsLoading(false), 1000);
-    return () => clearTimeout(timer);
-  }, []);
+    setLoadFailed(false);
+    setRetryCount(0);
+    
+    // Reset timestamp for cache busting
+    setLoadAttemptTime(Date.now());
+    
+    // Default to our API endpoint with a cache buster
+    let reliableThumbnail = thumbnail ? 
+      checkThumbnail(thumbnail, videoId) : 
+      `/api/videos/${videoId}/thumbnail?t=${Date.now()}`;
+
+    // Override for YouTube embeds - use direct YouTube image URL
+    if (contentType === 'embed' && youtubeId) {
+      reliableThumbnail = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+    }
+    
+    setImgSrc(reliableThumbnail);
+  }, [videoId, thumbnail, contentType, youtubeId]);
+  
+  // Define an internal retry mechanism
+  const retryWithFallback = () => {
+    setRetryCount(prev => prev + 1);
+    setLoadAttemptTime(Date.now());
+    
+    // If YouTube content, try different quality levels
+    if (contentType === 'embed' && youtubeId) {
+      if (retryCount === 0) {
+        // First retry: Try medium quality
+        console.log(`ThumbnailImage: Trying medium quality for video ${videoId}`);
+        setImgSrc(`https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`);
+      } else if (retryCount === 1) {
+        // Second retry: Try standard quality
+        console.log(`ThumbnailImage: Trying standard quality for video ${videoId}`);
+        setImgSrc(`https://img.youtube.com/vi/${youtubeId}/default.jpg`);
+      } else {
+        // Final fallback: Force SVG placeholder
+        console.error(`ThumbnailImage: All YouTube qualities failed for video ${videoId}`);
+        setImgSrc(`/api/videos/${videoId}/thumbnail?forcesvg=true&t=${loadAttemptTime}`);
+        setLoadFailed(true);
+      }
+    } else {
+      // Non-YouTube content, go directly to API with forced SVG
+      console.error(`ThumbnailImage: Error loading thumbnail for video ${videoId}`);
+      setImgSrc(`/api/videos/${videoId}/thumbnail?forcesvg=true&t=${loadAttemptTime}`);
+      setLoadFailed(true);
+    }
+  };
+
+  // Handle image load and error events
+  const handleImageLoad = () => {
+    setIsLoading(false);
+  };
+  
+  const handleImageError = () => {
+    if (retryCount < maxRetries) {
+      retryWithFallback();
+    } else {
+      setIsLoading(false);
+      setLoadFailed(true);
+      console.error(`ThumbnailImage: All retries failed for video ${videoId}`);
+    }
+  };
 
   // Always show the image with the current imgSrc state
   return (
     <>
       {isLoading && (
-        <div className="w-full h-full absolute inset-0 bg-black/20 flex items-center justify-center z-10">
+        <div className="w-full h-full absolute inset-0 bg-black/70 flex items-center justify-center z-10">
           <div className="w-8 h-8 border-2 border-t-orange-500 border-orange-500/30 rounded-full animate-spin"></div>
+        </div>
+      )}
+      {loadFailed && (
+        <div className="w-full h-full absolute inset-0 bg-black flex items-center justify-center z-5">
+          <div className="w-16 h-16 text-orange-500">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
         </div>
       )}
       <img
         src={imgSrc}
         alt={title}
         className="w-full h-full object-cover absolute inset-0"
-        onError={(e) => {
-          // If the image fails to load, try different YouTube thumbnail sizes if it's YouTube
-          if (contentType === 'embed' && youtubeId) {
-            // Try medium quality if high quality fails
-            if (imgSrc.includes('hqdefault')) {
-              console.log(`ThumbnailImage: Falling back to medium quality YouTube thumbnail for video ${videoId}`);
-              setImgSrc(`https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`);
-              return;
-            } else if (imgSrc.includes('mqdefault')) {
-              // Try default quality if medium quality fails
-              console.log(`ThumbnailImage: Falling back to default quality YouTube thumbnail for video ${videoId}`);
-              setImgSrc(`https://img.youtube.com/vi/${youtubeId}/default.jpg`);
-              return;
-            }
-          }
-
-          // If all else fails, use our API endpoint with SVG flag
-          console.error(`ThumbnailImage: Error loading thumbnail for video ${videoId}`);
-          e.currentTarget.src = `/api/videos/${videoId}/thumbnail?forcesvg=true&t=${Date.now()}`;
-        }}
+        onLoad={handleImageLoad}
+        onError={handleImageError}
+        style={{ opacity: loadFailed ? 0.5 : 1 }} /* Dim failed thumbnails but keep them visible */
       />
     </>
   );
