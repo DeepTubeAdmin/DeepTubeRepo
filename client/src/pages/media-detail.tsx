@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Video, Comment } from "@shared/schema";
@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Heart, Flag, Share, MessageSquare, ThumbsUp, Flag as FlagIcon } from "lucide-react";
+import { Heart, Flag, Share, MessageSquare, ThumbsUp, Flag as FlagIcon, Twitter, Facebook, Linkedin, Link as LinkIcon, Copy, X as XIcon } from "lucide-react";
 import GenericVideoEmbed from "@/components/GenericVideoEmbed";
 import MiniFooter from "@/components/MiniFooter";
 import SEO from "@/components/SEO";
@@ -57,7 +57,10 @@ export default function MediaDetail() {
   const [location, setLocation] = useLocation();
   const [commentText, setCommentText] = useState("");
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState<string>("");
+  const [copySuccess, setCopySuccess] = useState("");
+  const shareUrlRef = useRef<HTMLInputElement>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
@@ -246,6 +249,66 @@ export default function MediaDetail() {
     });
   };
   
+  // Copy URL to clipboard
+  const handleCopyShareLink = () => {
+    const shareUrl = `${window.location.origin}/media/${id}`;
+    
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(shareUrl)
+        .then(() => {
+          setCopySuccess("Link copied to clipboard!");
+          setTimeout(() => setCopySuccess(""), 2000);
+          toast({
+            title: "Link copied",
+            description: "The link has been copied to your clipboard"
+          });
+        })
+        .catch(err => {
+          console.error('Could not copy text: ', err);
+          toast({
+            title: "Copy failed",
+            description: "Please try manually selecting and copying the URL",
+            variant: "destructive"
+          });
+        });
+    } else {
+      // Fallback for browsers that don't support clipboard API
+      if (shareUrlRef.current) {
+        shareUrlRef.current.select();
+        document.execCommand('copy');
+        setCopySuccess("Link copied to clipboard!");
+        setTimeout(() => setCopySuccess(""), 2000);
+      }
+    }
+  };
+  
+  // Share to social media
+  const handleSocialShare = (platform: string) => {
+    const shareUrl = `${window.location.origin}/media/${id}`;
+    const shareTitle = media ? media.title : "Check out this content on DeepTube";
+    const shareText = media?.description || "Interesting AI-generated content on DeepTube";
+    
+    let shareLink = '';
+    
+    switch (platform) {
+      case 'twitter':
+        shareLink = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareTitle)}`;
+        break;
+      case 'facebook':
+        shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+        break;
+      case 'linkedin':
+        shareLink = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+        break;
+      default:
+        return;
+    }
+    
+    // Open in new window
+    window.open(shareLink, '_blank', 'width=600,height=400');
+    setShareDialogOpen(false);
+  };
+  
   if (mediaLoading) {
     return (
       <Layout>
@@ -418,7 +481,12 @@ export default function MediaDetail() {
                     <span>{isLiked ? 'Liked' : 'Like'}</span>
                   </Button>
                   
-                  <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-gray-400 hover:text-white"
+                    onClick={() => setShareDialogOpen(true)}
+                  >
                     <Share className="w-5 h-5 mr-1" />
                     <span>Share</span>
                   </Button>
@@ -586,6 +654,86 @@ export default function MediaDetail() {
               className="bg-primary text-black hover:bg-primary/90 font-bold"
             >
               {reportMutation.isPending ? "Submitting..." : "Submit Report"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Share dialog */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="bg-[#1a1a1a] border-[#333]">
+          <DialogHeader>
+            <DialogTitle>Share Content</DialogTitle>
+            <DialogDescription>
+              Share this {media.contentType} with others through these options
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="mb-4">
+              <label htmlFor="share-url" className="text-sm font-medium mb-2 block text-gray-300">
+                Media Link
+              </label>
+              <div className="flex items-center">
+                <input
+                  id="share-url"
+                  ref={shareUrlRef}
+                  type="text"
+                  readOnly
+                  className="flex-1 px-3 py-2 bg-[#121212] border border-[#333] rounded-l-md text-sm text-gray-300"
+                  value={`${window.location.origin}/media/${id}`}
+                />
+                <Button
+                  onClick={handleCopyShareLink}
+                  className="rounded-l-none bg-orange-500 hover:bg-orange-400 text-black"
+                >
+                  <Copy className="w-4 h-4 mr-1" />
+                  Copy
+                </Button>
+              </div>
+              {copySuccess && (
+                <p className="text-green-500 text-sm mt-1">{copySuccess}</p>
+              )}
+            </div>
+            
+            <div className="mt-6">
+              <h3 className="text-sm font-medium mb-3 text-gray-300">Share on Social Media</h3>
+              <div className="flex space-x-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 flex items-center justify-center border-[#333] text-[#1DA1F2] hover:bg-[#1DA1F2] hover:text-white hover:border-[#1DA1F2]"
+                  onClick={() => handleSocialShare('twitter')}
+                >
+                  <Twitter className="w-5 h-5 mr-2" />
+                  Twitter
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 flex items-center justify-center border-[#333] text-[#4267B2] hover:bg-[#4267B2] hover:text-white hover:border-[#4267B2]"
+                  onClick={() => handleSocialShare('facebook')}
+                >
+                  <Facebook className="w-5 h-5 mr-2" />
+                  Facebook
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 flex items-center justify-center border-[#333] text-[#0077B5] hover:bg-[#0077B5] hover:text-white hover:border-[#0077B5]"
+                  onClick={() => handleSocialShare('linkedin')}
+                >
+                  <Linkedin className="w-5 h-5 mr-2" />
+                  LinkedIn
+                </Button>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShareDialogOpen(false)}
+              className="border-[#444] text-gray-300 hover:bg-[#222] hover:text-white"
+            >
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
