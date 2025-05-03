@@ -590,10 +590,18 @@ export default function InfiniteContentFeed({
     );
   }
 
+  // Get reference to the main container for direct DOM manipulation
+  const containerRef = useRef<HTMLDivElement>(null);
+  
   // Add a consistent style for all content blocks
   const blockStyles = {
-    marginBottom: '24px', // Consistent spacing between all content blocks
-    paddingBottom: '24px', // Add padding to control spacing
+    marginBottom: '0', // Reset margin to control it via CSS
+    paddingBottom: '0', // Reset padding to control it via CSS
+  };
+  
+  // Special styling for the Popular Content section
+  const popularSectionStyles = {
+    marginBottom: '48px', // Extra margin after Popular Content section
   };
   
   // Add custom CSS to define a fixed gap between rows specifically for section blocks
@@ -601,30 +609,72 @@ export default function InfiniteContentFeed({
     // Add custom CSS to ensure consistent row spacing
     const styleElement = document.createElement('style');
     styleElement.textContent = `
-      section.popular-content {
-        margin-bottom: 24px !important;
+      /* Global spacing control */
+      .content-feed-container section {
+        margin-bottom: 48px !important;
       }
       
-      /* For newly loaded content sections */
-      section + section {
-        margin-top: 24px !important;
+      /* Equal spacing for grid rows */
+      .content-feed-container .grid {
+        display: grid;
+        row-gap: 24px !important;
+        column-gap: 24px !important;
       }
       
-      /* Equal spacing for grid items */
-      .grid > div {
+      /* Control spacing within Popular Content specifically */
+      .content-feed-container .popular-content .grid {
+        row-gap: 24px !important;
+      }
+      
+      /* Ensure non-grid items maintain spacing */
+      .content-feed-container .video-container,
+      .content-feed-container .image-container {
+        margin-bottom: 0 !important;
+      }
+      
+      /* For consistent transitions between sections */
+      .content-feed-container section:not(:first-child) {
+        padding-top: 24px;
+      }
+      
+      /* Special handling for section titles */
+      .content-feed-container .section-title {
         margin-bottom: 24px !important;
       }
     `;
     document.head.appendChild(styleElement);
     
+    // Force equal spacing after component mounts
+    const equalizeSpacing = () => {
+      if (containerRef.current) {
+        const sections = containerRef.current.querySelectorAll('section');
+        sections.forEach((section) => {
+          // Ensure all sections have consistent spacing
+          section.style.marginBottom = '48px';
+          
+          // Find grid elements and enforce consistent row gaps
+          const grid = section.querySelector('.grid');
+          if (grid) {
+            // @ts-ignore
+            grid.style.rowGap = '24px';
+            // @ts-ignore
+            grid.style.columnGap = '24px';
+          }
+        });
+      }
+    };
+    
+    // Apply spacing adjustments after initial render and after any content load
+    equalizeSpacing();
+    
+    // Clean up observer after the component unmounts
     return () => {
-      // Clean up style element when component unmounts
       document.head.removeChild(styleElement);
     };
-  }, []);
+  }, [contentBlocks]); // Re-run when content blocks change
 
   return (
-    <div className="space-y-0"> {/* Remove automatic spacing to control it manually */}
+    <div ref={containerRef} className="content-feed-container space-y-0"> {/* Container with reference and specific class */}
       {isInitialLoad ? (
         <div className="py-20 flex justify-center">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -719,9 +769,9 @@ export default function InfiniteContentFeed({
               <section 
                 key={`${block.type}-${block.id}`} 
                 className={`${showSectionTitle ? (isContentTypeTransition ? "mt-16" : "") : ""} ${index === 2 ? "popular-content" : ""}`}
-                style={blockStyles}
+                style={index === 2 ? {...blockStyles, ...popularSectionStyles} : blockStyles}
               >
-                {showSectionTitle && <h3 className="text-2xl font-bold mb-6">{sectionTitle}</h3>}
+                {showSectionTitle && <h3 className="section-title text-2xl font-bold mb-6">{sectionTitle}</h3>}
                 <div 
                   className={`grid auto-rows-auto ${block.type === 'videos' ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'}`}
                   style={{ 
