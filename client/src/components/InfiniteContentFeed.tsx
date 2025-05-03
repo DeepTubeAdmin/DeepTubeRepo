@@ -391,60 +391,41 @@ export default function InfiniteContentFeed({
             
             // For section titles based on block types, position, and server-provided category
             let sectionTitle = "";
+            let showSectionTitle = false;
             
-            // Use the block's ID to create consistent section titles that don't change on re-render
-            // This avoids issues with titles changing due to ad insertions
-            if (block.type === 'videos') {
-              if (index === 0) {
-                sectionTitle = "Trending Now";
-                // Show 3 rows for Trending Now
-                if (block.items.length > 3) {
-                  // Keep only the first 9 items (3 rows of 3)
-                  block.items = block.items.slice(0, 9);
-                }
-              } else if (index === 1) {
-                sectionTitle = "Recently Uploaded Videos";
-                // Show 3 rows for Recently Uploaded
-                if (block.items.length > 3) {
-                  // Keep only the first 9 items (3 rows of 3)
-                  block.items = block.items.slice(0, 9);
-                }
-              } else {
-                // For subsequent video blocks, use the category from server if available
-                if (block.categoryName) {
-                  sectionTitle = `${block.categoryName} Videos`;
-                } else {
-                  // Use the block ID as a consistent seed for random categories
-                  const categoryIndex = block.id % categories.length;
-                  const category = categories[categoryIndex >= 0 && categoryIndex < categories.length ? categoryIndex : 0];
-                  sectionTitle = category ? `${category.name} Videos` : "Entertainment Videos";
-                }
+            // Only show titles for the first three sections
+            if (index === 0) {
+              sectionTitle = "Trending Now";
+              showSectionTitle = true;
+              // Show 3 rows for Trending Now
+              if (block.items.length > 3) {
+                // Keep only the first 9 items (3 rows of 3)
+                block.items = block.items.slice(0, 9);
               }
-            } else {
-              // For image blocks based on position
-              if (index === 3) {
-                sectionTitle = "Trending Images";
-              } else if (index === 7) {
-                sectionTitle = "Most Viewed Images";
-              } else {
-                // For other image blocks, use the category from server if available
-                if (block.categoryName) {
-                  sectionTitle = `${block.categoryName} Images`;
-                } else {
-                  // Use the block ID as a consistent seed for random categories
-                  const categoryIndex = block.id % categories.length;
-                  const category = categories[categoryIndex >= 0 && categoryIndex < categories.length ? categoryIndex : 0];
-                  sectionTitle = category ? `${category.name} Images` : "Entertainment Images";
-                }
+            } else if (index === 1) {
+              sectionTitle = "Recently Uploaded Videos";
+              showSectionTitle = true;
+              // Show 3 rows for Recently Uploaded
+              if (block.items.length > 3) {
+                // Keep only the first 9 items (3 rows of 3)
+                block.items = block.items.slice(0, 9);
+              }
+            } else if (index === 2 && block.type === 'videos') {
+              sectionTitle = "Featured Content";
+              showSectionTitle = true;
+              // Show 3 rows for Featured Content
+              if (block.items.length > 3) {
+                // Keep only the first 9 items (3 rows of 3)
+                block.items = block.items.slice(0, 9);
               }
             }
             
             return (
               <section 
                 key={`${block.type}-${block.id}`} 
-                className={isContentTypeTransition ? "mt-16 mb-10" : "mb-10"}
+                className={showSectionTitle ? (isContentTypeTransition ? "mt-16 mb-10" : "mb-10") : "mb-6"}
               >
-                <h3 className="text-2xl font-bold mb-6">{sectionTitle}</h3>
+                {showSectionTitle && <h3 className="text-2xl font-bold mb-6">{sectionTitle}</h3>}
                 <div className={`grid grid-cols-1 sm:grid-cols-1 ${block.type === 'videos' ? 'md:grid-cols-2 lg:grid-cols-2 gap-6' : 'md:grid-cols-3 lg:grid-cols-4 gap-4'}`}>
                   {block.type === 'videos' && renderVideoBlock(block, index, block.id)}
                   {block.type === 'images' && block.items.map(item => (
