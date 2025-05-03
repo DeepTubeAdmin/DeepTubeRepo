@@ -26,6 +26,32 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+// Separate component for related videos to avoid React hook rules violation
+function RelatedVideos({ videoId }: { videoId: string }) {
+  const { data: relatedVideos } = useQuery<Video[]>({
+    queryKey: [`/api/videos/${videoId}/related`],
+    enabled: !!videoId,
+    select: (data) => data?.slice(0, 6)
+  });
+
+  if (!relatedVideos || relatedVideos.length === 0) {
+    return <div className="text-gray-500 text-center py-4">No related content found</div>;
+  }
+
+  return (
+    <>
+      {relatedVideos.map((relatedVideo) => (
+        <div key={relatedVideo.id} className="w-full">
+          <VideoCard 
+            video={relatedVideo}
+            compact={true}
+          />
+        </div>
+      ))}
+    </>
+  );
+}
+
 export default function MediaDetail() {
   const { id } = useParams<{ id: string }>();
   const [location, setLocation] = useLocation();
@@ -514,22 +540,8 @@ export default function MediaDetail() {
             <h2 className="text-lg font-bold mb-4">Related Content</h2>
             <div className="space-y-4">
               {/* Fetch related content based on content type, tags, etc */}
-              {(() => {
-                const { data: relatedVideos } = useQuery({
-                  queryKey: [`/api/videos/${id}/related`],
-                  enabled: !!id,
-                  select: (data: Video[]) => data?.slice(0, 6)
-                });
-                
-                return relatedVideos?.map((relatedVideo) => (
-                  <div key={relatedVideo.id} className="w-full">
-                    <VideoCard 
-                      video={relatedVideo}
-                      compact={true}
-                    />
-                  </div>
-                ));
-              })()}
+              {/* Using a separate component for related videos to avoid hook issues */}
+              <RelatedVideos videoId={id} />
             </div>
           </div>
         </div>
