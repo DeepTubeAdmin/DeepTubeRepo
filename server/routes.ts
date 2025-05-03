@@ -2872,6 +2872,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch comments" });
     }
   });
+
+  // Related videos API - finds videos with similar titles, keywords, and categories
+  app.get("/api/videos/:id/related", async (req, res) => {
+    try {
+      const videoId = parseInt(req.params.id);
+      const currentVideo = await dbStorage.getVideoById(videoId);
+      
+      if (!currentVideo) {
+        return res.status(404).json({ error: 'Video not found' });
+      }
+      
+      // Get all videos
+      const allVideos = await dbStorage.getVideos(100);
+      
+      // Filter out the current video
+      const otherVideos = allVideos.filter(v => v.id !== videoId);
+      
+      // Create a relevance score for each video
+      const scoredVideos = otherVideos.map(video => {
+        let score = 0;
+        
+        // Same category gets a big boost
+        if (video.categoryId === currentVideo.categoryId) {
+          score += 50;
+        }
+        
+        // Same content type gets a boost
+        if (video.contentType === currentVideo.contentType) {
+          score += 30;
+        }
+        
+        // Same AI generator gets a boost
+        if (video.aiGenerator && currentVideo.aiGenerator && 
+            video.aiGenerator.toLowerCase() === currentVideo.aiGenerator.toLowerCase()) {
+          score += 25;
+        }
+        
+        // Title similarity (simple contains check for now)
+        if (currentVideo.title && video.title) {
+          const currentTitleWords = currentVideo.title.toLowerCase().split(/\s+/);
+          const videoTitleWords = video.title.toLowerCase().split(/\s+/);
+          
+          // Check for shared words in titles
+          const sharedWords = currentTitleWords.filter(word => 
+            word.length > 3 && videoTitleWords.includes(word)
+          );
+          
+          score += sharedWords.length * 10;
+        }
+        
+        // Prompt similarity (if both have prompts)
+        if (currentVideo.prompt && video.prompt) {
+          const currentPromptWords = currentVideo.prompt.toLowerCase().split(/\s+/);
+          const videoPromptWords = video.prompt.toLowerCase().split(/\s+/);
+          
+          // Check for shared words in prompts
+          const sharedWords = currentPromptWords.filter(word => 
+            word.length > 3 && videoPromptWords.includes(word)
+          );
+          
+          score += sharedWords.length * 5;
+        }
+        
+        // Newer content gets a small boost
+        if (video.createdAt && video.createdAt > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)) { // within 30 days
+          score += 10;
+        }
+        
+        // Append a small random factor for diversity
+        score += Math.random() * 5;
+        
+        return { video, score };
+      });
+      
+      // Sort by score (descending) and take top 6
+      const relatedVideos = scoredVideos
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 6)
+        .map(item => item.video);
+      
+      console.log(`API: Found ${relatedVideos.length} related videos for video ${videoId}`);
+      res.json(relatedVideos);
+    } catch (error) {
+      console.error('Error fetching related videos:', error);
+      res.status(500).json({ error: 'Failed to fetch related videos' });
+    }
+  });
   
   app.post("/api/videos/:id/comments", async (req, res) => {
     try {
