@@ -96,7 +96,7 @@ export default function AdvertisementCard({ ad, className = '', contentType = 'v
   
   return (
     <div 
-      className={`${containerClasses} ${className} mb-6`}
+      className={`${containerClasses} ${className}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={handleClick}
