@@ -25,7 +25,7 @@ export default function VideoGrid({
   
   // Create a function to get the optimal column count based on available width
   // Increased column counts to match our increased items per row in the API
-  const [columnClass, setColumnClass] = useState('grid-cols-3'); // Default to 3 columns
+  const [columnClass, setColumnClass] = useState('grid-cols-2'); // Default to 2 columns
   
   // Update column class based on window resize
   useEffect(() => {
@@ -36,7 +36,7 @@ export default function VideoGrid({
       else if (width < 768) setColumnClass('grid-cols-1'); // Small tablets
       else if (width < 1024) setColumnClass('grid-cols-2'); // Large tablets/small desktop
       else if (width < 1536) setColumnClass('grid-cols-2'); // Desktop
-      else setColumnClass('grid-cols-3'); // Large screens - 3 per row
+      else setColumnClass('grid-cols-2'); // Large screens - 2 per row (changed from 3)
     };
     
     // Set initial value
