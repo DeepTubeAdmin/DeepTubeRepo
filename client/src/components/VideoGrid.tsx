@@ -20,22 +20,39 @@ export default function VideoGrid({
   showViewAll = true,
   viewAllUrl = "#",
 }: VideoGridProps) {
-  // No longer filtering out images
-  const filteredVideos = videos;
-
-  // Create a function to get the optimal column count based on available width
-  const [columnClass, setColumnClass] = useState('grid-cols-2'); // Default to 2 columns
+  // Calculate items to show (3 rows * columns)
+  const [columnCount, setColumnCount] = useState(2); // Default to 2 columns
+  const [columnClass, setColumnClass] = useState('grid-cols-2');
+  
+  // Get optimal number of videos to show (3 rows)
+  const itemsToShow = Math.min(videos.length, columnCount * 3);
+  const filteredVideos = videos.slice(0, itemsToShow);
 
   // Update column class based on window resize
   useEffect(() => {
     const updateColumnClass = () => {
       // Get window width
       const width = window.innerWidth;
-      if (width < 640) setColumnClass('grid-cols-1'); // Mobile
-      else if (width < 768) setColumnClass('grid-cols-1'); // Small tablets
-      else if (width < 1024) setColumnClass('grid-cols-2'); // Large tablets/small desktop
-      else if (width < 1536) setColumnClass('grid-cols-2'); // Desktop
-      else setColumnClass('grid-cols-2'); // Large screens - 2 per row (changed from 3)
+      if (width < 640) {
+        setColumnClass('grid-cols-1');
+        setColumnCount(1);
+      }
+      else if (width < 768) {
+        setColumnClass('grid-cols-1');
+        setColumnCount(1);
+      }
+      else if (width < 1024) {
+        setColumnClass('grid-cols-2');
+        setColumnCount(2);
+      }
+      else if (width < 1536) {
+        setColumnClass('grid-cols-3');
+        setColumnCount(3);
+      }
+      else {
+        setColumnClass('grid-cols-4');
+        setColumnCount(4);
+      }
     };
 
     // Set initial value
