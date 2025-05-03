@@ -11,6 +11,7 @@ import { Loader2 } from 'lucide-react';
 import { Link } from 'wouter';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { checkThumbnail } from '@/lib/checkThumbnail';
+import ErrorBoundary from './ErrorBoundary';
 
 interface InfiniteContentFeedProps {
   onPreview?: (videoId: number) => void;
@@ -259,17 +260,23 @@ export default function InfiniteContentFeed({
       }
     });
 
-    let itemsToRender = preparedItems;
+    // Filter out any potential problematic items
+    let itemsToRender = preparedItems.filter(item => {
+      // Ensure the item has all required properties
+      return item && item.item && typeof item.item.id === 'number';
+    });
 
     // Now render the items with ads in the right places
     return itemsToRender.map(({ item, hasAd }, i) => (
       <div key={`video-container-${item.id}`} className="video-container">
-        <VideoCard
-          key={`video-${item.id}`}
-          video={item}
-          onPreview={onPreview}
-          onWishlist={onWishlist}
-        />
+        <ErrorBoundary fallback={<div className="bg-black/80 rounded-md aspect-video flex items-center justify-center text-orange-500">Content Unavailable</div>}>
+          <VideoCard
+            key={`video-${item.id}`}
+            video={item}
+            onPreview={onPreview}
+            onWishlist={onWishlist}
+          />
+        </ErrorBoundary>
 
         {/* Insert advertisement if needed */}
         {hasAd && (() => {
@@ -325,14 +332,22 @@ export default function InfiniteContentFeed({
       }
     }
 
+    // Filter out any potential problematic items
+    itemsToRender = itemsToRender.filter(item => {
+      // Ensure the item has all required properties
+      return item && item.item && typeof item.item.id === 'number';
+    });
+    
     return itemsToRender.map(({ item, hasAd }) => (
       <div key={`image-container-${item.id}`} className="image-container">
-        <ImageCard
-          key={`image-${item.id}`}
-          image={item}
-          onPreview={onPreview}
-          onWishlist={onWishlist}
-        />
+        <ErrorBoundary fallback={<div className="bg-black/80 rounded-md aspect-[3/4] flex items-center justify-center text-orange-500">Image Unavailable</div>}>
+          <ImageCard
+            key={`image-${item.id}`}
+            image={item}
+            onPreview={onPreview}
+            onWishlist={onWishlist}
+          />
+        </ErrorBoundary>
 
         {/* Insert advertisement if needed */}
         {hasAd && (() => {
@@ -364,14 +379,13 @@ export default function InfiniteContentFeed({
   function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
     const [isWishlisted, setIsWishlisted] = useState(false);
     const [isHovering, setIsHovering] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [loadFailed, setLoadFailed] = useState(false);
+    const [imgSrc, setImgSrc] = useState(checkThumbnail(image.thumbnail || "", image.id));
 
     const handleClick = () => {
-      console.log('ImageCard: handleClick called for image', image.id);
       if (onPreview) {
-        console.log('ImageCard: Calling onPreview with image ID', image.id);
         onPreview(image.id);
-      } else {
-        console.log('ImageCard: onPreview prop is not provided');
       }
     };
 
@@ -390,6 +404,19 @@ export default function InfiniteContentFeed({
     const handleMouseLeave = () => {
       setIsHovering(false);
     };
+    
+    // Handle image loading/error events
+    const handleImageLoad = () => {
+      setIsLoading(false);
+    };
+    
+    const handleImageError = () => {
+      console.error(`ImageCard: Error loading thumbnail for image ${image.id}`);
+      // Use a forced SVG placeholder
+      setImgSrc(`/api/videos/${image.id}/thumbnail?forcesvg=true&t=${Date.now()}`);
+      setLoadFailed(true);
+      setIsLoading(false);
+    };
 
     return (
       <div 
@@ -401,14 +428,31 @@ export default function InfiniteContentFeed({
         <div className="relative">
           {/* Thumbnail with hover effect */}
           <AspectRatio ratio={3 / 4} className="bg-black">
+            {isLoading && (
+              <div className="w-full h-full absolute inset-0 bg-black/70 flex items-center justify-center z-10">
+                <div className="w-6 h-6 border-2 border-t-orange-500 border-orange-500/30 rounded-full animate-spin"></div>
+              </div>
+            )}
+            {loadFailed && (
+              <div className="w-full h-full absolute inset-0 bg-black/70 flex items-center justify-center z-5">
+                <div className="w-12 h-12 text-orange-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                </div>
+              </div>
+            )}
             <img
-              src={checkThumbnail(image.thumbnail || "", image.id)}
+              src={imgSrc}
               alt={image.title}
               className="object-cover w-full h-full transition-all duration-300 transform group-hover:scale-110"
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+              style={{ opacity: loadFailed ? 0.7 : 1 }} // Dim failed thumbnails but keep them visible
             />
           </AspectRatio>
-
-          {/* Remove AI watermark from thumbnails */}
 
           {/* View/info overlay - only shows on hover */}
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">

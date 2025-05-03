@@ -133,16 +133,16 @@ export default function VideoGrid({
           // Listen for reflow events to handle grid adjustments after failures
           onAnimationEnd={() => console.log('Grid animation completed')}
         >
-          {paddedVideos.map((video, index) => 
-            video ? (
+          {gridIndices.map(idx => 
+            idx >= 0 ? (
               <VideoCard
-                key={video.id}
-                video={video}
+                key={visibleVideos[idx].id}
+                video={visibleVideos[idx]}
                 onPreview={onPreview}
                 onWishlist={onWishlist}
               />
             ) : (
-              <div key={`empty-${index}`} className="hidden" />
+              <div key={`empty-${-idx-1}`} className="hidden" />
             )
           )}
         </div>
