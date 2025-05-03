@@ -99,7 +99,6 @@ export default function InfiniteContentFeed({
         if (entries[0].isIntersecting && hasMore) {
           // Immediately apply spacing fixes at the boundary, before load
           if (containerRef.current) {
-            const sections = containerRef.current.querySelectorAll('section');
             const popularSection = containerRef.current.querySelector('.popular-content');
             
             if (popularSection) {
@@ -107,9 +106,22 @@ export default function InfiniteContentFeed({
               let sibling = popularSection.nextElementSibling;
               while (sibling) {
                 const element = sibling as HTMLElement;
+                // Super aggressive styling to eliminate any gaps
                 element.style.marginTop = '0';
                 element.style.paddingTop = '0';
+                element.style.marginBottom = '0';
+                element.style.paddingBottom = '0';
+                element.style.position = 'relative';
+                element.style.top = '-24px';
                 sibling = sibling.nextElementSibling;
+              }
+              
+              // Move the loading indicator up as well to prevent gaps
+              const loadingIndicator = containerRef.current.querySelector('.loading-indicator');
+              if (loadingIndicator) {
+                const loadingElement = loadingIndicator as HTMLElement;
+                loadingElement.style.marginTop = '-24px';
+                loadingElement.style.position = 'relative';
               }
             }
           }
@@ -703,9 +715,14 @@ export default function InfiniteContentFeed({
       }
       
       /* Special handling for transition after titled to non-titled sections */
-      .content-feed-container section.popular-content + section {
+      .content-feed-container section.popular-content + section,
+      .content-feed-container section.popular-content ~ section {
         margin-top: 0 !important;
-        padding-top: 0 !important; /* Remove the padding to eliminate gap */
+        padding-top: 0 !important;
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+        position: relative !important;
+        top: -24px !important; /* Negative offset to eliminate gap */
       }
       
       /* Critical fix for the loading indicator */
@@ -771,10 +788,29 @@ export default function InfiniteContentFeed({
           // Special handling for section after Popular Content
           const previousSection = i > 0 ? sections[i-1] : null;
           
-          // Check for a section right after Popular Content
-          if (previousSection && previousSection.classList.contains('popular-content')) {
-            section.style.marginTop = '0';
-            section.style.paddingTop = '0'; // Remove the padding to eliminate gap
+          // Check for a section right after Popular Content or any section after Popular Content
+          const popularSection = containerRef.current.querySelector('.popular-content');
+          if (popularSection) {
+            // Check if this section comes after the Popular Content section in the DOM
+            let isAfterPopular = false;
+            let currentNode = popularSection.nextElementSibling;
+            
+            while (currentNode && !isAfterPopular) {
+              if (currentNode === section) {
+                isAfterPopular = true;
+              }
+              currentNode = currentNode.nextElementSibling;
+            }
+            
+            if (isAfterPopular) {
+              // Any section that comes after Popular Content gets aggressive spacing treatment
+              section.style.marginTop = '0';
+              section.style.paddingTop = '0';
+              section.style.marginBottom = '0';
+              section.style.paddingBottom = '0';
+              section.style.position = 'relative';
+              section.style.top = '-24px';
+            }
           }
           
           // Check for consecutive non-titled sections (both don't have 'has-title' class)
