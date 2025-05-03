@@ -59,7 +59,6 @@ export function checkThumbnail(thumbnailUrl: string, videoId: number): string {
     return thumbnailUrl;
   }
   
-  // For all other cases, use our reliable API endpoint
-  // Add a cache buster to ensure we get fresh content
-  return `/api/videos/${videoId}/thumbnail?t=${Date.now()}`;
+  // For all other cases, use SVG placeholder while thumbnail generates
+  return `/default-video-thumbnail.svg`;
 }

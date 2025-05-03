@@ -34,7 +34,7 @@ export default function InfiniteContentFeed({
     title: string;
     categoryName?: string;
   }>>([]);
-  
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -45,7 +45,7 @@ export default function InfiniteContentFeed({
   const [usedAdIds, setUsedAdIds] = useState<Set<string>>(new Set());
   const observer = useRef<IntersectionObserver | null>(null);
   const isMobile = useIsMobile();
-  
+
   // Fetch categories
   useEffect(() => {
     async function fetchCategories() {
@@ -59,10 +59,10 @@ export default function InfiniteContentFeed({
         console.error('Error fetching categories:', error);
       }
     }
-    
+
     fetchCategories();
   }, []);
-  
+
   // Determine how many items should be shown per row based on screen size
   const getItemsPerRow = () => {
     if (isMobile) return 1; // Mobile: 1 item per row
@@ -75,13 +75,13 @@ export default function InfiniteContentFeed({
     (node: HTMLDivElement | null) => {
       if (isLoading) return;
       if (observer.current) observer.current.disconnect();
-      
+
       observer.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && hasMore) {
           setPage((prevPage) => prevPage + 1);
         }
       });
-      
+
       if (node) observer.current.observe(node);
     },
     [isLoading, hasMore]
@@ -90,7 +90,7 @@ export default function InfiniteContentFeed({
   // Fetch content blocks from our API
   const fetchContentBlocks = useCallback(async (currentPage: number) => {
     setIsLoading(true);
-    
+
     try {
       // Build query parameters
       const params = new URLSearchParams({
@@ -99,23 +99,23 @@ export default function InfiniteContentFeed({
         sortBy: sortBy,
         shuffleSeed: shuffleSeed
       });
-      
+
       // Add category parameter if it exists and is not empty
       if (category) {
         params.append('category', category);
       }
-      
+
       const apiUrl = `/api/content/infinite?${params.toString()}`;
       console.log('Fetching content from:', apiUrl);
-      
+
       const response = await fetch(apiUrl);
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch content');
       }
-      
+
       const data = await response.json();
-      
+
       setContentBlocks(prev => {
         if (currentPage === 1) {
           return data.blocks;
@@ -123,7 +123,7 @@ export default function InfiniteContentFeed({
           return [...prev, ...data.blocks];
         }
       });
-      
+
       setHasMore(data.hasMore);
     } catch (error) {
       console.error('Error fetching content:', error);
@@ -141,7 +141,7 @@ export default function InfiniteContentFeed({
     setIsInitialLoad(true);
     fetchContentBlocks(1);
   }, [category, sortBy, shuffleSeed, fetchContentBlocks]);
-  
+
   // Load more content when scrolling
   useEffect(() => {
     if (page > 1) {
@@ -151,16 +151,16 @@ export default function InfiniteContentFeed({
 
   // Use effect to handle window resize and update items per row
   const [itemsPerRow, setItemsPerRow] = useState(getItemsPerRow());
-  
+
   useEffect(() => {
     const handleResize = () => {
       setItemsPerRow(getItemsPerRow());
     };
-    
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [isMobile]);
-  
+
   // Function to determine how many items should be displayed
   // This now provides enough items to fill the grid while accounting
   // for the responsive design that handles actually showing the items
@@ -171,73 +171,73 @@ export default function InfiniteContentFeed({
     const itemCount = Math.min(items.length, itemsPerRow);
     return items.slice(0, itemCount);
   };
-  
+
   // Function to get a unique random advertisement
   // Use useCallback to memoize the function and prevent re-renders
   const getUniqueRandomAd = useCallback(() => {
     let ad = getRandomAd();
     let attempts = 0;
-    
+
     // Try to find an ad that hasn't been used yet
     // But limit attempts to avoid infinite loop if all ads have been used
     while (usedAdIds.has(ad.id) && attempts < 10) {
       ad = getRandomAd();
       attempts++;
     }
-    
+
     // We'll update the usedAdIds in a useEffect to avoid render loops
     return ad;
   }, [usedAdIds]);
-  
+
   // Track the ads that are displayed in the current view
   const [displayedAds, setDisplayedAds] = useState<string[]>([]);
-  
+
   // Update usedAdIds when displayedAds changes
   useEffect(() => {
     if (displayedAds.length > 0) {
       const newUsedAdIds = new Set(usedAdIds);
       displayedAds.forEach(id => newUsedAdIds.add(id));
-      
+
       // If we've used all ads, reset the tracking
       if (newUsedAdIds.size >= 5) { // 5 is the number of sample ads we have
         setUsedAdIds(new Set());
       } else {
         setUsedAdIds(newUsedAdIds);
       }
-      
+
       // Clear the displayed ads after processing
       setDisplayedAds([]);
     }
   }, [displayedAds]);
-  
+
   // Function to render video blocks with ad control
   const renderVideoBlock = (block: any, blockIndex: number, blockPosition: number) => {
     // First, determine which items will have ads after them
     const itemsWithAdIndices: number[] = [];
     const preparedItems: { item: TypeVideo; hasAd: boolean }[] = [];
-    
+
     // Calculate start index for the current block's videos
     const blockStartIndex = contentBlocks.slice(0, blockIndex).reduce((count, prevBlock) => {
       return prevBlock.type === 'videos' ? count + prevBlock.items.length : count;
     }, 0);
-    
+
     // Analyze the items to find out where ads will be placed - every 7 videos
     block.items.forEach((item: TypeVideo, itemIndex: number) => {
       const globalVideoIndex = blockStartIndex + itemIndex;
       const shouldShowAd = globalVideoIndex > 0 && (globalVideoIndex + 1) % 7 === 0;
-      
+
       preparedItems.push({
         item,
         hasAd: shouldShowAd
       });
-      
+
       if (shouldShowAd) {
         itemsWithAdIndices.push(itemIndex);
       }
     });
-    
+
     let itemsToRender = preparedItems;
-    
+
     // Now render the items with ads in the right places
     return itemsToRender.map(({ item, hasAd }, i) => (
       <div key={`video-container-${item.id}`} className="video-container">
@@ -247,7 +247,7 @@ export default function InfiniteContentFeed({
           onPreview={onPreview}
           onWishlist={onWishlist}
         />
-        
+
         {/* Insert advertisement if needed */}
         {hasAd && (() => {
           // Get a random ad and track it in displayedAds
@@ -267,17 +267,17 @@ export default function InfiniteContentFeed({
       </div>
     ));
   };
-  
+
   // Function to render image blocks with ad control
   const renderImageBlock = (block: any, blockIndex: number) => {
     // Prepare items with ad markers
     const preparedItems: { item: TypeVideo; hasAd: boolean }[] = [];
-    
+
     // Calculate start index for the current block's images
     const blockStartIndex = contentBlocks.slice(0, blockIndex).reduce((count, prevBlock) => {
       return prevBlock.type === 'images' ? count + prevBlock.items.length : count;
     }, 0);
-    
+
     // No ads in image blocks
     block.items.forEach((item: TypeVideo, i: number) => {
       preparedItems.push({
@@ -285,14 +285,14 @@ export default function InfiniteContentFeed({
         hasAd: false
       });
     });
-    
+
     // For image grid, we want to ensure the number of items fits nicely in the grid
     // Our grid is 3 columns on medium screens and 4 columns on large screens
     let itemsToRender = preparedItems;
-    
+
     // If this is one of the titled sections, ensure clean layout for the grid
     const isSpecialBlock = blockIndex < 3;
-    
+
     if (isSpecialBlock) {
       // Make sure the count is a multiple of 4 (for large screens) or 3 (for medium screens)
       // By default, we'll optimize for 4-column layout (large screens)
@@ -301,7 +301,7 @@ export default function InfiniteContentFeed({
         itemsToRender = itemsToRender.slice(0, itemsToRender.length - remainder);
       }
     }
-    
+
     return itemsToRender.map(({ item, hasAd }) => (
       <div key={`image-container-${item.id}`} className="image-container">
         <ImageCard
@@ -310,7 +310,7 @@ export default function InfiniteContentFeed({
           onPreview={onPreview}
           onWishlist={onWishlist}
         />
-        
+
         {/* Insert advertisement if needed */}
         {hasAd && (() => {
           // Get a random ad and track it in displayedAds
@@ -330,14 +330,14 @@ export default function InfiniteContentFeed({
       </div>
     ));
   };
-  
+
   // Image card component specifically for images in the infinite feed
   interface ImageCardProps {
     image: TypeVideo;
     onPreview?: (imageId: number) => void;
     onWishlist?: (imageId: number) => void;
   }
-  
+
   function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
     const [isWishlisted, setIsWishlisted] = useState(false);
     const [isHovering, setIsHovering] = useState(false);
@@ -359,7 +359,7 @@ export default function InfiniteContentFeed({
         onWishlist(image.id);
       }
     };
-    
+
     const handleMouseEnter = () => {
       setIsHovering(true);
     };
@@ -384,14 +384,14 @@ export default function InfiniteContentFeed({
               className="object-cover w-full h-full transition-all duration-300 transform group-hover:scale-110"
             />
           </AspectRatio>
-          
+
           {/* Remove AI watermark from thumbnails */}
-          
+
           {/* View/info overlay - only shows on hover */}
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
           </div>
         </div>
-        
+
         {/* Image info */}
         <div className="pt-2 pb-3 px-1 bg-[#0f172a]">
           <div className="flex justify-between items-start">
@@ -402,12 +402,12 @@ export default function InfiniteContentFeed({
               <ExternalLink className="h-3.5 w-3.5 ml-1" />
             </Link>
           </div>
-          
+
           <div className="flex justify-between items-center mt-1">
             <div className="flex items-center space-x-2 text-xs text-gray-400">
               <span>{image.aiGenerator || "AI Generated"}</span>
             </div>
-            
+
             <button 
               onClick={handleWishlist}
               className="text-gray-400 hover:text-primary transition-colors"
@@ -433,18 +433,18 @@ export default function InfiniteContentFeed({
             const isContentTypeTransition = index > 0 && 
               contentBlocks[index-1] && 
               contentBlocks[index-1].type !== block.type;
-            
+
             // Get a random category for variety in section titles
             const getRandomCategory = () => {
               if (categories.length === 0) return "Entertainment";
               const randomIndex = Math.floor(Math.random() * categories.length);
               return categories[randomIndex].name;
             };
-            
+
             // For section titles based on block types, position, and server-provided category
             let sectionTitle = "";
             let showSectionTitle = false;
-            
+
             // Only show titles for the first three sections
             if (index === 0) {
               sectionTitle = "Trending Now";
@@ -474,21 +474,21 @@ export default function InfiniteContentFeed({
                 block.items = block.items.slice(0, itemCount);
               }
             }
-            
+
             return (
               <section 
                 key={`${block.type}-${block.id}`} 
                 className={showSectionTitle ? (isContentTypeTransition ? "mt-16 mb-10" : "mb-10") : "mb-6"}
               >
                 {showSectionTitle && <h3 className="text-2xl font-bold mb-6">{sectionTitle}</h3>}
-                <div className={`grid grid-cols-1 sm:grid-cols-1 ${block.type === 'videos' ? 'md:grid-cols-2 lg:grid-cols-2 gap-6' : 'md:grid-cols-3 lg:grid-cols-4 gap-4'}`}>
+                <div className={`grid auto-rows-auto ${block.type === 'videos' ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'}`}>
                   {block.type === 'videos' && renderVideoBlock(block, index, block.id)}
                   {block.type === 'images' && renderImageBlock(block, index)}
                 </div>
               </section>
             );
           })}
-          
+
           {hasMore && (
             <div 
               ref={loadingRef} 
@@ -497,7 +497,7 @@ export default function InfiniteContentFeed({
               {isLoading && <Loader2 className="h-8 w-8 animate-spin text-primary" />}
             </div>
           )}
-          
+
           {/* We no longer show "end of content" message for true infinite scrolling */}
         </>
       )}
