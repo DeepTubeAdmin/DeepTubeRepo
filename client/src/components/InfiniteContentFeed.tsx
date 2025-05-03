@@ -238,10 +238,19 @@ export default function InfiniteContentFeed({
       return prevBlock.type === 'videos' ? count + prevBlock.items.length : count;
     }, 0);
 
+    // Check if we have valid items to work with
+    if (!block.items || !Array.isArray(block.items) || block.items.length === 0) {
+      console.warn("No valid items to render in video block", blockIndex);
+      return [];
+    }
+
     // Analyze the items to find out where ads will be placed - every 7 videos
     // But not within the first 3 rows for the featured sections
     block.items.forEach((item: TypeVideo, itemIndex: number) => {
       const globalVideoIndex = blockStartIndex + itemIndex;
+      
+      // Skip any invalid items
+      if (!item || typeof item.id !== 'number') return;
       
       // Don't show ads within the special blocks to maintain clean 3-row layout
       const isSpecialBlock = blockPosition === 0 || blockPosition === 1 || blockPosition === 2;
@@ -270,14 +279,16 @@ export default function InfiniteContentFeed({
     // For videos, calculate the needed count based on the screen width
     // Videos are displayed in a 1-column grid on small screens, 2-column on larger screens
     let columnsCount = 2; // Default for medium/large screens
-    if (window.innerWidth < 768) {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
       columnsCount = 1;
     }
     
     // Ensure the items count is a multiple of the columns count to avoid blank spaces
-    // But only do this for the specific titled sections (blocks 0-2), not for infinite scroll
+    // This is critical for the Popular Content section (block 2)
     if (blockPosition <= 2 && itemsToRender.length > 0) { 
-      const idealCount = Math.ceil(itemsToRender.length / columnsCount) * columnsCount;
+      // Make rows a multiple of columns count to fill the grid evenly
+      const rowCount = blockPosition === 2 ? 3 : Math.ceil(itemsToRender.length / columnsCount); // Ensure exactly 3 rows for Popular Content
+      const idealCount = rowCount * columnsCount;
       
       // Add filler items if needed by repeating existing items
       if (itemsToRender.length < idealCount) {
@@ -288,7 +299,7 @@ export default function InfiniteContentFeed({
           // Copy an existing item as filler
           const original = itemsToRender[i % itemsToRender.length];
           fillerItems.push({
-            item: original.item,
+            item: {...original.item}, // Create a full copy to avoid reference issues
             hasAd: false // Don't add ads for filler items
           });
         }
@@ -334,6 +345,12 @@ export default function InfiniteContentFeed({
     // Prepare items with ad markers
     const preparedItems: { item: TypeVideo; hasAd: boolean }[] = [];
 
+    // Check if we have valid items to work with
+    if (!block.items || !Array.isArray(block.items) || block.items.length === 0) {
+      console.warn("No valid items to render in image block", blockIndex);
+      return [];
+    }
+
     // Calculate start index for the current block's images
     const blockStartIndex = contentBlocks.slice(0, blockIndex).reduce((count, prevBlock) => {
       return prevBlock.type === 'images' ? count + prevBlock.items.length : count;
@@ -341,6 +358,9 @@ export default function InfiniteContentFeed({
 
     // No ads in image blocks
     block.items.forEach((item: TypeVideo, i: number) => {
+      // Skip any invalid items
+      if (!item || typeof item.id !== 'number') return;
+      
       preparedItems.push({
         item,
         hasAd: false
@@ -355,12 +375,8 @@ export default function InfiniteContentFeed({
     const isSpecialBlock = blockIndex < 3;
 
     if (isSpecialBlock) {
-      // Make sure the count is a multiple of 4 (for large screens) or 3 (for medium screens)
-      // By default, we'll optimize for 4-column layout (large screens)
-      const remainder = itemsToRender.length % 4;
-      if (remainder !== 0) {
-        itemsToRender = itemsToRender.slice(0, itemsToRender.length - remainder);
-      }
+      // For special blocks, we'll make sure everything is filled properly without gaps
+      // rather than truncating items and creating gaps
     }
 
     // Filter out any potential problematic items
@@ -373,14 +389,22 @@ export default function InfiniteContentFeed({
     // Calculate the needed count based on the screen width
     // Images are displayed in a 2-column grid on small screens, 3-column on medium, 4-column on large
     let columnsCount = 4; // Default for large screens
-    if (window.innerWidth < 768) {
-      columnsCount = 2;
-    } else if (window.innerWidth < 1024) {
-      columnsCount = 3;
+    if (typeof window !== 'undefined') {
+      if (window.innerWidth < 768) {
+        columnsCount = 2;
+      } else if (window.innerWidth < 1024) {
+        columnsCount = 3;
+      }
     }
     
     // Ensure the items count is a multiple of the columns count to avoid blank spaces
-    const idealCount = Math.ceil(itemsToRender.length / columnsCount) * columnsCount;
+    // For special blocks (first 3), ensure we have exactly the needed number of rows
+    let rowCount = Math.ceil(itemsToRender.length / columnsCount);
+    if (isSpecialBlock) {
+      // Force exactly 2 rows for images in special blocks
+      rowCount = 2;
+    }
+    const idealCount = rowCount * columnsCount;
     
     // Add filler items if needed by repeating existing items
     if (itemsToRender.length > 0 && itemsToRender.length < idealCount) {
@@ -391,7 +415,7 @@ export default function InfiniteContentFeed({
         // Copy an existing item as filler
         const original = itemsToRender[i % itemsToRender.length];
         fillerItems.push({
-          item: original.item,
+          item: {...original.item}, // Create a full copy to avoid reference issues
           hasAd: false // Don't add ads for filler items
         });
       }
@@ -623,22 +647,27 @@ export default function InfiniteContentFeed({
               showSectionTitle = true;
               // Make sure we have exactly 3 rows of content for Popular Content
               if (block.items.length > 0) {
-                // Use our new helper function to get exactly 3 rows of content
-                const threeRowsCount = getItemsForThreeRows(block.type);
-                const itemCount = Math.min(threeRowsCount, block.items.length);
-                
-                // If we don't have enough items to fill the rows, repeat items as needed
-                if (itemCount > block.items.length) {
-                  let filledItems = [...block.items];
-                  while (filledItems.length < itemCount) {
-                    // Add items from the beginning of the list to fill the rows
-                    const itemsToAdd = block.items.slice(0, Math.min(itemCount - filledItems.length, block.items.length));
-                    filledItems = [...filledItems, ...itemsToAdd];
-                  }
-                  block.items = filledItems;
-                } else {
-                  block.items = block.items.slice(0, itemCount);
+                // Get the number of columns based on window width
+                let columnsCount = 2; // Default for medium/large screens
+                if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                  columnsCount = 1;
                 }
+                
+                // Always use exactly 3 rows for Popular Content section
+                const rowCount = 3;
+                const targetCount = rowCount * columnsCount;
+                
+                // Always fill rows completely by duplicating items as needed
+                let filledItems = [...block.items];
+                // Duplicate content as many times as needed to fill rows
+                while (filledItems.length < targetCount) {
+                  // Add items from the beginning of the list until we have enough
+                  const itemsToAdd = block.items.slice(0, Math.min(targetCount - filledItems.length, block.items.length));
+                  filledItems = [...filledItems, ...itemsToAdd];
+                }
+                
+                // Make sure we have exactly the right number of items
+                block.items = filledItems.slice(0, targetCount);
               }
             }
 
