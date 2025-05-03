@@ -71,6 +71,22 @@ export default function InfiniteContentFeed({
     if (window.innerWidth < 1280) return 4; // Small desktop: 4 items
     return 5; // Large desktop: 5 items
   };
+  
+  // Calculate how many videos to show for featured sections (3 rows)
+  const getItemsForThreeRows = (type: 'videos' | 'images'): number => {
+    if (type === 'videos') {
+      // For video sections we want columns * 3 (rows)
+      if (isMobile) return 3; // 1 column * 3 rows
+      if (window.innerWidth < 768) return 6; // 2 columns * 3 rows
+      return 6; // 2 columns * 3 rows (larger screens - we keep 2 columns for videos)
+    } else {
+      // For image sections we want columns * 3 (rows)
+      if (isMobile) return 3; // 1 column * 3 rows
+      if (window.innerWidth < 768) return 6; // 2 columns * 3 rows
+      if (window.innerWidth < 1024) return 9; // 3 columns * 3 rows
+      return 12; // 4 columns * 3 rows (larger screens)
+    }
+  };
   const loadingRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (isLoading) return;
@@ -449,28 +465,31 @@ export default function InfiniteContentFeed({
             if (index === 0) {
               sectionTitle = "Trending Now";
               showSectionTitle = true;
-              // Make sure we have even number of videos for grid layout
-              if (block.items.length > 0 && block.type === 'videos') {
-                // Ensure we have an even number of items for 2-column grid (no blank spaces)
-                const itemCount = Math.min(10, block.items.length);
+              // Make sure we have exactly 3 rows of content for Trending Now
+              if (block.items.length > 0) {
+                // Use our new helper function to get exactly 3 rows of content
+                const threeRowsCount = getItemsForThreeRows(block.type);
+                const itemCount = Math.min(threeRowsCount, block.items.length);
                 block.items = block.items.slice(0, itemCount);
               }
             } else if (index === 1) {
               sectionTitle = "Recently Uploaded Videos";
               showSectionTitle = true;
-              // Make sure we have even number of videos for grid layout
-              if (block.items.length > 0 && block.type === 'videos') {
-                // Ensure we have an even number of items for 2-column grid (no blank spaces)
-                const itemCount = Math.min(10, block.items.length);
+              // Make sure we have exactly 3 rows of content for Recently Uploaded
+              if (block.items.length > 0) {
+                // Use our new helper function to get exactly 3 rows of content
+                const threeRowsCount = getItemsForThreeRows(block.type);
+                const itemCount = Math.min(threeRowsCount, block.items.length);
                 block.items = block.items.slice(0, itemCount);
               }
             } else if (index === 2 && block.type === 'videos') {
               sectionTitle = "Popular Content";
               showSectionTitle = true;
-              // Make sure we have even number of videos for grid layout
+              // Make sure we have exactly 3 rows of content for Featured Content
               if (block.items.length > 0) {
-                // Ensure we have an even number of items for 2-column grid (no blank spaces)
-                const itemCount = Math.min(10, block.items.length);
+                // Use our new helper function to get exactly 3 rows of content
+                const threeRowsCount = getItemsForThreeRows(block.type);
+                const itemCount = Math.min(threeRowsCount, block.items.length);
                 block.items = block.items.slice(0, itemCount);
               }
             }
