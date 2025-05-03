@@ -72,12 +72,7 @@ export default function VideoGrid({
           />
         ))}
         
-        {/* Add empty placeholder items to fill the last row completely */}
-        {filteredVideos.length > 0 && filteredVideos.length % (parseInt(columnClass.split('-')[2]) || 1) !== 0 && 
-          Array.from({ length: parseInt(columnClass.split('-')[2]) - (filteredVideos.length % parseInt(columnClass.split('-')[2])) }).map((_, i) => (
-            <div key={`placeholder-${i}`} className="h-0 invisible"></div>
-          ))
-        }
+        {/* Remove placeholder logic to allow natural grid flow */}
       </div>
     </section>
   );
