@@ -272,11 +272,53 @@ export default function InfiniteContentFeed({
             <AdvertisementCard 
               key={`ad-after-${item.id}`}
               ad={ad} 
+              contentType="videos" // Mark this as a video type advertisement
             />
           );
         })()}
       </div>
     ));
+  };
+  
+  // Function to render image blocks with ad control
+  const renderImageBlock = (block: any, blockIndex: number) => {
+    return block.items.map((item: TypeVideo, i: number) => {
+      // For image blocks, place an ad after every 15th image
+      const blockStartIndex = contentBlocks.slice(0, blockIndex).reduce((count, prevBlock) => {
+        return prevBlock.type === 'images' ? count + prevBlock.items.length : count;
+      }, 0);
+      
+      const globalImageIndex = blockStartIndex + i;
+      const shouldShowAd = globalImageIndex > 0 && (globalImageIndex + 1) % 15 === 0;
+      
+      return (
+        <div key={`image-container-${item.id}`} className="image-container">
+          <ImageCard
+            key={`image-${item.id}`}
+            image={item}
+            onPreview={onPreview}
+            onWishlist={onWishlist}
+          />
+          
+          {/* Insert advertisement if needed */}
+          {shouldShowAd && (() => {
+            // Get a random ad and track it in displayedAds
+            const ad = getRandomAd();
+            // Add this ad ID to be processed in the useEffect
+            setTimeout(() => {
+              setDisplayedAds(prev => [...prev, ad.id]);
+            }, 0);
+            return (
+              <AdvertisementCard 
+                key={`ad-after-image-${item.id}`}
+                ad={ad} 
+                contentType="images" // Mark this as an image type advertisement
+              />
+            );
+          })()}
+        </div>
+      );
+    });
   };
   
   // Image card component specifically for images in the infinite feed
@@ -428,14 +470,7 @@ export default function InfiniteContentFeed({
                 {showSectionTitle && <h3 className="text-2xl font-bold mb-6">{sectionTitle}</h3>}
                 <div className={`grid grid-cols-1 sm:grid-cols-1 ${block.type === 'videos' ? 'md:grid-cols-2 lg:grid-cols-2 gap-6' : 'md:grid-cols-3 lg:grid-cols-4 gap-4'}`}>
                   {block.type === 'videos' && renderVideoBlock(block, index, block.id)}
-                  {block.type === 'images' && block.items.map(item => (
-                    <ImageCard
-                      key={item.id}
-                      image={item}
-                      onPreview={onPreview}
-                      onWishlist={onWishlist}
-                    />
-                  ))}
+                  {block.type === 'images' && renderImageBlock(block, index)}
                 </div>
               </section>
             );
