@@ -14,6 +14,7 @@ interface Advertisement {
 interface AdvertisementCardProps {
   ad: Advertisement;
   className?: string;
+  contentType?: 'videos' | 'images'; // Specify if this ad is in a video or image section
 }
 
 // Hardcoded sample ads that will be randomly selected
@@ -66,7 +67,7 @@ export function getRandomAd(): Advertisement {
   return SAMPLE_ADS[randomIndex];
 }
 
-export default function AdvertisementCard({ ad, className = '' }: AdvertisementCardProps) {
+export default function AdvertisementCard({ ad, className = '', contentType = 'videos' }: AdvertisementCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   
   const handleMouseEnter = () => {
@@ -81,14 +82,26 @@ export default function AdvertisementCard({ ad, className = '' }: AdvertisementC
     window.open(ad.targetUrl, '_blank');
   };
   
+  // Determine the container classes based on content type
+  // For videos, use video card styling with larger thumbnails
+  // For images, use image card styling with smaller thumbnails
+  const containerClasses = contentType === 'videos' 
+    ? 'video-card advertisement-card relative rounded overflow-hidden'
+    : 'image-card advertisement-card relative rounded overflow-hidden';
+  
+  // Determine the thumbnail height based on content type
+  const thumbnailClasses = contentType === 'videos'
+    ? 'thumbnail-container relative overflow-hidden aspect-video h-52 sm:h-56 md:h-60 lg:h-64'
+    : 'thumbnail-container relative overflow-hidden aspect-square h-40 sm:h-44 md:h-48 lg:h-52';
+  
   return (
     <div 
-      className={`video-card advertisement-card relative rounded overflow-hidden ${className}`}
+      className={`${containerClasses} ${className}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={handleClick}
     >
-      <div className="thumbnail-container relative overflow-hidden aspect-video h-52 sm:h-56 md:h-60 lg:h-64">
+      <div className={thumbnailClasses}>
         {/* Ad thumbnail */}
         <img 
           src={ad.imageUrl}

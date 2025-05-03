@@ -1208,10 +1208,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Videos are 3 per row (with special cases for first two blocks - 9 videos each), images are 4 per row
         let itemsPerRow = blockType === 'videos' ? 3 : 4;
         
-        // Special case: For trending and recent videos (first two blocks), we want 9 videos (3 rows of 3)
-        if (blockType === 'videos' && (blockId === 0 || blockId === 1)) {
-          itemsPerRow = 9; // 3 rows of 3 videos each
-        }
+        // For all blocks, use a variable number of columns depending on browser width
+        // but no special item count restrictions for Trending and Recent sections
+        // This allows a proper grid layout without empty spaces
         
         // Request more items than needed to allow for filtering out duplicates
         const fetchLimit = itemsPerRow * 5; // Request even more to account for used IDs across pages
