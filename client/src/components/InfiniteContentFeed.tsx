@@ -590,8 +590,41 @@ export default function InfiniteContentFeed({
     );
   }
 
+  // Add a consistent style for all content blocks
+  const blockStyles = {
+    marginBottom: '24px', // Consistent spacing between all content blocks
+    paddingBottom: '24px', // Add padding to control spacing
+  };
+  
+  // Add custom CSS to define a fixed gap between rows specifically for section blocks
+  useEffect(() => {
+    // Add custom CSS to ensure consistent row spacing
+    const styleElement = document.createElement('style');
+    styleElement.textContent = `
+      section.popular-content {
+        margin-bottom: 24px !important;
+      }
+      
+      /* For newly loaded content sections */
+      section + section {
+        margin-top: 24px !important;
+      }
+      
+      /* Equal spacing for grid items */
+      .grid > div {
+        margin-bottom: 24px !important;
+      }
+    `;
+    document.head.appendChild(styleElement);
+    
+    return () => {
+      // Clean up style element when component unmounts
+      document.head.removeChild(styleElement);
+    };
+  }, []);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-0"> {/* Remove automatic spacing to control it manually */}
       {isInitialLoad ? (
         <div className="py-20 flex justify-center">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -685,10 +718,18 @@ export default function InfiniteContentFeed({
             return (
               <section 
                 key={`${block.type}-${block.id}`} 
-                className={`${showSectionTitle ? (isContentTypeTransition ? "mt-16 mb-10" : "mb-10") : "mb-6"} ${index === 2 ? "gap-y-6" : ""}`}
+                className={`${showSectionTitle ? (isContentTypeTransition ? "mt-16" : "") : ""} ${index === 2 ? "popular-content" : ""}`}
+                style={blockStyles}
               >
                 {showSectionTitle && <h3 className="text-2xl font-bold mb-6">{sectionTitle}</h3>}
-                <div className={`grid auto-rows-auto gap-6 ${block.type === 'videos' ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'}`}>
+                <div 
+                  className={`grid auto-rows-auto ${block.type === 'videos' ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'}`}
+                  style={{ 
+                    gap: '24px', // Enforce consistent gap size via inline style
+                    rowGap: '24px', // Explicitly set row gap
+                    columnGap: '24px', // Explicitly set column gap
+                  }}
+                >
                 {/* Apply a direct style here to force flex-wrap prevention in case grid doesn't work */}
                   {block.type === 'videos' && renderVideoBlock(block, index, index)}
                   {block.type === 'images' && renderImageBlock(block, index)}
@@ -700,7 +741,8 @@ export default function InfiniteContentFeed({
           {hasMore && (
             <div 
               ref={loadingRef} 
-              className="py-6 flex justify-center"
+              className="py-6 flex justify-center" 
+              style={{ margin: '12px 0', height: '60px' }} // Fixed height to prevent layout shifts
             >
               {isLoading && <Loader2 className="h-8 w-8 animate-spin text-primary" />}
             </div>
