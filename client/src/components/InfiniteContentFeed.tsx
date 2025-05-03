@@ -581,8 +581,20 @@ export default function InfiniteContentFeed({
               if (block.items.length > 0) {
                 // Use our new helper function to get exactly 3 rows of content
                 const threeRowsCount = getItemsForThreeRows(block.type);
-                const itemCount = Math.min(threeRowsCount, block.items.length);
-                block.items = block.items.slice(0, itemCount);
+                const itemCount = Math.min(threeRowsCount, block.items.length * 2); // Allow duplicates if needed
+                
+                // If we don't have enough items to fill the rows, repeat items as needed
+                if (itemCount > block.items.length) {
+                  let filledItems = [...block.items];
+                  while (filledItems.length < itemCount) {
+                    // Add items from the beginning of the list to fill the rows
+                    const itemsToAdd = block.items.slice(0, Math.min(itemCount - filledItems.length, block.items.length));
+                    filledItems = [...filledItems, ...itemsToAdd];
+                  }
+                  block.items = filledItems;
+                } else {
+                  block.items = block.items.slice(0, itemCount);
+                }
               }
             } else if (index === 1) {
               sectionTitle = "Recently Uploaded Videos";
@@ -591,18 +603,42 @@ export default function InfiniteContentFeed({
               if (block.items.length > 0) {
                 // Use our new helper function to get exactly 3 rows of content
                 const threeRowsCount = getItemsForThreeRows(block.type);
-                const itemCount = Math.min(threeRowsCount, block.items.length);
-                block.items = block.items.slice(0, itemCount);
+                const itemCount = Math.min(threeRowsCount, block.items.length * 2); // Allow duplicates if needed
+                
+                // If we don't have enough items to fill the rows, repeat items as needed
+                if (itemCount > block.items.length) {
+                  let filledItems = [...block.items];
+                  while (filledItems.length < itemCount) {
+                    // Add items from the beginning of the list to fill the rows
+                    const itemsToAdd = block.items.slice(0, Math.min(itemCount - filledItems.length, block.items.length));
+                    filledItems = [...filledItems, ...itemsToAdd];
+                  }
+                  block.items = filledItems;
+                } else {
+                  block.items = block.items.slice(0, itemCount);
+                }
               }
             } else if (index === 2 && block.type === 'videos') {
               sectionTitle = "Popular Content";
               showSectionTitle = true;
-              // Make sure we have exactly 3 rows of content for Featured Content
+              // Make sure we have exactly 3 rows of content for Popular Content
               if (block.items.length > 0) {
                 // Use our new helper function to get exactly 3 rows of content
                 const threeRowsCount = getItemsForThreeRows(block.type);
                 const itemCount = Math.min(threeRowsCount, block.items.length);
-                block.items = block.items.slice(0, itemCount);
+                
+                // If we don't have enough items to fill the rows, repeat items as needed
+                if (itemCount > block.items.length) {
+                  let filledItems = [...block.items];
+                  while (filledItems.length < itemCount) {
+                    // Add items from the beginning of the list to fill the rows
+                    const itemsToAdd = block.items.slice(0, Math.min(itemCount - filledItems.length, block.items.length));
+                    filledItems = [...filledItems, ...itemsToAdd];
+                  }
+                  block.items = filledItems;
+                } else {
+                  block.items = block.items.slice(0, itemCount);
+                }
               }
             }
 
