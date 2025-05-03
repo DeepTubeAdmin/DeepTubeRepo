@@ -14,6 +14,8 @@ import MiniFooter from "@/components/MiniFooter";
 import SEO from "@/components/SEO";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { generateVideoStructuredData, generateImageStructuredData } from "@/lib/structuredData";
+import AIWatermark from "@/components/AIWatermark";
+import VideoCard from "@/components/VideoCard";
 import { 
   Dialog,
   DialogContent,

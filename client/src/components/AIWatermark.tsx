@@ -1,8 +1,8 @@
 import React from 'react';
 
 interface AIWatermarkProps {
-  aiGenerator?: string;
-  generator?: string; // For backward compatibility
+  aiGenerator?: string | null;
+  generator?: string | null; // For backward compatibility
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   size?: 'small' | 'medium' | 'large';
 }

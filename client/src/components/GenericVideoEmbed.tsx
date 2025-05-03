@@ -37,6 +37,7 @@ const GenericVideoEmbed = ({
   aspectRatio = '16:9',
   responsive = true,
   className = '',
+  aiGenerator = null,
 }: GenericVideoEmbedProps) => {
   const [aspectRatioValue, setAspectRatioValue] = useState<number>(0);
   const [embedUrl, setEmbedUrl] = useState<string>('');
@@ -183,7 +184,7 @@ const GenericVideoEmbed = ({
             className={responsive ? 'absolute top-0 left-0 w-full h-full' : ''}
             dangerouslySetInnerHTML={{ __html: html }}
           />
-          <AIWatermark position="bottom-right" size="medium" />
+          {aiGenerator && <AIWatermark aiGenerator={aiGenerator} position="bottom-right" size="medium" />}
         </div>
       </div>
     );
@@ -206,7 +207,7 @@ const GenericVideoEmbed = ({
             width={responsive ? '100%' : width}
             height={responsive ? '100%' : height}
           />
-          <AIWatermark position="bottom-right" size="medium" />
+          {aiGenerator && <AIWatermark aiGenerator={aiGenerator} position="bottom-right" size="medium" />}
         </div>
       ) : responsive ? (
         // Responsive iframe for non-direct videos
@@ -220,7 +221,7 @@ const GenericVideoEmbed = ({
             title={title}
             loading="lazy"
           />
-          <AIWatermark position="bottom-right" size="medium" />
+          {aiGenerator && <AIWatermark aiGenerator={aiGenerator} position="bottom-right" size="medium" />}
         </div>
       ) : (
         // Fixed size iframe for non-direct videos
@@ -235,7 +236,7 @@ const GenericVideoEmbed = ({
             title={title}
             loading="lazy"
           />
-          <AIWatermark position="bottom-right" size="medium" />
+          {aiGenerator && <AIWatermark aiGenerator={aiGenerator} position="bottom-right" size="medium" />}
         </div>
       )}
     </div>
