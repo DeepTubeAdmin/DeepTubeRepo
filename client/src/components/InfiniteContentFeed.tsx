@@ -611,7 +611,7 @@ export default function InfiniteContentFeed({
     styleElement.textContent = `
       /* Global spacing control */
       .content-feed-container section {
-        margin-bottom: 48px !important;
+        margin-bottom: 24px !important;
       }
       
       /* Equal spacing for grid rows */
@@ -632,9 +632,21 @@ export default function InfiniteContentFeed({
         margin-bottom: 0 !important;
       }
       
-      /* For consistent transitions between sections */
-      .content-feed-container section:not(:first-child) {
-        padding-top: 24px;
+      /* First 3 titled sections have different spacing */
+      .content-feed-container section.has-title {
+        margin-bottom: 24px !important;
+      }
+      
+      /* For non-titled sections (such as content after block 3) */
+      .content-feed-container section:not(.has-title) {
+        margin-bottom: 24px !important;
+        padding-top: 0 !important;
+      }
+      
+      /* Special handling for transition after titled to non-titled sections */
+      .content-feed-container section.popular-content + section {
+        margin-top: 0 !important;
+        padding-top: 24px !important;
       }
       
       /* Special handling for section titles */
@@ -648,9 +660,25 @@ export default function InfiniteContentFeed({
     const equalizeSpacing = () => {
       if (containerRef.current) {
         const sections = containerRef.current.querySelectorAll('section');
-        sections.forEach((section) => {
-          // Ensure all sections have consistent spacing
-          section.style.marginBottom = '48px';
+        sections.forEach((section, i) => {
+          // Apply different spacing based on section type
+          if (section.classList.contains('has-title')) {
+            // Titled sections (first 3 sections)
+            section.style.marginBottom = '24px';
+          } else if (section.classList.contains('popular-content')) {
+            // Special handling for Popular Content section
+            section.style.marginBottom = '24px';
+          } else {
+            // All other sections (no titles)
+            section.style.marginBottom = '24px';
+          }
+          
+          // Special handling for section after Popular Content
+          const previousSection = i > 0 ? sections[i-1] : null;
+          if (previousSection && previousSection.classList.contains('popular-content')) {
+            section.style.marginTop = '0';
+            section.style.paddingTop = '24px';
+          }
           
           // Find grid elements and enforce consistent row gaps
           const grid = section.querySelector('.grid');
@@ -768,7 +796,7 @@ export default function InfiniteContentFeed({
             return (
               <section 
                 key={`${block.type}-${block.id}`} 
-                className={`${showSectionTitle ? (isContentTypeTransition ? "mt-16" : "") : ""} ${index === 2 ? "popular-content" : ""}`}
+                className={`${showSectionTitle ? (isContentTypeTransition ? "mt-16 has-title" : "has-title") : ""} ${index === 2 ? "popular-content" : ""}`}
                 style={index === 2 ? {...blockStyles, ...popularSectionStyles} : blockStyles}
               >
                 {showSectionTitle && <h3 className="section-title text-2xl font-bold mb-6">{sectionTitle}</h3>}
