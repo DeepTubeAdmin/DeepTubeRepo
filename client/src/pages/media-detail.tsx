@@ -502,30 +502,6 @@ export default function MediaDetail() {
                   </Button>
                 </div>
               </div>
-              
-              <div className="bg-[#1a1a1a] p-4 rounded-md">
-                {media.description && (
-                  <p className="text-gray-300 mb-3">{media.description}</p>
-                )}
-                
-                {(media.aiGenerator || media.prompt) && (
-                  <div className="border-t border-[#333] pt-3 mt-3">
-                    {media.aiGenerator && (
-                      <div className="mb-2">
-                        <span className="text-sm font-semibold text-gray-400">AI Generator:</span>{" "}
-                        <span className="text-gray-300">{media.aiGenerator}</span>
-                      </div>
-                    )}
-                    
-                    {media.prompt && (
-                      <div>
-                        <span className="text-sm font-semibold text-gray-400">Prompt:</span>{" "}
-                        <span className="text-gray-300">{media.prompt}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
             </div>
             
             {/* Comments section */}
