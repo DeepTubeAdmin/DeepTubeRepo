@@ -465,7 +465,7 @@ export default function InfiniteContentFeed({
                 block.items = block.items.slice(0, itemCount);
               }
             } else if (index === 2 && block.type === 'videos') {
-              sectionTitle = "Featured Content";
+              sectionTitle = "Popular Content";
               showSectionTitle = true;
               // Make sure we have even number of videos for grid layout
               if (block.items.length > 0) {
