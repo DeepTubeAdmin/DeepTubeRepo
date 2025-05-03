@@ -210,7 +210,16 @@ export default function InfiniteContentFeed({
         if (currentPage === 1) {
           return data.blocks;
         } else {
-          return [...prev, ...data.blocks];
+          // Apply special transforms to prevent gaps when adding new blocks
+          // by modifying the incoming blocks before they're added to state
+          const transformedBlocks = data.blocks.map((block: any, blockIndex: number) => {
+            // Mark these blocks as dynamically loaded (page > 1)
+            return {
+              ...block,
+              dynamicallyLoaded: true, // Add a flag to identify dynamically loaded blocks
+            };
+          });
+          return [...prev, ...transformedBlocks];
         }
       });
 
@@ -725,10 +734,27 @@ export default function InfiniteContentFeed({
         top: -24px !important; /* Negative offset to eliminate gap */
       }
       
+      /* Special handling for dynamically loaded sections */
+      .content-feed-container section.dynamically-loaded {
+        margin-top: -24px !important;
+        padding-top: 0 !important;
+        position: relative !important;
+        z-index: 1 !important;
+      }
+      
+      /* Fix for the first dynamically loaded section */
+      .content-feed-container section:last-of-type:not(.popular-content) + section.dynamically-loaded {
+        margin-top: -24px !important;
+        padding-top: 0 !important;
+      }
+      
       /* Critical fix for the loading indicator */
       .content-feed-container .loading-indicator {
-        margin: 0 !important;
+        margin: -24px 0 0 0 !important;
         padding: 12px 0 !important;
+        position: relative !important;
+        z-index: 1 !important;
+        height: 48px !important;
       }
       
       /* Make sure there's no gap when new sections are appended */
@@ -789,7 +815,7 @@ export default function InfiniteContentFeed({
           const previousSection = i > 0 ? sections[i-1] : null;
           
           // Check for a section right after Popular Content or any section after Popular Content
-          const popularSection = containerRef.current.querySelector('.popular-content');
+          const popularSection = containerRef.current ? containerRef.current.querySelector('.popular-content') : null;
           if (popularSection) {
             // Check if this section comes after the Popular Content section in the DOM
             let isAfterPopular = false;
@@ -941,11 +967,40 @@ export default function InfiniteContentFeed({
               }
             }
 
+            // Determine if this is a dynamically loaded block (page > 1) and needs special styling
+            // Use optional chaining to safely access the property that may not exist in TypeScript interface
+            const isDynamicallyLoaded = block.dynamicallyLoaded === true || (block as any).dynamicallyLoaded === true;
+            
+            // Create specific style for the section based on its position and loading method
+            let sectionStyle = {};
+            if (index === 2) {
+              // Popular content section
+              sectionStyle = {...blockStyles, ...popularSectionStyles};
+            } else if (isDynamicallyLoaded) {
+              // Dynamically loaded blocks after page 1 need special styling
+              sectionStyle = {
+                ...blockStyles,
+                marginTop: '-24px',
+                position: 'relative',
+                zIndex: 1
+              };
+            } else {
+              // Standard blocks
+              sectionStyle = blockStyles;
+            }
+            
+            // Determine CSS classes based on section properties
+            const sectionClasses = [
+              showSectionTitle ? (isContentTypeTransition ? "mt-16 has-title" : "has-title") : "",
+              index === 2 ? "popular-content" : "",
+              isDynamicallyLoaded ? "dynamically-loaded" : ""
+            ].filter(Boolean).join(" ");
+            
             return (
               <section 
                 key={`${block.type}-${block.id}`} 
-                className={`${showSectionTitle ? (isContentTypeTransition ? "mt-16 has-title" : "has-title") : ""} ${index === 2 ? "popular-content" : ""}`}
-                style={index === 2 ? {...blockStyles, ...popularSectionStyles} : blockStyles}
+                className={sectionClasses}
+                style={sectionStyle}
               >
                 {showSectionTitle && <h3 className="section-title text-2xl font-bold mb-6">{sectionTitle}</h3>}
                 <div 
@@ -969,11 +1024,13 @@ export default function InfiniteContentFeed({
               ref={loadingRef} 
               className="loading-indicator flex justify-center" 
               style={{ 
-                margin: '0', 
+                margin: '-24px 0 0 0', // Negative top margin to eliminate gap
                 padding: '12px 0', 
                 height: '48px',
-                overflow: 'hidden' 
-              }} // Reduced height and margins
+                overflow: 'hidden',
+                position: 'relative',
+                zIndex: 1
+              }}
             >
               {isLoading && <Loader2 className="h-8 w-8 animate-spin text-primary" />}
             </div>
