@@ -382,12 +382,6 @@ export default function MediaDetail() {
               <div className="flex justify-between items-center mb-4">
                 <div className="text-sm text-gray-400">
                   <div className="flex items-center space-x-2">
-                    {media.aiGenerator && (
-                      <>
-                        <span className="text-orange-500">{media.aiGenerator}</span>
-                        <span className="text-gray-500">•</span>
-                      </>
-                    )}
                     <span>Added {new Date(media.createdAt).toLocaleDateString()}</span>
                     {uploaderUsername && (
                       <>
