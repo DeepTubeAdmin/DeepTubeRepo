@@ -685,10 +685,10 @@ export default function InfiniteContentFeed({
             return (
               <section 
                 key={`${block.type}-${block.id}`} 
-                className={showSectionTitle ? (isContentTypeTransition ? "mt-16 mb-10" : "mb-10") : "mb-6"}
+                className={`${showSectionTitle ? (isContentTypeTransition ? "mt-16 mb-10" : "mb-10") : "mb-6"} ${index === 2 ? "gap-y-6" : ""}`}
               >
                 {showSectionTitle && <h3 className="text-2xl font-bold mb-6">{sectionTitle}</h3>}
-                <div className={`grid auto-rows-auto ${block.type === 'videos' ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'}`}>
+                <div className={`grid auto-rows-auto gap-6 ${block.type === 'videos' ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'}`}>
                 {/* Apply a direct style here to force flex-wrap prevention in case grid doesn't work */}
                   {block.type === 'videos' && renderVideoBlock(block, index, index)}
                   {block.type === 'images' && renderImageBlock(block, index)}
