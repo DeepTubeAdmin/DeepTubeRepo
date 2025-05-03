@@ -49,6 +49,15 @@ export default function CategoryNavigation({
         
         {/* Scrollable tabs */}
         <div className="nav-tabs px-10 overflow-x-auto">
+          {/* All Categories option */}
+          <div 
+            className={`nav-tab cursor-pointer text-center ${!activeCategory ? 'active' : ''}`}
+            onClick={() => onCategoryChange('')}
+          >
+            All
+          </div>
+          
+          {/* Category options */}
           {categories.map(category => (
             <div 
               key={category.slug}

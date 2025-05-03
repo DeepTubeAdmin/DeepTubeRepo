@@ -84,6 +84,24 @@ export default function Home() {
 
   const handleCategoryChange = (slug: string) => {
     setActiveCategory(slug);
+    // Generate a new shuffle seed to ensure fresh content for the category
+    setShuffleSeed(Math.random().toString(36).substring(2, 8));
+    
+    // Provide user feedback when changing categories
+    if (slug) {
+      const categoryName = allCategories.find(cat => cat.slug === slug)?.name || '';
+      toast({
+        title: `${categoryName} Selected`,
+        description: `Showing ${categoryName} content`,
+        duration: 2000,
+      });
+    } else {
+      toast({
+        title: "All Categories",
+        description: "Showing content from all categories",
+        duration: 2000,
+      });
+    }
   };
   
   const filterMenuRef = useRef<HTMLDivElement>(null);
