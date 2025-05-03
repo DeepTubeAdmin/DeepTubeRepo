@@ -28,6 +28,8 @@ export default function InfiniteContentFeed({
   sortBy = 'trending', // Default to trending for initial load
   shuffleSeed = Math.random().toString(36).substring(2, 8) // Default random seed if not provided
 }: InfiniteContentFeedProps) {
+  // Reference to the main container for direct DOM manipulation
+  const containerRef = useRef<HTMLDivElement>(null);
   const [contentBlocks, setContentBlocks] = useState<Array<{
     type: 'videos' | 'images';
     items: TypeVideo[];
@@ -96,12 +98,53 @@ export default function InfiniteContentFeed({
       observer.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && hasMore) {
           setPage((prevPage) => prevPage + 1);
+          
+          // Apply aggressive spacing fixes after new content is loaded
+          setTimeout(() => {
+            // Apply immediate spacing fixes at the spot where new content will be added
+            if (containerRef.current) {
+              // 1. Fix all non-titled sections to have no top margin/padding
+              const sections = containerRef.current.querySelectorAll('section:not(.has-title)');
+              sections.forEach((section, i) => {
+                if (i > 0) {
+                  // Make sure all non-titled sections have zero gap with the previous section
+                  const sectionElement = section as HTMLElement;
+                  sectionElement.style.marginTop = '0';
+                  sectionElement.style.paddingTop = '0';
+                }
+              });
+              
+              // 2. Specifically target the sections after popular content
+              const popularSection = containerRef.current.querySelector('.popular-content');
+              if (popularSection) {
+                let sibling = popularSection.nextElementSibling;
+                while (sibling) {
+                  // Force all subsequent siblings to have zero top spacing
+                  const element = sibling as HTMLElement;
+                  element.style.marginTop = '0';
+                  element.style.paddingTop = '0';
+                  sibling = sibling.nextElementSibling;
+                }
+              }
+              
+              // 3. Fix any gaps between all sections after the third one
+              const allSections = containerRef.current.querySelectorAll('section');
+              if (allSections.length > 3) {
+                for (let i = 3; i < allSections.length; i++) {
+                  // Apply direct style to all sections after the third one
+                  const section = allSections[i] as HTMLElement;
+                  section.style.marginTop = '0';
+                  section.style.paddingTop = '0';
+                }
+              }
+            }
+          }, 300); // Slightly longer delay to ensure DOM updates completely
         }
       });
 
       if (node) observer.current.observe(node);
     },
-    [isLoading, hasMore]
+    [isLoading, hasMore, containerRef]
   );
 
   // Fetch content blocks from our API
@@ -590,8 +633,6 @@ export default function InfiniteContentFeed({
     );
   }
 
-  // Get reference to the main container for direct DOM manipulation
-  const containerRef = useRef<HTMLDivElement>(null);
   
   // Add a consistent style for all content blocks
   const blockStyles = {
@@ -649,6 +690,36 @@ export default function InfiniteContentFeed({
         padding-top: 24px !important;
       }
       
+      /* Critical fix for the loading indicator */
+      .content-feed-container .loading-indicator {
+        margin: 0 !important;
+        padding: 12px 0 !important;
+      }
+      
+      /* Make sure there's no gap when new sections are appended */
+      .content-feed-container section:not(.has-title) + section:not(.has-title),
+      .content-feed-container section:nth-of-type(n+4):not(.has-title) {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+      }
+      
+      /* Force zero margin on all newly loaded sections after page 1 */
+      .content-feed-container section:nth-child(n+4):not(.has-title) {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+      }
+      
+      /* Ensure all subsequent sections are properly spaced */
+      .content-feed-container section + section:not(.has-title) {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+      }
+      
+      /* Completely eliminate any gaps for sections appearing after content loads */
+      .content-feed-container section:nth-child(n+3) {
+        margin-top: 0 !important;
+      }
+
       /* Special handling for section titles */
       .content-feed-container .section-title {
         margin-bottom: 24px !important;
@@ -671,13 +742,36 @@ export default function InfiniteContentFeed({
           } else {
             // All other sections (no titles)
             section.style.marginBottom = '24px';
+            
+            // Special case for sections after the third section
+            if (i >= 3) {
+              section.style.marginTop = '0';
+              section.style.paddingTop = '0';
+            }
           }
           
           // Special handling for section after Popular Content
           const previousSection = i > 0 ? sections[i-1] : null;
+          
+          // Check for a section right after Popular Content
           if (previousSection && previousSection.classList.contains('popular-content')) {
             section.style.marginTop = '0';
             section.style.paddingTop = '24px';
+          }
+          
+          // Check for consecutive non-titled sections (both don't have 'has-title' class)
+          if (previousSection && 
+              !previousSection.classList.contains('has-title') && 
+              !section.classList.contains('has-title')) {
+            section.style.marginTop = '0';
+            section.style.paddingTop = '0';
+          }
+          
+          // Special handling for sections after any loading events
+          if (i > 0 && i % 3 === 0) {
+            // Every third section after loading should have zero margin/padding top
+            section.style.marginTop = '0';
+            section.style.paddingTop = '0';
           }
           
           // Find grid elements and enforce consistent row gaps
@@ -819,8 +913,13 @@ export default function InfiniteContentFeed({
           {hasMore && (
             <div 
               ref={loadingRef} 
-              className="py-6 flex justify-center" 
-              style={{ margin: '12px 0', height: '60px' }} // Fixed height to prevent layout shifts
+              className="loading-indicator flex justify-center" 
+              style={{ 
+                margin: '0', 
+                padding: '12px 0', 
+                height: '48px',
+                overflow: 'hidden' 
+              }} // Reduced height and margins
             >
               {isLoading && <Loader2 className="h-8 w-8 animate-spin text-primary" />}
             </div>
