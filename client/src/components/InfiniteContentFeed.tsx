@@ -764,16 +764,14 @@ export default function InfiniteContentFeed({
         padding-top: 0 !important;
       }
       
-      /* Force zero margin on all newly loaded sections after page 1 */
-      .content-feed-container section:nth-child(n+4):not(.has-title) {
-        margin-top: 0 !important;
-        padding-top: 0 !important;
+      /* Add standard spacing between all sections */
+      .content-feed-container section {
+        margin-bottom: 24px !important;
       }
       
-      /* Ensure all subsequent sections are properly spaced */
-      .content-feed-container section + section:not(.has-title) {
-        margin-top: 0 !important;
-        padding-top: 0 !important;
+      /* Add extra spacing for sections with titles */
+      .content-feed-container section.has-title {
+        margin-bottom: 36px !important;
       }
       
       /* Completely eliminate any gaps for sections appearing after content loads */
@@ -876,7 +874,7 @@ export default function InfiniteContentFeed({
   }, [contentBlocks]); // Re-run when content blocks change
 
   return (
-    <div ref={containerRef} className="content-feed-container space-y-0"> {/* Container with reference and specific class */}
+    <div ref={containerRef} className="content-feed-container space-y-6"> {/* Add consistent vertical spacing with space-y-6 */}
       {isInitialLoad ? (
         <div className="py-20 flex justify-center">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -1005,11 +1003,12 @@ export default function InfiniteContentFeed({
               >
                 {showSectionTitle && <h3 className="section-title text-2xl font-bold mb-6">{sectionTitle}</h3>}
                 <div 
-                  className={`grid auto-rows-auto ${block.type === 'videos' ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'}`}
+                  className={`grid auto-rows-auto gap-6 ${block.type === 'videos' ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'}`}
                   style={{ 
                     gap: '24px', // Enforce consistent gap size via inline style
                     rowGap: '24px', // Explicitly set row gap
                     columnGap: '24px', // Explicitly set column gap
+                    marginBottom: '24px', // Add bottom margin to each grid
                   }}
                 >
                 {/* Apply a direct style here to force flex-wrap prevention in case grid doesn't work */}
