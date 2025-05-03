@@ -24,9 +24,16 @@ export default function VideoGrid({
   const [columnCount, setColumnCount] = useState(2); // Default to 2 columns
   const [columnClass, setColumnClass] = useState('grid-cols-2');
   
-  // Get optimal number of videos to show (3 rows)
-  const itemsToShow = Math.min(videos.length, columnCount * 3);
+  // Force exactly 3 rows of content
+  const rowCount = 3;
+  const itemsToShow = Math.min(videos.length, columnCount * rowCount);
+  // Pad with nulls if needed to maintain grid structure
   const filteredVideos = videos.slice(0, itemsToShow);
+  const totalGridSpots = columnCount * rowCount;
+  const paddedVideos = [...filteredVideos];
+  while (paddedVideos.length < totalGridSpots) {
+    paddedVideos.push(null);
+  }
 
   // Update column class based on window resize
   useEffect(() => {
@@ -80,14 +87,18 @@ export default function VideoGrid({
 
       {/* Video grid with responsive columns */}
       <div className={`grid ${columnClass} gap-6 auto-rows-fr grid-flow-dense max-w-[2400px] mx-auto`}>
-        {filteredVideos.map((video) => (
-          <VideoCard
-            key={video.id}
-            video={video}
-            onPreview={onPreview}
-            onWishlist={onWishlist}
-          />
-        ))}
+        {paddedVideos.map((video, index) => 
+          video ? (
+            <VideoCard
+              key={video.id}
+              video={video}
+              onPreview={onPreview}
+              onWishlist={onWishlist}
+            />
+          ) : (
+            <div key={`empty-${index}`} className="hidden" />
+          )
+        )}
 
         {/* Remove placeholder logic to allow natural grid flow */}
       </div>
