@@ -502,6 +502,29 @@ export default function MediaDetail() {
                   </Button>
                 </div>
               </div>
+              
+              {/* Description and Prompt section - without the box container */}
+              <div className="mt-4 mb-6">
+                {media.description && (
+                  <p className="text-gray-300 mb-3">{media.description}</p>
+                )}
+                
+                <div className="flex flex-wrap gap-4 mt-2">
+                  {media.aiGenerator && (
+                    <div className="flex items-center">
+                      <span className="text-sm font-semibold text-gray-400 mr-2">AI Generator:</span>
+                      <span className="text-orange-500">{media.aiGenerator}</span>
+                    </div>
+                  )}
+                  
+                  {media.prompt && (
+                    <div className="flex-1">
+                      <span className="text-sm font-semibold text-gray-400 mr-2">Prompt:</span>
+                      <span className="text-gray-300">{media.prompt}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
             
             {/* Comments section */}
