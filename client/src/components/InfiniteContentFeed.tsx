@@ -283,11 +283,29 @@ export default function InfiniteContentFeed({
       columnsCount = 1;
     }
     
-    // Ensure the items count is a multiple of the columns count to avoid blank spaces
-    // This is critical for the Popular Content section (block 2)
-    if (blockPosition <= 2 && itemsToRender.length > 0) { 
+    // For Popular Content section, handle specially to never have blank spaces
+    // We use a different approach for position 2 (Popular Content) to ensure no gaps
+    if (blockPosition === 2) {
+      // For Popular Content, we always want exactly 3 rows, no matter what
+      const rowCount = 3;
+      const targetCount = rowCount * columnsCount;
+      
+      // Duplicate items until we have enough to fill all rows
+      if (itemsToRender.length < targetCount && itemsToRender.length > 0) {
+        // Double the array repeatedly until we have enough items
+        let extendedItems = [...itemsToRender];
+        while (extendedItems.length < targetCount) {
+          extendedItems = [...extendedItems, ...extendedItems];
+        }
+        
+        // Trim to exact size needed for the rows
+        itemsToRender = extendedItems.slice(0, targetCount);
+      }
+    }
+    // For other sections, just fill in grid neatly
+    else if (blockPosition <= 1 && itemsToRender.length > 0) { 
       // Make rows a multiple of columns count to fill the grid evenly
-      const rowCount = blockPosition === 2 ? 3 : Math.ceil(itemsToRender.length / columnsCount); // Ensure exactly 3 rows for Popular Content
+      const rowCount = Math.ceil(itemsToRender.length / columnsCount);
       const idealCount = rowCount * columnsCount;
       
       // Add filler items if needed by repeating existing items
@@ -642,32 +660,25 @@ export default function InfiniteContentFeed({
                   block.items = block.items.slice(0, itemCount);
                 }
               }
-            } else if (index === 2 && block.type === 'videos') {
+            } else if (index === 2) {
               sectionTitle = "Popular Content";
               showSectionTitle = true;
-              // Make sure we have exactly 3 rows of content for Popular Content
-              if (block.items.length > 0) {
-                // Get the number of columns based on window width
-                let columnsCount = 2; // Default for medium/large screens
-                if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                  columnsCount = 1;
+              
+              // Make sure we have exactly 3 rows of content for this section
+              if (block && block.items && Array.isArray(block.items) && block.items.length > 0) {
+                // Use 6 items (2 columns × 3 rows) for this section
+                const targetCount = 6;
+                
+                // Create a new array with duplicated items if needed
+                let filledItems = [];
+                
+                // If we have at least one item, repeat it to fill the grid
+                for (let i = 0; i < targetCount; i++) {
+                  filledItems.push({...block.items[i % block.items.length]});
                 }
                 
-                // Always use exactly 3 rows for Popular Content section
-                const rowCount = 3;
-                const targetCount = rowCount * columnsCount;
-                
-                // Always fill rows completely by duplicating items as needed
-                let filledItems = [...block.items];
-                // Duplicate content as many times as needed to fill rows
-                while (filledItems.length < targetCount) {
-                  // Add items from the beginning of the list until we have enough
-                  const itemsToAdd = block.items.slice(0, Math.min(targetCount - filledItems.length, block.items.length));
-                  filledItems = [...filledItems, ...itemsToAdd];
-                }
-                
-                // Make sure we have exactly the right number of items
-                block.items = filledItems.slice(0, targetCount);
+                // Replace the block's items with our guaranteed-full array
+                block.items = filledItems;
               }
             }
 
@@ -678,6 +689,7 @@ export default function InfiniteContentFeed({
               >
                 {showSectionTitle && <h3 className="text-2xl font-bold mb-6">{sectionTitle}</h3>}
                 <div className={`grid auto-rows-auto ${block.type === 'videos' ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'}`}>
+                {/* Apply a direct style here to force flex-wrap prevention in case grid doesn't work */}
                   {block.type === 'videos' && renderVideoBlock(block, index, index)}
                   {block.type === 'images' && renderImageBlock(block, index)}
                 </div>
