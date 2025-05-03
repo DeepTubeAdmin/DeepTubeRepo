@@ -20,11 +20,10 @@ export default function VideoGrid({
   showViewAll = true,
   viewAllUrl = "#",
 }: VideoGridProps) {
-  // Filter out image content
-  const filteredVideos = videos.filter(video => video.contentType !== "image");
+  // No longer filtering out images
+  const filteredVideos = videos;
   
   // Create a function to get the optimal column count based on available width
-  // Increased column counts to match our increased items per row in the API
   const [columnClass, setColumnClass] = useState('grid-cols-2'); // Default to 2 columns
   
   // Update column class based on window resize

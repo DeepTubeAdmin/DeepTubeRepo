@@ -221,10 +221,10 @@ export default function InfiniteContentFeed({
       return prevBlock.type === 'videos' ? count + prevBlock.items.length : count;
     }, 0);
     
-    // Analyze the items to find out where ads will be placed
+    // Analyze the items to find out where ads will be placed - every 7 videos
     block.items.forEach((item: TypeVideo, itemIndex: number) => {
       const globalVideoIndex = blockStartIndex + itemIndex;
-      const shouldShowAd = globalVideoIndex > 0 && (globalVideoIndex + 1) % 11 === 0;
+      const shouldShowAd = globalVideoIndex > 0 && (globalVideoIndex + 1) % 7 === 0;
       
       preparedItems.push({
         item,
@@ -236,19 +236,7 @@ export default function InfiniteContentFeed({
       }
     });
     
-    // We now don't impose a strict limit on the number of videos
-    // But we ensure that the number of videos is appropriate for the layout
     let itemsToRender = preparedItems;
-    
-    // If this is one of the titled sections (first three), we want to ensure clean layout
-    // with an even number of videos for the 2-column grid
-    const isSpecialBlock = blockPosition === 0 || blockPosition === 1 || blockPosition === 2;
-    
-    if (isSpecialBlock && itemsToRender.length % 2 !== 0) {
-      // If we have an odd number of videos, remove the last one to make it even
-      // This prevents having a blank space at the end of the grid
-      itemsToRender = itemsToRender.slice(0, itemsToRender.length - 1);
-    }
     
     // Now render the items with ads in the right places
     return itemsToRender.map(({ item, hasAd }, i) => (
@@ -290,14 +278,11 @@ export default function InfiniteContentFeed({
       return prevBlock.type === 'images' ? count + prevBlock.items.length : count;
     }, 0);
     
-    // Mark which items should have ads
+    // No ads in image blocks
     block.items.forEach((item: TypeVideo, i: number) => {
-      const globalImageIndex = blockStartIndex + i;
-      const shouldShowAd = globalImageIndex > 0 && (globalImageIndex + 1) % 15 === 0;
-      
       preparedItems.push({
         item,
-        hasAd: shouldShowAd
+        hasAd: false
       });
     });
     
