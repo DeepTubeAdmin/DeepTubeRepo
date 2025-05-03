@@ -97,6 +97,24 @@ export default function InfiniteContentFeed({
 
       observer.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && hasMore) {
+          // Immediately apply spacing fixes at the boundary, before load
+          if (containerRef.current) {
+            const sections = containerRef.current.querySelectorAll('section');
+            const popularSection = containerRef.current.querySelector('.popular-content');
+            
+            if (popularSection) {
+              // Specifically target the space after the Popular Content section
+              let sibling = popularSection.nextElementSibling;
+              while (sibling) {
+                const element = sibling as HTMLElement;
+                element.style.marginTop = '0';
+                element.style.paddingTop = '0';
+                sibling = sibling.nextElementSibling;
+              }
+            }
+          }
+          
+          // Now load more content
           setPage((prevPage) => prevPage + 1);
           
           // Apply aggressive spacing fixes after new content is loaded
@@ -642,7 +660,7 @@ export default function InfiniteContentFeed({
   
   // Special styling for the Popular Content section
   const popularSectionStyles = {
-    marginBottom: '48px', // Extra margin after Popular Content section
+    marginBottom: '24px', // Match the standard margin to eliminate extra spacing
   };
   
   // Add custom CSS to define a fixed gap between rows specifically for section blocks
@@ -687,7 +705,7 @@ export default function InfiniteContentFeed({
       /* Special handling for transition after titled to non-titled sections */
       .content-feed-container section.popular-content + section {
         margin-top: 0 !important;
-        padding-top: 24px !important;
+        padding-top: 0 !important; /* Remove the padding to eliminate gap */
       }
       
       /* Critical fix for the loading indicator */
@@ -756,7 +774,7 @@ export default function InfiniteContentFeed({
           // Check for a section right after Popular Content
           if (previousSection && previousSection.classList.contains('popular-content')) {
             section.style.marginTop = '0';
-            section.style.paddingTop = '24px';
+            section.style.paddingTop = '0'; // Remove the padding to eliminate gap
           }
           
           // Check for consecutive non-titled sections (both don't have 'has-title' class)
