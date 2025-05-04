@@ -198,8 +198,8 @@ export default function VideoCard({ video, onPreview, onWishlist, compact = fals
   // Handle report action
   const handleReport = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Redirect to the media detail page with the report dialog opened
-    window.location.href = `/media/${video.id}?report=true`;
+    // Open the media detail page with the report dialog in a new tab
+    window.open(`/media/${video.id}?report=true`, '_blank');
   };
 
   // Handle preview click
