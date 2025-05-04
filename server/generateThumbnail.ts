@@ -76,10 +76,10 @@ export async function generateAndStoreS3Thumbnail(
       await execFileAsync('ffmpeg', [
         '-y',
         '-i', tempVideo,
-        '-vf', 'select=eq(n\\,0)',
         '-vframes', '1',
-        '-aspect', '16:9',
-        '-s', '800x450',
+        '-an',
+        '-vf', 'scale=800:450:force_original_aspect_ratio=decrease,pad=800:450:(ow-iw)/2:(oh-ih)/2',
+        '-f', 'image2',
         tempThumb
       ]);
 
