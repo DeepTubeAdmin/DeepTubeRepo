@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import VideoCard from './VideoCard';
 import ImageCard from './ImageCard';
@@ -39,45 +39,85 @@ interface ContentFeedResponse {
 }
 
 export default function ContentFeed({ categorySlug }: ContentFeedProps) {
+  // State hooks - all defined at the top level
   const [page, setPage] = useState(1);
-  // Generate a consistent seed for this session
   const [shuffleSeed] = useState(() => Math.random().toString(36).substring(2, 10));
-  // Sort state
   const [sortBy, setSortBy] = useState<SortOption>('trending');
   const [showSortMenu, setShowSortMenu] = useState(false);
-  // Track column count based on screen size
   const [columnCount, setColumnCount] = useState(4); // Default to 4 columns
+  const [popularBlocks, setPopularBlocks] = useState<ContentFeedResponse['popular']['blocks']>([]);
 
-  // Keep track of the previous data for placeholderData
+  // Ref hooks - all defined at the top level
   const previousDataRef = useRef<ContentFeedResponse | undefined>(undefined);
-
-  // Sort menu refs for click outside handling
   const sortMenuRef = useRef<HTMLDivElement>(null);
   const sortButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Create a query key that includes category and shuffle seed and sort option
+  // Query key for TanStack Query
   const queryKey = ['/api/content/feed', { page, category: categorySlug || '', shuffleSeed, sortBy }];
 
-  // Using proper TanStack Query v5 syntax
+  // Data fetching with TanStack Query
   const { data, isLoading, isError } = useQuery<ContentFeedResponse>({
     queryKey,
     placeholderData: previousDataRef.current,
   });
-  
-  // Toggle sort menu
-  const toggleSortMenu = () => {
-    setShowSortMenu(!showSortMenu);
-  };
-  
-  // Handle sort change
-  const handleSortChange = (option: SortOption) => {
+
+  // Memoized helper functions
+  const getItemsBasedOnColumns = useCallback((items: Video[] = [], rows: number) => {
+    const totalItems = columnCount * rows;
+    return items?.slice(0, totalItems) || [];
+  }, [columnCount]);
+
+  const insertAdvertisement = useCallback((items: Video[] = [], adPosition: number = 0) => {
+    // Deep copy the array to avoid modifying the original
+    const result = [...(items || [])];
+    // Adjust position if it exceeds array length
+    const position = Math.min(adPosition, result.length - 1);
+    // Replace the item at the position with null (to be rendered as an ad)
+    if (result.length > 0) {
+      result[position] = null as unknown as Video;
+    }
+    return result;
+  }, []);
+
+  // Event handler callbacks
+  const toggleSortMenu = useCallback(() => {
+    setShowSortMenu(prev => !prev);
+  }, []);
+
+  const handleSortChange = useCallback((option: SortOption) => {
     setSortBy(option);
     setShowSortMenu(false);
     // Reset page when sort changes
     setPage(1);
-  };
-  
-  // Handle clicks outside of the sort menu
+  }, []);
+
+  // Process data for rendering - dynamic column/row adjustments
+  const renderData = useMemo(() => {
+    if (!data) return null;
+    
+    // Process popular blocks with dynamic column/row logic
+    const processedPopularBlocks = popularBlocks.map(block => ({
+      videos: getItemsBasedOnColumns(block.videos, 3), // Always 3 rows of videos
+      images: getItemsBasedOnColumns(block.images, 1), // Always 1 row of images
+      advertisement: block.advertisement
+    }));
+    
+    return {
+      trending: {
+        videos: getItemsBasedOnColumns(data?.trending?.videos, 3), // Always 3 rows of videos
+        images: getItemsBasedOnColumns(data?.trending?.images, 1),  // Always 1 row of images
+        advertisement: data?.trending?.advertisement
+      },
+      recent: {
+        videos: getItemsBasedOnColumns(data?.recent?.videos, 3), // Always 3 rows of videos
+        images: getItemsBasedOnColumns(data?.recent?.images, 1),  // Always 1 row of images
+        advertisement: data?.recent?.advertisement
+      },
+      popular: processedPopularBlocks
+    };
+  }, [data, popularBlocks, getItemsBasedOnColumns]);
+
+  // Effect for handling clicks outside the sort menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -96,17 +136,15 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showSortMenu]);
-  
-  // Update the ref with the latest data
+
+  // Effect for updating previous data ref
   useEffect(() => {
     if (data) {
       previousDataRef.current = data;
     }
   }, [data]);
 
-  const [popularBlocks, setPopularBlocks] = useState<ContentFeedResponse['popular']['blocks']>([]);
-
-  // When new data arrives, append popular blocks to our existing state
+  // Effect for handling popular blocks updates
   useEffect(() => {
     if (data?.popular?.blocks) {
       if (page === 1) {
@@ -118,8 +156,8 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
       }
     }
   }, [data, page]);
-  
-  // Handle detecting screen size and updating column count
+
+  // Effect for detecting screen size and updating column count
   useEffect(() => {
     function updateColumnCount() {
       // Default is 1 column for mobile
@@ -147,7 +185,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     return () => window.removeEventListener('resize', updateColumnCount);
   }, []);
 
-  // Intersection Observer for infinite scrolling
+  // Effect for infinite scrolling with intersection observer
   useEffect(() => {
     // Create an observer for the loading indicator
     const observer = new IntersectionObserver(
@@ -172,6 +210,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     };
   }, [data]);
 
+  // Loading state
   if (isLoading && page === 1) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -180,64 +219,29 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     );
   }
 
+  // Error state
   if (isError) {
     return (
-      <div className="text-center p-12 text-red-500">
-        <h2 className="text-2xl font-bold mb-4">Error Loading Content</h2>
-        <p>Unable to load videos. Please try again later.</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-white text-center">
+          <h2 className="text-2xl mb-4">Failed to load content</h2>
+          <Button 
+            variant="destructive" 
+            onClick={() => window.location.reload()}
+          >
+            Try Again
+          </Button>
+        </div>
       </div>
     );
-  }
+  }  
 
+  // No data state
   if (!data) {
     return null;
   }
 
-  // Calculate how many items to show based on columns and rows
-  const getItemsBasedOnColumns = (items: Video[] = [], rows: number) => {
-    const totalItems = columnCount * rows;
-    return items?.slice(0, totalItems) || [];
-  };
-  
-  // Prepare video and image data for rendering with dynamic column/row counts
-  const renderData = useMemo(() => {
-    if (!data) return null;
-    
-    // Process popular blocks with dynamic column/row logic
-    const processedPopularBlocks = popularBlocks.map(block => ({
-      videos: getItemsBasedOnColumns(block.videos, 3), // Always 3 rows of videos
-      images: getItemsBasedOnColumns(block.images, 1), // Always 1 row of images
-      advertisement: block.advertisement
-    }));
-    
-    return {
-      trending: {
-        videos: getItemsBasedOnColumns(data?.trending?.videos, 3), // Always 3 rows of videos
-        images: getItemsBasedOnColumns(data?.trending?.images, 1),  // Always 1 row of images
-        advertisement: data?.trending?.advertisement
-      },
-      recent: {
-        videos: getItemsBasedOnColumns(data?.recent?.videos, 3), // Always 3 rows of videos
-        images: getItemsBasedOnColumns(data?.recent?.images, 1),  // Always 1 row of images
-        advertisement: data?.recent?.advertisement
-      },
-      popular: processedPopularBlocks
-    };
-  }, [data, popularBlocks, columnCount]);
-  
-  // Helper function to replace a video with an ad at a specific position
-  const insertAdvertisement = (items: Video[] = [], adPosition: number = 0) => {
-    // Deep copy the array to avoid modifying the original
-    const result = [...(items || [])];
-    // Adjust position if it exceeds array length
-    const position = Math.min(adPosition, result.length - 1);
-    // Replace the item at the position with null (to be rendered as an ad)
-    if (result.length > 0) {
-      result[position] = null as unknown as Video;
-    }
-    return result;
-  };
-
+  // Render the content feed
   return (
     <div className="container mx-auto px-4 py-8 space-y-12">
       {/* Featured Video (Large Hero) */}
