@@ -8,6 +8,7 @@ import { Video } from '@shared/schema';
 
 interface ContentFeedProps {
   categorySlug?: string;
+  hideFeatured?: boolean; // Whether to hide the featured section
 }
 
 interface ContentFeedResponse {
@@ -35,7 +36,7 @@ interface ContentFeedResponse {
   };
 }
 
-export default function ContentFeed({ categorySlug }: ContentFeedProps) {
+export default function ContentFeed({ categorySlug, hideFeatured = false }: ContentFeedProps) {
   const [page, setPage] = useState(1);
   // Generate a consistent seed for this session
   const [shuffleSeed] = useState(() => Math.random().toString(36).substring(2, 10));
@@ -135,8 +136,8 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-12">
-      {/* Featured Video (Large Hero) */}
-      {data.featured.video && (
+      {/* Featured Video (Large Hero) - Only shown if hideFeatured is false */}
+      {!hideFeatured && data.featured.video && (
         <section className="mb-12">
           <h2 className="text-3xl font-bold mb-6 text-white border-l-4 border-orange-500 pl-4">
             {data.featured.title}
