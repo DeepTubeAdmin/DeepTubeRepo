@@ -434,7 +434,7 @@ export default function MediaDetail() {
                       // Try to clean up the path if it contains workspace references
                       let cleanedUrl = media.imageUrl;
                       
-                      if (media.imageUrl.includes('/home/runner/workspace/')) {
+                      if (media.imageUrl && media.imageUrl.includes('/home/runner/workspace/')) {
                         const match = media.imageUrl.match(/\/home\/runner\/workspace\/(.+)/);
                         if (match && match[1]) {
                           cleanedUrl = `/${match[1]}`;
@@ -445,7 +445,7 @@ export default function MediaDetail() {
                       }
                       
                       // Special case for absolute path references that should be relative
-                      if (media.imageUrl.startsWith('/api/s3/home/')) {
+                      if (media.imageUrl && media.imageUrl.startsWith('/api/s3/home/')) {
                         const pathParts = media.imageUrl.split('/home/');
                         if (pathParts.length > 1) {
                           const fileParts = pathParts[1].split('/');

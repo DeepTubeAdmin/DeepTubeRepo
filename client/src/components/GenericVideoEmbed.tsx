@@ -153,6 +153,16 @@ const GenericVideoEmbed = ({
         }
       }
       
+      // Special case for the /api/s3/uploads/ format (missing videos directory)
+      if (cleanedUrl.startsWith('/api/s3/uploads/') && cleanedUrl.match(/\.(mp4|mov|webm|avi)$/i)) {
+        // Extract the filename
+        const filename = cleanedUrl.split('/').pop();
+        if (filename) {
+          cleanedUrl = `/uploads/videos/${filename}`;
+          console.log(`Video URL adjusted: ${videoUrl} → ${cleanedUrl}`);
+        }
+      }
+      
       console.log(`Video URL cleaned: ${videoUrl} → ${cleanedUrl}`);
       setEmbedUrl(`direct:${cleanedUrl}`);
     } else {
