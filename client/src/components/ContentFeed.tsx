@@ -3,12 +3,15 @@ import { useQuery } from '@tanstack/react-query';
 import VideoCard from './VideoCard';
 import ImageCard from './ImageCard';
 import AdvertisementCard from './AdvertisementCard';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Filter } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Video } from '@shared/schema';
 
 interface ContentFeedProps {
   categorySlug?: string;
 }
+
+type SortOption = 'newest' | 'oldest' | 'most-viewed' | 'trending' | 'popular';
 
 interface ContentFeedResponse {
   featured: {
@@ -39,18 +42,58 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   const [page, setPage] = useState(1);
   // Generate a consistent seed for this session
   const [shuffleSeed] = useState(() => Math.random().toString(36).substring(2, 10));
+  // Sort state
+  const [sortBy, setSortBy] = useState<SortOption>('trending');
+  const [showSortMenu, setShowSortMenu] = useState(false);
 
   // Keep track of the previous data for placeholderData
   const previousDataRef = useRef<ContentFeedResponse | undefined>(undefined);
 
-  // Create a query key that includes category and shuffle seed
-  const queryKey = ['/api/content/feed', { page, category: categorySlug || '', shuffleSeed }];
+  // Sort menu refs for click outside handling
+  const sortMenuRef = useRef<HTMLDivElement>(null);
+  const sortButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Create a query key that includes category and shuffle seed and sort option
+  const queryKey = ['/api/content/feed', { page, category: categorySlug || '', shuffleSeed, sortBy }];
 
   // Using proper TanStack Query v5 syntax
   const { data, isLoading, isError } = useQuery<ContentFeedResponse>({
     queryKey,
     placeholderData: previousDataRef.current,
   });
+  
+  // Toggle sort menu
+  const toggleSortMenu = () => {
+    setShowSortMenu(!showSortMenu);
+  };
+  
+  // Handle sort change
+  const handleSortChange = (option: SortOption) => {
+    setSortBy(option);
+    setShowSortMenu(false);
+    // Reset page when sort changes
+    setPage(1);
+  };
+  
+  // Handle clicks outside of the sort menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showSortMenu && 
+        sortMenuRef.current && 
+        sortButtonRef.current && 
+        !sortMenuRef.current.contains(event.target as Node) &&
+        !sortButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowSortMenu(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSortMenu]);
   
   // Update the ref with the latest data
   useEffect(() => {
@@ -138,9 +181,70 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
       {/* Featured Video (Large Hero) */}
       {data.featured.video && (
         <section className="mb-12">
-          <h2 className="text-3xl font-bold mb-6 text-white border-l-4 border-orange-500 pl-4">
-            {data.featured.title}
-          </h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-3xl font-bold text-white border-l-4 border-orange-500 pl-4">
+              {data.featured.title}
+            </h2>
+            
+            {/* Sort Button and Dropdown */}
+            <div className="relative">
+              <Button
+                ref={sortButtonRef}
+                onClick={toggleSortMenu}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm border-gray-700 bg-black/50 hover:bg-black/80"
+              >
+                <Filter className="h-3.5 w-3.5" />
+                <span>Sort: {sortBy.charAt(0).toUpperCase() + sortBy.slice(1)}</span>
+              </Button>
+              
+              {showSortMenu && (
+                <div 
+                  ref={sortMenuRef}
+                  className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-black border border-gray-700 ring-1 ring-black ring-opacity-5 z-50"
+                >
+                  <div className="py-1" role="menu" aria-orientation="vertical">
+                    <button
+                      className={`${sortBy === 'newest' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                      onClick={() => handleSortChange('newest')}
+                      role="menuitem"
+                    >
+                      Newest First
+                    </button>
+                    <button
+                      className={`${sortBy === 'oldest' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                      onClick={() => handleSortChange('oldest')}
+                      role="menuitem"
+                    >
+                      Oldest First
+                    </button>
+                    <button
+                      className={`${sortBy === 'most-viewed' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                      onClick={() => handleSortChange('most-viewed')}
+                      role="menuitem"
+                    >
+                      Most Viewed
+                    </button>
+                    <button
+                      className={`${sortBy === 'trending' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                      onClick={() => handleSortChange('trending')}
+                      role="menuitem"
+                    >
+                      Trending
+                    </button>
+                    <button
+                      className={`${sortBy === 'popular' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                      onClick={() => handleSortChange('popular')}
+                      role="menuitem"
+                    >
+                      Popular
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
           <div className="max-w-4xl mx-auto">
             <VideoCard video={data.featured.video} size="large" />
           </div>
