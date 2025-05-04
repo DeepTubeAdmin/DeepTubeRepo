@@ -91,6 +91,32 @@ export default function AdminPage() {
     }
   };
 
+  // Handle featuring content
+  const handleFeatureContent = async (videoId: number) => {
+    try {
+      const response = await apiRequest('POST', `/api/admin/content/${videoId}/feature`);
+      const updatedVideo = await response.json();
+      
+      // Update the pending content list with the updated featured status
+      setPendingContent(prev => prev.map(item => 
+        item.id === videoId ? { ...item, featured: updatedVideo.featured } : item
+      ));
+      
+      toast({
+        title: 'Success',
+        description: `Content ${updatedVideo.featured ? 'featured' : 'unfeatured'} successfully`,
+        variant: 'default'
+      });
+    } catch (error) {
+      console.error('Error toggling feature status:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update feature status',
+        variant: 'destructive'
+      });
+    }
+  };
+
   useEffect(() => {
     // Only admin can access this page (user with ID 1 or 2 as defined in server/routes.ts)
     console.log("AdminPage: Current user:", user);
@@ -294,6 +320,14 @@ export default function AdminPage() {
                                   onClick={() => window.open(`/media/${content.id}`, '_blank')}
                                 >
                                   View
+                                </Button>
+                                <Button 
+                                  variant="secondary" 
+                                  size="sm"
+                                  onClick={() => handleFeatureContent(content.id)}
+                                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                                >
+                                  {content.featured ? 'Unfeature' : 'Feature'}
                                 </Button>
                                 <Button 
                                   variant="default" 
