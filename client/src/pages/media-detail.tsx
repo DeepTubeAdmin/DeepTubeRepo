@@ -505,15 +505,6 @@ export default function MediaDetail() {
               
               {/* Description and Prompt section - redesigned */}
               <div className="mt-6 mb-8 space-y-4">
-                {/* Description Box */}
-                <div className="bg-[#0c0c0c] p-4 rounded-md border border-[#222]">
-                  <div className="flex items-center mb-2">
-                    <MessageSquare className="h-4 w-4 text-orange-500 mr-2" />
-                    <span className="text-sm font-semibold text-gray-300">Description</span>
-                  </div>
-                  <p className="text-gray-300 text-sm">{media.description || 'No description provided.'}</p>
-                </div>
-                
                 {/* Prompt Box */}
                 <div className="bg-[#0c0c0c] p-4 rounded-md border border-[#222]">
                   <div className="flex items-center mb-2">
@@ -521,6 +512,15 @@ export default function MediaDetail() {
                     <span className="text-sm font-semibold text-gray-300">Prompt</span>
                   </div>
                   <p className="text-gray-300 text-sm">{media.prompt || 'No prompt information provided.'}</p>
+                </div>
+                
+                {/* Description Box */}
+                <div className="bg-[#0c0c0c] p-4 rounded-md border border-[#222]">
+                  <div className="flex items-center mb-2">
+                    <MessageSquare className="h-4 w-4 text-orange-500 mr-2" />
+                    <span className="text-sm font-semibold text-gray-300">Description</span>
+                  </div>
+                  <p className="text-gray-300 text-sm">{media.description || 'No description provided.'}</p>
                 </div>
               </div>
             </div>
