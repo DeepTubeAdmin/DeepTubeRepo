@@ -911,6 +911,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reports endpoint
+  app.post("/api/reports", async (req, res) => {
+    try {
+      // Define Zod schema for validation
+      const reportSchema = z.object({
+        videoId: z.number(),
+        reason: z.string().min(1),
+        userId: z.number().optional()
+      });
+      
+      // Validate the request body
+      const reportData = reportSchema.parse(req.body);
+      
+      // Create the report
+      const report = await dbStorage.createReport(reportData);
+      
+      res.status(201).json(report);
+    } catch (error) {
+      console.error('Error creating report:', error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: 'Failed to create report' });
+      }
+    }
+  });
+
   app.post("/api/categories", isAuthenticated, async (req, res) => {
     try {
       const categoryData = insertCategorySchema.parse(req.body);
