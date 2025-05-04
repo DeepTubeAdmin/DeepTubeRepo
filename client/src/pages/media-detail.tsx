@@ -423,26 +423,39 @@ export default function MediaDetail() {
               )}
               
               {media.contentType === 'embed' && media.embedCode && (
-                <div className="aspect-video">
+                <div className="aspect-video relative overflow-hidden max-h-[calc(100vh-300px)]">
                   {/* For YouTube embeds, ensure autoplay is forced */}
                   {media.embedCode.includes('youtube.com/embed/') ? (
                     <div
-                      className="w-full h-full"
-                      dangerouslySetInnerHTML={{
-                        __html: media.embedCode.includes('autoplay=1')
-                          ? media.embedCode.includes('origin=') 
-                            ? media.embedCode 
-                            : media.embedCode.replace(/src="([^"]+)"/, `src="$1&origin=${window.location.origin}"`)
-                          : media.embedCode
-                              .replace(/src="([^"]+)"/, `src="$1?autoplay=1&enablejsapi=1&origin=${window.location.origin}"`)
-                              .replace(/src="([^"]+)\?([^"]*)"/, `src="$1?autoplay=1&enablejsapi=1&origin=${window.location.origin}&$2"`)
-                      }}
-                    />
+                      className="w-full h-0 pb-[56.25%] relative" /* 16:9 aspect ratio with padding trick */
+                    >
+                      <div 
+                        className="absolute top-0 left-0 w-full h-full"
+                        dangerouslySetInnerHTML={{
+                          __html: media.embedCode.includes('autoplay=1')
+                            ? media.embedCode.includes('origin=') 
+                              ? media.embedCode.replace(/width="\d+"/, 'width="100%"').replace(/height="\d+"/, 'height="100%"')
+                              : media.embedCode.replace(/src="([^"]+)"/, `src="$1&origin=${window.location.origin}"`)
+                                .replace(/width="\d+"/, 'width="100%"').replace(/height="\d+"/, 'height="100%"')
+                            : media.embedCode
+                                .replace(/src="([^"]+)"/, `src="$1?autoplay=1&enablejsapi=1&origin=${window.location.origin}"`)
+                                .replace(/src="([^"]+)\?([^"]*)"/, `src="$1?autoplay=1&enablejsapi=1&origin=${window.location.origin}&$2"`)
+                                .replace(/width="\d+"/, 'width="100%"').replace(/height="\d+"/, 'height="100%"')
+                        }}
+                      />
+                    </div>
                   ) : (
-                    <div
-                      className="w-full h-full"
-                      dangerouslySetInnerHTML={{ __html: media.embedCode }}
-                    />
+                    <div 
+                      className="w-full h-0 pb-[56.25%] relative" /* 16:9 aspect ratio with padding trick */
+                    >
+                      <div
+                        className="absolute top-0 left-0 w-full h-full"
+                        dangerouslySetInnerHTML={{ __html: media.embedCode
+                          .replace(/width="\d+"/, 'width="100%"')
+                          .replace(/height="\d+"/, 'height="100%"') 
+                        }}
+                      />
+                    </div>
                   )}
                 </div>
               )}
