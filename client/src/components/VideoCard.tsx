@@ -242,11 +242,11 @@ export default function VideoCard({ video, onPreview, onWishlist, compact = fals
   return (
     <div
       ref={cardRef}
-      className="video-card relative rounded overflow-hidden bg-[#0f172a] hover:ring-2 hover:ring-orange-500/50 transition-all mb-6 md:mb-0"
+      className="video-card thumbnail-item relative rounded overflow-hidden bg-[#0f172a] hover:ring-2 hover:ring-orange-500/50 transition-all"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handlePreview}
-      style={{ marginBottom: '24px' }} /* Ensure consistent spacing between rows */
+
     >
       <div className="aspect-video relative overflow-hidden">
         {/* Base Thumbnail Layer */}

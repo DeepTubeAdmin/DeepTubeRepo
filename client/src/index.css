@@ -449,3 +449,9 @@
   font-size: 1.5rem;
   font-weight: bold;
 }
+
+/* Thumbnail item grid items (prevent any unwanted spacing) */
+.thumbnail-item {
+  margin: 0;
+  padding: 0;
+}
