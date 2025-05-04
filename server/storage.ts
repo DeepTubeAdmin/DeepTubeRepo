@@ -383,7 +383,39 @@ export class DatabaseStorage implements IStorage {
   }
   
   async deleteVideo(id: number): Promise<void> {
-    await db.delete(videos).where(eq(videos.id, id));
+    console.log(`Starting deletion of video with ID: ${id}`);
+    
+    try {
+      // First, delete all related wishlist items (no cascade)
+      await db.delete(wishlistItems)
+        .where(eq(wishlistItems.videoId, id));
+      console.log(`Deleted wishlist items for video ID: ${id}`);
+      
+      // The following have cascade delete in schema, but we'll explicitly delete to be safe
+      // Delete related comments
+      await db.delete(comments)
+        .where(eq(comments.videoId, id));
+      console.log(`Deleted comments for video ID: ${id}`);
+      
+      // Delete related likes
+      await db.delete(likes)
+        .where(eq(likes.videoId, id));
+      console.log(`Deleted likes for video ID: ${id}`);
+      
+      // Delete related reports
+      await db.delete(reports)
+        .where(eq(reports.videoId, id));
+      console.log(`Deleted reports for video ID: ${id}`);
+      
+      // Finally delete the video itself
+      const result = await db.delete(videos)
+        .where(eq(videos.id, id));
+      
+      console.log(`Successfully deleted video with ID: ${id}`);
+    } catch (error) {
+      console.error(`Error deleting video with ID: ${id}:`, error);
+      throw error;
+    }
   }
   
   async updateVideo(id: number, data: Partial<InsertVideo>): Promise<Video> {

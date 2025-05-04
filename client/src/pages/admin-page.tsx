@@ -162,7 +162,17 @@ export default function AdminPage() {
 
   const handleDeleteContent = async (videoId: number) => {
     try {
-      await apiRequest('DELETE', `/api/admin/content/${videoId}`);
+      console.log(`Attempting to delete content with ID: ${videoId}`);
+      const response = await apiRequest('DELETE', `/api/admin/content/${videoId}`);
+      
+      // Check if the request was successful
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Error response from server:', errorData);
+        throw new Error(errorData.error || `Server returned ${response.status}`);
+      }
+      
+      console.log(`Successfully deleted content with ID: ${videoId}`);
       setReportedContent(prev => prev.filter(item => item.id !== videoId));
       toast({
         title: 'Success',
@@ -173,7 +183,7 @@ export default function AdminPage() {
       console.error('Error deleting content:', error);
       toast({
         title: 'Error',
-        description: 'Failed to delete content',
+        description: error instanceof Error ? error.message : 'Failed to delete content',
         variant: 'destructive'
       });
     }

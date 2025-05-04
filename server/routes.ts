@@ -3246,22 +3246,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       ensureUser(req);
       const contentId = parseInt(req.params.contentId);
+      console.log(`Admin delete request for content ID: ${contentId} by user ID: ${req.user.id}`);
       
       // Get the content to verify it exists
       const content = await dbStorage.getVideoById(contentId);
       if (!content) {
+        console.error(`Content with ID ${contentId} not found`);
         return res.status(404).json({ error: "Content not found" });
       }
+      
+      console.log(`Found content for deletion: ${content.title} (ID: ${content.id})`);
       
       // Mark any reports for this content as resolved
       const client = await pool.connect();
       try {
-        await client.query(
+        const reportUpdateResult = await client.query(
           `UPDATE reports 
            SET status = 'reviewed', resolved_at = NOW(), resolved_by = $1 
-           WHERE video_id = $2 AND status = 'pending'`,
+           WHERE video_id = $2 AND status = 'pending' 
+           RETURNING id`,
           [req.user.id, contentId]
         );
+        
+        console.log(`Updated ${reportUpdateResult.rowCount} report(s) status for content ID: ${contentId}`);
       } catch (dbError) {
         console.error('Error updating report status:', dbError);
         // Continue with content deletion even if report status update fails
@@ -3269,11 +3276,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         client.release();
       }
       
-      await dbStorage.deleteVideo(contentId);
-      res.json({ success: true, message: "Content deleted successfully" });
+      try {
+        console.log(`Attempting to delete video with ID: ${contentId}`);
+        await dbStorage.deleteVideo(contentId);
+        console.log(`Video with ID: ${contentId} successfully deleted`);
+        res.json({ success: true, message: "Content deleted successfully" });
+      } catch (deleteError) {
+        console.error(`Error deleting video with ID: ${contentId}:`, deleteError);
+        res.status(500).json({ error: "Failed to delete content: " + (deleteError instanceof Error ? deleteError.message : String(deleteError)) });
+      }
     } catch (error) {
-      console.error("Error deleting content:", error);
-      res.status(500).json({ error: "Failed to delete content" });
+      console.error("Error in delete content endpoint:", error);
+      res.status(500).json({ error: "Failed to delete content: " + (error instanceof Error ? error.message : String(error)) });
     }
   });
   
