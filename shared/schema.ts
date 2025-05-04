@@ -55,6 +55,7 @@ export const videos = pgTable("videos", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   credits: integer("credits").notNull().default(0), // Number of credits required to purchase
   views: integer("views").notNull().default(0), // Track number of views
+  featured: boolean("featured").default(false).notNull(), // Marks video as featured for display in Featured Videos section
   reviewStatus: varchar("review_status", { enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
   reviewedAt: timestamp("reviewed_at"),
   reviewedBy: integer("reviewed_by").references(() => users.id),
@@ -234,6 +235,7 @@ export const insertVideoSchema = createInsertSchema(videos).pick({
   vimeoId: true,
   credits: true,
   views: true,
+  featured: true,
   reviewStatus: true,
   reviewedAt: true,
   reviewedBy: true,

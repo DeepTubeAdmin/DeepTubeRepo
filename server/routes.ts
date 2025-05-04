@@ -3486,6 +3486,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to approve content" });
     }
   });
+  
+  // Toggle a video's featured status (for Featured Videos section)
+  app.post("/api/admin/content/:contentId/feature", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      ensureUser(req);
+      const contentId = parseInt(req.params.contentId);
+      
+      // Verify the content exists
+      const content = await dbStorage.getVideoById(contentId);
+      if (!content) {
+        return res.status(404).json({ error: "Content not found" });
+      }
+      
+      // Toggle the featured status
+      const updatedVideo = await dbStorage.updateVideo(contentId, {
+        featured: !content.featured
+      });
+      
+      res.json(updatedVideo);
+    } catch (error) {
+      console.error("Error toggling feature status:", error);
+      res.status(500).json({ error: "Failed to update feature status" });
+    }
+  });
 
   app.post("/api/admin/content/:contentId/reject", isAuthenticated, isAdmin, async (req, res) => {
     try {
