@@ -196,7 +196,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
                 className="flex items-center gap-1 px-3 py-1.5 text-sm border-gray-700 bg-black/50 hover:bg-black/80"
               >
                 <Filter className="h-3.5 w-3.5" />
-                <span>Sort: {sortBy.charAt(0).toUpperCase() + sortBy.slice(1)}</span>
+                <span>Sort</span>
               </Button>
               
               {showSortMenu && (
