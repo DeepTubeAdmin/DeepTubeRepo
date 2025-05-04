@@ -1008,7 +1008,7 @@ export default function InfiniteContentFeed({
                     gap: '24px', // Enforce consistent gap size via inline style
                     rowGap: '24px', // Explicitly set row gap
                     columnGap: '24px', // Explicitly set column gap
-                    marginBottom: '24px', // Add bottom margin to each grid
+                    marginBottom: '0px', // No bottom margin to each grid
                   }}
                 >
                 {/* Apply a direct style here to force flex-wrap prevention in case grid doesn't work */}

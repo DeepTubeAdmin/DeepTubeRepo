@@ -437,7 +437,7 @@
   gap: 24px !important;
   row-gap: 24px !important;
   column-gap: 24px !important;
-  margin-bottom: 24px;
+  margin-bottom: 0px;
 }
 
 /* Fix for section 3 gap */
