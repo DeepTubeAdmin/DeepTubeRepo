@@ -259,7 +259,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
         
         {/* Video Grid (3 rows, 4 videos each) */}
         <div className="mb-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
             {insertAdvertisement(data.trending.videos, data.trending.advertisement.position)
               .map((video, index) => 
                 video ? (
@@ -272,7 +272,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
         </div>
         
         {/* Image Row (1 row, 4 images) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {data.trending.images.map((image, index) => (
             <ImageCard key={`trending-image-${image.id}-${index}`} image={image} />
           ))}
@@ -287,7 +287,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
         
         {/* Video Grid (3 rows, 4 videos each) */}
         <div className="mb-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
             {insertAdvertisement(data.recent.videos, data.recent.advertisement.position)
               .map((video, index) => 
                 video ? (
@@ -300,7 +300,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
         </div>
         
         {/* Image Row (1 row, 4 images) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {data.recent.images.map((image, index) => (
             <ImageCard key={`recent-image-${image.id}-${index}`} image={image} />
           ))}
@@ -318,7 +318,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
           <div key={`popular-block-${blockIndex}`} className="mb-12">
             {/* Video Grid (3 rows, 4 videos each) */}
             <div className="mb-8">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
                 {insertAdvertisement(block.videos, block.advertisement.position)
                   .map((video, index) => 
                     video ? (
@@ -331,7 +331,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
             </div>
             
             {/* Image Row (1 row, 4 images) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {block.images.map((image, index) => (
                 <ImageCard key={`popular-image-${image.id}-${index}-${blockIndex}`} image={image} />
               ))}
