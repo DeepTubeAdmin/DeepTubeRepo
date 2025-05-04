@@ -150,9 +150,11 @@ interface VideoCardProps {
   video: Video;
   onPreview?: (videoId: number) => void;
   onWishlist?: (videoId: number) => void;
+  size?: 'default' | 'small' | 'medium' | 'large';
+  compact?: boolean;
 }
 
-export default function VideoCard({ video, onPreview, onWishlist, compact = false }: VideoCardProps & { compact?: boolean }) {
+export default function VideoCard({ video, onPreview, onWishlist, size = 'default', compact = false }: VideoCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -246,14 +248,21 @@ export default function VideoCard({ video, onPreview, onWishlist, compact = fals
     }
   };
 
+  // Create dynamic sizing classes
+  const sizeClass = {
+    small: 'w-full',
+    default: 'w-full',
+    medium: 'w-full',
+    large: 'w-full max-w-4xl mx-auto',
+  }[size];
+
   return (
     <div
       ref={cardRef}
-      className="video-card thumbnail-item relative rounded overflow-hidden bg-[#0f172a] hover:ring-2 hover:ring-orange-500/50 transition-all"
+      className={`video-card thumbnail-item relative rounded overflow-hidden bg-[#0f172a] hover:ring-2 hover:ring-orange-500/50 transition-all ${sizeClass}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handlePreview}
-
     >
       <div className="aspect-video relative overflow-hidden">
         {/* Base Thumbnail Layer */}

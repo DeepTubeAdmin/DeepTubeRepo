@@ -1079,6 +1079,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Use a Map with category+sortBy as keys to store used IDs for different views
   const infiniteScrollCache = new Map<string, Set<number>>();
   
+  // Track used categories to ensure variety in blocks
+  // This must be a persistent map that exists across requests
+  const usedCategoriesCache = new Map<string, Set<number>>();
+  
   // Cache all categories to avoid multiple DB calls
   let cachedCategories: Category[] = [];
   
@@ -1134,7 +1138,241 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
   
+  // New API endpoint for the completely redesigned content feed
+  app.get("/api/content/feed", async (req, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const categorySlug = req.query.category as string || '';
+      const shuffleSeed = req.query.shuffleSeed as string || '';
+      
+      // Get categoryId if category slug is provided
+      let categoryId: number | undefined = undefined;
+      if (categorySlug) {
+        const category = await dbStorage.getCategoryBySlug(categorySlug);
+        categoryId = category?.id;
+      }
+      
+      // Create cache key based on category and shuffle seed
+      const cacheKey = getCacheKey(categorySlug, 'feed', shuffleSeed);
+      
+      // Get or create the set of used content IDs for this view
+      if (!infiniteScrollCache.has(cacheKey)) {
+        infiniteScrollCache.set(cacheKey, new Set<number>());
+      }
+      const usedContentIds = infiniteScrollCache.get(cacheKey)!;
+      
+      // Reset cache if we're starting a new page (page 1)
+      if (page === 1) {
+        resetContentCache(cacheKey, false);
+      }
+      
+      // Cache categories to avoid multiple DB calls
+      if (cachedCategories.length === 0) {
+        cachedCategories = await dbStorage.getCategories();
+        console.log(`Cached ${cachedCategories.length} categories for content selection`);
+      }
+
+      // Response structure
+      const response: {
+        featured: {
+          video: Video | null,
+          title: string
+        },
+        trending: {
+          videos: Video[],
+          images: Video[],
+          advertisement: { position: number }
+        },
+        recent: {
+          videos: Video[],
+          images: Video[],
+          advertisement: { position: number }
+        },
+        popular: {
+          blocks: Array<{
+            videos: Video[],
+            images: Video[],
+            advertisement: { position: number }
+          }>,
+          hasMore: boolean
+        }
+      } = {
+        featured: {
+          video: null,
+          title: 'Featured Video'
+        },
+        trending: {
+          videos: [],
+          images: [],
+          advertisement: { position: Math.floor(Math.random() * 12) } // Random position within 12 items
+        },
+        recent: {
+          videos: [],
+          images: [],
+          advertisement: { position: Math.floor(Math.random() * 12) } // Random position within 12 items
+        },
+        popular: {
+          blocks: [],
+          hasMore: true
+        }
+      };
+
+      // 1. FEATURED VIDEO SECTION
+      // Get featured videos (filtered by category if specified)
+      let featuredVideos: Video[] = [];
+      
+      // Get all featured videos 
+      const featuredVideosQuery = await dbStorage.getVideos(50);
+      
+      // Filter for videos (not images) with approved status
+      featuredVideos = featuredVideosQuery.filter(v => 
+        (v.contentType === 'video' || v.contentType === 'embed') && 
+        v.reviewStatus === 'approved');
+      
+      // If category is specified, filter featured videos by category
+      if (categoryId) {
+        featuredVideos = featuredVideos.filter(video => video.categoryId === categoryId);
+      }
+      
+      // Shuffle the featured videos with the provided seed
+      if (shuffleSeed && featuredVideos.length > 0) {
+        featuredVideos = shuffleArray(featuredVideos, shuffleSeed);
+      }
+      
+      // Select the first featured video that hasn't been used
+      const unusedFeaturedVideos = featuredVideos.filter(video => !usedContentIds.has(video.id));
+      
+      if (unusedFeaturedVideos.length > 0) {
+        response.featured.video = unusedFeaturedVideos[0];
+        usedContentIds.add(unusedFeaturedVideos[0].id);
+      } else if (featuredVideos.length > 0) {
+        // If all featured videos have been used, just pick the first one
+        response.featured.video = featuredVideos[0];
+        usedContentIds.add(featuredVideos[0].id);
+      }
+      
+      // 2. TRENDING NOW SECTION (3 rows of videos, 1 row of images)
+      // Get trending videos (not already used in featured)
+      let trendingVideos = await dbStorage.getTrendingVideos(50);
+      trendingVideos = trendingVideos.filter(v => 
+        (v.contentType === 'video' || v.contentType === 'embed') &&
+        !usedContentIds.has(v.id));
+        
+      // Apply shuffle with seed if provided
+      if (shuffleSeed && trendingVideos.length > 0) {
+        trendingVideos = shuffleArray(trendingVideos, shuffleSeed);
+      }
+      
+      // Select up to 12 videos for 3 rows (assuming 4 videos per row)
+      const selectedTrendingVideos = trendingVideos.slice(0, 12);
+      selectedTrendingVideos.forEach(video => usedContentIds.add(video.id));
+      response.trending.videos = selectedTrendingVideos;
+      
+      // Get trending images
+      let trendingImages = await dbStorage.getTrendingVideos(20, 'image');
+      trendingImages = trendingImages.filter(img => 
+        img.contentType === 'image' && !usedContentIds.has(img.id));
+        
+      // Apply shuffle with seed if provided
+      if (shuffleSeed && trendingImages.length > 0) {
+        trendingImages = shuffleArray(trendingImages, shuffleSeed);
+      }
+      
+      // Select up to 4 images for 1 row
+      const selectedTrendingImages = trendingImages.slice(0, 4);
+      selectedTrendingImages.forEach(image => usedContentIds.add(image.id));
+      response.trending.images = selectedTrendingImages;
+      
+      // 3. RECENTLY UPLOADED SECTION (3 rows of videos, 1 row of images)
+      // Get newest videos
+      let recentVideos = await dbStorage.getVideos(50, undefined, 0, 'newest');
+      recentVideos = recentVideos.filter(v => 
+        (v.contentType === 'video' || v.contentType === 'embed') &&
+        !usedContentIds.has(v.id));
+        
+      // Apply shuffle with seed if provided
+      if (shuffleSeed && recentVideos.length > 0) {
+        recentVideos = shuffleArray(recentVideos, shuffleSeed);
+      }
+      
+      // Select up to 12 videos for 3 rows
+      const selectedRecentVideos = recentVideos.slice(0, 12);
+      selectedRecentVideos.forEach(video => usedContentIds.add(video.id));
+      response.recent.videos = selectedRecentVideos;
+      
+      // Get newest images
+      let recentImages = await dbStorage.getVideos(20, 'image', 0, 'newest');
+      recentImages = recentImages.filter(img => 
+        img.contentType === 'image' && !usedContentIds.has(img.id));
+        
+      // Apply shuffle with seed if provided
+      if (shuffleSeed && recentImages.length > 0) {
+        recentImages = shuffleArray(recentImages, shuffleSeed);
+      }
+      
+      // Select up to 4 images for 1 row
+      const selectedRecentImages = recentImages.slice(0, 4);
+      selectedRecentImages.forEach(image => usedContentIds.add(image.id));
+      response.recent.images = selectedRecentImages;
+      
+      // 4. POPULAR CONTENT SECTION - THE INFINITE SCROLL PART (3 rows videos, 1 row images) repeating
+      // Number of blocks to show in each page (start with only 1 for page 1, increase for subsequent pages)
+      const blocksPerPage = page === 1 ? 1 : 2;
+      
+      for (let i = 0; i < blocksPerPage; i++) {
+        // Random position for advertisement
+        const adPosition = Math.floor(Math.random() * 12); // Random position within 12 videos
+        
+        // Get popular videos
+        let popularVideos = await dbStorage.getPopularVideos(50);
+        popularVideos = popularVideos.filter(v => 
+          (v.contentType === 'video' || v.contentType === 'embed') &&
+          !usedContentIds.has(v.id));
+          
+        // Apply shuffle with seed if provided
+        if (shuffleSeed && popularVideos.length > 0) {
+          popularVideos = shuffleArray(popularVideos, shuffleSeed);
+        }
+        
+        // Select up to 12 videos for 3 rows
+        const selectedPopularVideos = popularVideos.slice(0, 12);
+        selectedPopularVideos.forEach(video => usedContentIds.add(video.id));
+        
+        // Get popular images
+        let popularImages = await dbStorage.getPopularVideos(20, 'image');
+        popularImages = popularImages.filter(img => 
+          img.contentType === 'image' && !usedContentIds.has(img.id));
+          
+        // Apply shuffle with seed if provided
+        if (shuffleSeed && popularImages.length > 0) {
+          popularImages = shuffleArray(popularImages, shuffleSeed);
+        }
+        
+        // Select up to 4 images for 1 row
+        const selectedPopularImages = popularImages.slice(0, 4);
+        selectedPopularImages.forEach(image => usedContentIds.add(image.id));
+        
+        // Add block
+        response.popular.blocks.push({
+          videos: selectedPopularVideos,
+          images: selectedPopularImages,
+          advertisement: { position: adPosition }
+        });
+      }
+      
+      // Always set hasMore to true for continuous scrolling
+      response.popular.hasMore = true;
+      
+      res.json(response);
+    } catch (error) {
+      console.error("Error fetching content feed:", error);
+      res.status(500).json({ error: "Failed to fetch content feed" });
+    }
+  });
+  
+  // Deprecated endpoint - redirect to the new feed API
   app.get("/api/content/infinite", async (req, res) => {
+    return res.status(301).json({ error: "This API endpoint has been deprecated. Please use /api/content/feed instead." });
     try {
       const page = parseInt(req.query.page as string) || 1;
       const pageSize = parseInt(req.query.pageSize as string) || 5; // Default to 5 blocks per page

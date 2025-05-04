@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import CategoryNavigation from "@/components/CategoryNavigation";
 import VideoPlayer from "@/components/VideoPlayer";
 import VideoCard from "@/components/VideoCard";
-import InfiniteContentFeed from "@/components/InfiniteContentFeed";
+import ContentFeed from "@/components/ContentFeed";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Category, Video } from "@shared/schema";
@@ -297,14 +297,8 @@ export default function Home() {
           
           {/* Removed the Discover Content section and shuffle button as requested */}
           
-          {/* Infinite Content Feed with Video-Image alternating pattern */}
-          <InfiniteContentFeed 
-            onPreview={handlePreview}
-            onWishlist={handleWishlist}
-            category={activeCategory}
-            sortBy={sortBy}
-            shuffleSeed={shuffleSeed}
-          />
+          {/* Content Feed with three sections */}
+          <ContentFeed categorySlug={activeCategory} />
         </main>
       </div>
       
