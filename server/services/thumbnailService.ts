@@ -123,10 +123,65 @@ async function handleImageThumbnail(contentId: number, sourceUrl: string): Promi
   console.log(`Generating image thumbnail for image ${contentId} from ${sourceUrl}`);
   
   try {
+    // Import required modules
+    const fs = await import('fs/promises');
+    const fsSync = await import('fs');
+    const path = await import('path');
+    const os = await import('os');
+    const { execFile } = await import('child_process');
+    const { promisify } = await import('util');
+    const execFileAsync = promisify(execFile);
+    
+    // Set up temp files
+    const tempDir = os.tmpdir();
+    const tempOriginal = path.join(tempDir, `img-original-${contentId}-${Date.now()}`);
+    const tempThumb = path.join(tempDir, `img-thumb-${contentId}-${Date.now()}.jpg`);
+    
     let imageBuffer: Buffer;
     
+    // Clean up source URL to handle API and workspace references
+    const cleanedSourceUrl = sourceUrl
+      .replace('/api/s3/', '')
+      .replace('/home/runner/workspace/', '');
+      
+    // Handle S3 URLs and local file references
+    if (sourceUrl.includes('/api/s3/') || sourceUrl.includes('/api/content/')) {
+      // Try to find the image in the uploads directory
+      const fileName = path.basename(cleanedSourceUrl);
+      // Check different possible locations
+      const possiblePaths = [
+        `uploads/images/${fileName}`,
+        `uploads/${fileName}`,
+        cleanedSourceUrl,
+        sourceUrl.replace('/api/s3/', '')
+      ];
+      
+      let localImagePath = null;
+      
+      // Find the first path that exists
+      for (const p of possiblePaths) {
+        if (fsSync.existsSync(p)) {
+          localImagePath = p;
+          console.log(`Found image file at: ${localImagePath}`);
+          break;
+        }
+      }
+      
+      // If found locally, read it
+      if (localImagePath) {
+        imageBuffer = await fs.readFile(localImagePath);
+      } else {
+        // If not found, try to download it from the URL
+        console.log(`Could not find local file for ${sourceUrl}, trying to fetch...`);
+        const response = await fetch(sourceUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch image: ${response.status}`);
+        }
+        imageBuffer = Buffer.from(await response.arrayBuffer());
+      }
+    }
     // Handle base64 encoded images
-    if (sourceUrl.startsWith('data:image')) {
+    else if (sourceUrl.startsWith('data:image')) {
       console.log(`Processing base64 image for ${contentId}`);
       const matches = sourceUrl.match(/^data:[^;]+;base64,(.+)$/);
       if (!matches || matches.length !== 2) {
@@ -134,31 +189,89 @@ async function handleImageThumbnail(contentId: number, sourceUrl: string): Promi
       }
       imageBuffer = Buffer.from(matches[1], 'base64');
     }
-    // Handle URL images
+    // Handle http/https URLs
     else if (sourceUrl.startsWith('http')) {
       console.log(`Fetching image from URL for ${contentId}`);
-      const response = await fetch(sourceUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch image: ${response.status}`);
+      
+      // Use a retry mechanism for unstable connections
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (attempts < maxAttempts) {
+        try {
+          const response = await fetch(sourceUrl);
+          if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`);
+          imageBuffer = Buffer.from(await response.arrayBuffer());
+          break;
+        } catch (err) {
+          attempts++;
+          if (attempts >= maxAttempts) throw err;
+          console.log(`Fetch attempt ${attempts} failed, retrying...`);
+          await new Promise(r => setTimeout(r, 1000)); // Wait 1 second between attempts
+        }
       }
-      imageBuffer = Buffer.from(await response.arrayBuffer());
     }
     // Handle local file paths
     else {
-      console.log(`Reading image from local path for ${contentId}`);
-      const fs = await import('fs/promises');
-      imageBuffer = await fs.readFile(sourceUrl);
+      console.log(`Reading image from local path for ${contentId}: ${cleanedSourceUrl}`);
+      try {
+        imageBuffer = await fs.readFile(cleanedSourceUrl);
+      } catch (readError) {
+        console.error(`Failed to read from ${cleanedSourceUrl}:`, readError);
+        throw new Error(`Image file not found: ${cleanedSourceUrl}`);
+      }
     }
     
-    // Use the image as the thumbnail (resize could be added here)
-    const s3Key = s3Service.getThumbnailS3Key(contentId);
-    await s3Service.uploadToS3(imageBuffer, s3Key, 'image/jpeg');
+    // Save the image to a temp file
+    await fs.writeFile(tempOriginal, imageBuffer);
     
-    console.log(`Successfully generated image thumbnail for ${contentId}`);
+    // Use FFmpeg to create a proper resized thumbnail
+    try {
+      await execFileAsync('ffmpeg', [
+        '-y',                 // Overwrite output file
+        '-i', tempOriginal,   // Input file
+        '-vf', 'scale=800:450:force_original_aspect_ratio=decrease,pad=800:450:(ow-iw)/2:(oh-ih)/2',
+        '-q:v', '2',          // High quality (2 is high, 31 is lowest)
+        tempThumb             // Output file
+      ]);
+      
+      // Check if file was created and has content
+      const stats = await fs.stat(tempThumb);
+      if (stats.size === 0) {
+        throw new Error('Generated thumbnail is empty');
+      }
+      
+      console.log(`Successfully resized image thumbnail to 800x450`);
+    } catch (ffmpegError) {
+      console.error('FFmpeg processing failed:', ffmpegError);
+      // If FFmpeg fails, just use the original image
+      await fs.copyFile(tempOriginal, tempThumb);
+      console.log('Falling back to original image');
+    }
+    
+    // Upload the thumbnail to S3
+    const thumbBuffer = await fs.readFile(tempThumb);
+    const s3Key = `thumbnails/video-${contentId}.jpg`; // Use same naming convention as videos
+    
+    // Upload using the existing S3 service
+    const { uploadStringToS3 } = await import('../s3');
+    await uploadStringToS3(thumbBuffer, s3Key, 'image/jpeg');
+    
+    console.log(`Successfully uploaded image thumbnail to S3: ${s3Key}`);
+    
+    // Cleanup temp files
+    try {
+      if (fsSync.existsSync(tempOriginal)) await fs.unlink(tempOriginal);
+      if (fsSync.existsSync(tempThumb)) await fs.unlink(tempThumb);
+    } catch (cleanupError) {
+      console.warn('Failed to clean up temporary files:', cleanupError);
+    }
+    
     return s3Key;
   } catch (error) {
-    console.error(`Error handling image thumbnail: ${error}`);
-    throw error;
+    console.error(`Error handling image thumbnail for content ${contentId}:`, error);
+    // Fall back to placeholder if anything goes wrong
+    return generatePlaceholderThumbnail(contentId, 'image');
   }
 }
 
@@ -169,10 +282,126 @@ async function handleImageThumbnail(contentId: number, sourceUrl: string): Promi
  * @returns S3 key of the generated thumbnail
  */
 async function handleVideoThumbnail(contentId: number, sourceUrl: string): Promise<string> {
-  // For now, use a placeholder for videos
-  // In a real implementation, FFmpeg would be used to extract frames
-  console.log(`Video thumbnail generation not implemented, using placeholder for ${contentId}`);
-  return generatePlaceholderThumbnail(contentId, 'video');
+  // Import required modules
+  const { promisify } = await import('util');
+  const { execFile } = await import('child_process');
+  const fs = await import('fs/promises');
+  const fsSync = await import('fs');
+  const path = await import('path');
+  const os = await import('os');
+  const execFileAsync = promisify(execFile);
+  
+  console.log(`Generating thumbnail for video ${contentId} from source: ${sourceUrl}`);
+  
+  try {
+    // Create temp directory and files
+    const tempDir = os.tmpdir();
+    const tempThumb = path.join(tempDir, `thumb-${contentId}-${Date.now()}.jpg`);
+    
+    // Fix path if it's an API URL
+    const cleanedSourceUrl = sourceUrl
+      .replace('/api/s3/', '')
+      .replace('/home/runner/workspace/', '');
+    
+    // Handle S3 URLs - we need to extract the local path
+    let localVideoPath;
+    if (sourceUrl.includes('/api/s3/') || sourceUrl.includes('/api/content/')) {
+      // Try to find the video in the uploads directory
+      const fileName = path.basename(cleanedSourceUrl);
+      // Check different possible locations
+      const possiblePaths = [
+        `uploads/videos/${fileName}`, 
+        `uploads/${fileName}`,
+        cleanedSourceUrl,
+        sourceUrl.replace('/api/s3/', '')
+      ];
+      
+      // Find the first path that exists
+      for (const p of possiblePaths) {
+        if (fsSync.existsSync(p)) {
+          localVideoPath = p;
+          console.log(`Found video file at: ${localVideoPath}`);
+          break;
+        }
+      }
+      
+      if (!localVideoPath) {
+        console.error(`Could not find local file for ${sourceUrl} after trying paths:`, possiblePaths);
+        throw new Error('Video file not found');
+      }
+    } else {
+      // It's already a local path
+      localVideoPath = cleanedSourceUrl;
+    }
+    
+    // Make sure the video file exists
+    try {
+      await fs.access(localVideoPath);
+    } catch (error) {
+      console.error(`Video file not accessible at ${localVideoPath}:`, error);
+      throw new Error('Video file not accessible');
+    }
+    
+    console.log(`Extracting thumbnail from video at ${localVideoPath}`);
+    
+    // Try multiple timestamp positions in case the video starts with black frames
+    const timestamps = ['0.5', '1', '3', '5'];
+    let success = false;
+    
+    for (const timestamp of timestamps) {
+      try {
+        await execFileAsync('ffmpeg', [
+          '-y',                 // Overwrite output file
+          '-i', localVideoPath, // Input file
+          '-vframes', '1',      // Extract 1 frame
+          '-an',                // No audio
+          '-s', '800x450',      // Size
+          '-ss', timestamp,     // Timestamp
+          '-q:v', '2',          // Quality (2 is high quality, 31 is lowest)
+          tempThumb             // Output file
+        ]);
+        
+        // Check if file was created and has content
+        const stats = await fs.stat(tempThumb);
+        if (stats.size > 0) {
+          success = true;
+          console.log(`Successfully generated thumbnail at position ${timestamp}s`);
+          break;
+        }
+      } catch (error) {
+        console.error(`Failed to extract frame at ${timestamp}s:`, error);
+        // Continue to next timestamp
+      }
+    }
+    
+    if (!success) {
+      console.error(`Failed to extract thumbnail from ${localVideoPath} after trying multiple timestamps`);
+      throw new Error('Thumbnail extraction failed');
+    }
+    
+    // Upload the thumbnail to S3
+    const s3Key = `thumbnails/video-${contentId}.jpg`;
+    const thumbBuffer = await fs.readFile(tempThumb);
+    
+    // Upload using the existing S3 service
+    const { uploadStringToS3 } = await import('../s3');
+    await uploadStringToS3(thumbBuffer, s3Key, 'image/jpeg');
+    
+    console.log(`Successfully uploaded thumbnail to S3: ${s3Key}`);
+    
+    // Cleanup temp file
+    try {
+      await fs.unlink(tempThumb);
+    } catch (cleanupError) {
+      console.warn('Failed to clean up temporary file:', cleanupError);
+    }
+    
+    return s3Key;
+  } catch (error) {
+    console.error(`Error generating video thumbnail for content ${contentId}:`, error);
+    // Fall back to placeholder if anything goes wrong
+    return generatePlaceholderThumbnail(contentId, 'video');
+  }
 }
 
 /**
