@@ -34,10 +34,15 @@ export default function ThumbnailImage({ contentId, contentType, title, classNam
         alt={title}
         className="w-full h-full object-cover"
         onLoad={() => setIsLoading(false)}
-        onError={() => {
+        onError={(e) => {
+          // Log error to console with more details
+          console.error(`ThumbnailImage: Error loading thumbnail for ${contentType} ${contentId}`);
+          
           setError(true);
           setIsLoading(false);
-          setImgSrc(`/api/content/${contentId}/thumbnail?placeholder=true`);
+          
+          // Use the placeholder endpoint which should return an SVG placeholder
+          setImgSrc(`/api/content/${contentId}/thumbnail?placeholder=true&t=${Date.now()}`);
         }}
       />
     </div>

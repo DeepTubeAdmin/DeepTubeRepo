@@ -33,26 +33,57 @@ export default function VideoPreview({
     let retryTimeout: ReturnType<typeof setTimeout>;
 
     async function resolveVideoUrl() {
+      // Clean path for workspace references
+      let cleanedSrc = src;
+      
+      // If the URL contains workspace paths, extract just the uploads part
+      if (src.includes('/home/runner/workspace/')) {
+        const match = src.match(/\/home\/runner\/workspace\/(.+)/);
+        if (match && match[1]) {
+          cleanedSrc = `/${match[1]}`;
+          console.log(`VideoPreview: Cleaned workspace path: ${src} → ${cleanedSrc}`);
+        }
+      }
+      
+      // Special case for absolute path references that should be relative
+      if (cleanedSrc.startsWith('/api/s3/home/')) {
+        const pathParts = cleanedSrc.split('/home/');
+        if (pathParts.length > 1) {
+          // Extract just the filename
+          const fileParts = pathParts[1].split('/');
+          cleanedSrc = `/uploads/videos/${fileParts[fileParts.length - 1]}`;
+          console.log(`VideoPreview: Converted absolute path: ${src} → ${cleanedSrc}`);
+        }
+      }
+      
       // Always fetch a fresh S3 URL for video previews
-      if (src.startsWith('/api/s3/')) {
+      if (cleanedSrc.startsWith('/api/s3/')) {
         setIsLoadingUrl(true);
         try {
-          const response = await fetch(src + '?getUrl=true');
+          console.log(`VideoPreview: Fetching signed URL for ${cleanedSrc}`);
+          const response = await fetch(cleanedSrc + '?getUrl=true');
           const data = await response.json();
           if (data.url) {
             setResolvedUrl(data.url);
+            console.log(`VideoPreview: Resolved URL successfully for ${cleanedSrc}`);
           } else {
             throw new Error('No URL in response');
           }
         } catch (err) {
           console.error('Failed to resolve video URL:', err);
-          setResolvedUrl(src);
+          // Fall back to direct path for local development
+          if (cleanedSrc.includes('/uploads/videos/')) {
+            console.log(`VideoPreview: Falling back to direct path: ${cleanedSrc}`);
+            setResolvedUrl(cleanedSrc);
+          } else {
+            setResolvedUrl(cleanedSrc);
+          }
         } finally {
           setIsLoadingUrl(false);
         }
         return;
       }
-      setResolvedUrl(src);
+      setResolvedUrl(cleanedSrc);
     }
 
     resolveVideoUrl();

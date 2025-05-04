@@ -408,6 +408,17 @@ export default function MediaDetail() {
                     autoplay={true}
                     aiGenerator={media.aiGenerator}
                   />
+                  {/* Debug output for media object only in development */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <div className="text-xs bg-black bg-opacity-50 p-2 mt-2 rounded max-h-20 overflow-auto">
+                      <details>
+                        <summary className="text-gray-400 cursor-pointer">Debug: Media Object</summary>
+                        <pre className="text-gray-400 mt-1 whitespace-pre-wrap">
+                          {JSON.stringify(media, null, 2)}
+                        </pre>
+                      </details>
+                    </div>
+                  )}
                 </div>
               )}
               
@@ -416,7 +427,40 @@ export default function MediaDetail() {
                   <img 
                     src={media.imageUrl} 
                     alt={media.title} 
-                    className="max-w-full max-h-[70vh]" 
+                    className="max-w-full max-h-[70vh]"
+                    onError={(e) => {
+                      console.error(`Error loading image: ${media.imageUrl}`);
+                      
+                      // Try to clean up the path if it contains workspace references
+                      let cleanedUrl = media.imageUrl;
+                      
+                      if (media.imageUrl.includes('/home/runner/workspace/')) {
+                        const match = media.imageUrl.match(/\/home\/runner\/workspace\/(.+)/);
+                        if (match && match[1]) {
+                          cleanedUrl = `/${match[1]}`;
+                          console.log(`Image: Cleaned workspace path: ${media.imageUrl} → ${cleanedUrl}`);
+                          e.currentTarget.src = cleanedUrl;
+                          return;
+                        }
+                      }
+                      
+                      // Special case for absolute path references that should be relative
+                      if (media.imageUrl.startsWith('/api/s3/home/')) {
+                        const pathParts = media.imageUrl.split('/home/');
+                        if (pathParts.length > 1) {
+                          const fileParts = pathParts[1].split('/');
+                          cleanedUrl = `/uploads/images/${fileParts[fileParts.length - 1]}`;
+                          console.log(`Image: Converted absolute path: ${media.imageUrl} → ${cleanedUrl}`);
+                          e.currentTarget.src = cleanedUrl;
+                          return;
+                        }
+                      }
+                      
+                      // If still failing, try the thumbnail as a fallback
+                      if (media.id) {
+                        e.currentTarget.src = `/api/content/${media.id}/thumbnail?t=${Date.now()}`;
+                      }
+                    }}
                   />
                   {media.aiGenerator && <AIWatermark aiGenerator={media.aiGenerator} position="bottom-right" size="medium" />}
                 </div>
