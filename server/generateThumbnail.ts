@@ -78,18 +78,25 @@ export async function generateAndStoreS3Thumbnail(
           '-ss', '0.1',
           tempThumb
         ]);
+      } catch (error) {
+        console.error('Failed to generate thumbnail directly from file:', error);
+      }
+
+      // Download the file from source URL if needed
+      let videoBuffer;
+      let attempts = 0;
+      while (!videoBuffer && attempts < 3) {
         try {
           const videoResponse = await fetch(sourceUrl);
           if (!videoResponse.ok) throw new Error(`HTTP ${videoResponse.status}`);
           videoBuffer = await videoResponse.arrayBuffer();
-          break;
         } catch (err) {
           attempts++;
           if (attempts === 3) throw err;
           await new Promise(r => setTimeout(r, 1000));
         }
       }
-
+      
       await fs.promises.writeFile(tempVideo, Buffer.from(videoBuffer));
 
       // Generate thumbnail with multiple timestamp attempts
