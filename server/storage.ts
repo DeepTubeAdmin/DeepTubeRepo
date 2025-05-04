@@ -1,12 +1,13 @@
 import { 
-  users, categories, videos, wishlistItems, comments, likes, messages,
+  users, categories, videos, wishlistItems, comments, likes, messages, reports,
   type User, type InsertUser, 
   type Category, type InsertCategory,
   type Video, type InsertVideo,
   type WishlistItem, type InsertWishlistItem,
   type Comment, type InsertComment,
   type Like, type InsertLike,
-  type Message, type InsertMessage
+  type Message, type InsertMessage,
+  type Report, type InsertReport
 } from "@shared/schema";
 import { count } from "drizzle-orm";
 import { db } from "./db";
@@ -90,6 +91,13 @@ export interface IStorage {
   getUnreadMessageCount(userId: number): Promise<number>;
   getAllUserMessages(userId: number): Promise<Message[]>;
   markAllMessagesAsRead(receiverId: number, senderId: number): Promise<void>;
+  
+  // Report operations
+  createReport(report: InsertReport): Promise<Report>;
+  getReportById(id: number): Promise<Report | undefined>;
+  getReportsByVideoId(videoId: number): Promise<Report[]>;
+  getPendingReports(limit?: number): Promise<Report[]>;
+  updateReportStatus(id: number, status: 'pending' | 'reviewed' | 'ignored', resolvedBy?: number): Promise<Report>;
   
   // Session store
   sessionStore: SessionStore;
@@ -763,6 +771,42 @@ export class DatabaseStorage implements IStorage {
         eq(messages.senderId, senderId),
         eq(messages.read, false)
       ));
+  }
+  
+  // Report operations
+  async createReport(report: InsertReport): Promise<Report> {
+    const [result] = await db.insert(reports).values(report).returning();
+    return result;
+  }
+  
+  async getReportById(id: number): Promise<Report | undefined> {
+    const [report] = await db.select().from(reports).where(eq(reports.id, id));
+    return report;
+  }
+  
+  async getReportsByVideoId(videoId: number): Promise<Report[]> {
+    return db.select().from(reports).where(eq(reports.videoId, videoId));
+  }
+  
+  async getPendingReports(limit: number = 50): Promise<Report[]> {
+    return db.select()
+      .from(reports)
+      .where(eq(reports.status, 'pending'))
+      .orderBy(desc(reports.createdAt))
+      .limit(limit);
+  }
+  
+  async updateReportStatus(id: number, status: 'pending' | 'reviewed' | 'ignored', resolvedBy?: number): Promise<Report> {
+    const [result] = await db.update(reports)
+      .set({
+        status,
+        resolvedAt: status !== 'pending' ? new Date() : undefined,
+        resolvedBy: status !== 'pending' ? resolvedBy : undefined,
+      })
+      .where(eq(reports.id, id))
+      .returning();
+    
+    return result;
   }
 }
 
