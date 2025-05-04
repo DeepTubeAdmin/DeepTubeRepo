@@ -419,7 +419,7 @@
 
 /* Block container with consistent spacing */
 .block-container {
-  margin-bottom: 0px;
+  margin-bottom: 24px;
 }
 
 /* Grid layout with consistent gap */
