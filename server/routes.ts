@@ -1079,10 +1079,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Use a Map with category+sortBy as keys to store used IDs for different views
   const infiniteScrollCache = new Map<string, Set<number>>();
   
-  // Track used categories to ensure variety in blocks
-  // This must be a persistent map that exists across requests
-  const usedCategoriesCache = new Map<string, Set<number>>();
-  
   // Cache all categories to avoid multiple DB calls
   let cachedCategories: Category[] = [];
   
