@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage as dbStorage } from "./storage";
+import { pool } from "./db";
 import { setupAuth, comparePasswords, hashPassword } from "./auth";
 import { randomBytes } from "crypto";
 import { sendPasswordResetEmail } from "./sendgrid";
@@ -923,11 +924,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate the request body
       const reportData = reportSchema.parse(req.body);
+      console.log('Received valid report data:', reportData);
       
-      // Create the report
-      const report = await dbStorage.createReport(reportData);
-      
-      res.status(201).json(report);
+      // Direct SQL approach as a fallback
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const result = await client.query(
+          'INSERT INTO reports (video_id, user_id, reason, status) VALUES ($1, $2, $3, $4) RETURNING *',
+          [reportData.videoId, reportData.userId || null, reportData.reason, 'pending']
+        );
+        await client.query('COMMIT');
+        console.log('Report created successfully:', result.rows[0]);
+        res.status(201).json(result.rows[0]);
+      } catch (dbError) {
+        await client.query('ROLLBACK');
+        console.error('Database error creating report:', dbError);
+        res.status(500).json({ error: 'Database error creating report' });
+      } finally {
+        client.release();
+      }
     } catch (error) {
       console.error('Error creating report:', error);
       if (error instanceof z.ZodError) {
