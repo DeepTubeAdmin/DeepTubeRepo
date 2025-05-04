@@ -3149,6 +3149,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch pending content" });
     }
   });
+  
+  // Get reported content for admin dashboard
+  app.get("/api/admin/content/reported", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      // Get all pending reports
+      const client = await pool.connect();
+      try {
+        // Join reports with videos to get full video data with report info
+        const result = await client.query(
+          `SELECT r.*, v.*, r.created_at as reported_at, u.username as reported_by_username 
+           FROM reports r 
+           JOIN videos v ON r.video_id = v.id 
+           LEFT JOIN users u ON r.user_id = u.id 
+           WHERE r.status = 'pending' 
+           ORDER BY r.created_at DESC`
+        );
+        
+        // Format the results
+        const reportedContent = result.rows.map(row => ({
+          ...row,
+          reportReason: row.reason,
+          reportedAt: row.reported_at,
+          reportedBy: row.reported_by_username || 'Anonymous'
+        }));
+        
+        res.json(reportedContent);
+      } catch (dbError) {
+        console.error('Database error fetching reported content:', dbError);
+        res.status(500).json({ error: 'Database error fetching reported content' });
+      } finally {
+        client.release();
+      }
+    } catch (error) {
+      console.error("Error fetching reported content:", error);
+      res.status(500).json({ error: "Failed to fetch reported content" });
+    }
+  });
 
   app.post("/api/admin/content/:contentId/approve", isAuthenticated, isAdmin, async (req, res) => {
     try {
@@ -3207,6 +3244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete content as admin
   app.delete("/api/admin/content/:contentId", isAuthenticated, isAdmin, async (req, res) => {
     try {
+      ensureUser(req);
       const contentId = parseInt(req.params.contentId);
       
       // Get the content to verify it exists
@@ -3215,11 +3253,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Content not found" });
       }
       
+      // Mark any reports for this content as resolved
+      const client = await pool.connect();
+      try {
+        await client.query(
+          `UPDATE reports 
+           SET status = 'reviewed', resolved_at = NOW(), resolved_by = $1 
+           WHERE video_id = $2 AND status = 'pending'`,
+          [req.user.id, contentId]
+        );
+      } catch (dbError) {
+        console.error('Error updating report status:', dbError);
+        // Continue with content deletion even if report status update fails
+      } finally {
+        client.release();
+      }
+      
       await dbStorage.deleteVideo(contentId);
       res.json({ success: true, message: "Content deleted successfully" });
     } catch (error) {
       console.error("Error deleting content:", error);
       res.status(500).json({ error: "Failed to delete content" });
+    }
+  });
+  
+  // Endpoint to resolve a report without deleting content
+  app.post("/api/admin/reports/:reportId/resolve", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      ensureUser(req);
+      const reportId = parseInt(req.params.reportId);
+      
+      // Update the report status
+      const client = await pool.connect();
+      try {
+        const result = await client.query(
+          `UPDATE reports 
+           SET status = 'reviewed', resolved_at = NOW(), resolved_by = $1 
+           WHERE id = $2 AND status = 'pending' 
+           RETURNING *`,
+          [req.user.id, reportId]
+        );
+        
+        if (result.rowCount === 0) {
+          return res.status(404).json({ error: "Report not found or already resolved" });
+        }
+        
+        res.json({ success: true, message: "Report marked as resolved", report: result.rows[0] });
+      } catch (dbError) {
+        console.error('Database error resolving report:', dbError);
+        res.status(500).json({ error: 'Database error resolving report' });
+      } finally {
+        client.release();
+      }
+    } catch (error) {
+      console.error("Error resolving report:", error);
+      res.status(500).json({ error: "Failed to resolve report" });
     }
   });
   

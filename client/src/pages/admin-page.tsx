@@ -128,29 +128,19 @@ export default function AdminPage() {
           setPendingContent([]);
         }
         
-        // Fetch demo reported content
+        // Fetch actual reported content
         try {
-          const contentRes = await apiRequest('GET', '/api/content/featured');
-          if (contentRes.ok) {
-            const contentData = await contentRes.json();
-            
-            // Create some "reported" content for demonstration purposes
-            if (contentData && Array.isArray(contentData) && contentData.length > 0) {
-              const demoReported = contentData.slice(0, 3).map((video: Video): ReportedContent => ({
-                ...video,
-                reportReason: 'Content violates community guidelines',
-                reportedAt: new Date().toISOString(),
-                reportedBy: 'user123'
-              }));
-              
-              setReportedContent(demoReported);
-            } else {
-              // If no content, use empty array
-              setReportedContent([]);
-            }
+          const reportedRes = await apiRequest('GET', '/api/admin/content/reported');
+          if (reportedRes.ok) {
+            const reportedData = await reportedRes.json();
+            console.log('Loaded reported content:', reportedData);
+            setReportedContent(reportedData);
+          } else {
+            console.error('Failed to load reported content, status:', reportedRes.status);
+            setReportedContent([]);
           }
         } catch (contentError) {
-          console.warn('Could not load demo content for admin page:', contentError);
+          console.error('Could not load reported content:', contentError);
           // Continue with empty reported content
           setReportedContent([]);
         }
