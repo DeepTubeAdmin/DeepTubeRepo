@@ -86,8 +86,8 @@ export default function AdvertisementCard({ ad, className = '', contentType = 'v
   // For videos, use video card styling with larger thumbnails
   // For images, use image card styling with smaller thumbnails
   const containerClasses = contentType === 'videos' 
-    ? 'video-card advertisement-card thumbnail-item relative rounded overflow-hidden'
-    : 'image-card advertisement-card thumbnail-item relative rounded overflow-hidden';
+    ? 'video-card advertisement-card thumbnail-item relative rounded overflow-hidden mt-6'
+    : 'image-card advertisement-card thumbnail-item relative rounded overflow-hidden mt-6';
   
   // Determine the thumbnail height based on content type
   const thumbnailClasses = contentType === 'videos'
