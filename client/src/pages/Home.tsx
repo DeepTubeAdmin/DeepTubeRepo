@@ -297,8 +297,8 @@ export default function Home() {
           
           {/* Removed the Discover Content section and shuffle button as requested */}
           
-          {/* Content Feed with three sections - hide featured section since we have our own */}
-          <ContentFeed categorySlug={activeCategory} hideFeatured={true} />
+          {/* Content Feed with three sections */}
+          <ContentFeed categorySlug={activeCategory} />
         </main>
       </div>
       
