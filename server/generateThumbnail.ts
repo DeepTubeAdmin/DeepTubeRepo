@@ -55,10 +55,29 @@ export async function generateAndStoreS3Thumbnail(
       const tempVideo = path.join(tempDir, `video-${Date.now()}.mp4`);
       const tempThumb = path.join(tempDir, `thumb-${Date.now()}.jpg`);
 
-      // Download video with retry
-      let attempts = 0;
-      let videoBuffer;
-      while (attempts < 3) {
+      // Fix path if it's an API URL
+      const actualVideoPath = sourceUrl.replace('/api/s3/', '');
+      const videoPath = actualVideoPath.startsWith('/') ? actualVideoPath.substring(1) : actualVideoPath;
+
+      // Check if file exists before proceeding
+      if (!fs.existsSync(videoPath)) {
+        console.error(`Video file not found at path: ${videoPath}`);
+        throw new Error('Video file not found');
+      }
+
+      console.log(`Generating thumbnail from video file: ${videoPath}`);
+
+      // Generate thumbnail directly from file
+      try {
+        await execFileAsync('ffmpeg', [
+          '-y',
+          '-i', videoPath,
+          '-vframes', '1',
+          '-an',
+          '-s', '800x450',
+          '-ss', '0.1',
+          tempThumb
+        ]);
         try {
           const videoResponse = await fetch(sourceUrl);
           if (!videoResponse.ok) throw new Error(`HTTP ${videoResponse.status}`);
@@ -93,15 +112,30 @@ export async function generateAndStoreS3Thumbnail(
       }
 
       const thumbBuffer = await fs.promises.readFile(tempThumb);
-      await uploadStringToS3(thumbBuffer, s3Key, 'image/jpeg');
+      
+      // Verify the thumbnail was actually generated
+      if (thumbBuffer.length === 0) {
+        throw new Error('Generated thumbnail is empty');
+      }
 
-      // Cleanup
-      await fs.promises.unlink(tempVideo);
-      await fs.promises.unlink(tempThumb);
+      console.log(`Successfully generated thumbnail of size ${thumbBuffer.length} bytes`);
+
+      // Upload to S3 with explicit content type
+      await uploadStringToS3(thumbBuffer, s3Key, 'image/jpeg');
+      console.log(`Successfully uploaded thumbnail to S3: ${s3Key}`);
+
+      // Cleanup temp files
+      try {
+        if (fs.existsSync(tempThumb)) await fs.promises.unlink(tempThumb);
+        if (fs.existsSync(tempVideo)) await fs.promises.unlink(tempVideo);
+      } catch (cleanupError) {
+        console.error('Error cleaning up temp files:', cleanupError);
+      }
 
       return s3Key;
     } catch (error) {
       console.error('Video thumbnail generation failed:', error);
+      throw error; // Re-throw to trigger fallback SVG
     }
   }
 
