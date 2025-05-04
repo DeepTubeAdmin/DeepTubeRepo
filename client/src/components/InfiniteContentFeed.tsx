@@ -681,7 +681,7 @@ export default function InfiniteContentFeed({
   
   // Special styling for the Popular Content section
   const popularSectionStyles = {
-    marginBottom: '24px', // Match the standard margin to eliminate extra spacing
+    marginBottom: '0px', // Zero margin to eliminate extra spacing
   };
   
   // Add custom CSS to define a fixed gap between rows specifically for section blocks
@@ -691,7 +691,7 @@ export default function InfiniteContentFeed({
     styleElement.textContent = `
       /* Global spacing control */
       .content-feed-container section {
-        margin-bottom: 24px !important;
+        margin-bottom: 0px !important;
       }
       
       /* Equal spacing for grid rows */
@@ -712,14 +712,14 @@ export default function InfiniteContentFeed({
         margin-bottom: 0 !important;
       }
       
-      /* First 3 titled sections have different spacing */
+      /* First 3 titled sections have consistent spacing */
       .content-feed-container section.has-title {
-        margin-bottom: 24px !important;
+        margin-bottom: 0px !important;
       }
       
       /* For non-titled sections (such as content after block 3) */
       .content-feed-container section:not(.has-title) {
-        margin-bottom: 24px !important;
+        margin-bottom: 0px !important;
         padding-top: 0 !important;
       }
       
@@ -766,12 +766,12 @@ export default function InfiniteContentFeed({
       
       /* Add standard spacing between all sections */
       .content-feed-container section {
-        margin-bottom: 24px !important;
+        margin-bottom: 0px !important;
       }
       
       /* Add extra spacing for sections with titles */
       .content-feed-container section.has-title {
-        margin-bottom: 36px !important;
+        margin-bottom: 0px !important;
       }
       
       /* Completely eliminate any gaps for sections appearing after content loads */
@@ -794,13 +794,13 @@ export default function InfiniteContentFeed({
           // Apply different spacing based on section type
           if (section.classList.contains('has-title')) {
             // Titled sections (first 3 sections)
-            section.style.marginBottom = '24px';
+            section.style.marginBottom = '0px';
           } else if (section.classList.contains('popular-content')) {
             // Special handling for Popular Content section
-            section.style.marginBottom = '24px';
+            section.style.marginBottom = '0px';
           } else {
             // All other sections (no titles)
-            section.style.marginBottom = '24px';
+            section.style.marginBottom = '0px';
             
             // Special case for sections after the third section
             if (i >= 3) {

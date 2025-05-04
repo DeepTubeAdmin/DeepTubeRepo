@@ -440,6 +440,13 @@
   margin-bottom: 0px;
 }
 
+/* Apply zero margin to all sections */
+.content-feed .content-block:nth-child(1) .grid-layout,
+.content-feed .content-block:nth-child(2) .grid-layout,
+.content-feed .content-block:nth-child(3) .grid-layout {
+  margin-bottom: 0px;
+}
+
 /* Fix for section 3 gap */
 .content-feed .content-block:nth-child(3) ~ .content-block {
   margin-top: -24px;
