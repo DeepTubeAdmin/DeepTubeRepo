@@ -21,7 +21,7 @@ export async function generateAndStoreS3Thumbnail(
   sourceUrl: string | null = null,
   youtubeId: string | null = null
 ): Promise<string> {
-  const s3Key = `thumbnails/content-${videoId}.jpg`;
+  const s3Key = `thumbnails/video-${videoId}.jpg`;
 
   // Handle YouTube videos
   if (youtubeId) {
@@ -55,21 +55,42 @@ export async function generateAndStoreS3Thumbnail(
       const tempVideo = path.join(tempDir, `video-${Date.now()}.mp4`);
       const tempThumb = path.join(tempDir, `thumb-${Date.now()}.jpg`);
 
-      // Download video
-      const videoResponse = await fetch(sourceUrl);
-      const videoBuffer = await videoResponse.arrayBuffer();
+      // Download video with retry
+      let attempts = 0;
+      let videoBuffer;
+      while (attempts < 3) {
+        try {
+          const videoResponse = await fetch(sourceUrl);
+          if (!videoResponse.ok) throw new Error(`HTTP ${videoResponse.status}`);
+          videoBuffer = await videoResponse.arrayBuffer();
+          break;
+        } catch (err) {
+          attempts++;
+          if (attempts === 3) throw err;
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
+
       await fs.promises.writeFile(tempVideo, Buffer.from(videoBuffer));
 
-      // Generate thumbnail
-      await execFileAsync('ffmpeg', [
-        '-y',
-        '-i', tempVideo,
-        '-vframes', '1',
-        '-an',
-        '-s', '800x450',
-        '-ss', '0.1',
-        tempThumb
-      ]);
+      // Generate thumbnail with multiple timestamp attempts
+      const timestamps = ['0.1', '1.0', '2.0'];
+      for (const ts of timestamps) {
+        try {
+          await execFileAsync('ffmpeg', [
+            '-y',
+            '-i', tempVideo,
+            '-vframes', '1',
+            '-an',
+            '-s', '800x450',
+            '-ss', ts,
+            tempThumb
+          ]);
+          break;
+        } catch (err) {
+          if (ts === timestamps[timestamps.length - 1]) throw err;
+        }
+      }
 
       const thumbBuffer = await fs.promises.readFile(tempThumb);
       await uploadStringToS3(thumbBuffer, s3Key, 'image/jpeg');
