@@ -68,6 +68,19 @@ export default function MediaDetail() {
   const { toast } = useToast();
   const { user } = useAuth();
   
+  // Check if the URL has a report parameter
+  useEffect(() => {
+    // Parse the URL search parameters
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.has('report')) {
+      setReportDialogOpen(true);
+      
+      // Remove the report parameter from the URL without refreshing
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, []);
+  
   // Fetch media details
   const { data: media, isLoading: mediaLoading } = useQuery<Video>({
     queryKey: [`/api/videos/${id}`],

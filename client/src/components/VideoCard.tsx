@@ -1,4 +1,4 @@
-import { Heart, Play, ThumbsUp } from "lucide-react";
+import { Heart, Play, ThumbsUp, Flag } from "lucide-react";
 import { Video } from "@shared/schema";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
@@ -194,6 +194,13 @@ export default function VideoCard({ video, onPreview, onWishlist, compact = fals
       setIsLikeLoading(false);
     }
   };
+  
+  // Handle report action
+  const handleReport = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Redirect to the media detail page with the report dialog opened
+    window.location.href = `/media/${video.id}?report=true`;
+  };
 
   // Handle preview click
   const handlePreview = () => {
@@ -308,18 +315,28 @@ export default function VideoCard({ video, onPreview, onWishlist, compact = fals
             {video.aiGenerator || "AI Artist"} {username && <>• <Link to={`/user/${username}`} onClick={(e) => e.stopPropagation()} className="text-orange-500 hover:text-orange-400 hover:underline">{username}</Link></>}
           </div>
 
-          <button
-            onClick={handleLike}
-            className={`flex items-center space-x-1 px-2 py-1 rounded transition-colors ${
-              isLiked
-                ? 'text-orange-500 bg-orange-950/40'
-                : 'text-gray-400 hover:text-orange-400'
-            }`}
-            disabled={isLikeLoading}
-          >
-            <ThumbsUp className={`h-4 w-4 ${isLikeLoading ? 'animate-pulse' : ''}`} />
-            <span className="text-xs">{formatNumber(likeCount)}</span>
-          </button>
+          <div className="flex space-x-1">
+            <button
+              onClick={handleLike}
+              className={`flex items-center px-2 py-1 rounded transition-colors ${
+                isLiked
+                  ? 'text-orange-500 bg-orange-950/40'
+                  : 'text-gray-400 hover:text-orange-400'
+              }`}
+              disabled={isLikeLoading}
+              title={isLiked ? "Unlike" : "Like"}
+            >
+              <ThumbsUp className={`h-4 w-4 ${isLikeLoading ? 'animate-pulse' : ''}`} />
+            </button>
+            
+            <button
+              onClick={handleReport}
+              className="flex items-center px-2 py-1 rounded transition-colors text-gray-400 hover:text-orange-400"
+              title="Report"
+            >
+              <Flag className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
