@@ -15,6 +15,16 @@ import fsSync from "fs";
 import { fileURLToPath } from 'url';
 import s3Service from "./services/s3Service";
 import thumbnailService from "./services/thumbnailService";
+import { registerThumbnailRoutes } from "./thumbnail-routes";
+import mongoDb from "./mongodb";
+import {
+  getSignedS3Url,
+  uploadFileToS3,
+  uploadStringToS3,
+  localPathToS3Key,
+  generateAndStoreS3Thumbnail,
+  generateSvgPlaceholder
+} from "./combined-services";
 
 // Generate placeholder SVG for videos and images
 function getPlaceholderSvg(contentType = 'video') {
@@ -128,6 +138,17 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register the new thumbnail routes
+  registerThumbnailRoutes(app);
+  
+  // Initialize MongoDB connection (for future use)
+  try {
+    await mongoDb.connectToMongoDB();
+    console.log('MongoDB initialized for future migration');
+  } catch (mongoError) {
+    console.warn('MongoDB initialization skipped, will continue with PostgreSQL:', mongoError);
+  }
+  
   // Test endpoint for S3 access
   // Endpoint to fix thumbnails content-type by content type
   // Route to fix all image thumbnails
