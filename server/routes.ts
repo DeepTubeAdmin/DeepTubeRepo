@@ -2279,8 +2279,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Thumbnail generation endpoint
-  // SVG placeholder endpoint
+  // Unified thumbnail endpoint
+  app.get("/api/content/:id/thumbnail", async (req, res) => {
+    try {
+      const contentId = parseInt(req.params.id);
+      const forcePlaceholder = req.query.placeholder === 'true';
+      
+      if (!contentId) {
+        throw new Error('Invalid content ID');
+      }
+
+      // Get content info from database
+      const content = await dbStorage.getVideoById(contentId);
+      if (!content) {
+        throw new Error('Content not found');
+      }
+
+      // If placeholder requested or no existing thumbnail, generate new one
+      if (forcePlaceholder || !content.thumbnail) {
+        const s3Key = await generateAndStoreS3Thumbnail(
+          content.id,
+          content.contentType,
+          content.videoUrl || content.imageUrl,
+          content.youtubeId
+        );
+        
+        // Update content record with new thumbnail
+        await dbStorage.updateVideo(content.id, {
+          thumbnail: s3Key
+        });
+        
+        // Redirect to S3
+        const s3Url = await getSignedS3Url(s3Key);
+        return res.redirect(s3Url);
+      }
+
+      // Return existing thumbnail
+      const s3Url = await getSignedS3Url(content.thumbnail);
+      return res.redirect(s3Url);
+    } catch (error) {
+      console.error('Thumbnail error:', error);
+      res.status(500).send('Thumbnail generation failed');
+    }
+  });
+
   app.get("/api/placeholder-svg/:type", async (req, res) => {
     try {
       const contentType = req.params.type || 'unknown';
