@@ -17,7 +17,7 @@ interface SimpleDialogProps {
 export function SimpleDialog({ isOpen, onClose, title, children, className }: SimpleDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className={`sm:max-w-md bg-black border border-gray-800 text-white ${className || ""}`}>
+      <DialogContent className={`sm:max-w-md bg-black border border-gray-800 text-white max-h-[90vh] overflow-y-auto ${className || ""}`}>
         <DialogHeader className="border-b border-gray-800 pb-4">
           <DialogTitle className="text-white font-bold uppercase text-lg">{title}</DialogTitle>
         </DialogHeader>

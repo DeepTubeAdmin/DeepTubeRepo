@@ -534,7 +534,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
 
   return (
     <SimpleDialog isOpen={isOpen} onClose={onClose} title="Upload New Media" className="bg-[#1a1a1a] border-gray-800 max-w-md">
-      <div>
+      <div className="overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-gray-400">
             Share your AI-generated content with the DeepTube community
