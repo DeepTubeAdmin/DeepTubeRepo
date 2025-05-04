@@ -193,42 +193,50 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     return null;
   }
 
-  // Helper function to replace a video with an ad at a specific position
-  const insertAdvertisement = (items: Video[], adPosition: number) => {
-    // Deep copy the array to avoid modifying the original
-    const result = [...items];
-    // Adjust position if it exceeds array length
-    const position = Math.min(adPosition, items.length - 1);
-    // Replace the item at the position with null (to be rendered as an ad)
-    if (result.length > 0) {
-      result[position] = null as unknown as Video;
-    }
-    return result;
-  };
-  
   // Calculate how many items to show based on columns and rows
-  const getItemsBasedOnColumns = (items: Video[], rows: number) => {
+  const getItemsBasedOnColumns = (items: Video[] = [], rows: number) => {
     const totalItems = columnCount * rows;
-    return items.slice(0, totalItems);
+    return items?.slice(0, totalItems) || [];
   };
   
   // Prepare video and image data for rendering with dynamic column/row counts
   const renderData = useMemo(() => {
     if (!data) return null;
     
+    // Process popular blocks with dynamic column/row logic
+    const processedPopularBlocks = popularBlocks.map(block => ({
+      videos: getItemsBasedOnColumns(block.videos, 3), // Always 3 rows of videos
+      images: getItemsBasedOnColumns(block.images, 1), // Always 1 row of images
+      advertisement: block.advertisement
+    }));
+    
     return {
       trending: {
-        videos: getItemsBasedOnColumns(data.trending.videos, 3), // Always 3 rows of videos
-        images: getItemsBasedOnColumns(data.trending.images, 1),  // Always 1 row of images
-        advertisement: data.trending.advertisement
+        videos: getItemsBasedOnColumns(data?.trending?.videos, 3), // Always 3 rows of videos
+        images: getItemsBasedOnColumns(data?.trending?.images, 1),  // Always 1 row of images
+        advertisement: data?.trending?.advertisement
       },
       recent: {
-        videos: getItemsBasedOnColumns(data.recent.videos, 3), // Always 3 rows of videos
-        images: getItemsBasedOnColumns(data.recent.images, 1),  // Always 1 row of images
-        advertisement: data.recent.advertisement
-      }
+        videos: getItemsBasedOnColumns(data?.recent?.videos, 3), // Always 3 rows of videos
+        images: getItemsBasedOnColumns(data?.recent?.images, 1),  // Always 1 row of images
+        advertisement: data?.recent?.advertisement
+      },
+      popular: processedPopularBlocks
     };
-  }, [data, columnCount]);
+  }, [data, popularBlocks, columnCount]);
+  
+  // Helper function to replace a video with an ad at a specific position
+  const insertAdvertisement = (items: Video[] = [], adPosition: number = 0) => {
+    // Deep copy the array to avoid modifying the original
+    const result = [...(items || [])];
+    // Adjust position if it exceeds array length
+    const position = Math.min(adPosition, result.length - 1);
+    // Replace the item at the position with null (to be rendered as an ad)
+    if (result.length > 0) {
+      result[position] = null as unknown as Video;
+    }
+    return result;
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-12">
@@ -311,10 +319,10 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
           Trending Now
         </h2>
         
-        {/* Video Grid (3 rows, 4 videos each) */}
+        {/* Video Grid (3 rows of videos) */}
         <div className="mb-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
-            {insertAdvertisement(data.trending.videos, data.trending.advertisement.position)
+            {renderData && insertAdvertisement(renderData.trending.videos, renderData.trending.advertisement.position)
               .map((video, index) => 
                 video ? (
                   <VideoCard key={`trending-video-${video.id}-${index}`} video={video} />
@@ -325,9 +333,9 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
           </div>
         </div>
         
-        {/* Image Row (1 row, 4 images) */}
+        {/* Image Row (1 row of images) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {data.trending.images.map((image, index) => (
+          {renderData && renderData.trending.images.map((image, index) => (
             <ImageCard key={`trending-image-${image.id}-${index}`} image={image} />
           ))}
         </div>
@@ -339,10 +347,10 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
           Recently Uploaded
         </h2>
         
-        {/* Video Grid (3 rows, 4 videos each) */}
+        {/* Video Grid (3 rows of videos) */}
         <div className="mb-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
-            {insertAdvertisement(data.recent.videos, data.recent.advertisement.position)
+            {renderData && insertAdvertisement(renderData.recent.videos, renderData.recent.advertisement.position)
               .map((video, index) => 
                 video ? (
                   <VideoCard key={`recent-video-${video.id}-${index}`} video={video} />
@@ -353,9 +361,9 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
           </div>
         </div>
         
-        {/* Image Row (1 row, 4 images) */}
+        {/* Image Row (1 row of images) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {data.recent.images.map((image, index) => (
+          {renderData && renderData.recent.images.map((image, index) => (
             <ImageCard key={`recent-image-${image.id}-${index}`} image={image} />
           ))}
         </div>
@@ -368,9 +376,9 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
         </h2>
         
         {/* Render all loaded popular blocks */}
-        {popularBlocks.map((block, blockIndex) => (
+        {renderData && renderData.popular.map((block, blockIndex) => (
           <div key={`popular-block-${blockIndex}`} className="mb-12">
-            {/* Video Grid (3 rows, 4 videos each) */}
+            {/* Video Grid (3 rows of videos) */}
             <div className="mb-8">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
                 {insertAdvertisement(block.videos, block.advertisement.position)
@@ -384,7 +392,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
               </div>
             </div>
             
-            {/* Image Row (1 row, 4 images) */}
+            {/* Image Row (1 row of images) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {block.images.map((image, index) => (
                 <ImageCard key={`popular-image-${image.id}-${index}-${blockIndex}`} image={image} />
