@@ -13,8 +13,8 @@ import path from "path";
 import fs from "fs/promises";
 import fsSync from "fs";
 import { fileURLToPath } from 'url';
-import { getSignedS3Url, uploadFileToS3, uploadStringToS3, deleteFileFromS3, localPathToS3Key, urlPathToS3Key } from "./s3";
-import { generateAndStoreS3Thumbnail } from "./generateThumbnail";
+import s3Service from "./services/s3Service";
+import thumbnailService from "./services/thumbnailService";
 
 // Generate placeholder SVG for videos and images
 function getPlaceholderSvg(contentType = 'video') {
