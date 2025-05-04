@@ -142,7 +142,8 @@ async function handleImageThumbnail(contentId: number, sourceUrl: string): Promi
     // Clean up source URL to handle API and workspace references
     const cleanedSourceUrl = sourceUrl
       .replace('/api/s3/', '')
-      .replace('/home/runner/workspace/', '');
+      .replace('/home/runner/workspace/', '')
+      .replace('https://deeptubebucket.s3.us-east-2.amazonaws.com/', '');
       
     // Handle S3 URLs and local file references
     if (sourceUrl.includes('/api/s3/') || sourceUrl.includes('/api/content/')) {
@@ -310,10 +311,10 @@ async function handleVideoThumbnail(contentId: number, sourceUrl: string): Promi
       const fileName = path.basename(cleanedSourceUrl);
       // Check different possible locations
       const possiblePaths = [
-        `uploads/videos/${fileName}`, 
         `uploads/${fileName}`,
         cleanedSourceUrl,
-        sourceUrl.replace('/api/s3/', '')
+        sourceUrl.replace('/api/s3/', ''),
+        `uploads/videos/${fileName}`
       ];
       
       // Find the first path that exists
