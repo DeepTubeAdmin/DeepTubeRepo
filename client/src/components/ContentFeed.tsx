@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import VideoCard from './VideoCard';
 import ImageCard from './ImageCard';
@@ -45,6 +45,8 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   // Sort state
   const [sortBy, setSortBy] = useState<SortOption>('trending');
   const [showSortMenu, setShowSortMenu] = useState(false);
+  // Track column count based on screen size
+  const [columnCount, setColumnCount] = useState(4); // Default to 4 columns
 
   // Keep track of the previous data for placeholderData
   const previousDataRef = useRef<ContentFeedResponse | undefined>(undefined);
@@ -116,6 +118,34 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
       }
     }
   }, [data, page]);
+  
+  // Handle detecting screen size and updating column count
+  useEffect(() => {
+    function updateColumnCount() {
+      // Default is 1 column for mobile
+      let columns = 1;
+      
+      // Match the breakpoints in our Tailwind CSS classes
+      if (window.innerWidth >= 1280) { // xl breakpoint
+        columns = 4;
+      } else if (window.innerWidth >= 1024) { // lg breakpoint
+        columns = 3;
+      } else if (window.innerWidth >= 640) { // sm breakpoint
+        columns = 2;
+      }
+      
+      setColumnCount(columns);
+    }
+    
+    // Set initial column count
+    updateColumnCount();
+    
+    // Update column count when window is resized
+    window.addEventListener('resize', updateColumnCount);
+    
+    // Clean up event listener on component unmount
+    return () => window.removeEventListener('resize', updateColumnCount);
+  }, []);
 
   // Intersection Observer for infinite scrolling
   useEffect(() => {
@@ -175,6 +205,30 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     }
     return result;
   };
+  
+  // Calculate how many items to show based on columns and rows
+  const getItemsBasedOnColumns = (items: Video[], rows: number) => {
+    const totalItems = columnCount * rows;
+    return items.slice(0, totalItems);
+  };
+  
+  // Prepare video and image data for rendering with dynamic column/row counts
+  const renderData = useMemo(() => {
+    if (!data) return null;
+    
+    return {
+      trending: {
+        videos: getItemsBasedOnColumns(data.trending.videos, 3), // Always 3 rows of videos
+        images: getItemsBasedOnColumns(data.trending.images, 1),  // Always 1 row of images
+        advertisement: data.trending.advertisement
+      },
+      recent: {
+        videos: getItemsBasedOnColumns(data.recent.videos, 3), // Always 3 rows of videos
+        images: getItemsBasedOnColumns(data.recent.images, 1),  // Always 1 row of images
+        advertisement: data.recent.advertisement
+      }
+    };
+  }, [data, columnCount]);
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-12">
