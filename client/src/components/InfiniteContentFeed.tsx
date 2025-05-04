@@ -673,208 +673,11 @@ export default function InfiniteContentFeed({
   }
 
   
-  // Add a consistent style for all content blocks
-  const blockStyles = {
-    marginBottom: '0', // Reset margin to control it via CSS
-    paddingBottom: '0', // Reset padding to control it via CSS
-  };
-  
-  // Special styling for the Popular Content section
-  const popularSectionStyles = {
-    marginBottom: '0px', // Zero margin to eliminate extra spacing
-  };
-  
-  // Add custom CSS to define a fixed gap between rows specifically for section blocks
-  useEffect(() => {
-    // Add custom CSS to ensure consistent row spacing
-    const styleElement = document.createElement('style');
-    styleElement.textContent = `
-      /* Global spacing control */
-      .content-feed-container section {
-        margin-bottom: 0px !important;
-      }
-      
-      /* Equal spacing for grid rows */
-      .content-feed-container .grid {
-        display: grid;
-        row-gap: 24px !important;
-        column-gap: 24px !important;
-      }
-      
-      /* Control spacing within Popular Content specifically */
-      .content-feed-container .popular-content .grid {
-        row-gap: 24px !important;
-      }
-      
-      /* Ensure non-grid items maintain spacing */
-      .content-feed-container .video-container,
-      .content-feed-container .image-container {
-        margin-bottom: 0 !important;
-      }
-      
-      /* First 3 titled sections have consistent spacing */
-      .content-feed-container section.has-title {
-        margin-bottom: 0px !important;
-      }
-      
-      /* For non-titled sections (such as content after block 3) */
-      .content-feed-container section:not(.has-title) {
-        margin-bottom: 0px !important;
-        padding-top: 0 !important;
-      }
-      
-      /* Special handling for transition after titled to non-titled sections */
-      .content-feed-container section.popular-content + section,
-      .content-feed-container section.popular-content ~ section {
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-        margin-bottom: 0 !important;
-        padding-bottom: 0 !important;
-        position: relative !important;
-        top: -24px !important; /* Negative offset to eliminate gap */
-      }
-      
-      /* Special handling for dynamically loaded sections */
-      .content-feed-container section.dynamically-loaded {
-        margin-top: 0 !important;
-        padding-top: 24px !important; /* Add proper padding for spacing */
-        position: relative !important;
-        z-index: 1 !important;
-      }
-      
-      /* Fix for the first dynamically loaded section */
-      .content-feed-container section:last-of-type:not(.popular-content) + section.dynamically-loaded {
-        margin-top: 0 !important;
-        padding-top: 24px !important; /* Add proper padding for spacing */
-      }
-      
-      /* Critical fix for the loading indicator */
-      .content-feed-container .loading-indicator {
-        margin: 0 !important;
-        padding: 24px 0 !important; /* Match the spacing of thumbnails */
-        position: relative !important;
-        z-index: 1 !important;
-        height: 72px !important; /* Taller to accommodate padding */
-      }
-      
-      /* Make sure there's no gap when new sections are appended */
-      .content-feed-container section:not(.has-title) + section:not(.has-title),
-      .content-feed-container section:nth-of-type(n+4):not(.has-title) {
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-      }
-      
-      /* Add standard spacing between all sections */
-      .content-feed-container section {
-        margin-bottom: 0px !important;
-      }
-      
-      /* Add extra spacing for sections with titles */
-      .content-feed-container section.has-title {
-        margin-bottom: 0px !important;
-      }
-      
-      /* Completely eliminate any gaps for sections appearing after content loads */
-      .content-feed-container section:nth-child(n+3) {
-        margin-top: 0 !important;
-      }
-
-      /* Special handling for section titles */
-      .content-feed-container .section-title {
-        margin-bottom: 24px !important;
-      }
-    `;
-    document.head.appendChild(styleElement);
-    
-    // Force equal spacing after component mounts
-    const equalizeSpacing = () => {
-      if (containerRef.current) {
-        const sections = containerRef.current.querySelectorAll('section');
-        sections.forEach((section, i) => {
-          // Apply different spacing based on section type
-          if (section.classList.contains('has-title')) {
-            // Titled sections (first 3 sections)
-            section.style.marginBottom = '0px';
-          } else if (section.classList.contains('popular-content')) {
-            // Special handling for Popular Content section
-            section.style.marginBottom = '0px';
-          } else {
-            // All other sections (no titles)
-            section.style.marginBottom = '0px';
-            
-            // Special case for sections after the third section
-            if (i >= 3) {
-              section.style.marginTop = '0';
-              section.style.paddingTop = '0';
-            }
-          }
-          
-          // Special handling for section after Popular Content
-          const previousSection = i > 0 ? sections[i-1] : null;
-          
-          // Check for a section right after Popular Content or any section after Popular Content
-          const popularSection = containerRef.current ? containerRef.current.querySelector('.popular-content') : null;
-          if (popularSection) {
-            // Check if this section comes after the Popular Content section in the DOM
-            let isAfterPopular = false;
-            let currentNode = popularSection.nextElementSibling;
-            
-            while (currentNode && !isAfterPopular) {
-              if (currentNode === section) {
-                isAfterPopular = true;
-              }
-              currentNode = currentNode.nextElementSibling;
-            }
-            
-            if (isAfterPopular) {
-              // Any section that comes after Popular Content gets aggressive spacing treatment
-              section.style.marginTop = '0';
-              section.style.paddingTop = '0';
-              section.style.marginBottom = '0';
-              section.style.paddingBottom = '0';
-              section.style.position = 'relative';
-              section.style.top = '-24px';
-            }
-          }
-          
-          // Check for consecutive non-titled sections (both don't have 'has-title' class)
-          if (previousSection && 
-              !previousSection.classList.contains('has-title') && 
-              !section.classList.contains('has-title')) {
-            section.style.marginTop = '0';
-            section.style.paddingTop = '0';
-          }
-          
-          // Special handling for sections after any loading events
-          if (i > 0 && i % 3 === 0) {
-            // Every third section after loading should have zero margin/padding top
-            section.style.marginTop = '0';
-            section.style.paddingTop = '0';
-          }
-          
-          // Find grid elements and enforce consistent row gaps
-          const grid = section.querySelector('.grid');
-          if (grid) {
-            // @ts-ignore
-            grid.style.rowGap = '24px';
-            // @ts-ignore
-            grid.style.columnGap = '24px';
-          }
-        });
-      }
-    };
-    
-    // Apply spacing adjustments after initial render and after any content load
-    equalizeSpacing();
-    
-    // Clean up observer after the component unmounts
-    return () => {
-      document.head.removeChild(styleElement);
-    };
-  }, [contentBlocks]); // Re-run when content blocks change
+  // Simplified spacing approach - no custom styles needed
+  // All spacing is handled by CSS classes in index.css
 
   return (
-    <div ref={containerRef} className="content-feed content-feed-container space-y-6"> {/* Add consistent vertical spacing with space-y-6 */}
+    <div ref={containerRef} className="content-feed">
       {isInitialLoad ? (
         <div className="py-20 flex justify-center">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -965,73 +768,25 @@ export default function InfiniteContentFeed({
               }
             }
 
-            // Determine if this is a dynamically loaded block (page > 1) and needs special styling
+            // Determine if this is a dynamically loaded block (page > 1)
             // Use optional chaining to safely access the property that may not exist in TypeScript interface
             const isDynamicallyLoaded = block.dynamicallyLoaded === true || (block as any).dynamicallyLoaded === true;
             
-            // Create specific style for the section based on its position and loading method
-            let sectionStyle = {};
-            if (index === 2) {
-              // Popular content section
-              sectionStyle = {...blockStyles, ...popularSectionStyles};
-            } else if (isDynamicallyLoaded) {
-              // Dynamically loaded blocks after page 1 need special styling
-              sectionStyle = {
-                ...blockStyles,
-                marginTop: '0',
-                paddingTop: '24px', // Add proper spacing between blocks
-                position: 'relative',
-                zIndex: 1
-              };
-            } else {
-              // Standard blocks
-              sectionStyle = blockStyles;
-            }
-            
-            // Determine CSS classes based on section properties
-            const sectionClasses = [
-              showSectionTitle ? (isContentTypeTransition ? "mt-16 has-title" : "has-title") : "",
-              index === 2 ? "popular-content" : "",
-              isDynamicallyLoaded ? "dynamically-loaded" : ""
-            ].filter(Boolean).join(" ");
-            
             return (
-              <section 
-                key={`${block.type}-${block.id}`} 
-                className={`content-block ${sectionClasses}`}
-                style={sectionStyle}
-              >
-                {showSectionTitle && <h3 className="section-title text-2xl font-bold mb-6">{sectionTitle}</h3>}
+              <div key={`${block.type}-${block.id}`} className="block-container">
+                {showSectionTitle && <h3 className="section-title">{sectionTitle}</h3>}
                 <div 
-                  className={`grid-layout grid auto-rows-auto gap-6 ${block.type === 'videos' ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'}`}
-                  style={{ 
-                    gap: '24px', // Enforce consistent gap size via inline style
-                    rowGap: '24px', // Explicitly set row gap
-                    columnGap: '24px', // Explicitly set column gap
-                    marginBottom: '0px', // No bottom margin to each grid
-                  }}
+                  className={`grid gap-6 ${block.type === 'videos' ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'}`}
                 >
-                {/* Apply a direct style here to force flex-wrap prevention in case grid doesn't work */}
                   {block.type === 'videos' && renderVideoBlock(block, index, index)}
                   {block.type === 'images' && renderImageBlock(block, index)}
                 </div>
-              </section>
+              </div>
             );
           })}
 
           {hasMore && (
-            <div 
-              ref={loadingRef} 
-              className="loading-indicator flex justify-center" 
-              style={{ 
-                margin: '0', 
-                padding: '24px 0', /* Match the spacing of thumbnails */
-                height: '72px', /* Taller to accommodate padding */
-                overflow: 'hidden',
-                position: 'relative',
-                zIndex: 1
-              }}
-            >
+            <div ref={loadingRef} className="loading">
               {isLoading && <Loader2 className="h-8 w-8 animate-spin text-primary" />}
             </div>
           )}

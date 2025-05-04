@@ -409,7 +409,7 @@
   @apply border-primary;
 }
 
-/* Improved spacing for content blocks */
+/* Simplified spacing for content blocks */
 .content-feed {
   display: flex;
   flex-direction: column;
@@ -417,37 +417,35 @@
   padding: 0;
 }
 
-.content-feed .content-block {
-  margin-top: 0;
-  padding-top: 24px;
-  position: relative;
-  z-index: 1;
-}
-
-.content-feed .content-block:not(:first-child) {
-  margin-top: 0;
-}
-
-.content-feed .grid-item {
-  padding: 0 12px;
+/* Block container with consistent spacing */
+.block-container {
   margin-bottom: 24px;
 }
 
-.content-feed .grid-layout {
-  gap: 24px !important;
-  row-gap: 24px !important;
-  column-gap: 24px !important;
-  margin-bottom: 0px;
+/* Grid layout with consistent gap */
+.content-feed .grid {
+  display: grid;
+  gap: 24px;
+  row-gap: 24px;
+  column-gap: 24px;
 }
 
-/* Apply zero margin to all sections */
-.content-feed .content-block:nth-child(1) .grid-layout,
-.content-feed .content-block:nth-child(2) .grid-layout,
-.content-feed .content-block:nth-child(3) .grid-layout {
-  margin-bottom: 0px;
+/* Loading indicator styling */
+.content-feed .loading {
+  margin: 0;
+  padding: 24px 0;
+  height: 72px;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-/* Fix for section 3 gap */
-.content-feed .content-block:nth-child(3) ~ .content-block {
-  margin-top: -24px;
+/* Section title styling */
+.content-feed .section-title {
+  margin-bottom: 24px;
+  font-size: 1.5rem;
+  font-weight: bold;
 }
