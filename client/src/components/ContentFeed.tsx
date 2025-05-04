@@ -120,14 +120,16 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     return null;
   }
 
-  // Helper function to insert ad at a specific position
+  // Helper function to replace a video with an ad at a specific position
   const insertAdvertisement = (items: Video[], adPosition: number) => {
     // Deep copy the array to avoid modifying the original
     const result = [...items];
     // Adjust position if it exceeds array length
-    const position = Math.min(adPosition, items.length);
-    // Add a null item that will be rendered as an ad
-    result.splice(position, 0, null as unknown as Video);
+    const position = Math.min(adPosition, items.length - 1);
+    // Replace the item at the position with null (to be rendered as an ad)
+    if (result.length > 0) {
+      result[position] = null as unknown as Video;
+    }
     return result;
   };
 
