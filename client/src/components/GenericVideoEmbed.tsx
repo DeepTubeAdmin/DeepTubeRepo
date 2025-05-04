@@ -128,10 +128,33 @@ const GenericVideoEmbed = ({
         console.error('Error processing YouTube URL:', err);
         setError('Could not load YouTube video. The URL format may be invalid.');
       }
-    } else if (videoUrl.startsWith('/api/s3/') || videoUrl.includes('amazonaws.com') || videoUrl.includes('.mp4') || videoUrl.includes('video/mp4')) {
+    } else if (videoUrl.startsWith('/api/s3/') || videoUrl.includes('amazonaws.com') || videoUrl.includes('.mp4') || videoUrl.includes('video/mp4') || videoUrl.includes('uploads/videos/')) {
       // For S3 or direct MP4 URLs, we'll use a video element instead of an iframe
       // Setting a special marker to identify this as a direct video URL
-      setEmbedUrl(`direct:${videoUrl}`);
+      
+      // Fix paths that may contain workspace path references
+      let cleanedUrl = videoUrl;
+      
+      // If the URL contains workspace paths, extract just the uploads part
+      if (videoUrl.includes('/home/runner/workspace/')) {
+        const match = videoUrl.match(/\/home\/runner\/workspace\/(.+)/);
+        if (match && match[1]) {
+          cleanedUrl = `/${match[1]}`;
+        }
+      }
+      
+      // Special case for absolute path references that should be relative
+      if (cleanedUrl.startsWith('/api/s3/home/')) {
+        const pathParts = cleanedUrl.split('/home/');
+        if (pathParts.length > 1) {
+          // Extract just the filename
+          const fileParts = pathParts[1].split('/');
+          cleanedUrl = `/uploads/videos/${fileParts[fileParts.length - 1]}`;
+        }
+      }
+      
+      console.log(`Video URL cleaned: ${videoUrl} → ${cleanedUrl}`);
+      setEmbedUrl(`direct:${cleanedUrl}`);
     } else {
       // For other URLs, just use the URL directly
       setEmbedUrl(videoUrl);
@@ -206,6 +229,41 @@ const GenericVideoEmbed = ({
             className={responsive ? 'absolute top-0 left-0 w-full h-full' : ''}
             width={responsive ? '100%' : width}
             height={responsive ? '100%' : height}
+            onError={(e) => {
+              console.error('Video playback error:', e);
+              // Set a data attribute to indicate error to apply styles
+              e.currentTarget.setAttribute('data-error', 'true');
+              
+              // Add an overlay error message element
+              const container = e.currentTarget.parentElement;
+              if (container) {
+                const errorEl = document.createElement('div');
+                errorEl.className = 'video-error-overlay';
+                errorEl.innerHTML = `
+                  <div class="p-4 bg-black bg-opacity-75 rounded text-center text-white">
+                    <p class="mb-2">Error playing video</p>
+                    <p class="text-sm text-gray-300 mb-3">The video may not be available or accessible.</p>
+                    <button class="px-3 py-1 bg-orange-500 hover:bg-orange-600 rounded text-white text-sm">
+                      Retry
+                    </button>
+                  </div>
+                `;
+                container.appendChild(errorEl);
+                
+                // Add click listener to retry button
+                const retryBtn = errorEl.querySelector('button');
+                if (retryBtn) {
+                  retryBtn.addEventListener('click', () => {
+                    // Remove the error overlay
+                    errorEl.remove();
+                    // Reset the error state
+                    e.currentTarget.removeAttribute('data-error');
+                    // Try to load the video again
+                    e.currentTarget.load();
+                  });
+                }
+              }
+            }}
           />
           {aiGenerator && <AIWatermark aiGenerator={aiGenerator} position="bottom-right" size="medium" />}
         </div>
