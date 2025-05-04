@@ -54,7 +54,7 @@ export default function ImageGallery({
   }, []);
   
   return (
-    <section className="mb-8">
+    <div className="block-container">
       {/* Pornhub-style heading with "view more" link */}
       <div className="flex justify-between items-center mb-3">
         <h2 className="text-lg font-bold uppercase">{title}</h2>
@@ -66,7 +66,7 @@ export default function ImageGallery({
       </div>
       
       {/* Image grid */}
-      <div className={`grid ${columnClass} gap-4 w-full`}>
+      <div className={`grid ${columnClass} gap-6 w-full`}>
         {images.map((image) => (
           <ImageCard
             key={image.id}
@@ -83,7 +83,7 @@ export default function ImageGallery({
           ))
         }
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -124,7 +124,7 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
   return (
     <div 
       id={`video-preview-${image.id}`}
-      className="group transition-transform duration-200 overflow-hidden cursor-pointer"
+      className="group thumbnail-item transition-transform duration-200 overflow-hidden cursor-pointer"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={handleClick}
