@@ -129,7 +129,10 @@ export default function MediaDetail() {
   // Add comment mutation
   const addCommentMutation = useMutation({
     mutationFn: async (comment: { videoId: number; text: string; userId?: number; username?: string }) => {
-      const res = await apiRequest("POST", "/api/comments", comment);
+      const res = await apiRequest("POST", `/api/videos/${id}/comments`, {
+        username: comment.username || "Anonymous",
+        content: comment.text
+      });
       return res.json();
     },
     onSuccess: () => {
