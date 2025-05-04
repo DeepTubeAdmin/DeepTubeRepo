@@ -505,30 +505,30 @@ export default function MediaDetail() {
               
               {/* Description and Prompt section - redesigned */}
               <div className="mt-6 mb-8 space-y-4">
-                {/* Description */}
-                {media.description && (
-                  <div className="border-l-4 border-orange-500 pl-4 py-1">
-                    <p className="text-white">{media.description}</p>
+                {/* Description Box */}
+                <div className="bg-[#0c0c0c] p-4 rounded-md border border-[#222]">
+                  <div className="flex items-center mb-2">
+                    <MessageSquare className="h-4 w-4 text-orange-500 mr-2" />
+                    <span className="text-sm font-semibold text-gray-300">Description</span>
                   </div>
-                )}
+                  <p className="text-gray-300 text-sm">{media.description || 'No description provided.'}</p>
+                </div>
                 
-                {/* Prompt info in a better layout */}
-                {media.prompt && (
-                  <div className="bg-[#0c0c0c] p-4 rounded-md border border-[#222]">
-                    <div className="flex items-center mb-2">
-                      <Terminal className="h-4 w-4 text-orange-500 mr-2" />
-                      <span className="text-sm font-semibold text-gray-300">Prompt</span>
-                    </div>
-                    <p className="text-gray-300 text-sm">{media.prompt}</p>
+                {/* Prompt Box */}
+                <div className="bg-[#0c0c0c] p-4 rounded-md border border-[#222]">
+                  <div className="flex items-center mb-2">
+                    <Terminal className="h-4 w-4 text-orange-500 mr-2" />
+                    <span className="text-sm font-semibold text-gray-300">Prompt</span>
                   </div>
-                )}
+                  <p className="text-gray-300 text-sm">{media.prompt || 'No prompt information provided.'}</p>
+                </div>
               </div>
             </div>
             
             {/* Comments section */}
             <div>
               <h2 className="text-xl font-bold mb-4">
-                {comments.length} {comments.length === 1 ? 'Comment' : 'Comments'}
+                Comments
               </h2>
               
               {/* Comment form */}
