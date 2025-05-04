@@ -178,6 +178,33 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   }),
 }));
 
+// Content reports table
+export const reports = pgTable("reports", {
+  id: serial("id").primaryKey(),
+  videoId: integer("video_id").references(() => videos.id, { onDelete: "cascade" }).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+  reason: text("reason").notNull(),
+  status: varchar("status", { enum: ["pending", "reviewed", "ignored"] }).default("pending").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: integer("resolved_by").references(() => users.id, { onDelete: "set null" }),
+});
+
+export const reportsRelations = relations(reports, ({ one }) => ({
+  video: one(videos, {
+    fields: [reports.videoId],
+    references: [videos.id],
+  }),
+  user: one(users, {
+    fields: [reports.userId],
+    references: [users.id],
+  }),
+  resolver: one(users, {
+    fields: [reports.resolvedBy],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
