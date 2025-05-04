@@ -4,7 +4,7 @@ import ImageGallery from './ImageGallery';
 import VideoCard from './VideoCard';
 import AdvertisementCard, { getRandomAd } from './AdvertisementCard';
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { ExternalLink, Heart, Image } from 'lucide-react';
+import { ExternalLink, Heart, Image, Flag, ThumbsUp } from 'lucide-react';
 import { Video as TypeVideo, Category } from '@/types';
 import { Video as SchemaVideo } from '@shared/schema';
 import { Loader2 } from 'lucide-react';
@@ -567,6 +567,8 @@ export default function InfiniteContentFeed({
     const [isLoading, setIsLoading] = useState(true);
     const [loadFailed, setLoadFailed] = useState(false);
     const [imgSrc, setImgSrc] = useState(checkThumbnail(image.thumbnail || "", image.id));
+    const [isLiked, setIsLiked] = useState(false);
+    const [isLikeLoading, setIsLikeLoading] = useState(false);
 
     const handleClick = () => {
       if (onPreview) {
@@ -660,12 +662,46 @@ export default function InfiniteContentFeed({
               <span>{image.aiGenerator || "AI Generated"}</span>
             </div>
 
-            <button 
-              onClick={handleWishlist}
-              className="text-gray-400 hover:text-primary transition-colors"
-            >
-              <Heart className="h-4 w-4" fill={isWishlisted ? "currentColor" : "none"} />
-            </button>
+            <div className="flex space-x-1">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsLiked(!isLiked);
+                  setIsLikeLoading(true);
+                  // Simulate like action
+                  setTimeout(() => setIsLikeLoading(false), 300);
+                }}
+                className={`flex items-center px-2 py-1 rounded transition-colors ${
+                  isLiked
+                    ? 'text-orange-500 bg-orange-950/40'
+                    : 'text-gray-400 hover:text-orange-400'
+                }`}
+                disabled={isLikeLoading}
+                title={isLiked ? "Unlike" : "Like"}
+              >
+                <ThumbsUp className={`h-4 w-4 ${isLikeLoading ? 'animate-pulse' : ''}`} />
+              </button>
+              
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Open report in new window with report parameter
+                  window.open(`/media/${image.id}?report=true`, '_blank');
+                }}
+                className="flex items-center px-2 py-1 rounded transition-colors text-gray-400 hover:text-orange-400"
+                title="Report"
+              >
+                <Flag className="h-4 w-4" />
+              </button>
+              
+              <button 
+                onClick={handleWishlist}
+                className="flex items-center px-2 py-1 rounded transition-colors text-gray-400 hover:text-primary"
+                title="Add to Wishlist"
+              >
+                <Heart className="h-4 w-4" fill={isWishlisted ? "currentColor" : "none"} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
