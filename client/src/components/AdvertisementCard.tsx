@@ -86,8 +86,8 @@ export default function AdvertisementCard({ ad, className = '', contentType = 'v
   // For videos, use video card styling with larger thumbnails
   // For images, use image card styling with smaller thumbnails
   const containerClasses = contentType === 'videos' 
-    ? 'video-card advertisement-card relative rounded overflow-hidden'
-    : 'image-card advertisement-card relative rounded overflow-hidden';
+    ? 'video-card advertisement-card thumbnail-item relative rounded overflow-hidden'
+    : 'image-card advertisement-card thumbnail-item relative rounded overflow-hidden';
   
   // Determine the thumbnail height based on content type
   const thumbnailClasses = contentType === 'videos'
@@ -96,7 +96,7 @@ export default function AdvertisementCard({ ad, className = '', contentType = 'v
   
   return (
     <div 
-      className={`${containerClasses} ${className} mt-6`}
+      className={`${containerClasses} ${className}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={handleClick}
