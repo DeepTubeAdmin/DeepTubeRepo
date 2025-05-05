@@ -7,6 +7,7 @@ import { randomBytes } from "crypto";
 import { sendPasswordResetEmail } from "./sendgrid";
 import { z } from "zod";
 import { insertCategorySchema, insertVideoSchema, type Video, type Category, type InsertLike } from "@shared/schema";
+import * as youtubeUtils from "./youtubeUtils";
 // Vimeo service no longer used as we've migrated to S3
 import multer from "multer";
 import path from "path";
@@ -2344,6 +2345,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Use the already imported YouTube utilities
+
   // Unified thumbnail endpoint
   app.get("/api/content/:id/thumbnail", async (req, res) => {
     console.log(`Unified thumbnail endpoint requested for content ID: ${req.params.id}`);
@@ -2366,15 +2369,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Special case for YouTube embeds - handle them directly without Cloudinary
-      if (content.contentType === 'embed' && content.embedCode && 
-          (content.embedCode.includes('youtube.com') || content.embedCode.includes('youtu.be'))) {
-        // Extract YouTube video ID using regex patterns
-        const ytMatch = content.embedCode.match(/(?:youtube\.com\/embed\/|youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-        if (ytMatch && ytMatch[1]) {
-          const youtubeId = ytMatch[1];
-          
+      if (content.contentType === 'embed' && content.embedCode) {
+        // Extract YouTube video ID using our utility function
+        const youtubeId = youtubeUtils.extractYoutubeVideoId(content.embedCode);
+        
+        if (youtubeId) {
           // Use high quality thumbnail - directly redirect to YouTube
-          const youtubeThumbnailUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+          const youtubeThumbnailUrl = youtubeUtils.getYoutubeThumbnailUrl(youtubeId, 'hqdefault');
           
           console.log(`Directly using YouTube thumbnail for embed ${contentId}: ${youtubeThumbnailUrl}`);
           
@@ -2513,6 +2514,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Video not found' });
       }
       
+      console.log(`Admin requested thumbnail regeneration for ${video.contentType} ${videoId}:`);
+      console.log(` - Title: ${video.title}`);
+      console.log(` - Content Type: ${video.contentType}`);
+      
+      // Special case for YouTube embeds - handle directly without Cloudinary
+      if (video.contentType === 'embed' && video.embedCode) {
+        // Extract YouTube video ID
+        const youtubeId = youtubeUtils.extractYoutubeVideoId(video.embedCode);
+        
+        if (youtubeId) {
+          console.log(` - Detected YouTube embed with ID: ${youtubeId}`);
+          
+          // Update the video record with the unified thumbnail path
+          await dbStorage.updateVideo(videoId, { 
+            thumbnail: `/api/content/${videoId}/thumbnail` 
+          });
+          
+          return res.json({
+            success: true,
+            message: `Successfully updated YouTube embed thumbnail for ${videoId}`,
+            videoId,
+            thumbnailUrl: `/api/content/${videoId}/thumbnail`,
+            youtubeId
+          });
+        }
+      }
+      
+      // For non-YouTube content, proceed with normal flow
       // Get the appropriate source URL based on content type
       const sourceUrl = video.contentType === 'video' ? video.videoUrl : 
                       video.contentType === 'image' ? video.imageUrl : null;
@@ -2521,9 +2550,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Content has no source URL' });
       }
       
-      console.log(`Admin requested thumbnail regeneration for ${video.contentType} ${videoId}:`);
-      console.log(` - Title: ${video.title}`);
-      console.log(` - Content Type: ${video.contentType}`);
       console.log(` - Source URL: ${sourceUrl}`);
       
       // Import the Cloudinary service
@@ -2574,6 +2600,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Content not found" });
       }
       
+      // Special case for YouTube embeds - handle directly without Cloudinary
+      if (video.contentType === 'embed' && video.embedCode) {
+        // Extract YouTube video ID
+        const youtubeId = youtubeUtils.extractYoutubeVideoId(video.embedCode);
+        
+        if (youtubeId) {
+          console.log(`Detected YouTube embed with ID: ${youtubeId} for content ${videoId}`);
+          
+          // Update to use unified thumbnail path
+          await dbStorage.updateVideo(videoId, { 
+            thumbnail: `/api/content/${videoId}/thumbnail` 
+          });
+          
+          return res.json({ 
+            success: true, 
+            message: `Thumbnail updated for YouTube embed ${videoId}`,
+            thumbnailUrl: `/api/content/${videoId}/thumbnail`,
+            contentType: video.contentType,
+            youtubeId,
+            directYoutubeUrl: youtubeUtils.getYoutubeThumbnailUrl(youtubeId, 'hqdefault')
+          });
+        }
+      }
+      
+      // For non-YouTube content, proceed with normal flow
       // Import the Cloudinary service
       const cloudinaryService = await import('./services/cloudinaryService').then(m => m.default);
       
