@@ -41,23 +41,18 @@ interface ContentFeedResponse {
 export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   // State hooks - all defined at the top level
   const [page, setPage] = useState(1);
-  // Generate shuffle seed that changes on each page refresh by including a timestamp
-  const [shuffleSeed, setShuffleSeed] = useState(() => {
+  // Generate shuffle seed that changes on each page refresh by including a timestamp and multiple random components
+  const [shuffleSeed] = useState(() => {
     const timestamp = new Date().getTime();
-    return `${timestamp}-${Math.random().toString(36).substring(2, 8)}`;
+    const random1 = Math.random().toString(36).substring(2, 10);
+    const random2 = Math.random().toString(36).substring(2, 10);
+    // Combine timestamp and multiple random strings for maximum entropy
+    return `${timestamp}-${random1}-${random2}`;
   });
   const [sortBy, setSortBy] = useState<SortOption>('trending');
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [columnCount, setColumnCount] = useState(4); // Default to 4 columns
   const [popularBlocks, setPopularBlocks] = useState<ContentFeedResponse['popular']['blocks']>([]);
-  
-  // Function to generate a new shuffle seed
-  const regenerateShuffle = useCallback(() => {
-    const timestamp = new Date().getTime();
-    setShuffleSeed(`${timestamp}-${Math.random().toString(36).substring(2, 8)}`);
-    // Reset page when shuffle changes
-    setPage(1);
-  }, []);
 
   // Ref hooks - all defined at the top level
   const previousDataRef = useRef<ContentFeedResponse | undefined>(undefined);
@@ -264,20 +259,8 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
               {data.featured.title}
             </h2>
             
-            {/* Controls: Shuffle and Sort Buttons */}
-            <div className="flex items-center gap-2">
-              {/* Shuffle Button */}
-              <Button
-                onClick={regenerateShuffle}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-1 px-3 py-1.5 text-sm border-gray-700 bg-black/50 hover:bg-black/80"
-                title="Shuffle content"
-              >
-                <Shuffle className="h-3.5 w-3.5" />
-                <span>Shuffle</span>
-              </Button>
-              
+            {/* Controls: Sort Button */}
+            <div className="flex items-center">
               {/* Sort Button and Dropdown */}
               <div className="relative">
                 <Button
