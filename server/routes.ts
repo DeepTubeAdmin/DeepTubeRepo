@@ -844,66 +844,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // FFmpeg video thumbnail regeneration endpoint
-  app.get('/api/regenerate-thumbnails-cloudinary', isAdmin, async (req, res) => {
-    try {
-      // Get all videos (excluding images and embeds)
-      const videos = await dbStorage.getVideos(1000, 'video');
-      console.log(`Retrieved ${videos.length} videos for Cloudinary thumbnail regeneration`);
-      
-      let successCount = 0;
-      let failedCount = 0;
-      
-      // Process each video
-      for (const video of videos) {
-        try {
-          if (!video.videoUrl) {
-            console.log(`Skipping video ${video.id} (${video.title}): No video URL`);
-            failedCount++;
-            continue;
-          }
-
-          console.log(`Processing video ${video.id}: ${video.title}`);
-          console.log(`Video URL: ${video.videoUrl}`);
-          
-          // Generate thumbnail using Cloudinary
-          const s3Key = await cloudinaryService.generateThumbnail(
-            video.id,
-            video.videoUrl,
-            'video',
-            null // YouTube ID will be null for S3 videos
-          );
-          
-          // Update the video thumbnail URL
-          await dbStorage.updateVideo(video.id, {
-            thumbnail: `/api/videos/${video.id}/thumbnail`
-          });
-          
-          console.log(`✅ Successfully generated thumbnail for video ${video.id} at ${s3Key}`);
-          successCount++;
-        } catch (videoError) {
-          console.error(`❌ Error generating thumbnail for video ${video.id}:`, videoError);
-          failedCount++;
-        }
-        
-        // Add delay to avoid overwhelming the server
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
-      
-      // Return the results
-      return res.json({
-        success: successCount,
-        failed: failedCount,
-        total: videos.length
-      });
-    } catch (error) {
-      console.error('Error in Cloudinary thumbnail regeneration:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to regenerate thumbnails using Cloudinary',
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
+  // Endpoint '/api/regenerate-thumbnails-cloudinary' removed as requested
   
   // Type guard function to ensure req.user is defined
   function ensureUser(req: Request): asserts req is Request & { user: Express.User } {
