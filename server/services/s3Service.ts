@@ -5,7 +5,7 @@
  * as well as generate pre-signed URLs for temporary access to protected resources.
  */
 
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 // Initialize S3 client with AWS credentials from environment variables
@@ -147,6 +147,36 @@ function getThumbnailS3Key(contentId: number): string {
 }
 
 /**
+ * Check if an object exists in S3
+ * @param s3Key Key for the file in S3
+ * @returns True if the object exists, false otherwise
+ */
+async function checkIfObjectExists(s3Key: string): Promise<boolean> {
+  try {
+    if (!bucketName) {
+      throw new Error('AWS_BUCKET_NAME environment variable is not set');
+    }
+
+    const command = new HeadObjectCommand({
+      Bucket: bucketName,
+      Key: s3Key
+    });
+
+    // If this doesn't throw, the object exists
+    await s3Client.send(command);
+    return true;
+  } catch (error) {
+    // If it's a 404 error, the object doesn't exist
+    if ((error as any).name === 'NotFound' || (error as any).$metadata?.httpStatusCode === 404) {
+      return false;
+    }
+    // For other errors, rethrow
+    console.error(`Error checking if object exists in S3:`, error);
+    throw error;
+  }
+}
+
+/**
  * Get the file extension from a filename
  * @param filename Filename with extension
  * @returns File extension without the dot
@@ -164,5 +194,6 @@ export default {
   getS3ResourcePath,
   getVideoS3Key,
   getImageS3Key,
-  getThumbnailS3Key
+  getThumbnailS3Key,
+  checkIfObjectExists
 };

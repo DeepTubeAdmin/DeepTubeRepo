@@ -4,7 +4,8 @@
  */
 
 import s3Service from "./services/s3Service";
-import thumbnailService from "./services/thumbnailService";
+import cloudinaryService from "./services/cloudinaryService";
+// Using Cloudinary instead of FFmpeg for thumbnail generation
 
 // Export legacy function names that map to new service methods for backward compatibility
 export const getSignedS3Url = s3Service.getSignedS3Url;
@@ -94,14 +95,15 @@ export function urlPathToS3Key(urlPath: string): string {
   return localPathToS3Key(urlPath);
 }
 
-// Map old function to new function
+// Map old function to new function using Cloudinary instead of FFmpeg
 export async function generateAndStoreS3Thumbnail(
   contentId: number,
   contentType: string,
   sourceUrl: string | null = null,
   youtubeId: string | null = null
 ): Promise<string> {
-  return thumbnailService.generateThumbnail(contentId, contentType, sourceUrl, youtubeId);
+  console.log(`Thumbnail generation request for ${contentType} ${contentId} using Cloudinary`);
+  return cloudinaryService.generateThumbnail(contentId, sourceUrl, contentType, youtubeId);
 }
 
 // SVG Placeholder generator that was in old generateThumbnail.ts

@@ -14,7 +14,7 @@ import fs from "fs/promises";
 import fsSync from "fs";
 import { fileURLToPath } from 'url';
 import s3Service from "./services/s3Service";
-import thumbnailService from "./services/thumbnailService";
+import cloudinaryService from "./services/cloudinaryService";
 // Thumbnail routes now integrated directly
 import mongoDb from "./mongodb";
 import {
@@ -139,6 +139,92 @@ const upload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Thumbnail routes are now integrated directly
+  
+  // Main thumbnail endpoint that generates thumbnails on-demand using Cloudinary
+  app.get('/api/videos/:videoId/thumbnail', async (req, res) => {
+    try {
+      const videoId = parseInt(req.params.videoId);
+      if (isNaN(videoId)) {
+        console.error(`Invalid video ID: ${req.params.videoId}`);
+        return sendSvgPlaceholder(res, 'video');
+      }
+      
+      // Fetch the video or image from the database
+      const content = await dbStorage.getVideo(videoId);
+      if (!content) {
+        console.error(`Content not found for ID: ${videoId}`);
+        return sendSvgPlaceholder(res, 'video');
+      }
+      
+      console.log(`Thumbnail request for ${content.contentType} ID: ${videoId}`);
+      
+      // Determine the content type for appropriate placeholder
+      const contentType = content.contentType || 'video';
+      
+      // Check if we can generate a thumbnail from the source
+      let sourceUrl = null;
+      let youtubeId = null;
+      
+      // For videos, use the video URL
+      if (contentType === 'video') {
+        sourceUrl = content.videoUrl || null;
+      }
+      // For images, use the image URL
+      else if (contentType === 'image') {
+        sourceUrl = content.imageUrl || null;
+      }
+      // For embeds, extract YouTube ID if available
+      else if (contentType === 'embed') {
+        youtubeId = cloudinaryService.extractYoutubeVideoId(content.embedCode || '');
+        if (youtubeId) {
+          sourceUrl = cloudinaryService.getYoutubeThumbnailUrl(youtubeId);
+        }
+      }
+      
+      // Use S3 if a thumbnail exists
+      try {
+        const s3Key = s3Service.getThumbnailS3Key(videoId);
+        
+        // Attempt to serve the S3 thumbnail directly if it exists
+        try {
+          // Check if thumbnail exists in S3
+          await s3Service.checkIfObjectExists(s3Key);
+          
+          // Get signed URL for the thumbnail
+          const signedUrl = await s3Service.getSignedS3Url(s3Key);
+          
+          // Redirect to the signed URL
+          return res.redirect(signedUrl);
+        } catch (s3Error) {
+          // If the thumbnail doesn't exist in S3, generate it
+          console.log(`Thumbnail not found in S3 for ${contentType} ${videoId}, generating...`);
+        }
+      } catch (error) {
+        console.error(`Error checking S3 for thumbnail:`, error);
+      }
+      
+      // If we reach here, we need to generate a new thumbnail
+      try {
+        // Generate a new thumbnail
+        await generateAndStoreS3Thumbnail(videoId, contentType, sourceUrl, youtubeId);
+        
+        // Get the S3 key for the generated thumbnail
+        const s3Key = s3Service.getThumbnailS3Key(videoId);
+        
+        // Get signed URL for the thumbnail
+        const signedUrl = await s3Service.getSignedS3Url(s3Key);
+        
+        // Redirect to the signed URL
+        return res.redirect(signedUrl);
+      } catch (genError) {
+        console.error(`Error generating thumbnail for ${contentType} ${videoId}:`, genError);
+        return sendSvgPlaceholder(res, contentType);
+      }
+    } catch (error) {
+      console.error('Error in thumbnail endpoint:', error);
+      return sendSvgPlaceholder(res, 'video');
+    }
+  });
   
   // Initialize MongoDB connection (for future use)
   try {
