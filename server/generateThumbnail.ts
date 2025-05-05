@@ -147,12 +147,12 @@ export async function generateAndStoreS3Thumbnail(
   }
 
   // Return default SVG if all methods fail
-  const svg = generatePlaceholderSvg(contentType);
+  const svg = generateSvgPlaceholder(contentType);
   await uploadStringToS3(svg, s3Key, 'image/svg+xml');
   return s3Key;
 }
 
-function generatePlaceholderSvg(contentType: string): string {
+export function generateSvgPlaceholder(contentType: string): string {
   const bgColor = '#0f172a';
   const textColor = '#f59e0b';
 

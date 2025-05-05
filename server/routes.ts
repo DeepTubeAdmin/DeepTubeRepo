@@ -1159,7 +1159,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         videoData.reviewStatus = 'approved';
       }
       
+      // Create the video entry
       const video = await dbStorage.createVideo(videoData);
+      
+      // For newly uploaded content, make sure we set the correct thumbnail path
+      // and generate a thumbnail if needed (especially for S3-uploaded content)
+      try {
+        // For videos, images, and embeds, update the thumbnail path to use our unified endpoint
+        await dbStorage.updateVideo(video.id, {
+          thumbnail: `/api/content/${video.id}/thumbnail`
+        });
+        
+        console.log(`Set unified thumbnail path for video ID ${video.id}`);
+        
+        // If it's a video or embed with a URL, let's trigger thumbnail generation immediately
+        if ((video.contentType === 'video' && video.videoUrl) || 
+            (video.contentType === 'embed' && video.embedCode)) {
+          // This will call the unified endpoint which will generate a thumbnail if needed
+          try {
+            console.log(`Triggering thumbnail generation for new ${video.contentType} with ID ${video.id}`);
+            await fetch(`http://localhost:5000/api/content/${video.id}/thumbnail?force=true`, {
+              method: 'GET'
+            });
+            console.log(`Thumbnail generation triggered for content ID ${video.id}`);
+          } catch (thumbnailError) {
+            console.error(`Error triggering thumbnail generation for content ID ${video.id}:`, thumbnailError);
+            // Continue even if thumbnail generation fails
+          }
+        }
+      } catch (thumbnailError) {
+        console.error(`Error updating thumbnail path for video ID ${video.id}:`, thumbnailError);
+        // Continue without failing the request
+      }
+      
+      // Return the created video
       res.status(201).json(video);
     } catch (error) {
       console.error("Error creating video:", error);
@@ -2417,6 +2450,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const contentId = parseInt(req.params.id);
+      // Check if we're forcing a thumbnail regeneration
+      const forceRegeneration = req.query.force === 'true';
       const forcePlaceholder = req.query.placeholder === 'true';
       
       if (!contentId) {
@@ -2429,8 +2464,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error('Content not found');
       }
 
-      // If placeholder requested or no existing thumbnail, generate new one using Cloudinary
-      if (forcePlaceholder || !content.thumbnail) {
+      // Generate a new thumbnail if one of these conditions is true:
+      // 1. Force regeneration is requested
+      // 2. Placeholder is requested
+      // 3. No existing thumbnail
+      // 4. Thumbnail path doesn't match the unified endpoint pattern
+      if (forceRegeneration || 
+          forcePlaceholder || 
+          !content.thumbnail ||
+          !content.thumbnail.startsWith('/api/content/')) {
+        
         // Determine the appropriate source URL and YouTube ID (if applicable)
         let sourceUrl = null;
         let youtubeId = null;
@@ -2457,22 +2500,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
           youtubeId
         );
         
-        // Update content record with thumbnail endpoint path
+        // Update content record with the new unified thumbnail endpoint path
         await dbStorage.updateVideo(content.id, {
-          thumbnail: `/api/videos/${content.id}/thumbnail`
+          thumbnail: `/api/content/${content.id}/thumbnail`
         });
+        console.log(`Updated content ID ${content.id} with unified thumbnail path`);
         
-        // Redirect to S3
+        // Redirect to S3 URL for the generated thumbnail
         const s3Url = await getSignedS3Url(s3Key);
+        console.log(`Redirecting to S3 URL for newly generated thumbnail: ${s3Url.substring(0, 100)}...`);
         return res.redirect(s3Url);
       }
 
-      // Return existing thumbnail
-      const s3Url = await getSignedS3Url(content.thumbnail);
+      // Return existing thumbnail: Determine if it's an S3 key or a path
+      let existingThumbnailPath = content.thumbnail;
+
+      // If using the old API path, convert it to S3 key
+      if (existingThumbnailPath.startsWith('/api/videos/')) {
+        // For backward compatibility - this will be updated on next access
+        const thumbnailS3Key = s3Service.getThumbnailS3Key(content.id);
+        const s3Url = await getSignedS3Url(thumbnailS3Key);
+        return res.redirect(s3Url);
+      }
+      
+      // If it's an S3 key directly, use it
+      if (existingThumbnailPath.includes('thumbnails/video-')) {
+        const s3Url = await getSignedS3Url(existingThumbnailPath);
+        return res.redirect(s3Url);
+      }
+      
+      // Otherwise, treat it as an S3 URL or placeholder
+      const s3Key = s3Service.getThumbnailS3Key(content.id);
+      const s3Url = await getSignedS3Url(s3Key);
+      console.log(`Redirecting to existing thumbnail: ${s3Url.substring(0, 100)}...`);
       return res.redirect(s3Url);
     } catch (error) {
       console.error('Thumbnail error:', error);
-      res.status(500).send('Thumbnail generation failed');
+      // If an error occurs, redirect to a placeholder
+      return res.redirect(`/api/placeholder-svg/${req.query.contentType || 'unknown'}`);
     }
   });
 
