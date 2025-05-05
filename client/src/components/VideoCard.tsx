@@ -60,7 +60,7 @@ function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailIma
     // Default to our API endpoint with a cache buster
     let reliableThumbnail = thumbnail ? 
       checkThumbnail(thumbnail, videoId) : 
-      `/api/videos/${videoId}/thumbnail?t=${Date.now()}`;
+      `/api/content/${videoId}/thumbnail?t=${Date.now()}`;
 
     // Override for YouTube embeds - use direct YouTube image URL
     if (contentType === 'embed' && youtubeId) {
@@ -88,13 +88,13 @@ function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailIma
       } else {
         // Final fallback: Force SVG placeholder
         console.error(`ThumbnailImage: All YouTube qualities failed for video ${videoId}`);
-        setImgSrc(`/api/videos/${videoId}/thumbnail?forcesvg=true&t=${loadAttemptTime}`);
+        setImgSrc(`/api/content/${videoId}/thumbnail?placeholder=true&t=${loadAttemptTime}`);
         setLoadFailed(true);
       }
     } else {
       // Non-YouTube content, go directly to API with forced SVG
       console.error(`ThumbnailImage: Error loading thumbnail for video ${videoId}`);
-      setImgSrc(`/api/videos/${videoId}/thumbnail?forcesvg=true&t=${loadAttemptTime}`);
+      setImgSrc(`/api/content/${videoId}/thumbnail?placeholder=true&t=${loadAttemptTime}`);
       setLoadFailed(true);
     }
   };

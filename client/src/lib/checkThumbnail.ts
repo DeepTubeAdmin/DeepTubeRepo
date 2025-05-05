@@ -86,7 +86,7 @@ async function validateThumbnailUrl(url: string, retries = 2, timeout = 3000): P
  * Get a default SVG placeholder for a video
  */
 function getDefaultPlaceholder(videoId: number): string {
-  return `/api/videos/${videoId}/thumbnail`;
+  return `/api/content/${videoId}/thumbnail`;
 }
 
 /**
@@ -106,7 +106,7 @@ export async function validateAndGetThumbnail(thumbnailUrl: string, videoId: num
     }
     
     // If it's already using our endpoint, check if it works
-    if (thumbnailUrl.startsWith('/api/videos/')) {
+    if (thumbnailUrl.startsWith('/api/videos/') || thumbnailUrl.startsWith('/api/content/')) {
       const isValid = await validateThumbnailUrl(thumbnailUrl);
       return isValid ? thumbnailUrl : getDefaultPlaceholder(videoId);
     }
@@ -189,7 +189,7 @@ export function checkThumbnail(thumbnailUrl: string, videoId: number): string {
   }
   
   // If it's already using our endpoint, return as is
-  if (thumbnailUrl.startsWith('/api/videos/')) {
+  if (thumbnailUrl.startsWith('/api/videos/') || thumbnailUrl.startsWith('/api/content/')) {
     return thumbnailUrl;
   }
   

@@ -155,7 +155,7 @@ export async function fetchS3Url(url: string | null, maxRetries: number = 3): Pr
   console.log('fetchS3Url called with:', url);
   
   // For direct URLs that aren't API calls, return as is
-  if (!url.startsWith('/api/s3/') && !url.includes('/api/videos/') && !url.includes('thumbnail')) {
+  if (!url.startsWith('/api/s3/') && !url.includes('/api/videos/') && !url.includes('/api/content/') && !url.includes('thumbnail')) {
     return url;
   }
   

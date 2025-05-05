@@ -600,7 +600,7 @@ export default function InfiniteContentFeed({
     const handleImageError = () => {
       console.error(`ImageCard: Error loading thumbnail for image ${image.id}`);
       // Use a forced SVG placeholder
-      setImgSrc(`/api/videos/${image.id}/thumbnail?forcesvg=true&t=${Date.now()}`);
+      setImgSrc(`/api/content/${image.id}/thumbnail?placeholder=true&t=${Date.now()}`);
       setLoadFailed(true);
       setIsLoading(false);
     };

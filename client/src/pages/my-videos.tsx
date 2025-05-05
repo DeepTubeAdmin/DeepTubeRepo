@@ -163,7 +163,7 @@ export default function MyVideosPage() {
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       console.error(`Error loading thumbnail for video ${video.id}`);
-                      e.currentTarget.src = `/api/videos/${video.id}/thumbnail?forcesvg=true&t=${Date.now()}`;
+                      e.currentTarget.src = `/api/content/${video.id}/thumbnail?placeholder=true&t=${Date.now()}`;
                     }}
                   />
                   <div className="absolute top-2 right-2">
