@@ -186,6 +186,30 @@ function getFileExtension(filename: string): string {
   return parts.length > 1 ? parts.pop()!.toLowerCase() : 'bin';
 }
 
+/**
+ * Convert a path from a URL to an S3 key
+ * @param path Path from URL or API endpoint
+ * @returns S3 key that can be used with S3 operations
+ */
+function getS3KeyFromPath(path: string): string {
+  // Handle paths that might already be prefixed
+  if (path.startsWith('uploads/')) {
+    return path;
+  }
+  
+  // Remove any leading slashes
+  const cleanPath = path.replace(/^\/+/, '');
+  
+  // If it's already in an S3 format, return as is
+  if (cleanPath.startsWith('thumbnails/') || 
+      cleanPath.startsWith('uploads/')) {
+    return cleanPath;
+  }
+  
+  // Otherwise, assume it's a file that should be in the uploads directory
+  return `uploads/${cleanPath}`;
+}
+
 // Export all functions as a default object
 export default {
   uploadToS3,
@@ -195,5 +219,6 @@ export default {
   getVideoS3Key,
   getImageS3Key,
   getThumbnailS3Key,
-  checkIfObjectExists
+  checkIfObjectExists,
+  getS3KeyFromPath
 };
