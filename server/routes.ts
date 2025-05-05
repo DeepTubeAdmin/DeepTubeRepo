@@ -2168,7 +2168,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const thumbnailS3Key = await cloudinaryService.generateThumbnail(
               tempVideoId,
               signedS3Url,
-              'video'
+              'video',
+              null
             );
             
             // Set the thumbnail path to be used in the response
