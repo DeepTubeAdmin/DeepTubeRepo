@@ -94,27 +94,29 @@ async function getThumbnail(req: Request, res: Response): Promise<void> {
       console.log(`No existing S3 thumbnail found for ${contentId}, generating new one`);
     }
     
-    // If we get here, we need to generate a new thumbnail
-    try {
-      // Determine source URL and content type
-      let sourceUrl = null;
-      let youtubeId = null;
-      
-      if (content.contentType === 'video') {
-        sourceUrl = content.videoUrl;
-      } else if (content.contentType === 'image') {
-        sourceUrl = content.imageUrl;
-      } else if (content.contentType === 'embed' && content.embedCode) {
-        youtubeId = thumbnailService.extractYoutubeVideoId(content.embedCode);
-      }
-      
-      // Generate a new thumbnail
-      const s3Key = await thumbnailService.generateThumbnail(
-        contentId,
-        content.contentType,
-        sourceUrl,
-        youtubeId
-      );
+    // Only generate a new thumbnail if this is an explicit regeneration request
+    // or if we truly couldn't find an existing thumbnail
+    if (req.query.regenerate === 'true' || !content.thumbnail) {
+      try {
+        // Determine source URL and content type
+        let sourceUrl = null;
+        let youtubeId = null;
+        
+        if (content.contentType === 'video') {
+          sourceUrl = content.videoUrl;
+        } else if (content.contentType === 'image') {
+          sourceUrl = content.imageUrl;
+        } else if (content.contentType === 'embed' && content.embedCode) {
+          youtubeId = thumbnailService.extractYoutubeVideoId(content.embedCode);
+        }
+        
+        // Generate a new thumbnail
+        const s3Key = await thumbnailService.generateThumbnail(
+          contentId,
+          content.contentType,
+          sourceUrl,
+          youtubeId
+        );
       
       // Update the database with the new thumbnail path
       await dbStorage.updateVideo(contentId, {
