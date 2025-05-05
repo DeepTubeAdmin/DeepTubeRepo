@@ -523,6 +523,36 @@ export default function AdminPage() {
                       </div>
                       
                       <div>
+                        <h4 className="text-sm font-medium text-gray-300 mb-2">Video Content Thumbnails</h4>
+                        <div className="flex items-center space-x-4">
+                          <Button 
+                            variant="default" 
+                            onClick={async () => {
+                              try {
+                                const response = await fetch('/api/regenerate-thumbnails-cloudinary');
+                                const data = await response.json();
+                                toast({
+                                  title: 'Cloudinary Thumbnails Generated',
+                                  description: `Successfully regenerated ${data.success} video thumbnails`,
+                                  variant: 'default'
+                                });
+                              } catch (error) {
+                                console.error('Error generating Cloudinary thumbnails:', error);
+                                toast({
+                                  title: 'Error',
+                                  description: 'Failed to regenerate Cloudinary thumbnails',
+                                  variant: 'destructive'
+                                });
+                              }
+                            }}
+                          >
+                            Regenerate Video Thumbnails
+                          </Button>
+                          <p className="text-sm text-gray-400">Uses Cloudinary to regenerate thumbnails for all video content</p>
+                        </div>
+                      </div>
+                      
+                      <div>
                         <h4 className="text-sm font-medium text-gray-300 mb-2">All Content Thumbnails</h4>
                         <div className="flex items-center space-x-4">
                           <Button 
