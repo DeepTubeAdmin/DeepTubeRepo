@@ -517,67 +517,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
-  app.get('/api/fix-thumbnails-all', async (req, res) => {
-    try {
-      // Get all videos
-      const videos = await dbStorage.getVideos(1000);
-      console.log(`Retrieved ${videos.length} videos for thumbnail fixing`);
-      
-      const results = [];
-      
-      // Process each video
-      for (let i = 0; i < videos.length; i++) {
-        const video = videos[i];
-        try {
-          // Determine content type for appropriate SVG
-          let contentType = video.contentType || 'video';
-          
-          // Normalize content type
-          if (contentType === 'images') contentType = 'image';
-          if (contentType === 'videos') contentType = 'video';
-          
-          // Get SVG for the content type
-          const placeholderSvg = getPlaceholderSvg(contentType);
-          
-          // S3 key for the thumbnail
-          const s3Key = `thumbnails/video-${video.id}.jpg`;
-          
-          // Upload SVG placeholder with correct content type
-          await uploadStringToS3(placeholderSvg, s3Key, 'image/svg+xml');
-          
-          console.log(`Fixed thumbnail for ${video.id}: ${video.title} (${contentType})`);
-          
-          results.push({
-            id: video.id,
-            title: video.title,
-            contentType,
-            success: true
-          });
-        } catch (error) {
-          console.error(`Error fixing thumbnail for video ${video.id}:`, error);
-          results.push({
-            id: video.id,
-            title: video.title,
-            success: false,
-            error: error instanceof Error ? error.message : String(error)
-          });
-        }
-      }
-      
-      return res.json({
-        success: true,
-        totalProcessed: videos.length,
-        results
-      });
-    } catch (error) {
-      console.error('Error fixing thumbnails:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to fix thumbnails',
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
+  // Endpoint '/api/fix-thumbnails-all' removed as requested
   
   // Endpoint to fix a single thumbnail
   app.get('/api/fix-thumbnail/:videoId', async (req, res) => {
@@ -2529,60 +2469,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Admin API for regenerating all video thumbnails
-  app.post('/api/admin/regenerate-video-thumbnails', isAdmin, async (req, res) => {
-    try {
-      // Start a background process to regenerate all video thumbnails
-      res.json({ 
-        success: true,
-        message: 'Starting video thumbnail regeneration'
-      });
-      
-      // Perform the regeneration after sending the response
-      setTimeout(async () => {
-        console.log('Starting video thumbnail regeneration');
-        let count = 0;
-        let failedCount = 0;
-        
-        // Get all videos
-        const videos = await dbStorage.getVideos(undefined, 'video');
-        console.log(`Found ${videos.length} videos to regenerate thumbnails for`);
-        
-        for (const video of videos) {
-          try {
-            console.log(`Regenerating thumbnail for video ${video.id}: ${video.title}`);
-            
-            // Generate a new SVG placeholder thumbnail
-            const svg = generateSvgPlaceholder('video');
-            const s3Key = `thumbnails/video-${video.id}.jpg`;
-            
-            // Upload the SVG to S3
-            await uploadStringToS3(svg, s3Key, 'image/svg+xml');
-            
-            // Update the video record with the unified thumbnail path
-            await dbStorage.updateVideo(video.id, {
-              thumbnail: `/api/content/${video.id}/thumbnail`
-            });
-            
-            console.log(`Successfully regenerated thumbnail for video ${video.id}`);
-            count++;
-          } catch (error) {
-            console.error(`Failed to regenerate thumbnail for video ${video.id}:`, error);
-            failedCount++;
-          }
-        }
-        
-        console.log(`Completed video thumbnail regeneration: ${count} succeeded, ${failedCount} failed`);
-      }, 100);
-    } catch (error) {
-      console.error('Error starting thumbnail regeneration:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Failed to start thumbnail regeneration',
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
+  // Endpoint '/api/admin/regenerate-video-thumbnails' removed as requested
   
   // Regenerate all thumbnails using Cloudinary
   // Endpoint '/api/regenerate-all-thumbnails' removed as requested
