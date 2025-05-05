@@ -15,6 +15,7 @@ import fsSync from "fs";
 import { fileURLToPath } from 'url';
 import s3Service from "./services/s3Service";
 import cloudinaryService from "./services/cloudinaryService";
+import { v2 as cloudinary } from 'cloudinary';
 // Thumbnail routes now integrated directly
 import mongoDb from "./mongodb";
 import {
@@ -1222,6 +1223,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Cache all categories to avoid multiple DB calls
   let cachedCategories: Category[] = [];
+
+  // Simple test endpoint for Cloudinary
+  app.get('/api/test-cloudinary', async (req, res) => {
+    try {
+      console.log('Testing Cloudinary configuration');
+      console.log(`Cloud name: ${process.env.CLOUDINARY_CLOUD_NAME}`);
+      console.log(`API key length: ${process.env.CLOUDINARY_API_KEY?.length || 0} chars`);
+      console.log(`API secret length: ${process.env.CLOUDINARY_API_SECRET?.length || 0} chars`);
+      
+      // Create a simple transformation URL
+      const testUrl = cloudinary.url('sample', {
+        width: 300,
+        height: 200,
+        crop: 'fill',
+        format: 'jpg',
+        sign_url: true
+      });
+      
+      console.log(`Generated test URL: ${testUrl}`);
+      
+      // Try to fetch the test image
+      const response = await fetch(testUrl);
+      const success = response.ok;
+      const status = response.status;
+      
+      // Return the test results
+      return res.json({
+        success,
+        status,
+        cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+        apiKeyProvided: Boolean(process.env.CLOUDINARY_API_KEY),
+        apiSecretProvided: Boolean(process.env.CLOUDINARY_API_SECRET),
+        testUrl: success ? testUrl : null
+      });
+    } catch (error) {
+      console.error('Cloudinary test error:', error);
+      res.status(500).json({
+        success: false,
+        error: String(error)
+      });
+    }
+  });
   
   // Helper to get or create a cache key
   function getCacheKey(categorySlug: string, sortBy: string, shuffleSeed: string = ''): string {
