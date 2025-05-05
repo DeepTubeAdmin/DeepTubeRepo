@@ -44,3 +44,12 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "node test-thumbnails.js"
+
+[[workflows.workflow]]
+name = "Test Cloudinary"
+author = 41952596
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node test-cloudinary-thumbnail.js"
