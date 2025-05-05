@@ -150,7 +150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Fetch the video or image from the database
-      const [content] = await dbStorage.getVideos(1, 'all', 'newest', Number(videoId));
+      const content = await dbStorage.getVideoById(Number(videoId));
       if (!content) {
         console.error(`Content not found for ID: ${videoId}`);
         return sendSvgPlaceholder(res, 'video');
@@ -504,18 +504,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get('/api/fix-image-thumbnails', async (req, res) => {
     try {
-      // Import the fix-all-image-thumbnails module
-      const { default: fixAllImageThumbnails } = await import('./fix-all-image-thumbnails.js');
-      
-      // Run the fix process
-      console.log('Starting image thumbnails fix process...');
-      const results = await fixAllImageThumbnails();
-      
-      // Return the results
-      return res.json({
-        success: true,
-        results
-      });
+      // Redirect to the new endpoint
+      return res.redirect('/api/fix-all-image-thumbnails');
     } catch (error) {
       console.error('Error fixing image thumbnails:', error);
       return res.status(500).json({
