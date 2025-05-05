@@ -2086,30 +2086,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Created new video with ID:", video.id, video.title);
 
-      // Generate thumbnail immediately after creating video record
-      if ((contentType === "video" || contentType === "videos") && videoUrl) {
-        try {
-          console.log(`Generating thumbnail for new video upload: ${video.id} with URL ${videoUrl}`);
-          
-          const { generateAndStoreS3Thumbnail } = await import('./generateThumbnail');
-          const s3Key = await generateAndStoreS3Thumbnail(
-            video.id,
-            contentType,
-            videoUrl
-          );
-          
-          // Update the video record with the thumbnail path
-          await dbStorage.updateVideo(video.id, { 
-            thumbnail: `/api/videos/${video.id}/thumbnail` 
-          });
-          
-          console.log(`Successfully generated thumbnail for new video: ${video.id}`);
-        } catch (thumbnailError) {
-          console.error(`Error generating thumbnail for video ${video.id}:`, thumbnailError);
-          // Continue even if thumbnail generation fails
-        }
-      }
-      
       // Generate a thumbnail for the video if it's a video and has a URL
       // Import the module only when needed to avoid circular dependencies
       if ((contentType === "video" || contentType === "videos") && videoUrl) {
