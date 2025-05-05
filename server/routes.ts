@@ -2667,14 +2667,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Regenerate all video thumbnails using FFmpeg
+  // Regenerate all thumbnails using Cloudinary
   app.get('/api/regenerate-all-thumbnails', isAdmin, async (req, res) => {
     try {
       // Get all videos
       const videos = await dbStorage.getVideos(1000);
       
       // Initialize results object
-      const results = {
+      const results: {
+        total: number;
+        succeeded: number;
+        failed: number;
+        skipped: number;
+        failures: Array<{videoId: number; title: string; error: string}>
+      } = {
         total: videos.length,
         succeeded: 0,
         failed: 0,
@@ -2682,39 +2688,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         failures: []
       };
       
-      console.log(`Starting regeneration of ${videos.length} video thumbnails using FFmpeg...`);
+      console.log(`Starting regeneration of ${videos.length} thumbnails using Cloudinary...`);
       
-      // Import the enhanced thumbnail generator
-      const { generateAndStoreS3Thumbnail } = await import('./generateThumbnail');
+      // Import the Cloudinary service
+      const cloudinaryService = await import('./services/cloudinaryService').then(m => m.default);
       
       // Process each video
       for (const video of videos) {
         try {
-          if (!video.videoUrl) {
-            console.log(`Skipping video ${video.id} - no video URL`);
+          const sourceUrl = video.contentType === 'video' ? video.videoUrl : 
+                          video.contentType === 'image' ? video.imageUrl : null;
+          
+          if (!sourceUrl) {
+            console.log(`Skipping content ${video.id} - no source URL`);
             results.skipped++;
             continue;
           }
           
-          console.log(`Regenerating thumbnail for video ${video.id}: ${video.title}`);
-          console.log(`Using source URL: ${video.videoUrl}`);
+          console.log(`Regenerating thumbnail for ${video.contentType} ${video.id}: ${video.title}`);
+          console.log(`Using source URL: ${sourceUrl}`);
           
-          // Generate the thumbnail using FFmpeg
-          const s3Key = await generateAndStoreS3Thumbnail(
+          // Detect YouTube embed and extract video ID if present
+          let youtubeId = null;
+          if (video.contentType === 'embed' && video.embedCode) {
+            youtubeId = cloudinaryService.extractYoutubeVideoId(video.embedCode);
+          }
+          
+          // Generate the thumbnail using Cloudinary
+          const s3Key = await cloudinaryService.generateThumbnail(
             video.id,
+            sourceUrl,
             video.contentType,
-            video.videoUrl
+            youtubeId
           );
           
-          // Update the video record with the thumbnail path
+          // Update the unified thumbnail path
           await dbStorage.updateVideo(video.id, { 
-            thumbnail: `/api/videos/${video.id}/thumbnail` 
+            thumbnail: `/api/content/${video.id}/thumbnail` 
           });
           
-          console.log(`Successfully regenerated thumbnail for video ${video.id}`);
+          console.log(`Successfully regenerated thumbnail for ${video.contentType} ${video.id}`);
           results.succeeded++;
         } catch (error) {
-          console.error(`Failed to regenerate thumbnail for video ${video.id}:`, error);
+          console.error(`Failed to regenerate thumbnail for ${video.contentType} ${video.id}:`, error);
           results.failed++;
           results.failures.push({
             videoId: video.id,
@@ -2734,7 +2750,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Admin API for regenerating a single video thumbnail
+  // Admin API for regenerating a single thumbnail using Cloudinary
   app.post('/api/admin/regenerate-video-thumbnail/:videoId', isAdmin, async (req, res) => {
     try {
       const videoId = parseInt(req.params.videoId);
@@ -2748,40 +2764,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Video not found' });
       }
       
-      if (video.contentType !== 'video') {
-        return res.status(400).json({ error: 'Content is not a video' });
+      // Get the appropriate source URL based on content type
+      const sourceUrl = video.contentType === 'video' ? video.videoUrl : 
+                      video.contentType === 'image' ? video.imageUrl : null;
+      
+      if (!sourceUrl) {
+        return res.status(400).json({ error: 'Content has no source URL' });
       }
       
-      if (!video.videoUrl) {
-        return res.status(400).json({ error: 'Video has no source URL' });
-      }
-      
-      console.log(`Admin requested thumbnail regeneration for video ${videoId}:`);
+      console.log(`Admin requested thumbnail regeneration for ${video.contentType} ${videoId}:`);
       console.log(` - Title: ${video.title}`);
       console.log(` - Content Type: ${video.contentType}`);
-      console.log(` - Video URL: ${video.videoUrl}`);
+      console.log(` - Source URL: ${sourceUrl}`);
       
-      // Import the enhanced thumbnail generator
-      const { generateAndStoreS3Thumbnail } = await import('./generateThumbnail');
+      // Import the Cloudinary service
+      const cloudinaryService = await import('./services/cloudinaryService').then(m => m.default);
       
-      // Force regenerate the thumbnail using FFmpeg
-      const s3Key = await generateAndStoreS3Thumbnail(
+      // Detect YouTube embed and extract video ID if present
+      let youtubeId = null;
+      if (video.contentType === 'embed' && video.embedCode) {
+        youtubeId = cloudinaryService.extractYoutubeVideoId(video.embedCode);
+      }
+      
+      // Force regenerate the thumbnail using Cloudinary
+      const s3Key = await cloudinaryService.generateThumbnail(
         videoId,
+        sourceUrl,
         video.contentType,
-        video.videoUrl
+        youtubeId
       );
       
-      // Update the video record with the thumbnail path
+      // Update the video record with the unified thumbnail path
       await dbStorage.updateVideo(videoId, { 
-        thumbnail: `/api/videos/${videoId}/thumbnail` 
+        thumbnail: `/api/content/${videoId}/thumbnail` 
       });
       
       return res.json({
         success: true,
-        message: `Successfully regenerated thumbnail for video ${videoId} using FFmpeg`,
+        message: `Successfully regenerated thumbnail for ${video.contentType} ${videoId} using Cloudinary`,
         videoId,
         s3Key,
-        thumbnailUrl: `/api/videos/${videoId}/thumbnail`
+        thumbnailUrl: `/api/content/${videoId}/thumbnail`
       });
     } catch (error) {
       console.error(`Error regenerating video thumbnail:`, error);
@@ -2792,19 +2815,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Test endpoint for thumbnail generation
-  // Improved thumbnail regeneration endpoint using FFmpeg for videos
+  // Test endpoint for thumbnail generation using Cloudinary
   app.get("/api/regenerate-thumbnail/:id", async (req, res) => {
     try {
       const videoId = parseInt(req.params.id);
       const video = await dbStorage.getVideoById(videoId);
       
       if (!video) {
-        return res.status(404).json({ error: "Video not found" });
+        return res.status(404).json({ error: "Content not found" });
       }
       
-      // Import the thumbnail generator
-      const { generateAndStoreS3Thumbnail } = await import('./generateThumbnail');
+      // Import the Cloudinary service
+      const cloudinaryService = await import('./services/cloudinaryService').then(m => m.default);
       
       // Get the source URL based on content type
       let sourceUrl = null;
@@ -2816,24 +2838,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sourceUrl = video.imageUrl;
       } else if (video.contentType === 'embed' && video.embedCode) {
         // Try to extract YouTube ID
-        const youtubeIdMatch = video.embedCode.match(/youtube\.com\/embed\/([\w-]+)/);
-        if (youtubeIdMatch && youtubeIdMatch[1]) {
-          youtubeId = youtubeIdMatch[1];
-        }
+        youtubeId = cloudinaryService.extractYoutubeVideoId(video.embedCode);
       }
       
-      // Force regenerate the thumbnail in S3
-      const s3Key = await generateAndStoreS3Thumbnail(videoId, video.contentType, sourceUrl, youtubeId);
+      if (!sourceUrl && !youtubeId) {
+        return res.status(400).json({ error: "No source URL or YouTube ID found for content" });
+      }
       
-      // Update the video record with the thumbnail path
+      // Force regenerate the thumbnail using Cloudinary
+      const s3Key = await cloudinaryService.generateThumbnail(
+        videoId,
+        sourceUrl,
+        video.contentType,
+        youtubeId
+      );
+      
+      // Update to use unified thumbnail path
       await dbStorage.updateVideo(videoId, { 
-        thumbnail: `/api/videos/${videoId}/thumbnail` 
+        thumbnail: `/api/content/${videoId}/thumbnail` 
       });
       
       res.json({ 
         success: true, 
-        message: `Thumbnail regenerated for video ${videoId}`,
-        thumbnailUrl: `/api/videos/${videoId}/thumbnail`,
+        message: `Thumbnail regenerated for ${video.contentType} ${videoId}`,
+        thumbnailUrl: `/api/content/${videoId}/thumbnail`,
         contentType: video.contentType,
         sourceUrl,
         youtubeId

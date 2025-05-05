@@ -75,21 +75,85 @@ async function generateThumbnail(
     const width = options.width || 800;
     const height = options.height || 450;
     
-    // For video content, use our enhanced FFmpeg thumbnail generator instead of SVG placeholders
+    // For video content, use Cloudinary's video thumbnail capabilities
     if (contentType === 'video' && sourceUrl) {
-      console.log(`For video content, using FFmpeg thumbnail generator`);
-      // Import the FFmpeg thumbnail generator
-      const { generateAndStoreS3Thumbnail } = await import('../generateThumbnail');
+      console.log(`Generating Cloudinary thumbnail for video ${contentId} from ${sourceUrl}`);
       
-      // Use the enhanced generator which tries multiple methods
       try {
-        const s3Key = await generateAndStoreS3Thumbnail(contentId, contentType, sourceUrl);
-        console.log(`Successfully generated video thumbnail using FFmpeg: ${s3Key}`);
+        // Generate a direct thumbnail from the video URL using Cloudinary's video processing
+        // Apply special transformations optimized for video thumbnails
+        const transformation = {
+          width,
+          height,
+          crop: 'fill',
+          quality: 'auto',
+          format: 'jpg',
+          // Video-specific transformations
+          video_sampling: 1, // Take thumbnail from 1% of the video duration
+          effect: 'sharpen',
+          resource_type: 'video'
+        };
+        
+        // If it's a local API URL, make it a full URL
+        let fullSourceUrl = sourceUrl;
+        if (sourceUrl.startsWith('/api/')) {
+          // We need to make it a fully qualified URL for Cloudinary
+          const baseUrl = process.env.BASE_URL || 'https://deeptube.co';
+          fullSourceUrl = `${baseUrl}${sourceUrl}`;
+          console.log(`Converting relative URL to absolute URL: ${fullSourceUrl}`);
+        }
+        
+        // Generate a Cloudinary URL for the video thumbnail
+        const result = cloudinary.url(fullSourceUrl, {
+          type: 'fetch',
+          transformation: [transformation],
+          sign_url: true,
+          resource_type: 'video'
+        });
+        
+        console.log(`Cloudinary video thumbnail URL: ${result}`);
+        
+        // Fetch the thumbnail from Cloudinary
+        const response = await fetch(result);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch video thumbnail from Cloudinary: ${response.status}`);
+        }
+        
+        // Process and upload the thumbnail to S3
+        const imageBuffer = Buffer.from(await response.arrayBuffer());
+        const s3Key = s3Service.getThumbnailS3Key(contentId);
+        await s3Service.uploadToS3(imageBuffer, s3Key, 'image/jpeg');
+        
+        console.log(`Successfully uploaded video thumbnail to S3: ${s3Key}`);
         return s3Key;
-      } catch (ffmpegError) {
-        console.error(`FFmpeg thumbnail generation failed:`, ffmpegError);
-        // We'll continue with other methods rather than falling back to SVG
-        throw ffmpegError; // Pass the error along - we don't want SVGs anymore
+      } catch (cloudinaryError) {
+        console.error(`Cloudinary video thumbnail generation failed:`, cloudinaryError);
+        // Try direct YouTube thumbnail strategy as fallback for video URLs
+        try {
+          // Check if it's a YouTube video URL embedded in our video
+          const youtubeId = extractYoutubeVideoId(sourceUrl);
+          if (youtubeId) {
+            console.log(`Detected YouTube video ID in source URL: ${youtubeId}`);
+            const youtubeThumbnailUrl = getYoutubeThumbnailUrl(youtubeId);
+            
+            // Fetch the YouTube thumbnail directly
+            const ytResponse = await fetch(youtubeThumbnailUrl);
+            if (ytResponse.ok) {
+              const ytImageBuffer = Buffer.from(await ytResponse.arrayBuffer());
+              const s3Key = s3Service.getThumbnailS3Key(contentId);
+              await s3Service.uploadToS3(ytImageBuffer, s3Key, 'image/jpeg');
+              
+              console.log(`Successfully uploaded YouTube thumbnail to S3: ${s3Key}`);
+              return s3Key;
+            }
+          }
+        } catch (ytError) {
+          console.error(`YouTube thumbnail fallback failed:`, ytError);
+        }
+        
+        // We'll try standard image processing instead
+        console.log(`Falling back to standard image processing for video thumbnail`);
+        // Continue with the next methods rather than throwing an error
       }
     }
     
@@ -173,8 +237,11 @@ async function generateFromUrl(
       }
     }
     
-    // Transform the URL using Cloudinary's fetch functionality
-    const transformation = {
+    // Detect if the URL is likely a video based on extension or parameters
+    const isVideoUrl = /\.(mp4|mov|avi|wmv|flv|webm|mkv)(\?|$)/i.test(url) || url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com');
+    
+    // Add video-specific transformations if needed
+    let transformation = {
       width,
       height,
       crop: 'fill',
@@ -183,12 +250,24 @@ async function generateFromUrl(
       fetch_format: 'auto'
     };
     
-    // Generate the Cloudinary URL with transformation - use fetch for remote URLs
-    const result = cloudinary.url(url, {
+    // If it seems to be a video URL, add video-specific transformations
+    // Note: We need to use an 'any' type here because Cloudinary's TypeScript definitions don't include video-specific settings
+    let cloudinaryOptions: any = {
       type: 'fetch',
       transformation: [transformation],
-      sign_url: true
-    });
+      sign_url: true,
+      resource_type: isVideoUrl ? 'video' : 'image'
+    };
+    
+    // Add video-specific transformations if needed
+    if (isVideoUrl) {
+      // Add video sampling to the transformation
+      (transformation as any).video_sampling = 1; // Take thumbnail from 1% of the video duration
+      (transformation as any).effect = 'sharpen';
+    }
+    
+    // Generate the Cloudinary URL with transformation - use the options we defined
+    const result = cloudinary.url(url, cloudinaryOptions);
     
     console.log(`Cloudinary transformation URL: ${result}`);
     
