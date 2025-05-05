@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import VideoCard from './VideoCard';
 import ImageCard from './ImageCard';
 import AdvertisementCard from './AdvertisementCard';
-import { Loader2, Filter } from 'lucide-react';
+import { Loader2, Filter, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Video } from '@shared/schema';
 
@@ -41,11 +41,23 @@ interface ContentFeedResponse {
 export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   // State hooks - all defined at the top level
   const [page, setPage] = useState(1);
-  const [shuffleSeed] = useState(() => Math.random().toString(36).substring(2, 10));
+  // Generate shuffle seed that changes on each page refresh by including a timestamp
+  const [shuffleSeed, setShuffleSeed] = useState(() => {
+    const timestamp = new Date().getTime();
+    return `${timestamp}-${Math.random().toString(36).substring(2, 8)}`;
+  });
   const [sortBy, setSortBy] = useState<SortOption>('trending');
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [columnCount, setColumnCount] = useState(4); // Default to 4 columns
   const [popularBlocks, setPopularBlocks] = useState<ContentFeedResponse['popular']['blocks']>([]);
+  
+  // Function to generate a new shuffle seed
+  const regenerateShuffle = useCallback(() => {
+    const timestamp = new Date().getTime();
+    setShuffleSeed(`${timestamp}-${Math.random().toString(36).substring(2, 8)}`);
+    // Reset page when shuffle changes
+    setPage(1);
+  }, []);
 
   // Ref hooks - all defined at the top level
   const previousDataRef = useRef<ContentFeedResponse | undefined>(undefined);
@@ -252,63 +264,78 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
               {data.featured.title}
             </h2>
             
-            {/* Sort Button and Dropdown */}
-            <div className="relative">
+            {/* Controls: Shuffle and Sort Buttons */}
+            <div className="flex items-center gap-2">
+              {/* Shuffle Button */}
               <Button
-                ref={sortButtonRef}
-                onClick={toggleSortMenu}
+                onClick={regenerateShuffle}
                 variant="outline"
                 size="sm"
                 className="flex items-center gap-1 px-3 py-1.5 text-sm border-gray-700 bg-black/50 hover:bg-black/80"
+                title="Shuffle content"
               >
-                <Filter className="h-3.5 w-3.5" />
-                <span>Sort</span>
+                <Shuffle className="h-3.5 w-3.5" />
+                <span>Shuffle</span>
               </Button>
               
-              {showSortMenu && (
-                <div 
-                  ref={sortMenuRef}
-                  className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-black border border-gray-700 ring-1 ring-black ring-opacity-5 z-50"
+              {/* Sort Button and Dropdown */}
+              <div className="relative">
+                <Button
+                  ref={sortButtonRef}
+                  onClick={toggleSortMenu}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm border-gray-700 bg-black/50 hover:bg-black/80"
                 >
-                  <div className="py-1" role="menu" aria-orientation="vertical">
-                    <button
-                      className={`${sortBy === 'newest' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
-                      onClick={() => handleSortChange('newest')}
-                      role="menuitem"
-                    >
-                      Newest First
-                    </button>
-                    <button
-                      className={`${sortBy === 'oldest' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
-                      onClick={() => handleSortChange('oldest')}
-                      role="menuitem"
-                    >
-                      Oldest First
-                    </button>
-                    <button
-                      className={`${sortBy === 'most-viewed' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
-                      onClick={() => handleSortChange('most-viewed')}
-                      role="menuitem"
-                    >
-                      Most Viewed
-                    </button>
-                    <button
-                      className={`${sortBy === 'trending' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
-                      onClick={() => handleSortChange('trending')}
-                      role="menuitem"
-                    >
-                      Trending
-                    </button>
-                    <button
-                      className={`${sortBy === 'popular' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
-                      onClick={() => handleSortChange('popular')}
-                      role="menuitem"
-                    >
-                      Popular
-                    </button>
+                  <Filter className="h-3.5 w-3.5" />
+                  <span>Sort</span>
+                </Button>
+              
+                {showSortMenu && (
+                  <div 
+                    ref={sortMenuRef}
+                    className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-black border border-gray-700 ring-1 ring-black ring-opacity-5 z-50"
+                  >
+                    <div className="py-1" role="menu" aria-orientation="vertical">
+                      <button
+                        className={`${sortBy === 'newest' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                        onClick={() => handleSortChange('newest')}
+                        role="menuitem"
+                      >
+                        Newest First
+                      </button>
+                      <button
+                        className={`${sortBy === 'oldest' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                        onClick={() => handleSortChange('oldest')}
+                        role="menuitem"
+                      >
+                        Oldest First
+                      </button>
+                      <button
+                        className={`${sortBy === 'most-viewed' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                        onClick={() => handleSortChange('most-viewed')}
+                        role="menuitem"
+                      >
+                        Most Viewed
+                      </button>
+                      <button
+                        className={`${sortBy === 'trending' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                        onClick={() => handleSortChange('trending')}
+                        role="menuitem"
+                      >
+                        Trending
+                      </button>
+                      <button
+                        className={`${sortBy === 'popular' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                        onClick={() => handleSortChange('popular')}
+                        role="menuitem"
+                      >
+                        Popular
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
           <div className="max-w-4xl mx-auto">
