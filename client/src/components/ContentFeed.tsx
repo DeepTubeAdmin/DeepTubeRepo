@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, useContext } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import VideoCard from './VideoCard';
 import ImageCard from './ImageCard';
 import AdvertisementCard from './AdvertisementCard';
 import { Loader2, Filter, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ShuffleContext } from '@/App';
 import { Video } from '@shared/schema';
 
 interface ContentFeedProps {
@@ -39,23 +40,15 @@ interface ContentFeedResponse {
 }
 
 export default function ContentFeed({ categorySlug }: ContentFeedProps) {
+  // Get shuffle seed from context instead of local state
+  const { shuffleSeed } = useContext(ShuffleContext);
+  
   // State hooks - all defined at the top level
   const [page, setPage] = useState(1);
-  // Generate shuffle seed that can be updated to force re-shuffle
-  const [shuffleSeed, setShuffleSeed] = useState(generateShuffleSeed);
   const [sortBy, setSortBy] = useState<SortOption>('trending');
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [columnCount, setColumnCount] = useState(4); // Default to 4 columns
   const [popularBlocks, setPopularBlocks] = useState<ContentFeedResponse['popular']['blocks']>([]);
-  
-  // Helper function to generate a high-entropy shuffle seed
-  function generateShuffleSeed() {
-    const timestamp = new Date().getTime();
-    const random1 = Math.random().toString(36).substring(2, 10);
-    const random2 = Math.random().toString(36).substring(2, 10);
-    // Combine timestamp and multiple random strings for maximum entropy
-    return `${timestamp}-${random1}-${random2}`;
-  }
 
   // Ref hooks - all defined at the top level
   const previousDataRef = useRef<ContentFeedResponse | undefined>(undefined);

@@ -63,6 +63,22 @@ function App() {
   const [location] = useLocation();
   const [showAgeVerification, setShowAgeVerification] = useState(false);
   
+  // Create a state for the shuffle seed
+  const [shuffleSeed, setShuffleSeed] = useState(() => {
+    const timestamp = new Date().getTime();
+    const random = Math.random().toString(36).substring(2, 10);
+    return `${timestamp}-${random}`;
+  });
+  
+  // Function to trigger a new shuffle by generating a new seed
+  const triggerShuffle = () => {
+    const timestamp = new Date().getTime();
+    const random = Math.random().toString(36).substring(2, 10);
+    const newSeed = `${timestamp}-${random}`;
+    console.log('Triggering content shuffle with new seed:', newSeed);
+    setShuffleSeed(newSeed);
+  };
+  
   useEffect(() => {
     // Check if user has already verified their age
     const isVerified = localStorage.getItem('ageVerified') === 'true';
@@ -85,16 +101,18 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <div className="bg-background">
-            <Toaster />
-            <AgeVerificationModal 
-              isOpen={showAgeVerification}
-              onVerify={handleAgeVerified}
-            />
-            <Router />
-          </div>
-        </TooltipProvider>
+        <ShuffleContext.Provider value={{ shuffleSeed, triggerShuffle }}>
+          <TooltipProvider>
+            <div className="bg-background">
+              <Toaster />
+              <AgeVerificationModal 
+                isOpen={showAgeVerification}
+                onVerify={handleAgeVerified}
+              />
+              <Router />
+            </div>
+          </TooltipProvider>
+        </ShuffleContext.Provider>
       </AuthProvider>
     </QueryClientProvider>
   );

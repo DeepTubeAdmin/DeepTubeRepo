@@ -3,9 +3,10 @@ import { Link, useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Search, User, Package, History, LogOut, Upload, WandSparkles, Video, MessageSquare } from "lucide-react";
+import { Search, User, Package, History, LogOut, Upload, WandSparkles, Video, MessageSquare, Shuffle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useShuffle } from "@/App";
 import UploadMediaModal from "./UploadMediaModal";
 import LoginRequiredModal from "./LoginRequiredModal";
 import AIGeneratorsModal from "./AIGeneratorsModal";
@@ -77,6 +78,26 @@ export default function Header({ simple = false }: HeaderProps) {
     setShowUserDropdown(!showUserDropdown);
   };
 
+  // Get the triggerShuffle function from the ShuffleContext
+  const { triggerShuffle } = useShuffle();
+  
+  // Handle logo click to trigger content shuffling
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Display a toast notification
+    toast({
+      title: "Shuffling content",
+      description: "Mixing things up for you!",
+      duration: 2000,
+    });
+    // Trigger the shuffle
+    triggerShuffle();
+    // If not on home page, navigate to home page
+    if (window.location.pathname !== '/') {
+      window.location.href = '/';
+    }
+  };
+
   if (simple) {
     return (
       <header className="bg-black py-2 px-4 sticky top-0 z-50">
@@ -84,14 +105,15 @@ export default function Header({ simple = false }: HeaderProps) {
           <div className="flex items-center justify-between">
             {/* Logo with tagline */}
             <div className="flex items-center">
-              <Link href="/" className="home-link">
+              <div className="flex items-center cursor-pointer group" onClick={handleLogoClick}>
                 <div className="flex flex-col">
-                  <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">
+                  <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600 group-hover:from-purple-500 group-hover:to-blue-600 transition-all duration-300">
                     DeepTube<span className="text-gray-400 text-sm align-top">Beta</span>
                   </h1>
                   <span className="text-xs text-gray-400 -mt-1">Ethical AI Media</span>
                 </div>
-              </Link>
+                <Shuffle className="ml-2 h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
             </div>
             
             <div className="flex items-center space-x-3">
@@ -208,14 +230,15 @@ export default function Header({ simple = false }: HeaderProps) {
         <div className="flex items-center justify-between">
           {/* Logo with tagline */}
           <div className="flex items-center">
-            <Link href="/" className="home-link">
+            <div className="flex items-center cursor-pointer group" onClick={handleLogoClick}>
               <div className="flex flex-col">
-                <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">
+                <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600 group-hover:from-purple-500 group-hover:to-blue-600 transition-all duration-300">
                   DeepTube<span className="text-gray-400 text-sm align-top">Beta</span>
                 </h1>
                 <span className="text-xs text-gray-400 -mt-1">Ethical AI Media</span>
               </div>
-            </Link>
+              <Shuffle className="ml-2 h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
           </div>
           
           {/* Search Bar */}
