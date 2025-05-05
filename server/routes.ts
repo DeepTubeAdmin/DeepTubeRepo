@@ -2151,30 +2151,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log(`File uploaded to S3: ${s3Key}`);
         
-        // For videos, try to generate a thumbnail immediately after upload
+        // For videos, try to generate a thumbnail immediately after upload using Cloudinary
         if (isVideo) {
           try {
             // We'll create a placeholder videoId for the thumbnail generation
             // It will be replaced when the actual video entry is created
             const tempVideoId = Date.now();
-            console.log(`Generating temporary thumbnail for uploaded video with temp ID: ${tempVideoId}`);
+            console.log(`Generating temporary thumbnail for uploaded video with temp ID: ${tempVideoId} using Cloudinary`);
             
-            // Import the thumbnail generator on demand to avoid circular dependencies
-            const { generateAndStoreS3Thumbnail } = await import('./generateThumbnail');
+            // Use Cloudinary service to generate the thumbnail directly from the S3 URL
+            // First, we need to get a signed URL for the S3 object for Cloudinary to access
+            const signedS3Url = await getSignedS3Url(s3Key);
+            console.log(`Generated signed S3 URL for Cloudinary to access: ${signedS3Url.substring(0, 100)}...`);
             
-            // Use the S3 URL to generate the thumbnail
-            await generateAndStoreS3Thumbnail(
+            // Generate thumbnail using Cloudinary
+            const thumbnailS3Key = await cloudinaryService.generateThumbnail(
               tempVideoId,
-              'video',
-              s3Url
+              signedS3Url,
+              'video'
             );
             
             // Set the thumbnail path to be used in the response
             // This will be a temporary thumbnail based on the temp ID
             thumbnailPath = `/api/videos/${tempVideoId}/thumbnail`;
-            console.log(`Generated temporary thumbnail for uploaded video: ${thumbnailPath}`);
+            console.log(`Generated temporary thumbnail for uploaded video using Cloudinary: ${thumbnailPath} (S3 key: ${thumbnailS3Key})`);
           } catch (thumbnailError) {
-            console.error("Error generating thumbnail for uploaded video:", thumbnailError);
+            console.error("Error generating thumbnail for uploaded video with Cloudinary:", thumbnailError);
             // Continue even if thumbnail generation fails
           }
         }
@@ -2423,18 +2425,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error('Content not found');
       }
 
-      // If placeholder requested or no existing thumbnail, generate new one
+      // If placeholder requested or no existing thumbnail, generate new one using Cloudinary
       if (forcePlaceholder || !content.thumbnail) {
-        const s3Key = await generateAndStoreS3Thumbnail(
+        // Determine the appropriate source URL and YouTube ID (if applicable)
+        let sourceUrl = null;
+        let youtubeId = null;
+        
+        if (content.contentType === 'video' || content.contentType === 'videos') {
+          sourceUrl = content.videoUrl;
+        } else if (content.contentType === 'image' || content.contentType === 'images') {
+          sourceUrl = content.imageUrl;
+        } else if (content.contentType === 'embed') {
+          youtubeId = cloudinaryService.extractYoutubeVideoId(content.embedCode || '');
+          if (youtubeId) {
+            sourceUrl = cloudinaryService.getYoutubeThumbnailUrl(youtubeId);
+          }
+        }
+        
+        console.log(`Generating thumbnail via Cloudinary for content ID ${content.id}, type: ${content.contentType}`);
+        console.log(`Source URL: ${sourceUrl || 'none'}, YouTube ID: ${youtubeId || 'none'}`);
+        
+        // Generate thumbnail using Cloudinary
+        const s3Key = await cloudinaryService.generateThumbnail(
           content.id,
+          sourceUrl,
           content.contentType,
-          content.videoUrl || content.imageUrl,
-          content.youtubeId
+          youtubeId
         );
         
-        // Update content record with new thumbnail
+        // Update content record with thumbnail endpoint path
         await dbStorage.updateVideo(content.id, {
-          thumbnail: s3Key
+          thumbnail: `/api/videos/${content.id}/thumbnail`
         });
         
         // Redirect to S3
