@@ -150,7 +150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Fetch the video or image from the database
-      const content = await dbStorage.getVideo(videoId);
+      const [content] = await dbStorage.getVideos(1, 'all', 'newest', Number(videoId));
       if (!content) {
         console.error(`Content not found for ID: ${videoId}`);
         return sendSvgPlaceholder(res, 'video');
@@ -844,11 +844,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // FFmpeg video thumbnail regeneration endpoint
-  app.get('/api/regenerate-video-thumbnails', isAdmin, async (req, res) => {
+  app.get('/api/regenerate-thumbnails-cloudinary', isAdmin, async (req, res) => {
     try {
       // Get all videos (excluding images and embeds)
       const videos = await dbStorage.getVideos(1000, 'video');
-      console.log(`Retrieved ${videos.length} videos for FFmpeg thumbnail regeneration`);
+      console.log(`Retrieved ${videos.length} videos for Cloudinary thumbnail regeneration`);
       
       let successCount = 0;
       let failedCount = 0;
