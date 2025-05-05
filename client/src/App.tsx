@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
@@ -23,6 +23,18 @@ import ResetPassword from "@/pages/reset-password";
 import { AuthProvider } from "@/hooks/use-auth";
 import Layout from "@/components/Layout";
 import AgeVerificationModal from "@/components/AgeVerificationModal";
+
+// Create a context for shuffle functionality
+export const ShuffleContext = createContext<{
+  shuffleSeed: string;
+  triggerShuffle: () => void;
+}>({ 
+  shuffleSeed: '',
+  triggerShuffle: () => {} 
+});
+
+// Custom hook to use the shuffle context
+export const useShuffle = () => useContext(ShuffleContext);
 
 function Router() {
   return (

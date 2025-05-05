@@ -41,18 +41,21 @@ interface ContentFeedResponse {
 export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   // State hooks - all defined at the top level
   const [page, setPage] = useState(1);
-  // Generate shuffle seed that changes on each page refresh by including a timestamp and multiple random components
-  const [shuffleSeed] = useState(() => {
+  // Generate shuffle seed that can be updated to force re-shuffle
+  const [shuffleSeed, setShuffleSeed] = useState(generateShuffleSeed);
+  const [sortBy, setSortBy] = useState<SortOption>('trending');
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  const [columnCount, setColumnCount] = useState(4); // Default to 4 columns
+  const [popularBlocks, setPopularBlocks] = useState<ContentFeedResponse['popular']['blocks']>([]);
+  
+  // Helper function to generate a high-entropy shuffle seed
+  function generateShuffleSeed() {
     const timestamp = new Date().getTime();
     const random1 = Math.random().toString(36).substring(2, 10);
     const random2 = Math.random().toString(36).substring(2, 10);
     // Combine timestamp and multiple random strings for maximum entropy
     return `${timestamp}-${random1}-${random2}`;
-  });
-  const [sortBy, setSortBy] = useState<SortOption>('trending');
-  const [showSortMenu, setShowSortMenu] = useState(false);
-  const [columnCount, setColumnCount] = useState(4); // Default to 4 columns
-  const [popularBlocks, setPopularBlocks] = useState<ContentFeedResponse['popular']['blocks']>([]);
+  }
 
   // Ref hooks - all defined at the top level
   const previousDataRef = useRef<ContentFeedResponse | undefined>(undefined);
