@@ -75,6 +75,17 @@ async function generateThumbnail(
     const width = options.width || 800;
     const height = options.height || 450;
     
+    // For video content, let's use an SVG placeholder directly
+    // This will be faster and more reliable than trying to process through Cloudinary
+    if (contentType === 'video') {
+      console.log(`For video content, generating SVG placeholder directly`);
+      const svg = generateSvgPlaceholder(contentType, width, height);
+      const s3Key = s3Service.getThumbnailS3Key(contentId);
+      await s3Service.uploadToS3(Buffer.from(svg), s3Key, 'image/svg+xml');
+      console.log(`Successfully uploaded SVG placeholder to S3: ${s3Key}`);
+      return s3Key;
+    }
+    
     // For YouTube videos, use the video ID directly
     if (youtubeId) {
       const youtubeUrl = `https://www.youtube.com/watch?v=${youtubeId}`;
@@ -100,7 +111,12 @@ async function generateThumbnail(
     console.error(`Error generating Cloudinary thumbnail:`, error);
     // Fall back to placeholder on error
     try {
-      return await generatePlaceholder(contentId, contentType);
+      // Generate SVG directly
+      const svg = generateSvgPlaceholder(contentType);
+      const s3Key = s3Service.getThumbnailS3Key(contentId);
+      await s3Service.uploadToS3(Buffer.from(svg), s3Key, 'image/svg+xml');
+      console.log(`Successfully uploaded SVG placeholder to S3: ${s3Key}`);
+      return s3Key;
     } catch (placeholderError) {
       console.error(`Error generating placeholder:`, placeholderError);
       throw new Error(`Failed to generate any thumbnail for ${contentType} ${contentId}`);
