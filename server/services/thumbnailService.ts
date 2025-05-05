@@ -137,7 +137,7 @@ async function handleImageThumbnail(contentId: number, sourceUrl: string): Promi
     const tempOriginal = path.join(tempDir, `img-original-${contentId}-${Date.now()}`);
     const tempThumb = path.join(tempDir, `img-thumb-${contentId}-${Date.now()}.jpg`);
     
-    let imageBuffer: Buffer;
+    let imageBuffer: Buffer | undefined;
     
     // Clean up source URL to handle API and workspace references
     const cleanedSourceUrl = sourceUrl
@@ -224,7 +224,12 @@ async function handleImageThumbnail(contentId: number, sourceUrl: string): Promi
     }
     
     // Save the image to a temp file
-    await fs.writeFile(tempOriginal, imageBuffer);
+    if (!imageBuffer) {
+      throw new Error('Failed to load image from any source');
+    }
+    // Must explicitly ensure imageBuffer is a Buffer before writing to file
+    const bufferToWrite = Buffer.isBuffer(imageBuffer) ? imageBuffer : Buffer.from(imageBuffer);
+    await fs.writeFile(tempOriginal, bufferToWrite);
     
     // Use FFmpeg to create a proper resized thumbnail
     try {

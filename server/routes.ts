@@ -15,7 +15,7 @@ import fsSync from "fs";
 import { fileURLToPath } from 'url';
 import s3Service from "./services/s3Service";
 import thumbnailService from "./services/thumbnailService";
-import { registerThumbnailRoutes } from "./thumbnail-routes";
+// Thumbnail routes now integrated directly
 import mongoDb from "./mongodb";
 import {
   getSignedS3Url,
@@ -138,8 +138,7 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Register the new thumbnail routes
-  registerThumbnailRoutes(app);
+  // Thumbnail routes are now integrated directly
   
   // Initialize MongoDB connection (for future use)
   try {
