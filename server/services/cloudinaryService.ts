@@ -75,15 +75,22 @@ async function generateThumbnail(
     const width = options.width || 800;
     const height = options.height || 450;
     
-    // For video content, let's use an SVG placeholder directly
-    // This will be faster and more reliable than trying to process through Cloudinary
-    if (contentType === 'video') {
-      console.log(`For video content, generating SVG placeholder directly`);
-      const svg = generateSvgPlaceholder(contentType, width, height);
-      const s3Key = s3Service.getThumbnailS3Key(contentId);
-      await s3Service.uploadToS3(Buffer.from(svg), s3Key, 'image/svg+xml');
-      console.log(`Successfully uploaded SVG placeholder to S3: ${s3Key}`);
-      return s3Key;
+    // For video content, use our enhanced FFmpeg thumbnail generator instead of SVG placeholders
+    if (contentType === 'video' && sourceUrl) {
+      console.log(`For video content, using FFmpeg thumbnail generator`);
+      // Import the FFmpeg thumbnail generator
+      const { generateAndStoreS3Thumbnail } = await import('../generateThumbnail');
+      
+      // Use the enhanced generator which tries multiple methods
+      try {
+        const s3Key = await generateAndStoreS3Thumbnail(contentId, contentType, sourceUrl);
+        console.log(`Successfully generated video thumbnail using FFmpeg: ${s3Key}`);
+        return s3Key;
+      } catch (ffmpegError) {
+        console.error(`FFmpeg thumbnail generation failed:`, ffmpegError);
+        // We'll continue with other methods rather than falling back to SVG
+        throw ffmpegError; // Pass the error along - we don't want SVGs anymore
+      }
     }
     
     // For YouTube videos, use the video ID directly
@@ -109,9 +116,15 @@ async function generateThumbnail(
     return await generatePlaceholder(contentId, contentType, width, height);
   } catch (error) {
     console.error(`Error generating Cloudinary thumbnail:`, error);
-    // Fall back to placeholder on error
+    
+    // For videos, we don't want to fall back to SVG placeholders
+    if (contentType === 'video') {
+      throw new Error(`Failed to generate video thumbnail - no SVG fallback allowed`);
+    }
+    
+    // For other content types, we can fall back to placeholder as before
     try {
-      // Generate SVG directly
+      // Generate a placeholder - but only for non-video content types
       const svg = generateSvgPlaceholder(contentType);
       const s3Key = s3Service.getThumbnailS3Key(contentId);
       await s3Service.uploadToS3(Buffer.from(svg), s3Key, 'image/svg+xml');
@@ -269,6 +282,11 @@ async function generatePlaceholder(
 ): Promise<string> {
   console.log(`Generating placeholder thumbnail for ${contentType} ${contentId}`);
   
+  // For video content, we don't want any placeholder - strictly require real frames
+  if (contentType === 'video') {
+    throw new Error(`Cannot generate placeholder for video content - real frames required`);
+  }
+  
   try {
     // Generate a placeholder image URL using Cloudinary text overlay
     const text = `AI Generated ${contentType.charAt(0).toUpperCase()}${contentType.slice(1)}`;
@@ -303,8 +321,13 @@ async function generatePlaceholder(
   } catch (error) {
     console.error(`Error generating placeholder:`, error);
     
-    // If Cloudinary fails, fall back to a simple SVG placeholder
+    // If Cloudinary fails, fall back to a simple SVG placeholder (but not for videos)
     try {
+      // Double check it's not a video
+      if (contentType === 'video') {
+        throw new Error('SVG placeholders not allowed for videos');
+      }
+      
       const svg = generateSvgPlaceholder(contentType, width, height);
       const s3Key = s3Service.getThumbnailS3Key(contentId);
       await s3Service.uploadToS3(Buffer.from(svg), s3Key, 'image/svg+xml');
@@ -332,6 +355,7 @@ function generateSvgPlaceholder(
 ): string {
   const bgColor = '#0f172a';
   const textColor = '#f59e0b';
+  const accentColor = '#475569';
   
   // Normalize content type
   let normalizedType = contentType;
@@ -341,9 +365,50 @@ function generateSvgPlaceholder(
   // Display proper content type in the SVG
   const displayType = normalizedType.charAt(0).toUpperCase() + normalizedType.slice(1);
   
+  // For videos, let's create a more video-like thumbnail with a play button
+  if (normalizedType === 'video') {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+      <rect width="${width}" height="${height}" fill="${bgColor}"/>
+      
+      <!-- Grid pattern to make it look more like a video -->
+      <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+        <rect width="40" height="40" fill="${accentColor}" fill-opacity="0.1"/>
+      </pattern>
+      <rect width="${width}" height="${height}" fill="url(#grid)"/>
+      
+      <!-- Play button -->
+      <circle cx="${width/2}" cy="${height/2}" r="50" fill="${accentColor}" fill-opacity="0.6"/>
+      <path d="M${width/2 - 20},${height/2 - 25} L${width/2 + 30},${height/2} L${width/2 - 20},${height/2 + 25} Z" fill="${textColor}"/>
+      
+      <!-- Text label at bottom -->
+      <rect x="0" y="${height - 40}" width="${width}" height="40" fill="${bgColor}" fill-opacity="0.8"/>
+      <text x="${width/2}" y="${height - 15}" font-family="Arial" font-size="18" fill="${textColor}" text-anchor="middle">
+        AI Generated ${displayType}
+      </text>
+    </svg>`;
+  }
+  
+  // For other content types (images, embeds)
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
     <rect width="${width}" height="${height}" fill="${bgColor}"/>
-    <text x="${width/2}" y="${height/2}" font-family="Arial" font-size="24" fill="${textColor}" text-anchor="middle">
+    
+    <!-- Simple grid pattern -->
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <rect width="40" height="40" fill="${accentColor}" fill-opacity="0.1"/>
+    </pattern>
+    <rect width="${width}" height="${height}" fill="url(#grid)"/>
+    
+    <!-- Image icon for images -->
+    ${normalizedType === 'image' ? 
+      `<rect x="${width/2 - 40}" y="${height/2 - 40}" width="80" height="80" fill="${accentColor}" fill-opacity="0.6" rx="5" ry="5"/>
+       <rect x="${width/2 - 30}" y="${height/2 - 30}" width="60" height="45" fill="${textColor}" rx="3" ry="3"/>
+       <circle cx="${width/2 - 10}" cy="${height/2 - 15}" r="8" fill="${bgColor}"/>` : 
+      ''
+    }
+    
+    <!-- Text label at bottom -->
+    <rect x="0" y="${height - 40}" width="${width}" height="40" fill="${bgColor}" fill-opacity="0.8"/>
+    <text x="${width/2}" y="${height - 15}" font-family="Arial" font-size="18" fill="${textColor}" text-anchor="middle">
       AI Generated ${displayType}
     </text>
   </svg>`;

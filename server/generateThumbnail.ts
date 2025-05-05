@@ -83,26 +83,38 @@ export async function generateAndStoreS3Thumbnail(
       }
 
       // Download the file from source URL if needed
-      let videoBuffer;
+      let videoBuffer: ArrayBuffer;
       let attempts = 0;
-      while (!videoBuffer && attempts < 3) {
+      while (attempts < 3) {
         try {
+          if (!sourceUrl) throw new Error('No source URL provided');
           const videoResponse = await fetch(sourceUrl);
           if (!videoResponse.ok) throw new Error(`HTTP ${videoResponse.status}`);
           videoBuffer = await videoResponse.arrayBuffer();
+          // If we get here, we have a valid buffer - break out of the loop
+          break;
         } catch (err) {
           attempts++;
-          if (attempts === 3) throw err;
+          console.log(`Attempt ${attempts}/3 to download video failed: ${err}`);
+          if (attempts === 3) throw new Error(`Failed to download video after 3 attempts: ${err}`);
           await new Promise(r => setTimeout(r, 1000));
         }
       }
       
-      await fs.promises.writeFile(tempVideo, Buffer.from(videoBuffer));
+      // TypeScript should now know videoBuffer is defined
+      await fs.promises.writeFile(tempVideo, Buffer.from(videoBuffer!));
 
       // Generate thumbnail with multiple timestamp attempts
-      const timestamps = ['0.1', '1.0', '2.0'];
+      const timestamps = ['0.1', '1.0', '2.0', '5.0', '10.0'];
+      let success = false;
+      
+      // Try different methods with different parameters
       for (const ts of timestamps) {
+        if (success) break;
+        
+        // Method 1: Standard extraction
         try {
+          console.log(`Attempting thumbnail extraction at ${ts}s with standard method`);
           await execFileAsync('ffmpeg', [
             '-y',
             '-i', tempVideo,
@@ -112,10 +124,56 @@ export async function generateAndStoreS3Thumbnail(
             '-ss', ts,
             tempThumb
           ]);
-          break;
+          success = true;
+          console.log(`Successfully extracted frame at ${ts}s with standard method`);
         } catch (err) {
-          if (ts === timestamps[timestamps.length - 1]) throw err;
+          console.log(`Standard extraction failed at ${ts}s: ${err}`);
         }
+        
+        // Method 2: Seek before input for more accurate frame selection
+        if (!success) {
+          try {
+            console.log(`Attempting thumbnail extraction at ${ts}s with seek-before-input method`);
+            await execFileAsync('ffmpeg', [
+              '-y',
+              '-ss', ts,
+              '-i', tempVideo,
+              '-vframes', '1',
+              '-an',
+              '-s', '800x450',
+              tempThumb
+            ]);
+            success = true;
+            console.log(`Successfully extracted frame at ${ts}s with seek-before-input method`);
+          } catch (err) {
+            console.log(`Seek-before-input method failed at ${ts}s: ${err}`);
+          }
+        }
+        
+        // Method 3: Force specific decoder
+        if (!success) {
+          try {
+            console.log(`Attempting thumbnail extraction at ${ts}s with forced decoder method`);
+            await execFileAsync('ffmpeg', [
+              '-y',
+              '-c:v', 'h264',
+              '-i', tempVideo,
+              '-vframes', '1',
+              '-an',
+              '-s', '800x450',
+              '-ss', ts,
+              tempThumb
+            ]);
+            success = true;
+            console.log(`Successfully extracted frame at ${ts}s with forced decoder method`);
+          } catch (err) {
+            console.log(`Forced decoder method failed at ${ts}s: ${err}`);
+          }
+        }
+      }
+      
+      if (!success) {
+        throw new Error('Failed to extract video frame after multiple attempts');
       }
 
       const thumbBuffer = await fs.promises.readFile(tempThumb);
@@ -146,10 +204,11 @@ export async function generateAndStoreS3Thumbnail(
     }
   }
 
-  // Return default SVG if all methods fail
-  const svg = generateSvgPlaceholder(contentType);
-  await uploadStringToS3(svg, s3Key, 'image/svg+xml');
-  return s3Key;
+  // Don't return an SVG placeholder - we want to make sure real video frames are used
+  // Either throw the error to the caller or try harder to extract a frame
+  console.error('All video frame extraction methods failed');
+  throw new Error('Failed to extract video frame for thumbnail - no fallback to SVG');
+  
 }
 
 export function generateSvgPlaceholder(contentType: string): string {

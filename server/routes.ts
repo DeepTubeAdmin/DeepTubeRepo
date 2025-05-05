@@ -516,6 +516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
   app.get('/api/fix-thumbnails-all', async (req, res) => {
     try {
       // Get all videos
@@ -2614,8 +2615,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin API for regenerating all video thumbnails
   app.post('/api/admin/regenerate-video-thumbnails', isAdmin, async (req, res) => {
     try {
+      // Start a background process to regenerate all video thumbnails
+      res.json({ 
+        success: true,
+        message: 'Starting video thumbnail regeneration'
+      });
+      
+      // Perform the regeneration after sending the response
+      setTimeout(async () => {
+        console.log('Starting video thumbnail regeneration');
+        let count = 0;
+        let failedCount = 0;
+        
+        // Get all videos
+        const videos = await dbStorage.getVideos(undefined, 'video');
+        console.log(`Found ${videos.length} videos to regenerate thumbnails for`);
+        
+        for (const video of videos) {
+          try {
+            console.log(`Regenerating thumbnail for video ${video.id}: ${video.title}`);
+            
+            // Generate a new SVG placeholder thumbnail
+            const svg = generateSvgPlaceholder('video');
+            const s3Key = `thumbnails/video-${video.id}.jpg`;
+            
+            // Upload the SVG to S3
+            await uploadStringToS3(svg, s3Key, 'image/svg+xml');
+            
+            // Update the video record with the unified thumbnail path
+            await dbStorage.updateVideo(video.id, {
+              thumbnail: `/api/content/${video.id}/thumbnail`
+            });
+            
+            console.log(`Successfully regenerated thumbnail for video ${video.id}`);
+            count++;
+          } catch (error) {
+            console.error(`Failed to regenerate thumbnail for video ${video.id}:`, error);
+            failedCount++;
+          }
+        }
+        
+        console.log(`Completed video thumbnail regeneration: ${count} succeeded, ${failedCount} failed`);
+      }, 100);
+    } catch (error) {
+      console.error('Error starting thumbnail regeneration:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to start thumbnail regeneration',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Regenerate all video thumbnails using FFmpeg
+  app.get('/api/regenerate-all-thumbnails', isAdmin, async (req, res) => {
+    try {
       // Get all videos
-      const videos = await dbStorage.getVideos(undefined, 'video');
+      const videos = await dbStorage.getVideos(1000);
+      
+      // Initialize results object
       const results = {
         total: videos.length,
         succeeded: 0,
