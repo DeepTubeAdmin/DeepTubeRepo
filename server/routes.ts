@@ -2364,6 +2364,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!content) {
         throw new Error('Content not found');
       }
+      
+      // Special case for YouTube embeds - handle them directly without Cloudinary
+      if (content.contentType === 'embed' && content.embedCode && 
+          (content.embedCode.includes('youtube.com') || content.embedCode.includes('youtu.be'))) {
+        // Extract YouTube video ID using regex patterns
+        const ytMatch = content.embedCode.match(/(?:youtube\.com\/embed\/|youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+        if (ytMatch && ytMatch[1]) {
+          const youtubeId = ytMatch[1];
+          
+          // Use high quality thumbnail - directly redirect to YouTube
+          const youtubeThumbnailUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+          
+          console.log(`Directly using YouTube thumbnail for embed ${contentId}: ${youtubeThumbnailUrl}`);
+          
+          // Update thumbnail path to the unified endpoint
+          if (!content.thumbnail || !content.thumbnail.startsWith('/api/content/')) {
+            await dbStorage.updateVideo(contentId, {
+              thumbnail: `/api/content/${contentId}/thumbnail`
+            });
+            console.log(`Updated YouTube embed ${contentId} with unified thumbnail path`);
+          }
+          
+          return res.redirect(youtubeThumbnailUrl);
+        }
+      }
 
       // Generate a new thumbnail if one of these conditions is true:
       // 1. Force regeneration is requested

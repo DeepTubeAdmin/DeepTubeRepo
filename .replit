@@ -48,16 +48,8 @@ args = "node test-thumbnails.js"
 [[workflows.workflow]]
 name = "Test Cloudinary"
 author = 41952596
-mode = "sequential"
+mode = "parallel"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Test Cloudinary"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Test Cloudinary"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "node test-cloudinary-thumbnail.js"

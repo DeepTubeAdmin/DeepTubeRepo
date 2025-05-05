@@ -159,8 +159,37 @@ async function generateThumbnail(
     
     // For YouTube videos, use the video ID directly
     if (youtubeId) {
-      const youtubeUrl = `https://www.youtube.com/watch?v=${youtubeId}`;
-      return await generateFromUrl(contentId, youtubeUrl, width, height);
+      try {
+        const youtubeUrl = `https://www.youtube.com/watch?v=${youtubeId}`;
+        return await generateFromUrl(contentId, youtubeUrl, width, height);
+      } catch (error) {
+        console.error(`Error generating thumbnail from YouTube URL:`, error);
+        
+        // Fallback: Use direct YouTube thumbnail URL
+        try {
+          // Try to fetch directly from YouTube
+          const youtubeThumbnailUrl = getYoutubeThumbnailUrl(youtubeId);
+          console.log(`Falling back to direct YouTube thumbnail: ${youtubeThumbnailUrl}`);
+          
+          const response = await fetch(youtubeThumbnailUrl);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch YouTube thumbnail: ${response.status}`);
+          }
+          
+          // Get the image data
+          const imageBuffer = Buffer.from(await response.arrayBuffer());
+          
+          // Upload to S3
+          const s3Key = s3Service.getThumbnailS3Key(contentId);
+          await s3Service.uploadToS3(imageBuffer, s3Key, 'image/jpeg');
+          
+          console.log(`Successfully uploaded YouTube thumbnail to S3 directly: ${s3Key}`);
+          return s3Key;
+        } catch (directError) {
+          console.error(`Direct YouTube thumbnail fetch failed:`, directError);
+          throw error; // Rethrow the original error
+        }
+      }
     }
     
     // If we have a source URL, use it
