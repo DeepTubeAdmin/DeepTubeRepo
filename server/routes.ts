@@ -203,13 +203,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error(`Error checking S3 for thumbnail:`, error);
       }
       
-      // If we reach here, we need to generate a new thumbnail
+      // If we reach here, we need to generate a new thumbnail using Cloudinary
       try {
-        // Generate a new thumbnail
-        await generateAndStoreS3Thumbnail(videoId, contentType, sourceUrl, youtubeId);
+        console.log(`Generating new thumbnail via Cloudinary for ${contentType} ID: ${videoId}`);
         
-        // Get the S3 key for the generated thumbnail
-        const s3Key = s3Service.getThumbnailS3Key(videoId);
+        // Generate thumbnail using Cloudinary
+        const s3Key = await cloudinaryService.generateThumbnail(videoId, sourceUrl, contentType, youtubeId);
         
         // Get signed URL for the thumbnail
         const signedUrl = await s3Service.getSignedS3Url(s3Key);
@@ -285,11 +284,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (image.imageUrl.startsWith('http')) {
             console.log(`Image ${image.id} using URL: ${image.imageUrl}`);
             
-            // Generate thumbnail using the imageUrl as source
-            const s3Key = await generateAndStoreS3Thumbnail(
+            // Generate thumbnail using the imageUrl as source with Cloudinary
+            const s3Key = await cloudinaryService.generateThumbnail(
               image.id,
-              'image',
-              image.imageUrl
+              image.imageUrl,
+              'image'
             );
             
             // Update the database to use the thumbnail endpoint
@@ -326,11 +325,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               continue;
             }
             
-            // Generate S3 key
-            const s3Key = `thumbnails/video-${image.id}.jpg`;
-            
-            // Upload to S3 with base64 encoding
-            await uploadStringToS3(base64Data, s3Key, 'image/jpeg', { encoding: 'base64' });
+            // Generate thumbnail from base64 data using Cloudinary
+            const s3Key = await cloudinaryService.generateFromBase64(
+              image.id,
+              image.imageUrl
+            );
             
             // Update the database to use the thumbnail endpoint
             await dbStorage.updateVideo(image.id, {
@@ -598,16 +597,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Creating placeholder SVG for content type: ${contentType} for video ID ${videoId}`);
       
-      // Get SVG placeholder based on content type
-      const placeholderSvg = getPlaceholderSvg(contentType);
+      // Determine source URL based on content type
+      let sourceUrl = null;
+      let youtubeId = null;
       
-      // Define S3 key for video thumbnail
-      const s3Key = `thumbnails/video-${videoId}.jpg`;
+      if (contentType === 'video' && video.videoUrl) {
+        sourceUrl = video.videoUrl;
+      } else if (contentType === 'image' && video.imageUrl) {
+        sourceUrl = video.imageUrl;
+      } else if (contentType === 'embed' && video.embedCode) {
+        youtubeId = cloudinaryService.extractYoutubeVideoId(video.embedCode);
+        if (youtubeId) {
+          sourceUrl = cloudinaryService.getYoutubeThumbnailUrl(youtubeId);
+        }
+      }
       
-      console.log(`Fixing thumbnail for video ${videoId} by uploading to ${s3Key}`);
+      console.log(`Fixing thumbnail for ${contentType} ${videoId} with Cloudinary`);
       
-      // Upload the SVG placeholder to S3 as a string with public-read ACL
-      await uploadStringToS3(placeholderSvg, s3Key, 'image/svg+xml');
+      // Generate thumbnail via Cloudinary
+      const s3Key = await cloudinaryService.generateThumbnail(videoId, sourceUrl, contentType, youtubeId);
       
       // Update the video record to use our thumbnail endpoint
       await dbStorage.updateVideo(videoId, { 
@@ -855,11 +863,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Processing video ${video.id}: ${video.title}`);
           console.log(`Video URL: ${video.videoUrl}`);
           
-          // Generate thumbnail using FFmpeg
-          const s3Key = await generateAndStoreS3Thumbnail(
+          // Generate thumbnail using Cloudinary
+          const s3Key = await cloudinaryService.generateThumbnail(
             video.id,
-            'video',
             video.videoUrl,
+            'video',
             null // YouTube ID will be null for S3 videos
           );
           
@@ -886,10 +894,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         total: videos.length
       });
     } catch (error) {
-      console.error('Error in FFmpeg thumbnail regeneration:', error);
+      console.error('Error in Cloudinary thumbnail regeneration:', error);
       return res.status(500).json({
         success: false,
-        message: 'Failed to regenerate thumbnails using FFmpeg',
+        message: 'Failed to regenerate thumbnails using Cloudinary',
         error: error instanceof Error ? error.message : String(error)
       });
     }
