@@ -9,12 +9,47 @@ import { v2 as cloudinary } from 'cloudinary';
 import s3Service from './s3Service';
 
 // Configure Cloudinary with credentials from environment variables
+// Handle both direct values and CLOUDINARY_URL format
+let cloudName, apiKey, apiSecret;
+
+// Parse from CLOUDINARY_URL format if needed
+const cloudinaryUrl = process.env.CLOUDINARY_CLOUD_NAME || '';
+if (cloudinaryUrl.includes('cloudinary://')) {
+  try {
+    // Extract from format: cloudinary://<api_key>:<api_secret>@<cloud_name>
+    const match = cloudinaryUrl.match(/cloudinary:\/\/([^:]+):([^@]+)@(.+)$/);
+    if (match) {
+      apiKey = match[1].trim();
+      apiSecret = match[2].trim();
+      cloudName = match[3].trim();
+      console.log(`Extracted Cloudinary credentials from URL format:`);
+      console.log(`  Cloud name: ${cloudName}`);
+      console.log(`  API key: ${apiKey.substring(0, 5)}...`);
+      console.log(`  API secret: ${apiSecret.substring(0, 5)}...`);
+    }
+  } catch (error) {
+    console.error('Error parsing CLOUDINARY_URL:', error);
+  }
+} else {
+  // Use direct values
+  cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  apiKey = process.env.CLOUDINARY_API_KEY;
+  apiSecret = process.env.CLOUDINARY_API_SECRET;
+}
+
+// Configure Cloudinary with the parsed or direct values
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: cloudName || process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: apiKey || process.env.CLOUDINARY_API_KEY,
+  api_secret: apiSecret || process.env.CLOUDINARY_API_SECRET,
   secure: true
 });
+
+// Log configuration status
+console.log(`Cloudinary configuration status:`);
+console.log(`  Cloud name provided: ${Boolean(cloudName)}`);
+console.log(`  API key provided: ${Boolean(apiKey)}`);
+console.log(`  API secret provided: ${Boolean(apiSecret)}`);
 
 /**
  * Generate a thumbnail using Cloudinary from a source URL
@@ -90,6 +125,25 @@ async function generateFromUrl(
   console.log(`Generating thumbnail from URL: ${url}`);
   
   try {
+    // If the URL starts with /api/s3/, we need to use a direct S3 URL
+    if (url.startsWith('/api/s3/')) {
+      // Extract the S3 path from the URL
+      const s3Path = url.replace('/api/s3/', '');
+      
+      // Get a direct S3 URL we can use with Cloudinary
+      try {
+        // Get a signed URL for the resource
+        const s3Key = s3Service.getS3KeyFromPath(s3Path);
+        const signedUrl = await s3Service.getSignedS3Url(s3Key);
+        
+        console.log(`Converted /api/s3/ URL to direct S3 URL: ${signedUrl}`);
+        url = signedUrl; // Use this URL instead
+      } catch (s3Error) {
+        console.error(`Failed to convert /api/s3/ URL to S3 URL:`, s3Error);
+        // Continue with the original URL as a fallback
+      }
+    }
+    
     // Transform the URL using Cloudinary's fetch functionality
     const transformation = {
       width,
