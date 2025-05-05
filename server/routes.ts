@@ -2412,6 +2412,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Unified thumbnail endpoint
   app.get("/api/content/:id/thumbnail", async (req, res) => {
+    console.log(`Unified thumbnail endpoint requested for content ID: ${req.params.id}`);
+    console.log(`Query params: ${JSON.stringify(req.query)}`);
+    
     try {
       const contentId = parseInt(req.params.id);
       const forcePlaceholder = req.query.placeholder === 'true';

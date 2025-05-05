@@ -17,8 +17,8 @@ export default function ThumbnailImage({ contentId, contentType, title, classNam
     setIsLoading(true);
     setError(false);
     
-    // Use our new Cloudinary-powered thumbnail endpoint
-    const thumbnailUrl = `/api/videos/${contentId}/thumbnail?t=${Date.now()}`;
+    // Use our new unified Cloudinary-powered thumbnail endpoint
+    const thumbnailUrl = `/api/content/${contentId}/thumbnail?t=${Date.now()}`;
     setImgSrc(thumbnailUrl);
   }, [contentId]);
 
@@ -42,7 +42,7 @@ export default function ThumbnailImage({ contentId, contentType, title, classNam
           setIsLoading(false);
           
           // Use the placeholder endpoint which should return an SVG placeholder
-          setImgSrc(`/api/videos/${contentId}/thumbnail?placeholder=true&t=${Date.now()}`);
+          setImgSrc(`/api/content/${contentId}/thumbnail?placeholder=true&t=${Date.now()}`);
         }}
       />
     </div>
