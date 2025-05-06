@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, useContext } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 import VideoCard from './VideoCard';
 import ImageCard from './ImageCard';
 import AdvertisementCard from './AdvertisementCard';
@@ -167,10 +168,10 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     setPopularBlocks([]);
     
     // Force a data refetch when shuffle seed changes
-    queryClient.invalidateQueries(queryKey);
+    queryClient.invalidateQueries({ queryKey: ['/api/content/feed'] });
     
     console.log('ContentFeed: Shuffle seed changed, resetting to page 1 and refetching');
-  }, [shuffleSeed, queryKey]);
+  }, [shuffleSeed]);
 
   // Effect for detecting screen size and updating column count
   useEffect(() => {

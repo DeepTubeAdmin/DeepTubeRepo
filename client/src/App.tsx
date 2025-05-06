@@ -83,28 +83,23 @@ function App() {
     const newSeed = `${timestamp}-${random1}-${random2}-${performanceNow}`;
     console.log('Triggering content shuffle with high-entropy seed:', newSeed);
     
-    // Clear all queries first
-    queryClient.clear();
-    queryClient.removeQueries();
-    
-    // Force cache invalidation
-    queryClient.invalidateQueries();
-    
-    // Update the shuffle seed state
+    // First update the shuffle seed state (this will trigger re-renders in components)
     setShuffleSeed(newSeed);
     
-    // Force a reload if we're on the home page
-    if (window.location.pathname === '/') {
-      window.location.reload();
-    }
+    // Then invalidate specific feed queries to ensure fresh data
+    queryClient.invalidateQueries({ queryKey: ['/api/content/feed'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/videos'] });  
+    queryClient.invalidateQueries({ queryKey: ['/api/content/trending'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/content/popular'] });
     
-    // Add a small delay to allow React to process state changes
-    setTimeout(() => {
-      // If we're on the home page, we need to force a reload to see the changes
-      if (window.location.pathname === '/') {
+    // Only force a reload if we're on the home page
+    // We need this because sometimes React Query caching is too aggressive
+    if (window.location.pathname === '/') {
+      // Small timeout to ensure React has time to process state changes
+      setTimeout(() => {
         window.location.reload();
-      }
-    }, 100);
+      }, 100);
+    }
   };
   
   useEffect(() => {
