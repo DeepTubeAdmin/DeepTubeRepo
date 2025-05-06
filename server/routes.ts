@@ -15,7 +15,7 @@ import fs from "fs/promises";
 import fsSync from "fs";
 import { fileURLToPath } from 'url';
 import s3Service from "./services/s3Service";
-import thumbnailService from "./services/simplifiedThumbnailService";
+import thumbnailService from "./services/ThumbnailService";
 import { v2 as cloudinary } from 'cloudinary';
 import { asc, desc, eq, like, and, sql, or, SQL, inArray } from 'drizzle-orm';
 import { videos } from '@shared/schema';
