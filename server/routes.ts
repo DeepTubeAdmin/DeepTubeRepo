@@ -2807,37 +2807,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sourceUrl = video.contentType === 'video' ? video.videoUrl : 
                       video.contentType === 'image' ? video.imageUrl : null;
       
-      if (!sourceUrl) {
+      if (!sourceUrl && video.contentType !== 'embed') {
         return res.status(400).json({ error: 'Content has no source URL' });
       }
-      
-      console.log(` - Source URL: ${sourceUrl}`);
-      
-      // Import the thumbnail service
-      const thumbnailService = await import('./services/simplifiedThumbnailService').then(m => m.default);
       
       // Detect YouTube embed and extract video ID if present
       let youtubeId = null;
       if (video.contentType === 'embed' && video.embedCode) {
-        youtubeId = thumbnailService.extractYoutubeVideoId(video.embedCode);
+        youtubeId = thumbnailService.extractYouTubeVideoId(video.embedCode);
       }
       
-      // Generate thumbnail based on content type and source
-      let s3Key;
-      if (youtubeId) {
-        s3Key = await thumbnailService.generateYouTubeThumbnail(videoId, youtubeId);
-      } else if (sourceUrl) {
-        // For local paths or S3 paths
-        const { urlPathToS3Key } = await import('./combined-services');
-        const sourceKey = sourceUrl.includes('/api/s3/') ? urlPathToS3Key(sourceUrl) : sourceUrl;
-        s3Key = await thumbnailService.generateThumbnail(videoId, sourceKey);
-      } else {
-        // No suitable source for thumbnail, use placeholder
-        const svgContent = thumbnailService.generatePlaceholder(video.contentType);
-        const { uploadStringToS3 } = await import('./combined-services');
-        s3Key = `thumbnails/placeholder-${videoId}.svg`;
-        await uploadStringToS3(svgContent, s3Key, 'image/svg+xml');
-      }
+      console.log(` - Source URL: ${sourceUrl || 'None (embed)'}`);
+      console.log(` - YouTube ID: ${youtubeId || 'None'}`);
+      
+      // Generate thumbnail using our unified ThumbnailService
+      const result = await thumbnailService.generateThumbnail({
+        contentId: videoId,
+        contentType: video.contentType,
+        sourceUrl: sourceUrl,
+        youtubeId: youtubeId,
+        forceRegeneration: true
+      });
       
       // Update the video record with the unified thumbnail path
       await dbStorage.updateVideo(videoId, { 
@@ -2846,9 +2836,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.json({
         success: true,
-        message: `Successfully regenerated thumbnail for ${video.contentType} ${videoId} using Cloudinary`,
+        message: `Successfully regenerated thumbnail for ${video.contentType} ${videoId} using method: ${result.method}`,
         videoId,
-        s3Key,
+        thumbnailPath: result.thumbnailPath,
+        method: result.method,
         thumbnailUrl: `/api/content/${videoId}/thumbnail`
       });
     } catch (error) {
@@ -2894,10 +2885,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // For non-YouTube content, proceed with normal flow
-      // Import the thumbnail service
-      const thumbnailService = await import('./services/simplifiedThumbnailService').then(m => m.default);
-      
       // Get the source URL based on content type
       let sourceUrl = null;
       let youtubeId = null;
@@ -2908,29 +2895,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sourceUrl = video.imageUrl;
       } else if (video.contentType === 'embed' && video.embedCode) {
         // Try to extract YouTube ID
-        youtubeId = thumbnailService.extractYoutubeVideoId(video.embedCode);
+        youtubeId = thumbnailService.extractYouTubeVideoId(video.embedCode);
       }
       
-      if (!sourceUrl && !youtubeId) {
-        return res.status(400).json({ error: "No source URL or YouTube ID found for content" });
-      }
+      // If no source URL or YouTube ID is available, we'll use a placeholder
+      const generatePlaceholder = !sourceUrl && !youtubeId;
       
-      // Generate thumbnail based on content type and source
-      let s3Key;
-      if (youtubeId) {
-        s3Key = await thumbnailService.generateYouTubeThumbnail(videoId, youtubeId);
-      } else if (sourceUrl) {
-        // For local paths or S3 paths
-        const { urlPathToS3Key } = await import('./combined-services');
-        const sourceKey = sourceUrl.includes('/api/s3/') ? urlPathToS3Key(sourceUrl) : sourceUrl;
-        s3Key = await thumbnailService.generateThumbnail(videoId, sourceKey);
-      } else {
-        // No suitable source for thumbnail, use placeholder
-        const svgContent = thumbnailService.generatePlaceholder(video.contentType);
-        const { uploadStringToS3 } = await import('./combined-services');
-        s3Key = `thumbnails/placeholder-${videoId}.svg`;
-        await uploadStringToS3(svgContent, s3Key, 'image/svg+xml');
-      }
+      // Generate thumbnail using our unified ThumbnailService
+      console.log(`Generating thumbnail for ${video.contentType} ${videoId} using unified service`);
+      console.log(` - Using placeholder: ${generatePlaceholder}`);
+      const result = await thumbnailService.generateThumbnail({
+        contentId: videoId,
+        contentType: video.contentType,
+        sourceUrl: sourceUrl,
+        youtubeId: youtubeId,
+        forceRegeneration: true,
+        generatePlaceholder: generatePlaceholder
+      });
       
       // Update to use unified thumbnail path
       await dbStorage.updateVideo(videoId, { 
@@ -2939,11 +2920,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ 
         success: true, 
-        message: `Thumbnail regenerated for ${video.contentType} ${videoId}`,
+        message: `Thumbnail regenerated for ${video.contentType} ${videoId} using method: ${result.method}`,
         thumbnailUrl: `/api/content/${videoId}/thumbnail`,
         contentType: video.contentType,
         sourceUrl,
-        youtubeId
+        youtubeId,
+        thumbnailPath: result.thumbnailPath,
+        method: result.method
       });
     } catch (error) {
       console.error("Error regenerating thumbnail:", error);
