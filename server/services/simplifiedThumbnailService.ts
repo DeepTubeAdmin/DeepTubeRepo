@@ -7,7 +7,50 @@
 
 import { v2 as cloudinary, UploadApiOptions } from 'cloudinary';
 import s3Service from './s3Service';
-import { getYoutubeThumbnailUrl, extractYoutubeVideoId } from '../youtubeUtils';
+
+/**
+ * Extract YouTube video ID from various YouTube URL formats
+ */
+export function extractYoutubeVideoId(url: string): string | null {
+  if (!url) return null;
+  
+  // Handle both embed codes and regular YouTube URLs
+  const patterns = [
+    /youtube\.com\/embed\/([\w-]+)/i,           // embed URLs
+    /youtube\.com\/watch\?v=([\w-]+)/i,         // standard watch URLs
+    /youtu\.be\/([\w-]+)/i,                     // short URLs
+    /youtube\.com\/v\/([\w-]+)/i,               // old embed URLs
+    /youtube\.com\/user\/[\w-]+\/\?v=([\w-]+)/i, // user page videos
+    /youtube\.com\/\?v=([\w-]+)/i,               // another variation
+    /\<iframe[^>]*src=".*?youtube\.com\/embed\/([\w-]+)".*?\<\/iframe\>/i  // iframe embed
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Get the best quality YouTube thumbnail URL for a given video ID
+ */
+export function getYoutubeThumbnailUrl(videoId: string | null): string | null {
+  if (!videoId) return null;
+  
+  // YouTube offers several thumbnail options:
+  // maxresdefault.jpg (1280x720)
+  // sddefault.jpg (640x480)
+  // hqdefault.jpg (480x360)
+  // mqdefault.jpg (320x180)
+  // default.jpg (120x90)
+  
+  // We'll use the highest quality available
+  return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+}
 
 // We won't configure Cloudinary directly here
 // Instead, we'll use dynamic configuration during runtime to pick up the latest credentials
@@ -208,3 +251,97 @@ export function generatePlaceholder(contentType: string = 'video'): string {
     </text>
   </svg>`;
 }
+
+/**
+ * Generate a thumbnail from a base64-encoded image or video frame
+ */
+export async function generateFromBase64(videoId: number, base64Data: string, contentType: string): Promise<string> {
+  try {
+    console.log(`Generating thumbnail from base64 data for content ID ${videoId}`);    
+    // Ensure Cloudinary has the latest configuration
+    await ensureCloudinaryConfig();
+    
+    // Import combined services for simplified access
+    const { uploadStringToS3 } = await import('../combined-services');
+    
+    // Prepare data for upload
+    const thumbnailS3Key = `thumbnails/${contentType}-${videoId}.jpg`;
+    const buffer = Buffer.from(base64Data.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+    
+    // Upload to S3 directly since it's already a usable image
+    await uploadStringToS3(buffer, thumbnailS3Key, 'image/jpeg');
+    console.log(`Successfully saved base64 thumbnail to S3: ${thumbnailS3Key}`);
+    
+    return thumbnailS3Key;
+  } catch (error) {
+    console.error('Base64 thumbnail generation failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Test the Cloudinary connection by uploading a simple test image
+ */
+export async function testConnection(): Promise<boolean> {
+  try {
+    console.log('Testing Cloudinary connection...');
+    
+    // Ensure we have the latest configuration
+    await ensureCloudinaryConfig();
+    
+    // Create a small test SVG
+    const testSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+      <rect width="100" height="100" fill="#ff9000"/>
+      <text x="50" y="50" font-family="Arial" font-size="12" text-anchor="middle" fill="black">Test</text>
+    </svg>`;
+    
+    // Upload to Cloudinary
+    const result = await cloudinary.uploader.upload(
+      `data:image/svg+xml;base64,${Buffer.from(testSvg).toString('base64')}`,
+      { resource_type: 'image', public_id: 'test-connection' }
+    );
+    
+    console.log('Cloudinary connection test successful:', result.secure_url);
+    return true;
+  } catch (error) {
+    console.error('Cloudinary connection test failed:', error);
+    return false;
+  }
+}
+
+/**
+ * Upload a test image to verify configuration
+ */
+export async function uploadTestImage(imagePath: string): Promise<string | null> {
+  try {
+    console.log(`Testing Cloudinary upload with image: ${imagePath}`);
+    
+    // Ensure we have the latest configuration
+    await ensureCloudinaryConfig();
+    
+    // Upload to Cloudinary
+    const result = await cloudinary.uploader.upload(imagePath, {
+      resource_type: 'image',
+      public_id: 'test-upload-' + Date.now()
+    });
+    
+    console.log('Cloudinary test upload successful:', result.secure_url);
+    return result.secure_url;
+  } catch (error) {
+    console.error('Cloudinary test upload failed:', error);
+    return null;
+  }
+}
+
+// Export functions as a default object for backward compatibility
+export default {
+  ensureCloudinaryConfig,
+  testConnection,
+  uploadTestImage,
+  extractYoutubeVideoId,
+  getYoutubeThumbnailUrl,
+  generateFromBase64,
+  generateThumbnail,
+  generateYouTubeThumbnail,
+  generatePlaceholder
+};
