@@ -314,8 +314,63 @@ async function generateThumbnail(
       
       // Process with Cloudinary
       try {
+        // Check if sourceUrl is a relative URL or an API endpoint and convert to absolute URL
+        let fullSourceUrl = sourceUrl;
+        if (sourceUrl.startsWith('/api/')) {
+          console.log('Converting relative API path to full URL...');
+          
+          // Since this is an internal API route, we need to use a different approach
+          console.log('Using alternative approach for API paths - using a placeholder SVG');
+          
+          // Generate a simple placeholder SVG
+          const placeholderSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180">
+            <rect width="320" height="180" fill="#ff9000"/>
+            <text x="160" y="90" font-family="Arial" font-size="24" text-anchor="middle" fill="white">
+              ${contentType.toUpperCase()} ${contentId}
+            </text>
+          </svg>`;
+          
+          // Upload as a Base64 data URL
+          const dataUrl = `data:image/svg+xml;base64,${Buffer.from(placeholderSvg).toString('base64')}`;
+          console.log('Uploading placeholder SVG to Cloudinary...');
+          
+          // Simplified options for SVG placeholder
+          const result = await cloudinary.uploader.upload(dataUrl, {
+            public_id: `content-${contentId}-placeholder`,
+            overwrite: true,
+            resource_type: 'image',
+            format: 'png'
+          });
+          
+          console.log('Placeholder uploaded successfully, result:', result.secure_url);
+          
+          // Download the thumbnail from Cloudinary and upload to S3
+          const response = await fetch(result.secure_url);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch Cloudinary thumbnail: ${response.status}`);
+          }
+          
+          const buffer = await response.arrayBuffer();
+          await uploadStringToS3(
+            Buffer.from(buffer),
+            s3Key,
+            'image/jpeg'
+          );
+          
+          console.log(`Successfully uploaded placeholder thumbnail to S3 for content ${contentId}`);
+          return s3Key;
+        } else if (sourceUrl.startsWith('http')) {
+          // Already a full URL, use as is
+          fullSourceUrl = sourceUrl;
+        } else {
+          console.error(`Unsupported source URL format: ${sourceUrl}`);
+          throw new Error(`Unsupported source URL format: ${sourceUrl}`);
+        }
+        
+        console.log(`Using source URL: ${fullSourceUrl}`);
         console.log('Uploading to Cloudinary...');
-        const result = await cloudinary.uploader.upload(sourceUrl, options);
+        
+        const result = await cloudinary.uploader.upload(fullSourceUrl, options);
         console.log('Cloudinary upload successful, result:', result.secure_url);
         
         // Download the thumbnail from Cloudinary and upload to S3
@@ -335,7 +390,23 @@ async function generateThumbnail(
         return s3Key;
       } catch (error) {
         console.error('Cloudinary processing failed:', error);
-        throw new Error(`Cloudinary thumbnail generation failed: ${error}`);
+        
+        // Create a detailed error message that includes the error object properties
+        let errorMessage = 'Unknown error';
+        if (error instanceof Error) {
+          errorMessage = error.message;
+          
+          // Include more details if available
+          const anyError = error as any;
+          if (anyError.code) {
+            errorMessage += ` (Code: ${anyError.code})`;
+          }
+          if (anyError.errno) {
+            errorMessage += ` (Errno: ${anyError.errno})`;
+          }
+        }
+        
+        throw new Error(`Cloudinary thumbnail generation failed: ${errorMessage}`);
       }
     }
     

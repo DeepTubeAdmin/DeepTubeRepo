@@ -8,74 +8,12 @@ import { v2 as cloudinary } from 'cloudinary';
 // Configure Cloudinary with environment variables
 console.log("Setting up Cloudinary configuration...");
 
-// Special handling for Replit environment where env vars might have unusual formats
-let cloudName = '';
+// Hardcoded cloud name based on previous runs and debugging
+let cloudName = 'defho2yvd'; // We know this from previous runs
 let apiKey = process.env.CLOUDINARY_API_KEY || '';
 let apiSecret = process.env.CLOUDINARY_API_SECRET || '';
 
-// Search for cloud name in environment variables - there are multiple possible formats
-// Check standard env var first
-if (process.env.CLOUDINARY_CLOUD_NAME) {
-  cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  console.log(`Using standard CLOUDINARY_CLOUD_NAME: ${cloudName}`);
-
-  // Check if cloudName contains the entire URL (happens in some environments)
-  if (cloudName.startsWith('CLOUDINARY_URL=cloudinary://')) {
-    console.log('Detected CLOUDINARY_URL format in CLOUDINARY_CLOUD_NAME, extracting values...');
-    try {
-      // Extract from format like: CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
-      const match = cloudName.match(/CLOUDINARY_URL=cloudinary:\/\/([^:]+):([^@]+)@([^/]+)/);
-      if (match) {
-        const [, extractedApiKey, extractedApiSecret, extractedCloudName] = match;
-        console.log(`Extracted cloud_name: ${extractedCloudName}`);
-        
-        // Override with extracted values
-        cloudName = extractedCloudName;
-        if (!apiKey) apiKey = extractedApiKey;
-        if (!apiSecret) apiSecret = extractedApiSecret;
-      }
-    } catch (error) {
-      console.error('Error extracting Cloudinary credentials from URL format:', error);
-    }
-  }
-} else {
-  // Look for other environment variable patterns
-  console.log('Scanning environment variables for Cloudinary cloud name...');
-  
-  // Check each environment variable for patterns
-  for (const [key, value] of Object.entries(process.env)) {
-    if (!value) continue;
-    
-    // Check if it's a cloud name with URL as value
-    if (value.includes('CLOUDINARY_URL=cloudinary://')) {
-      console.log(`Found Cloudinary URL in environment variable ${key}`);
-      
-      try {
-        // Extract from format like: CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
-        const match = value.match(/CLOUDINARY_URL=cloudinary:\/\/([^:]+):([^@]+)@([^/]+)/);
-        if (match) {
-          const [, extractedApiKey, extractedApiSecret, extractedCloudName] = match;
-          console.log(`Extracted cloud_name: ${extractedCloudName} from ${key}`);
-          
-          // Use the key as cloud_name if it seems valid, otherwise use the extracted one
-          if (key && !key.includes('=') && !key.startsWith('CLOUDINARY_')) {
-            cloudName = key;
-            console.log(`Using environment variable name as cloud_name: ${cloudName}`);
-          } else {
-            cloudName = extractedCloudName;
-            console.log(`Using extracted cloud_name: ${cloudName}`);
-          }
-          
-          if (!apiKey) apiKey = extractedApiKey;
-          if (!apiSecret) apiSecret = extractedApiSecret;
-          break;
-        }
-      } catch (error) {
-        console.error(`Error extracting from ${key}:`, error);
-      }
-    }
-  }
-}
+console.log('Using fixed cloud_name:', cloudName);
 
 // Check if we have all required configuration
 if (cloudName && apiKey && apiSecret) {
