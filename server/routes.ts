@@ -2607,32 +2607,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Generating thumbnail for content ID ${content.id}, type: ${content.contentType}`);
         console.log(`Source URL: ${sourceUrl || 'none'}, YouTube ID: ${youtubeId || 'none'}`);
         
-        // Import thumbnail service
-        const thumbService = await import('./services/simplifiedThumbnailService');
+        // Generate thumbnail using our new unified ThumbnailService
+        // The service will handle all the different cases internally
+        const result = await thumbnailService.generateThumbnail({
+          contentId: content.id,
+          contentType: content.contentType,
+          sourceUrl: sourceUrl,
+          youtubeId: youtubeId,
+          forceRegeneration: forceRegeneration,
+          generatePlaceholder: forcePlaceholder
+        });
         
-        let s3Key;
+        // Extract the S3 key from the result
+        let s3Key = result.thumbnailPath;
         
-        // Generate thumbnail using simplified service based on content type
-        if (youtubeId) {
-          // For YouTube embeds
-          s3Key = await thumbService.generateYouTubeThumbnail(content.id, youtubeId);
-        } else if (sourceUrl && content.contentType === 'video') {
-          // For direct video uploads
-          // Extract S3 key from URL if it's an S3 URL
-          const s3KeyFromUrl = sourceUrl.startsWith('/api/s3/') 
-            ? await import('./combined-services').then(m => m.urlPathToS3Key(sourceUrl))
-            : sourceUrl;
-          
-          s3Key = await thumbService.generateThumbnail(content.id, s3KeyFromUrl);
-        } else {
-          // For images or when no source available
-          // Use a placeholder SVG
-          console.log(`No suitable source for thumbnail generation, using placeholder`);
-          const svgContent = thumbService.generatePlaceholder(content.contentType);
-          const placeholderS3Key = `thumbnails/placeholder-${content.id}.svg`;
-          await uploadStringToS3(svgContent, placeholderS3Key, 'image/svg+xml');
-          s3Key = placeholderS3Key;
-        }
+        // Log the method used to generate the thumbnail
+        console.log(`Thumbnail generated using method: ${result.method}`);
+        
+        // The thumbnail has already been generated and stored at this point
+        // by our unified ThumbnailService
         
         // Update content record with the new unified thumbnail endpoint path
         await dbStorage.updateVideo(content.id, {
@@ -2707,12 +2700,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Test endpoint for checking Cloudinary connectivity
   app.get('/api/test-cloudinary', async (req, res) => {
     try {
-      // Import the thumbnail service
-      const thumbnailService = await import('./services/simplifiedThumbnailService').then(m => m.default);
-      
-      // Run the test
+      // Use the new unified ThumbnailService
       console.log('Running Cloudinary connection test...');
-      const testResults = await thumbnailService.testConnection();
+      const testResults = await thumbnailService.testCloudinaryConnection();
       
       // Get the actual configured cloud name from Cloudinary
       const { v2: cloudinary } = await import('cloudinary');
@@ -2739,9 +2729,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Test endpoint that actually uploads a test image to Cloudinary
   app.get('/api/test-cloudinary-upload', async (req, res) => {
     try {
-      // Import the thumbnail service
-      const thumbnailService = await import('./services/simplifiedThumbnailService').then(m => m.default);
-      
       // Get the actual configured cloud name from Cloudinary
       const { v2: cloudinary } = await import('cloudinary');
       const config = cloudinary.config();
@@ -2749,7 +2736,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Run the upload test
       console.log('Running Cloudinary upload test...');
       console.log(`Using cloud_name: ${config.cloud_name}`);
-      const testResults = await thumbnailService.uploadTestImage();
+      
+      // Use our new ThumbnailService for testing
+      const testResults = await thumbnailService.testService();
       
       // Return results with additional information
       return res.json({
