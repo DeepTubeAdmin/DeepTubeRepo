@@ -2596,24 +2596,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (content.contentType === 'image' || content.contentType === 'images') {
           sourceUrl = content.imageUrl;
         } else if (content.contentType === 'embed') {
-          youtubeId = cloudinaryService.extractYoutubeVideoId(content.embedCode || '');
+          // Import thumbnail service
+          const thumbService = await import('./services/simplifiedThumbnailService');
+          youtubeId = thumbService.extractYoutubeVideoId(content.embedCode || '');
           if (youtubeId) {
-            sourceUrl = thumbnailService.getYoutubeThumbnailUrl(youtubeId);
+            sourceUrl = thumbService.getYoutubeThumbnailUrl(youtubeId);
           }
         }
         
-        console.log(`Generating thumbnail via Cloudinary for content ID ${content.id}, type: ${content.contentType}`);
+        console.log(`Generating thumbnail for content ID ${content.id}, type: ${content.contentType}`);
         console.log(`Source URL: ${sourceUrl || 'none'}, YouTube ID: ${youtubeId || 'none'}`);
         
-        // Import simplified thumbnail service
-        const simplifiedThumbnailService = await import('./services/simplifiedThumbnailService');
+        // Import thumbnail service
+        const thumbService = await import('./services/simplifiedThumbnailService');
         
         let s3Key;
         
         // Generate thumbnail using simplified service based on content type
         if (youtubeId) {
           // For YouTube embeds
-          s3Key = await simplifiedThumbnailService.generateYouTubeThumbnail(content.id, youtubeId);
+          s3Key = await thumbService.generateYouTubeThumbnail(content.id, youtubeId);
         } else if (sourceUrl && content.contentType === 'video') {
           // For direct video uploads
           // Extract S3 key from URL if it's an S3 URL
@@ -2621,12 +2623,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? await import('./combined-services').then(m => m.urlPathToS3Key(sourceUrl))
             : sourceUrl;
           
-          s3Key = await simplifiedThumbnailService.generateThumbnail(content.id, s3KeyFromUrl);
+          s3Key = await thumbService.generateThumbnail(content.id, s3KeyFromUrl);
         } else {
           // For images or when no source available
           // Use a placeholder SVG
           console.log(`No suitable source for thumbnail generation, using placeholder`);
-          const svgContent = simplifiedThumbnailService.generatePlaceholder(content.contentType);
+          const svgContent = thumbService.generatePlaceholder(content.contentType);
           const placeholderS3Key = `thumbnails/placeholder-${content.id}.svg`;
           await uploadStringToS3(svgContent, placeholderS3Key, 'image/svg+xml');
           s3Key = placeholderS3Key;
