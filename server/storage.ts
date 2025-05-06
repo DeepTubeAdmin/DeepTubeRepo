@@ -235,7 +235,8 @@ export class DatabaseStorage implements IStorage {
     limit: number = 50, 
     contentType?: string, 
     categoryId?: number, 
-    sortBy: 'newest' | 'oldest' | 'viewed' | 'most-viewed' | 'trending' | 'popular' = 'newest'
+    sortBy: 'newest' | 'oldest' | 'viewed' | 'most-viewed' | 'trending' | 'popular' = 'newest',
+    shuffleSeed?: string
   ): Promise<Video[]> {
     // Handle special sort cases that require different query structures
     if (sortBy === 'popular') {
@@ -265,7 +266,47 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Add ordering with YouTube-like algorithm
-    if (sortBy === 'newest') {
+    if (shuffleSeed) {
+      // When a shuffleSeed is provided, use a seeded random order to ensure consistent shuffle results
+      console.log(`Using randomized shuffle ordering with seed: ${shuffleSeed}`);      
+      // Convert the seed string to a numeric value to use with SQL RANDOM()
+      const seedValue = shuffleSeed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      
+      // Use seed to create different deterministic sort patterns based on seed modulo
+      const sortPattern = seedValue % 5;
+      
+      switch (sortPattern) {
+        case 0: // Random only
+          queryBuilder = queryBuilder.orderBy(
+            sql`RANDOM() * ${seedValue}::FLOAT`
+          );
+          break;
+        case 1: // Newest with random offset
+          queryBuilder = queryBuilder.orderBy(
+            sql`${videos.id} + (${seedValue} % 1000)::INTEGER DESC`
+          );
+          break;
+        case 2: // Title-influenced shuffle
+          queryBuilder = queryBuilder.orderBy(
+            sql`ASCII(SUBSTRING(${videos.title}, 1, 1)) * (${seedValue} % 100)::INTEGER`
+          );
+          break;
+        case 3: // Created date with seed offset
+          queryBuilder = queryBuilder.orderBy(
+            sql`EXTRACT(EPOCH FROM ${videos.createdAt})::INTEGER * (${seedValue} % 100)::INTEGER`
+          );
+          break;
+        case 4: // Category with random
+          queryBuilder = queryBuilder.orderBy(
+            sql`${videos.categoryId} * (${seedValue} % 50)::INTEGER + RANDOM() * ${seedValue}::FLOAT`
+          );
+          break;
+        default:
+          // Fallback to completely random
+          queryBuilder = queryBuilder.orderBy(sql`RANDOM()`);
+      }
+    }
+    else if (sortBy === 'newest') {
       // Order by ID desc ensures newest uploads appear first
       queryBuilder = queryBuilder.orderBy(desc(videos.id));
     } else if (sortBy === 'oldest') {

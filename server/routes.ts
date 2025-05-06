@@ -17,6 +17,9 @@ import { fileURLToPath } from 'url';
 import s3Service from "./services/s3Service";
 import cloudinaryService from "./services/cloudinaryService";
 import { v2 as cloudinary } from 'cloudinary';
+import { asc, desc, eq, like, and, sql, or, SQL, inArray } from 'drizzle-orm';
+import { videos } from '@shared/schema';
+import { db } from './db';
 // Thumbnail routes now integrated directly
 import mongoDb from "./mongodb";
 import {
@@ -1335,18 +1338,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get featured videos (filtered by category if specified)
       let featuredVideos: Video[] = [];
       
-      // Get all featured videos - use random query for strong shuffling
-      // The random SQL clause will shuffle the order differently based on the seed value
-      const randomSeed = shuffleSeed ? parseInt(shuffleSeed.replace(/[^0-9]/g, '').slice(0, 8) || '1234') : Date.now();
-      const randomOrder = sql`RANDOM() * ${randomSeed}::FLOAT`;
-      
-      // Modify the database query to include ORDER BY with seeded randomization
-      const queryOptions = {
-        orderBy: randomOrder
-      };
-      
-      // Get videos with randomized order from the database
-      const featuredVideosQuery = await db.select().from(videos).orderBy(randomOrder).limit(50);
+      // Get all featured videos using the storage layer
+      const featuredVideosQuery = await dbStorage.getVideos(50);
+      console.log(`Retrieved ${featuredVideosQuery.length} featured videos from database`);
       
       // Filter for videos (not images) with approved status
       featuredVideos = featuredVideosQuery.filter(v => 
@@ -1409,7 +1403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // 3. RECENTLY UPLOADED SECTION (3 rows of videos, 1 row of images)
       // Get newest videos
-      let recentVideos = await dbStorage.getVideos(50, undefined, 0, 'newest');
+      let recentVideos = await dbStorage.getVideos(50, undefined, undefined, 'newest', shuffleSeed);
       recentVideos = recentVideos.filter(v => 
         (v.contentType === 'video' || v.contentType === 'embed') &&
         !usedContentIds.has(v.id));
