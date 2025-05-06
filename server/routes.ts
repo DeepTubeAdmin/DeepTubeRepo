@@ -1226,7 +1226,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Reset cache if we're starting a new page (page 1)
       if (page === 1) {
-        resetContentCache(cacheKey, false);
+        // Create a new set for the used content IDs
+        infiniteScrollCache.set(cacheKey, new Set<number>());
+        usedCategoriesCache.set(cacheKey, new Set<number>());
+        console.log(`Reset content cache for ${cacheKey}, fresh shuffle`); 
       }
       
       // Cache categories to avoid multiple DB calls
@@ -1478,8 +1481,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If page 1, reset the cache for this category/sort combo
       if (page === 1) {
-        // Only reset content but not category tracking when restarting from page 1
-        resetContentCache(cacheKey, false);
+        // Create a new set for the used content IDs
+        infiniteScrollCache.set(cacheKey, new Set<number>());
+        usedCategoriesCache.set(cacheKey, new Set<number>());
+        console.log(`Reset content cache for ${cacheKey}, fresh shuffle`);
       }
       
       // Get or create the set of used content IDs for this view
