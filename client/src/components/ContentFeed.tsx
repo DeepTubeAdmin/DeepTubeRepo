@@ -164,10 +164,13 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   useEffect(() => {
     // Reset to page 1 whenever shuffle seed changes to ensure fresh content
     setPage(1);
-    // Also reset popular blocks to avoid mixing pre-shuffle and post-shuffle content
     setPopularBlocks([]);
-    console.log('ContentFeed: Shuffle seed changed, resetting to page 1');
-  }, [shuffleSeed]);
+    
+    // Force a data refetch when shuffle seed changes
+    queryClient.invalidateQueries(queryKey);
+    
+    console.log('ContentFeed: Shuffle seed changed, resetting to page 1 and refetching');
+  }, [shuffleSeed, queryKey]);
 
   // Effect for detecting screen size and updating column count
   useEffect(() => {

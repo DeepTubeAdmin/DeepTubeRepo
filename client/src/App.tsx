@@ -83,20 +83,20 @@ function App() {
     const newSeed = `${timestamp}-${random1}-${random2}-${performanceNow}`;
     console.log('Triggering content shuffle with high-entropy seed:', newSeed);
     
-    // Aggressively clear ALL cached queries to ensure a complete refresh
+    // Clear all queries first
     queryClient.clear();
+    queryClient.removeQueries();
     
-    // For explicit content sections, also remove them individually
-    queryClient.removeQueries({ queryKey: ['/api/content/feed'] });
-    queryClient.removeQueries({ queryKey: ['/api/videos'] });
-    queryClient.removeQueries({ queryKey: ['/api/content/trending'] });
-    queryClient.removeQueries({ queryKey: ['/api/content/popular'] });
-    
-    // Force a complete refresh of all content data
+    // Force cache invalidation
     queryClient.invalidateQueries();
     
     // Update the shuffle seed state
     setShuffleSeed(newSeed);
+    
+    // Force a reload if we're on the home page
+    if (window.location.pathname === '/') {
+      window.location.reload();
+    }
     
     // Add a small delay to allow React to process state changes
     setTimeout(() => {
