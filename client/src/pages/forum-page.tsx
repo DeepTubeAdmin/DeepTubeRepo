@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Trash2, AlertCircle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import Layout from "@/components/Layout";
 import MiniFooter from "@/components/MiniFooter";
@@ -241,6 +243,40 @@ export default function ForumPage() {
     }
     return 0;
   });
+
+  // Check if user is an admin (ID 1 or 2)
+  const isAdmin = user && (user.id === 1 || user.id === 2);
+
+  const handleDeleteThread = (threadId: number) => {
+    // In a real app, this would send a DELETE request to the backend
+    setThreads(threads.filter(thread => thread.id !== threadId));
+    // Also remove associated comments
+    setComments(comments.filter(comment => comment.threadId !== threadId));
+    
+    toast({
+      title: "Thread deleted",
+      description: "The thread has been deleted successfully",
+      variant: "destructive"
+    });
+  };
+
+  const handleDeleteComment = (commentId: number, threadId: number) => {
+    // In a real app, this would send a DELETE request to the backend
+    setComments(comments.filter(comment => comment.id !== commentId));
+    
+    // Update the comment count in the thread
+    setThreads(
+      threads.map(thread =>
+        thread.id === threadId ? { ...thread, commentCount: thread.commentCount - 1 } : thread
+      )
+    );
+    
+    toast({
+      title: "Comment deleted",
+      description: "The comment has been deleted successfully",
+      variant: "destructive"
+    });
+  };
 
   const openCommentForm = (threadId: number) => {
     setVisibleCommentForms({...visibleCommentForms, [threadId]: true});
@@ -545,6 +581,40 @@ export default function ForumPage() {
                           <MessageCircle size={16} />
                           <span>Reply ({thread.commentCount})</span>
                         </Button>
+                        
+                        {/* Admin delete thread button */}
+                        {isAdmin && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="flex items-center gap-1 text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                              >
+                                <Trash2 size={16} />
+                                <span>Delete</span>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Thread</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete this thread? This action cannot be undone 
+                                  and all associated comments will also be deleted.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => handleDeleteThread(thread.id)}
+                                  className="bg-destructive hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </div>
                     </CardFooter>
                     
@@ -602,11 +672,44 @@ export default function ForumPage() {
                                   <span className="text-xs text-muted-foreground">{comment.timestamp}</span>
                                 </div>
                                 <p className="text-sm">{comment.content}</p>
-                                <div className="flex items-center gap-2 mt-2">
+                                <div className="flex items-center gap-2 mt-2 justify-between">
                                   <Button variant="ghost" size="sm" className="h-auto py-1 px-2">
                                     <ThumbsUp size={14} className="mr-1" />
                                     <span className="text-xs">{comment.upvotes}</span>
                                   </Button>
+                                  
+                                  {/* Admin delete comment button */}
+                                  {isAdmin && (
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button
+                                          variant="ghost" 
+                                          size="sm" 
+                                          className="h-auto py-1 px-2 text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                                        >
+                                          <Trash2 size={14} className="mr-1" />
+                                          <span className="text-xs">Delete</span>
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Delete Comment</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            Are you sure you want to delete this comment? This action cannot be undone.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                          <AlertDialogAction 
+                                            onClick={() => handleDeleteComment(comment.id, thread.id)}
+                                            className="bg-destructive hover:bg-destructive/90"
+                                          >
+                                            Delete
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  )}
                                 </div>
                               </div>
                             ))}
