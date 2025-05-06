@@ -81,17 +81,30 @@ function App() {
     
     // Combine all sources for maximum entropy
     const newSeed = `${timestamp}-${random1}-${random2}-${performanceNow}`;
-    console.log('Triggering content shuffle with high-entropy seed');
+    console.log('Triggering content shuffle with high-entropy seed:', newSeed);
     
-    // Clear the query cache for content feed queries to force a fresh fetch
-    // This ensures we don't mix content from different shuffles
+    // Aggressively clear ALL cached queries to ensure a complete refresh
+    queryClient.clear();
+    
+    // For explicit content sections, also remove them individually
     queryClient.removeQueries({ queryKey: ['/api/content/feed'] });
+    queryClient.removeQueries({ queryKey: ['/api/videos'] });
+    queryClient.removeQueries({ queryKey: ['/api/content/trending'] });
+    queryClient.removeQueries({ queryKey: ['/api/content/popular'] });
     
-    // Invalidate any other queries that might be affected by the shuffle
-    queryClient.invalidateQueries({ queryKey: ['/api/content'] });
+    // Force a complete refresh of all content data
+    queryClient.invalidateQueries();
     
     // Update the shuffle seed state
     setShuffleSeed(newSeed);
+    
+    // Add a small delay to allow React to process state changes
+    setTimeout(() => {
+      // If we're on the home page, we need to force a reload to see the changes
+      if (window.location.pathname === '/') {
+        window.location.reload();
+      }
+    }, 100);
   };
   
   useEffect(() => {

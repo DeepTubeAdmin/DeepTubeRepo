@@ -90,9 +90,12 @@ export default function Header({ simple = false }: HeaderProps) {
       description: "Mixing things up for you!",
       duration: 2000,
     });
-    // Trigger the shuffle
+    
+    // First, trigger the shuffle - this will generate a new seed and clear caches
     triggerShuffle();
-    // If not on home page, navigate to home page
+    
+    // The shuffle function will handle the reload for us if we're on the home page
+    // If not on home page, navigate to home page (the reload will happen in triggerShuffle)
     if (window.location.pathname !== '/') {
       window.location.href = '/';
     }
