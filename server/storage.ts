@@ -269,42 +269,42 @@ export class DatabaseStorage implements IStorage {
     if (shuffleSeed) {
       // When a shuffleSeed is provided, use a seeded random order to ensure consistent shuffle results
       console.log(`Using randomized shuffle ordering with seed: ${shuffleSeed}`);      
-      // Convert the seed string to a normalized value between 0 and 1 to avoid integer overflow
-      const seedHash = shuffleSeed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 100;
-      const seedValue = seedHash / 100;
-      
-      // Use seed to create different deterministic sort patterns based on seed modulo
+      // Generate a stable integer hash from the shuffle seed
+      const seedHash = shuffleSeed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      // Use modulo to get a sort pattern between 0-4
       const sortPattern = seedHash % 5;
+      // Use modulo to get a small integer between 1-99 that's safe to use in SQL
+      const seedValue = 1 + (seedHash % 99); 
       
       switch (sortPattern) {
-        case 0: // Random only
+        case 0: // Random only with fixed offset
           queryBuilder = queryBuilder.orderBy(
-            sql`RANDOM() * ${seedValue}`
+            sql`${videos.id} % ${seedValue}`
           );
           break;
-        case 1: // Newest with random offset
+        case 1: // Newest with deterministic offset
           queryBuilder = queryBuilder.orderBy(
-            sql`${videos.id} + (${seedValue} * 10)::INTEGER DESC`
+            sql`${videos.id} % ${seedValue} DESC`
           );
           break;
         case 2: // Title-influenced shuffle
           queryBuilder = queryBuilder.orderBy(
-            sql`ASCII(SUBSTRING(${videos.title}, 1, 1)) * (${seedValue} * 10)::INTEGER`
+            sql`LENGTH(${videos.title}) % ${seedValue}`
           );
           break;
-        case 3: // Created date with seed offset
+        case 3: // Created date with fixed modulo
           queryBuilder = queryBuilder.orderBy(
-            sql`EXTRACT(EPOCH FROM ${videos.createdAt})::INTEGER * ${seedValue}`
+            sql`EXTRACT(EPOCH FROM ${videos.createdAt})::INTEGER % ${seedValue}`
           );
           break;
-        case 4: // Category with random
+        case 4: // Category with fixed modulo
           queryBuilder = queryBuilder.orderBy(
-            sql`${videos.categoryId} * (${seedValue} * 5)::INTEGER + RANDOM() * ${seedValue}`
+            sql`(${videos.categoryId} * ${seedValue}) % 100`
           );
           break;
         default:
-          // Fallback to completely random
-          queryBuilder = queryBuilder.orderBy(sql`RANDOM()`);
+          // Fallback to ID-based ordering
+          queryBuilder = queryBuilder.orderBy(desc(videos.id));
       }
     }
     else if (sortBy === 'newest') {

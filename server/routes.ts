@@ -1509,7 +1509,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Select up to 12 videos for 3 rows (assuming 4 videos per row)
       const selectedTrendingVideos = trendingVideos.slice(0, 12);
-      selectedTrendingVideos.forEach(video => usedContentIds.add(video.id));
+      // Safely add IDs to usedContentIds set, filtering out any undefined items
+      selectedTrendingVideos
+        .filter(video => video && typeof video === 'object' && video.id !== undefined)
+        .forEach(video => usedContentIds.add(video.id));
       response.trending.videos = selectedTrendingVideos;
       
       // Get trending images
@@ -1524,7 +1527,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Select up to 4 images for 1 row
       const selectedTrendingImages = trendingImages.slice(0, 4);
-      selectedTrendingImages.forEach(image => usedContentIds.add(image.id));
+      // Safely add IDs to usedContentIds set, filtering out any undefined items
+      selectedTrendingImages
+        .filter(image => image && typeof image === 'object' && image.id !== undefined)
+        .forEach(image => usedContentIds.add(image.id));
       response.trending.images = selectedTrendingImages;
       
       // 3. RECENTLY UPLOADED SECTION (3 rows of videos, 1 row of images)
