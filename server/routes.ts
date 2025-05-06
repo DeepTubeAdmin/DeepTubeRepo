@@ -2221,17 +2221,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const signedS3Url = await getSignedS3Url(s3Key);
             console.log(`Generated signed S3 URL for Cloudinary to access: ${signedS3Url.substring(0, 100)}...`);
             
-            // Generate thumbnail using Cloudinary
-            const thumbnailS3Key = await cloudinaryService.generateThumbnail(
-              tempVideoId,
-              signedS3Url,
-              'video',
-              null
-            );
+            // Import simplified thumbnail service for direct upload
+            const simplifiedThumbnailService = await import('./services/simplifiedThumbnailService');
             
-            // Set the thumbnail path to be used in the response
-            // This will be a temporary thumbnail based on the temp ID
-            thumbnailPath = `/api/videos/${tempVideoId}/thumbnail`;
+            // Generate thumbnail using simplified service with direct Cloudinary integration
+            console.log('Using simplified thumbnail service for direct S3 URL processing');
+            const thumbnailS3Key = await simplifiedThumbnailService.generateThumbnail(tempVideoId, s3Key);
+            
+            // Set the thumbnail path to be used in the response - use the standard API format
+            thumbnailPath = `/api/content/${tempVideoId}/thumbnail`;
+            console.log(`Generated thumbnail using simplified service: ${thumbnailPath} (S3 key: ${thumbnailS3Key})`);
             console.log(`Generated temporary thumbnail for uploaded video using Cloudinary: ${thumbnailPath} (S3 key: ${thumbnailS3Key})`);
           } catch (thumbnailError) {
             console.error("Error generating thumbnail for uploaded video with Cloudinary:", thumbnailError);
