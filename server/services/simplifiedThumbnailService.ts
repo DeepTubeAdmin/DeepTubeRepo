@@ -5,7 +5,7 @@
  * without any dependency on FFmpeg or complex processing logic.
  */
 
-import { v2 as cloudinary } from 'cloudinary';
+import { v2 as cloudinary, UploadApiOptions } from 'cloudinary';
 import s3Service from './s3Service';
 import { getYoutubeThumbnailUrl, extractYoutubeVideoId } from '../youtubeUtils';
 
@@ -63,7 +63,8 @@ export async function generateThumbnail(videoId: number, s3Key: string): Promise
     try {
       // Upload to Cloudinary and generate thumbnail
       console.log('Starting Cloudinary upload with updated credentials...');
-      const result = await cloudinary.uploader.upload(s3Url, {
+      // Define options with proper typing
+      const uploadOptions: UploadApiOptions = {
         resource_type: 'video',
         public_id: `video-${videoId}`,
         eager: [
@@ -76,8 +77,8 @@ export async function generateThumbnail(videoId: number, s3Key: string): Promise
           }
         ],
         eager_async: false // Wait for processing to complete
-        // Remove null value for eager_notification_url
-      });
+      };
+      const result = await cloudinary.uploader.upload(s3Url, uploadOptions);
       
       // Get the thumbnail URL from the result
       const thumbnailUrl = result.eager[0].secure_url;
@@ -153,7 +154,8 @@ export async function generateYouTubeThumbnail(videoId: number, youtubeId: strin
       const youtubeUrl = `https://www.youtube.com/watch?v=${youtubeId}`;
       console.log(`Uploading YouTube URL to Cloudinary: ${youtubeUrl}`);
       
-      const result = await cloudinary.uploader.upload(youtubeUrl, {
+      // Define options with proper typing
+      const youtubeOptions: UploadApiOptions = {
         resource_type: 'video',
         public_id: `youtube-${videoId}`,
         eager: [
@@ -166,7 +168,8 @@ export async function generateYouTubeThumbnail(videoId: number, youtubeId: strin
           }
         ],
         eager_async: false
-      });
+      };
+      const result = await cloudinary.uploader.upload(youtubeUrl, youtubeOptions);
       
       console.log('Cloudinary upload successful, extracting thumbnail URL');
       const thumbnailUrl = result.eager[0].secure_url;
