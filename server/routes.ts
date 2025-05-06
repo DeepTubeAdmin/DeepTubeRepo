@@ -1255,25 +1255,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const categorySlug = req.query.category as string || '';
-      // FORCED DIRECT SHUFFLE APPROACH
+      // MAXIMUM FORCED SHUFFLE APPROACH (SUPER AGGRESSIVE)
       // Check for shuffle parameter in URL (from clicking logo)
       const hasShuffleParam = req.query.shuffle !== undefined;
 
-      // For debugging
-      console.log(`Content feed request: page=${page}, category=${categorySlug || 'all'}, hasShuffleInURL=${hasShuffleParam}`);
+      // For debugging with MUCH MORE DETAIL
+      console.log('-----------------------------------------------------');
+      console.log(`CONTENT FEED REQUEST: page=${page}, category=${categorySlug || 'all'}`);
+      console.log(`URL PARAMETERS: ${JSON.stringify(req.query)}`);
+      console.log(`SHUFFLE PARAM PRESENT: ${hasShuffleParam}`);
       
-      // Force shuffle to true when we have a shuffle parameter in URL
-      const shuffle = hasShuffleParam;
+      // ALWAYS FORCE SHUFFLE TO TRUE
+      // This guarantees that the content will always be shuffled
+      const shuffle = true;
       
-      // Use either the shuffle param value or generate a completely new random shuffle seed
-      // for maximum randomization effect
-      const effectiveSeed = shuffle
-        ? (req.query.shuffle as string || Math.random().toString(36) + Date.now().toString()) 
-        : '';
+      // Generate a COMPLETELY RANDOM seed every single time
+      // for maximum randomization effect (guaranteed different results)
+      const effectiveSeed = Date.now().toString() + Math.random().toString(36).substring(2);
         
-      console.log(`Shuffle mode is ${shuffle ? 'ACTIVE' : 'inactive'}, using seed: ${effectiveSeed || 'none'}`);
+      console.log(`SHUFFLE MODE: ALWAYS ACTIVE`);
+      console.log(`USING RANDOM SEED: ${effectiveSeed}`);
+      console.log('-----------------------------------------------------');
       
-      // Shorthand for use in SQL queries
+      // Use the same seed in SQL queries
       const shuffleSeed = effectiveSeed;
       
       // Get categoryId if category slug is provided

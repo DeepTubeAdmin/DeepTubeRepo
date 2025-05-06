@@ -95,15 +95,11 @@ export default function Header({ simple = false }: HeaderProps) {
       duration: 1500,
     });
     
-    // Simple approach: force reload the page with a random parameter to bust cache
+    // Super-simplified approach: just reload with a forced shuffle parameter
     setTimeout(() => {
-      // If already on home page, add/update the random parameter
-      // Otherwise navigate to home with the random parameter
-      if (window.location.pathname === '/') {
-        window.location.href = `/?shuffle=${shuffleId}&t=${Date.now()}`;
-      } else {
-        window.location.href = `/?shuffle=${shuffleId}&t=${Date.now()}`;
-      }
+      // This will force a complete reload with the shuffle parameter and timestamp
+      // These parameters will be picked up by our server-side API endpoint
+      window.location.replace(`/?shuffle=${shuffleId}&t=${Date.now()}`);
     }, 200); // Short delay to let toast appear
   };
 
