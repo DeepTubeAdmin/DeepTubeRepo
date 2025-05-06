@@ -12,26 +12,22 @@ import { localPathToS3Key, uploadStringToS3 } from '../s3';
  * Ensure Cloudinary is configured before any operations
  */
 function ensureCloudinaryConfig() {
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const apiKey = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  const config = cloudinary.config();
   
-  if (!cloudName || !apiKey || !apiSecret) {
+  if (!config.cloud_name || !config.api_key || !config.api_secret) {
     console.error('Cloudinary credentials not properly configured');
-    console.log('Available environment variables:');
-    console.log(` - CLOUDINARY_CLOUD_NAME: ${cloudName ? 'Present' : 'Missing'}`);
-    console.log(` - CLOUDINARY_API_KEY: ${apiKey ? 'Present' : 'Missing'}`);
-    console.log(` - CLOUDINARY_API_SECRET: ${apiSecret ? 'Present' : 'Missing'}`);
-    throw new Error('Cloudinary credentials not properly configured');
+    console.log('Current Cloudinary config:');
+    console.log(` - cloud_name: ${config.cloud_name ? config.cloud_name : 'Missing'}`);
+    console.log(` - api_key: ${config.api_key ? `Present (${config.api_key.length} chars)` : 'Missing'}`);
+    console.log(` - api_secret: ${config.api_secret ? `Present (${config.api_secret.length} chars)` : 'Missing'}`);
+    
+    // This is important: don't throw an error, just warn
+    // The application will continue to work with placeholders
+    console.warn('Cloudinary operations will be limited');
+    return false;
   }
-
-  // Configure Cloudinary
-  cloudinary.config({
-    cloud_name: cloudName,
-    api_key: apiKey,
-    api_secret: apiSecret,
-    secure: true
-  });
+  
+  return true;
 }
 
 /**
@@ -222,11 +218,13 @@ async function generateThumbnail(
   contentType: string,
   youtubeId: string | null = null
 ): Promise<string> {
-  ensureCloudinaryConfig();
+  // Check Cloudinary config and continue even if not configured
+  const cloudinaryConfigured = ensureCloudinaryConfig();
   const s3Key = `thumbnails/content-${contentId}.jpg`;
   
   try {
     // For YouTube videos, use the YouTube thumbnail directly
+    // This doesn't need Cloudinary so it should always work
     if (youtubeId) {
       console.log(`Using YouTube thumbnail for content ${contentId} with YouTube ID ${youtubeId}`);
       const youtubeThumbnailUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
@@ -253,8 +251,34 @@ async function generateThumbnail(
       }
     }
     
-    // For direct source URLs, use Cloudinary to generate thumbnail
+    // For direct source URLs, try to use Cloudinary if configured
     if (sourceUrl) {
+      if (!cloudinaryConfigured) {
+        console.warn(`Cloudinary not configured, fetching source URL directly without processing for content ${contentId}`);
+        
+        // Without Cloudinary, try to fetch and use the original image directly
+        try {
+          const response = await fetch(sourceUrl);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch source URL: ${response.status}`);
+          }
+          
+          const buffer = await response.arrayBuffer();
+          await uploadStringToS3(
+            Buffer.from(buffer),
+            s3Key,
+            contentType === 'image' || contentType === 'images' ? 'image/jpeg' : 'video/mp4'
+          );
+          
+          console.log(`Successfully uploaded original content to S3 for content ${contentId}`);
+          return s3Key;
+        } catch (error) {
+          console.error(`Error uploading original content to S3: ${error}`);
+          throw error;
+        }
+      }
+      
+      // If Cloudinary is configured, proceed with it
       console.log(`Generating thumbnail via Cloudinary for content ${contentId}, type: ${contentType}`);
       console.log(`Source URL: ${sourceUrl}`);
       
