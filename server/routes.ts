@@ -305,7 +305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Image ${image.id} using URL: ${image.imageUrl}`);
             
             // Generate thumbnail using the imageUrl as source with unified thumbnail service
-            const simplifiedThumbnailService = await import('./services/simplifiedThumbnailService');
+            const thumbnailService = await import('./services/ThumbnailService');
             const imageUrlKey = `uploads/images/image-${image.id}.jpg`;
             
             // First save the image to S3
@@ -314,8 +314,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const imageData = await response.arrayBuffer();
             await uploadStringToS3(Buffer.from(imageData), imageUrlKey, 'image/jpeg');
             
-            // Now generate the thumbnail
-            const s3Key = await simplifiedThumbnailService.generateThumbnail(image.id, imageUrlKey);
+            // Now generate the thumbnail using the new ThumbnailService
+            console.log('Using unified ThumbnailService for image thumbnail generation');
+            const result = await thumbnailService.generateThumbnail({
+              contentId: image.id,
+              contentType: 'image',
+              sourceUrl: `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${imageUrlKey}`
+            });
+            const s3Key = result.thumbnailPath;
             
             // Update the database to use the thumbnail endpoint
             await dbStorage.updateVideo(image.id, {
