@@ -269,36 +269,37 @@ export class DatabaseStorage implements IStorage {
     if (shuffleSeed) {
       // When a shuffleSeed is provided, use a seeded random order to ensure consistent shuffle results
       console.log(`Using randomized shuffle ordering with seed: ${shuffleSeed}`);      
-      // Convert the seed string to a numeric value to use with SQL RANDOM()
-      const seedValue = shuffleSeed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      // Convert the seed string to a normalized value between 0 and 1 to avoid integer overflow
+      const seedHash = shuffleSeed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 100;
+      const seedValue = seedHash / 100;
       
       // Use seed to create different deterministic sort patterns based on seed modulo
-      const sortPattern = seedValue % 5;
+      const sortPattern = seedHash % 5;
       
       switch (sortPattern) {
         case 0: // Random only
           queryBuilder = queryBuilder.orderBy(
-            sql`RANDOM() * ${seedValue}::FLOAT`
+            sql`RANDOM() * ${seedValue}`
           );
           break;
         case 1: // Newest with random offset
           queryBuilder = queryBuilder.orderBy(
-            sql`${videos.id} + (${seedValue} % 1000)::INTEGER DESC`
+            sql`${videos.id} + (${seedValue} * 10)::INTEGER DESC`
           );
           break;
         case 2: // Title-influenced shuffle
           queryBuilder = queryBuilder.orderBy(
-            sql`ASCII(SUBSTRING(${videos.title}, 1, 1)) * (${seedValue} % 100)::INTEGER`
+            sql`ASCII(SUBSTRING(${videos.title}, 1, 1)) * (${seedValue} * 10)::INTEGER`
           );
           break;
         case 3: // Created date with seed offset
           queryBuilder = queryBuilder.orderBy(
-            sql`EXTRACT(EPOCH FROM ${videos.createdAt})::INTEGER * (${seedValue} % 100)::INTEGER`
+            sql`EXTRACT(EPOCH FROM ${videos.createdAt})::INTEGER * ${seedValue}`
           );
           break;
         case 4: // Category with random
           queryBuilder = queryBuilder.orderBy(
-            sql`${videos.categoryId} * (${seedValue} % 50)::INTEGER + RANDOM() * ${seedValue}::FLOAT`
+            sql`${videos.categoryId} * (${seedValue} * 5)::INTEGER + RANDOM() * ${seedValue}`
           );
           break;
         default:
