@@ -49,8 +49,24 @@ export async function uploadToCloudinary(
   options: CloudinaryOptions = {}
 ): Promise<UploadApiResponse> {
   try {
+    console.log(`Cloudinary: Starting upload process`);
+    console.log(`Cloudinary: Source URL starts with: ${source.substring(0, 50)}...`);
+    console.log(`Cloudinary: Options: ${JSON.stringify(options)}`);
+    
     // Ensure Cloudinary is configured
-    configureCloudinary();
+    const configResult = configureCloudinary();
+    console.log(`Cloudinary: Configuration check result: ${configResult ? 'Success' : 'Failure'}`);
+    
+    if (!configResult) {
+      console.error('Cloudinary: Configuration failed, credentials may be missing or invalid');
+      throw new Error('Cloudinary configuration failed - check environment variables');
+    }
+    
+    // Output current Cloudinary config (without sensitive data)
+    const config = cloudinary.config();
+    console.log(`Cloudinary: Using cloud_name: ${config.cloud_name}`);
+    console.log(`Cloudinary: API key status: ${config.api_key ? 'Present' : 'Missing'}`);
+    console.log(`Cloudinary: API secret status: ${config.api_secret ? 'Present' : 'Missing'}`);
     
     // Prepare upload options
     const uploadOptions: UploadApiOptions = {
@@ -58,16 +74,51 @@ export async function uploadToCloudinary(
       public_id: options.publicId || undefined,
       format: options.format || undefined,
       transformation: options.transformation || undefined,
-      eager_async: false // Wait for transformations to complete
+      eager_async: false, // Wait for transformations to complete
+      timeout: 60000 // 60-second timeout for uploads
     };
     
-    console.log(`Uploading to Cloudinary: ${source.substring(0, 100)}...`);
+    console.log(`Cloudinary: Prepared upload options:
+      resource_type: ${uploadOptions.resource_type}
+      public_id: ${uploadOptions.public_id}
+      format: ${uploadOptions.format}
+      transformations: ${uploadOptions.transformation ? JSON.stringify(uploadOptions.transformation) : 'none'}
+    `);
+    
+    console.log(`Cloudinary: Starting upload with source URL: ${source.substring(0, 100)}...`);
+    const startTime = Date.now();
     const result = await cloudinary.uploader.upload(source, uploadOptions);
-    console.log(`Cloudinary upload successful: ${result.secure_url}`);
+    const endTime = Date.now();
+    
+    console.log(`Cloudinary: Upload successful in ${endTime - startTime}ms`);
+    console.log(`Cloudinary: Result URL: ${result.secure_url}`);
+    console.log(`Cloudinary: Public ID: ${result.public_id}`);
+    console.log(`Cloudinary: Resource type: ${result.resource_type}`);
+    console.log(`Cloudinary: Format: ${result.format}`);
+    
+    // Check for eager transformations
+    if (result.eager && result.eager.length > 0) {
+      console.log(`Cloudinary: Eager transformations available: ${result.eager.length}`);
+      result.eager.forEach((t, i) => {
+        console.log(`Cloudinary: Eager transformation #${i+1}: ${t.secure_url}`);
+      });
+    }
     
     return result;
   } catch (error) {
-    console.error('Error uploading to Cloudinary:', error);
+    console.error('Cloudinary: ERROR during upload:', error);
+    console.error(`Cloudinary: Error message: ${error.message}`);
+    console.error(`Cloudinary: Error stack: ${error.stack}`);
+    
+    // Attempt to determine the nature of the error
+    if (error.message && error.message.includes('timeout')) {
+      console.error('Cloudinary: Upload timed out - source URL may be too large or inaccessible');
+    } else if (error.message && error.message.includes('Invalid credentials')) {
+      console.error('Cloudinary: Invalid credentials - check API key and secret');
+    } else if (error.message && error.message.includes('not found')) {
+      console.error('Cloudinary: Source not found - URL may be invalid or inaccessible');
+    }
+    
     throw error;
   }
 }

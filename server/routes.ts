@@ -581,7 +581,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (contentType === 'image' && video.imageUrl) {
         sourceUrl = video.imageUrl;
       } else if (contentType === 'embed' && video.embedCode) {
-        youtubeId = thumbnailUtils.extractYouTubeVideoId(video.embedCode);
+        const { extractYouTubeVideoId } = await import('./services/ThumbnailService/cloudinary');
+        youtubeId = extractYouTubeVideoId(video.embedCode);
         if (youtubeId) {
           sourceUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
         }
@@ -2589,11 +2590,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (content.contentType === 'image' || content.contentType === 'images') {
           sourceUrl = content.imageUrl;
         } else if (content.contentType === 'embed') {
-          // Import thumbnail service
-          const thumbService = await import('./services/simplifiedThumbnailService');
-          youtubeId = thumbService.extractYoutubeVideoId(content.embedCode || '');
+          // Use unified ThumbnailService for YouTube ID extraction
+          const thumbnailService = await import('./services/ThumbnailService');
+          youtubeId = thumbnailService.extractYouTubeVideoId(content.embedCode || '');
           if (youtubeId) {
-            sourceUrl = thumbService.getYoutubeThumbnailUrl(youtubeId);
+            sourceUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+            console.log(`Extracted YouTube ID: ${youtubeId}, using source URL: ${sourceUrl}`);
           }
         }
         
@@ -2655,8 +2657,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (existingThumbnailPath.startsWith('/api/videos/')) {
           try {
             // For backward compatibility - this will be updated on next access
-            const thumbnailS3Key = thumbnailService.storage.getThumbnailS3Key(content.id, content.contentType);
-            const s3Url = await thumbnailService.storage.getSignedS3Url(thumbnailS3Key);
+            const { getThumbnailS3Key, getSignedS3Url } = await import('./services/ThumbnailService/storage');
+            const thumbnailS3Key = getThumbnailS3Key(content.id, content.contentType);
+            const s3Url = await getSignedS3Url(thumbnailS3Key);
             return res.redirect(s3Url);
           } catch (oldPathError) {
             console.error(`Error with old API path: ${oldPathError}`);

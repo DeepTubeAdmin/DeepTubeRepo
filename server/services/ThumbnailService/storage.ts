@@ -31,6 +31,17 @@ export async function uploadToS3(
   options: StorageOptions = {}
 ): Promise<string> {
   try {
+    console.log(`S3 Upload: Starting upload for key ${s3Key}`);
+    console.log(`S3 Upload: Content type ${typeof content}, length: ${typeof content === 'string' ? content.length : content.length} bytes`);
+    console.log(`S3 Upload: Options: ${JSON.stringify(options)}`);
+    
+    // Check AWS credentials
+    console.log(`S3 Upload: Checking AWS credentials availability: ` +
+                `Region=${!!process.env.AWS_REGION}, ` +
+                `Key=${!!process.env.AWS_ACCESS_KEY_ID}, ` +
+                `Secret=${!!process.env.AWS_SECRET_ACCESS_KEY}, ` +
+                `Bucket=${!!process.env.AWS_BUCKET_NAME}`);
+    
     // Convert string to Buffer if needed
     const contentBuffer = typeof content === 'string' 
       ? (options.encoding === 'base64' 
@@ -38,8 +49,11 @@ export async function uploadToS3(
         : Buffer.from(content))
       : content;
 
+    console.log(`S3 Upload: Prepared buffer of size ${contentBuffer.length} bytes`);
+
     // Determine content type based on file extension if not provided
     const contentType = options.contentType || getContentTypeFromKey(s3Key);
+    console.log(`S3 Upload: Using content type: ${contentType}`);
     
     // Create the S3 put command
     const params = {
@@ -51,13 +65,29 @@ export async function uploadToS3(
     };
 
     // Upload to S3
-    console.log(`Uploading ${s3Key} to S3 bucket ${bucketName}`);
+    console.log(`S3 Upload: Sending PutObjectCommand for ${s3Key} to bucket ${bucketName}`);
+    const startTime = Date.now();
     await s3Client.send(new PutObjectCommand(params));
+    const endTime = Date.now();
+    console.log(`S3 Upload: Successfully uploaded ${s3Key} in ${endTime - startTime}ms`);
+    
+    // Verify the upload by trying to access the object
+    try {
+      console.log(`S3 Upload: Verifying upload by checking object existence`);
+      const exists = await checkIfObjectExists(s3Key);
+      console.log(`S3 Upload: Verification result - Object exists: ${exists}`);
+    } catch (verifyError) {
+      console.warn(`S3 Upload: Verification failed but upload may have succeeded: ${verifyError.message}`);
+    }
     
     // Return the S3 URL
-    return getS3ResourcePath(s3Key);
+    const resourcePath = getS3ResourcePath(s3Key);
+    console.log(`S3 Upload: Complete. Resource path: ${resourcePath}`);
+    return resourcePath;
   } catch (error) {
-    console.error(`Error uploading to S3: ${s3Key}`, error);
+    console.error(`S3 Upload: ERROR uploading to S3: ${s3Key}`, error);
+    console.error(`S3 Upload: Error message: ${error.message}`);
+    console.error(`S3 Upload: Error stack: ${error.stack}`);
     throw error;
   }
 }
