@@ -2554,7 +2554,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // For direct video uploads
           // Extract S3 key from URL if it's an S3 URL
           const s3KeyFromUrl = sourceUrl.startsWith('/api/s3/') 
-            ? s3Service.urlPathToS3Key(sourceUrl)
+            ? await import('./combined-services').then(m => m.urlPathToS3Key(sourceUrl))
             : sourceUrl;
           
           s3Key = await simplifiedThumbnailService.generateThumbnail(content.id, s3KeyFromUrl);

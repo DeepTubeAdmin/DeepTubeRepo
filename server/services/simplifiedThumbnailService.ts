@@ -35,51 +35,59 @@ export async function generateThumbnail(videoId: number, s3Key: string): Promise
   try {
     console.log(`Generating simplified thumbnail for video ${videoId} using Cloudinary direct API`);
     
+    // Import combined services for simplified access
+    const { getSignedS3Url, uploadStringToS3 } = await import('../combined-services');
+    
     // Get a signed URL for the video in S3
-    const s3Url = await s3Service.getSignedS3Url(s3Key);
+    const s3Url = await getSignedS3Url(s3Key);
     console.log(`Got signed S3 URL for video: ${s3Url.substring(0, 50)}...`);
     
-    // Upload to Cloudinary and generate thumbnail
-    const result = await cloudinary.uploader.upload(s3Url, {
-      resource_type: 'video',
-      public_id: `video-${videoId}`,
-      eager: [
-        { 
-          format: 'jpg', 
-          transformation: [
-            { width: 800, height: 450, crop: 'fill' },
-            { start_offset: '1' }
-          ]
-        }
-      ],
-      eager_async: false, // Wait for processing to complete
-      eager_notification_url: null // No notification needed
-    });
-    
-    // Get the thumbnail URL from the result
-    const thumbnailUrl = result.eager[0].secure_url;
-    console.log(`Successfully generated Cloudinary thumbnail: ${thumbnailUrl}`);
-    
-    // Save the thumbnail to our S3
     try {
-      const thumbnailResponse = await fetch(thumbnailUrl);
-      if (!thumbnailResponse.ok) {
-        throw new Error(`Failed to fetch Cloudinary thumbnail: ${thumbnailResponse.status}`);
+      // Upload to Cloudinary and generate thumbnail
+      const result = await cloudinary.uploader.upload(s3Url, {
+        resource_type: 'video',
+        public_id: `video-${videoId}`,
+        eager: [
+          { 
+            format: 'jpg', 
+            transformation: [
+              { width: 800, height: 450, crop: 'fill' },
+              { start_offset: '1' }
+            ]
+          }
+        ],
+        eager_async: false, // Wait for processing to complete
+        eager_notification_url: null // No notification needed
+      });
+      
+      // Get the thumbnail URL from the result
+      const thumbnailUrl = result.eager[0].secure_url;
+      console.log(`Successfully generated Cloudinary thumbnail: ${thumbnailUrl}`);
+      
+      // Save the thumbnail to our S3
+      try {
+        const thumbnailResponse = await fetch(thumbnailUrl);
+        if (!thumbnailResponse.ok) {
+          throw new Error(`Failed to fetch Cloudinary thumbnail: ${thumbnailResponse.status}`);
+        }
+        
+        const thumbnailBuffer = Buffer.from(await thumbnailResponse.arrayBuffer());
+        const thumbnailS3Key = `thumbnails/video-${videoId}.jpg`;
+        await uploadStringToS3(thumbnailBuffer, thumbnailS3Key, 'image/jpeg');
+        console.log(`Saved thumbnail to S3: ${thumbnailS3Key}`);
+        
+        // Return the S3 key for the thumbnail
+        return thumbnailS3Key;
+      } catch (s3Error) {
+        console.error('Failed to save thumbnail to S3:', s3Error);
+        
+        // If we can't save to S3, return the Cloudinary URL
+        // This ensures we at least have a working thumbnail
+        return thumbnailUrl;
       }
-      
-      const thumbnailBuffer = Buffer.from(await thumbnailResponse.arrayBuffer());
-      const thumbnailS3Key = `thumbnails/video-${videoId}.jpg`;
-      await s3Service.uploadStringToS3(thumbnailBuffer, thumbnailS3Key, 'image/jpeg');
-      console.log(`Saved thumbnail to S3: ${thumbnailS3Key}`);
-      
-      // Return the S3 key for the thumbnail
-      return thumbnailS3Key;
-    } catch (s3Error) {
-      console.error('Failed to save thumbnail to S3:', s3Error);
-      
-      // If we can't save to S3, return the Cloudinary URL
-      // This ensures we at least have a working thumbnail
-      return thumbnailUrl;
+    } catch (cloudinaryError) {
+      console.error('Cloudinary processing failed:', cloudinaryError);
+      throw cloudinaryError;
     }
   } catch (error) {
     console.error('Cloudinary thumbnail generation failed:', error);
@@ -94,6 +102,9 @@ export async function generateYouTubeThumbnail(videoId: number, youtubeId: strin
   try {
     console.log(`Generating thumbnail for YouTube video ${youtubeId}`);
     
+    // Import combined services for simplified access
+    const { uploadStringToS3 } = await import('../combined-services');
+    
     // Try the direct YouTube thumbnail approach first (faster and more reliable)
     try {
       const youtubeThumbnailUrl = getYoutubeThumbnailUrl(youtubeId, 'maxresdefault');
@@ -106,7 +117,7 @@ export async function generateYouTubeThumbnail(videoId: number, youtubeId: strin
       
       const imageBuffer = Buffer.from(await response.arrayBuffer());
       const thumbnailS3Key = `thumbnails/youtube-${videoId}.jpg`;
-      await s3Service.uploadStringToS3(imageBuffer, thumbnailS3Key, 'image/jpeg');
+      await uploadStringToS3(imageBuffer, thumbnailS3Key, 'image/jpeg');
       
       console.log(`Successfully saved YouTube thumbnail to S3: ${thumbnailS3Key}`);
       return thumbnailS3Key;
@@ -138,7 +149,7 @@ export async function generateYouTubeThumbnail(videoId: number, youtubeId: strin
       const thumbnailResponse = await fetch(thumbnailUrl);
       const thumbnailBuffer = Buffer.from(await thumbnailResponse.arrayBuffer());
       const thumbnailS3Key = `thumbnails/youtube-${videoId}.jpg`;
-      await s3Service.uploadStringToS3(thumbnailBuffer, thumbnailS3Key, 'image/jpeg');
+      await uploadStringToS3(thumbnailBuffer, thumbnailS3Key, 'image/jpeg');
       
       return thumbnailS3Key;
     }
