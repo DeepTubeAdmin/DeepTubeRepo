@@ -305,7 +305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Image ${image.id} using URL: ${image.imageUrl}`);
             
             // Generate thumbnail using the imageUrl as source with unified thumbnail service
-            const thumbnailService = await import('./services/ThumbnailService');
+            const simplifiedThumbnailService = await import('./services/simplifiedThumbnailService');
             const imageUrlKey = `uploads/images/image-${image.id}.jpg`;
             
             // First save the image to S3
@@ -314,14 +314,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const imageData = await response.arrayBuffer();
             await uploadStringToS3(Buffer.from(imageData), imageUrlKey, 'image/jpeg');
             
-            // Now generate the thumbnail using our new API structure
-            const result = await thumbnailService.default.generateThumbnail({
-              contentId: image.id,
-              contentType: 'image',
-              sourceUrl: imageUrlKey,
-              forceRegeneration: true
-            });
-            const s3Key = result.thumbnailPath;
+            // Now generate the thumbnail
+            const s3Key = await simplifiedThumbnailService.generateThumbnail(image.id, imageUrlKey);
             
             // Update the database to use the thumbnail endpoint
             await dbStorage.updateVideo(image.id, {
@@ -358,7 +352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             
             // Generate thumbnail from base64 data using our unified ThumbnailService
-            const result = await thumbnailService.default.generateThumbnail({
+            const result = await thumbnailService.generateThumbnail({
               contentId: image.id,
               contentType: 'image',
               base64Data: image.imageUrl,
@@ -594,7 +588,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Source URL: ${sourceUrl || 'none'}, YouTube ID: ${youtubeId || 'none'}`);
       
       // The service will handle all the different cases internally
-      const result = await thumbnailService.default.generateThumbnail({
+      const result = await thumbnailService.generateThumbnail({
         contentId: videoId,
         contentType: contentType,
         sourceUrl: sourceUrl,
@@ -2146,16 +2140,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if ((contentType === "video" || contentType === "videos") && videoUrl) {
         try {
           console.log(`Generating thumbnail for new video upload: ${video.id} with URL ${videoUrl}`);
-          // Use the unified ThumbnailService
-          const thumbnailService = await import('./services/ThumbnailService');
+          // Import the thumbnail generator function
+          const { generateAndStoreS3Thumbnail } = await import('./generateThumbnail');
           
           // Generate the thumbnail
-          const result = await thumbnailService.generateThumbnail({
-            contentId: video.id,
-            contentType: 'video',
-            sourceUrl: videoUrl,
-            forceRegeneration: true
-          });
+          const s3Key = await generateAndStoreS3Thumbnail(
+            video.id,
+            contentType,
+            videoUrl
+          );
           
           // Update the video record with the thumbnail path
           await dbStorage.updateVideo(video.id, { 
@@ -2273,20 +2266,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const signedS3Url = await getSignedS3Url(s3Key);
             console.log(`Generated signed S3 URL for Cloudinary to access: ${signedS3Url.substring(0, 100)}...`);
             
-            // Import unified thumbnail service for direct upload
-            const unified = await import('./services/ThumbnailService');
+            // Import simplified thumbnail service for direct upload
+            const simplifiedThumbnailService = await import('./services/simplifiedThumbnailService');
             
-            // Generate thumbnail using unified service with direct Cloudinary integration
-            console.log('Using unified ThumbnailService for direct S3 URL processing');
-            const result = await unified.default.generateThumbnail({
-              contentId: tempVideoId, 
-              contentType: 'video',
-              sourceUrl: s3Key
-            });
-            const thumbnailS3Key = result.thumbnailPath;
+            // Generate thumbnail using simplified service with direct Cloudinary integration
+            console.log('Using simplified thumbnail service for direct S3 URL processing');
+            const thumbnailS3Key = await simplifiedThumbnailService.generateThumbnail(tempVideoId, s3Key);
             
-            // Set the thumbnail path to be used in the response - use the new API format
-            thumbnailPath = `/api/videos/${tempVideoId}/thumbnail`;
+            // Set the thumbnail path to be used in the response - use the standard API format
+            thumbnailPath = `/api/content/${tempVideoId}/thumbnail`;
             console.log(`Generated thumbnail using simplified service: ${thumbnailPath} (S3 key: ${thumbnailS3Key})`);
             console.log(`Generated temporary thumbnail for uploaded video using Cloudinary: ${thumbnailPath} (S3 key: ${thumbnailS3Key})`);
           } catch (thumbnailError) {
@@ -2558,9 +2546,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Directly using YouTube thumbnail for embed ${contentId}: ${youtubeThumbnailUrl}`);
           
           // Update thumbnail path to the unified endpoint
-          if (!content.thumbnail || !content.thumbnail.startsWith('/api/videos/')) {
+          if (!content.thumbnail || !content.thumbnail.startsWith('/api/content/')) {
             await dbStorage.updateVideo(contentId, {
-              thumbnail: `/api/videos/${contentId}/thumbnail`
+              thumbnail: `/api/content/${contentId}/thumbnail`
             });
             console.log(`Updated YouTube embed ${contentId} with unified thumbnail path`);
           }
@@ -2577,7 +2565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (forceRegeneration || 
           forcePlaceholder || 
           !content.thumbnail ||
-          !content.thumbnail.startsWith('/api/videos/')) {
+          !content.thumbnail.startsWith('/api/content/')) {
         
         // Determine the appropriate source URL and YouTube ID (if applicable)
         let sourceUrl = null;
@@ -2621,7 +2609,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Update content record with the new unified thumbnail endpoint path
         await dbStorage.updateVideo(content.id, {
-          thumbnail: `/api/videos/${content.id}/thumbnail`
+          thumbnail: `/api/content/${content.id}/thumbnail`
         });
         console.log(`Updated content ID ${content.id} with unified thumbnail path`);
         
