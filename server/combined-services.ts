@@ -4,7 +4,7 @@
  */
 
 import s3Service from "./services/s3Service";
-import cloudinaryService from "./services/cloudinaryService";
+import thumbnailService from "./services/simplifiedThumbnailService";
 // Using Cloudinary instead of FFmpeg for thumbnail generation
 
 // Export legacy function names that map to new service methods for backward compatibility
@@ -103,23 +103,14 @@ export async function generateAndStoreS3Thumbnail(
   youtubeId: string | null = null
 ): Promise<string> {
   console.log(`Thumbnail generation request for ${contentType} ${contentId} using Cloudinary`);
-  return cloudinaryService.generateThumbnail(contentId, sourceUrl, contentType, youtubeId);
+  if (youtubeId) {
+    return thumbnailService.generateYouTubeThumbnail(contentId, youtubeId);
+  } else {
+    return thumbnailService.generateThumbnail(contentId, sourceUrl);
+  }
 }
 
-// SVG Placeholder generator that was in old generateThumbnail.ts
+// SVG Placeholder generator using the simplified thumbnail service
 export function generateSvgPlaceholder(contentType: string): string {
-  const bgColor = '#0f172a';
-  const textColor = '#f59e0b';
-  const width = 800;
-  const height = 450;
-  
-  // Display proper content type in the SVG
-  const displayType = contentType.charAt(0).toUpperCase() + contentType.slice(1);
-  
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-    <rect width="${width}" height="${height}" fill="${bgColor}"/>
-    <text x="${width/2}" y="${height/2}" font-family="Arial" font-size="24" fill="${textColor}" text-anchor="middle">
-      ${displayType} Preview
-    </text>
-  </svg>`;
+  return thumbnailService.generatePlaceholder(contentType);
 }
