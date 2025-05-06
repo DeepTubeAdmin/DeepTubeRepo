@@ -2278,7 +2278,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             
             console.log('Thumbnail generation result:', result);
-            const thumbnailS3Key = result.thumbnailPath, s3Key);
+            const thumbnailS3Key = result.thumbnailPath;
             
             // Set the thumbnail path to be used in the response - use the standard API format
             thumbnailPath = `/api/content/${tempVideoId}/thumbnail`;
