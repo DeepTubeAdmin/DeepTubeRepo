@@ -1371,7 +1371,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // 2. TRENDING NOW SECTION (3 rows of videos, 1 row of images)
       // Get trending videos (not already used in featured)
-      let trendingVideos = await dbStorage.getTrendingVideos(50);
+      // Get trending videos with shuffle seed applied at the database level
+      let trendingVideos = await dbStorage.getTrendingVideos(50, undefined, shuffleSeed);
       trendingVideos = trendingVideos.filter(v => 
         (v.contentType === 'video' || v.contentType === 'embed') &&
         !usedContentIds.has(v.id));
@@ -1387,7 +1388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       response.trending.videos = selectedTrendingVideos;
       
       // Get trending images
-      let trendingImages = await dbStorage.getTrendingVideos(20, 'image');
+      let trendingImages = await dbStorage.getTrendingVideos(20, 'image', shuffleSeed);
       trendingImages = trendingImages.filter(img => 
         img.contentType === 'image' && !usedContentIds.has(img.id));
         
@@ -1419,7 +1420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       response.recent.videos = selectedRecentVideos;
       
       // Get newest images
-      let recentImages = await dbStorage.getVideos(20, 'image', 0, 'newest');
+      let recentImages = await dbStorage.getVideos(20, 'image', undefined, 'newest', shuffleSeed);
       recentImages = recentImages.filter(img => 
         img.contentType === 'image' && !usedContentIds.has(img.id));
         
@@ -1442,7 +1443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const adPosition = Math.floor(Math.random() * 12); // Random position within 12 videos
         
         // Get popular videos
-        let popularVideos = await dbStorage.getPopularVideos(50);
+        let popularVideos = await dbStorage.getPopularVideos(50, undefined, shuffleSeed);
         popularVideos = popularVideos.filter(v => 
           (v.contentType === 'video' || v.contentType === 'embed') &&
           !usedContentIds.has(v.id));
@@ -1457,7 +1458,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         selectedPopularVideos.forEach(video => usedContentIds.add(video.id));
         
         // Get popular images
-        let popularImages = await dbStorage.getPopularVideos(20, 'image');
+        let popularImages = await dbStorage.getPopularVideos(20, 'image', shuffleSeed);
         popularImages = popularImages.filter(img => 
           img.contentType === 'image' && !usedContentIds.has(img.id));
           

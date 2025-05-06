@@ -711,7 +711,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async getTrendingVideos(limit: number = 20, contentType?: string): Promise<Video[]> {
+  async getTrendingVideos(limit: number = 20, contentType?: string, shuffleSeed?: string): Promise<Video[]> {
     try {
       // Start with base query
       let queryBuilder = db.select().from(videos);
@@ -721,11 +721,23 @@ export class DatabaseStorage implements IStorage {
         queryBuilder = queryBuilder.where(eq(videos.contentType, contentType));
       }
       
-      // Order by a combination of views and recency (trending algorithm)
-      // This algorithm prioritizes videos that are newer and have more views
-      queryBuilder = queryBuilder.orderBy(
-        sql`(${videos.views} * 0.6) + ((EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) - EXTRACT(EPOCH FROM ${videos.createdAt})) / 86400) * 0.4 DESC`
-      );
+      // When shuffleSeed is provided, use the same randomization algorithm as the main getVideos method
+      if (shuffleSeed) {
+        console.log(`Using randomized shuffle ordering for trending with seed: ${shuffleSeed}`);
+        // Convert the seed string to a numeric value to use with SQL RANDOM()
+        const seedValue = shuffleSeed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        
+        // Use seed with trending ranking for more deterministic but varied ordering
+        queryBuilder = queryBuilder.orderBy(
+          sql`(${videos.views} * 0.6) + ((EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) - EXTRACT(EPOCH FROM ${videos.createdAt})) / 86400) * 0.4 + (RANDOM() * ${seedValue} * 0.2) DESC`
+        );
+      } else {
+        // Default trending algorithm without shuffle
+        // This algorithm prioritizes videos that are newer and have more views
+        queryBuilder = queryBuilder.orderBy(
+          sql`(${videos.views} * 0.6) + ((EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) - EXTRACT(EPOCH FROM ${videos.createdAt})) / 86400) * 0.4 DESC`
+        );
+      }
       
       // Add limit
       const results = await queryBuilder.limit(limit);
@@ -739,7 +751,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async getPopularVideos(limit: number = 20, contentType?: string): Promise<Video[]> {
+  async getPopularVideos(limit: number = 20, contentType?: string, shuffleSeed?: string): Promise<Video[]> {
     try {
       // Start with base query to count likes
       let queryBuilder = db
@@ -757,10 +769,23 @@ export class DatabaseStorage implements IStorage {
         queryBuilder = queryBuilder.where(eq(videos.contentType, contentType));
       }
       
-      // Group by video ID and order by like count descending
-      queryBuilder = queryBuilder
-        .groupBy(videos.id)
-        .orderBy(desc(sql<number>`COUNT(${likes.id})`));
+      // Group by video ID 
+      queryBuilder = queryBuilder.groupBy(videos.id);
+      
+      // Apply randomized ordering with shuffle seed if provided
+      if (shuffleSeed) {
+        console.log(`Using randomized shuffle ordering for popular with seed: ${shuffleSeed}`);
+        // Convert the seed string to a numeric value to use with SQL RANDOM()
+        const seedValue = shuffleSeed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        
+        // Mix popularity ranking with seeded randomness
+        queryBuilder = queryBuilder.orderBy(
+          sql`COUNT(${likes.id}) + (RANDOM() * ${seedValue} * 3.0) DESC`
+        );
+      } else {
+        // Default ordering - most likes first
+        queryBuilder = queryBuilder.orderBy(desc(sql<number>`COUNT(${likes.id})`));
+      }
       
       // Add limit
       const results = await queryBuilder.limit(limit);
