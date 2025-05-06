@@ -27,13 +27,14 @@ export default function Home() {
   
   // Effect to trigger shuffle on component mount based on URL parameters
   useEffect(() => {
-    // Check if we came from a shuffle (URL parameter)
+    // Check if we came from a shuffle (URL parameter) or if there's a shuffleSeed parameter
     const urlParams = new URLSearchParams(window.location.search);
     const hasShuffleParam = urlParams.has('shuffle');
+    const hasShuffleSeedParam = urlParams.has('shuffleSeed');
     
-    // Only do an auto-shuffle if we don't already have a shuffle param
+    // Only do an auto-shuffle if we don't already have any shuffle params
     // This prevents infinite loops of shuffling
-    if (!hasShuffleParam) {
+    if (!hasShuffleParam && !hasShuffleSeedParam) {
       // Generate a random number to decide whether to shuffle
       // Lower probability (30%) to reduce frequency of auto-shuffles
       const shouldAutoShuffle = Math.random() > 0.7;
