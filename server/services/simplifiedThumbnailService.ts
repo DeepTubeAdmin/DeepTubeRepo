@@ -161,7 +161,7 @@ export async function generateThumbnail(videoId: number, s3Key: string): Promise
 /**
  * Generate a thumbnail from a YouTube video using its ID
  */
-export async function generateYouTubeThumbnail(videoId: number, youtubeId: string): Promise<string> {
+export async function generateYouTubeThumbnail(videoId: number, youtubeId: string | null): Promise<string> {
   try {
     console.log(`Generating thumbnail for YouTube video ${youtubeId}`);
     

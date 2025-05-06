@@ -103,10 +103,22 @@ export async function generateAndStoreS3Thumbnail(
   youtubeId: string | null = null
 ): Promise<string> {
   console.log(`Thumbnail generation request for ${contentType} ${contentId} using Cloudinary`);
-  if (youtubeId) {
-    return thumbnailService.generateYouTubeThumbnail(contentId, youtubeId);
-  } else {
-    return thumbnailService.generateThumbnail(contentId, sourceUrl);
+  try {
+    if (youtubeId) {
+      // Use the YouTube-specific generation function for YouTube content
+      return thumbnailService.generateYouTubeThumbnail(contentId, youtubeId);
+    } else if (sourceUrl) {
+      // Use the standard thumbnail generation for videos with a source URL
+      return thumbnailService.generateThumbnail(contentId, sourceUrl);
+    } else {
+      // For content without a source, return a placeholder
+      console.log(`No source for content ${contentId}, using placeholder`);
+      return `thumbnails/placeholder-${contentId}.svg`;
+    }
+  } catch (error) {
+    console.error(`Error in thumbnail generation for ${contentId}:`, error);
+    // Generate and return a placeholder in case of any errors
+    return `thumbnails/placeholder-${contentId}.svg`;
   }
 }
 
