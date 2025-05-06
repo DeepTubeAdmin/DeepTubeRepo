@@ -125,6 +125,27 @@ export function getThumbnailS3Key(contentId: number, contentType: string, extens
 }
 
 /**
+ * Check if an object exists in S3
+ * @param s3Key S3 key to check
+ * @returns Promise that resolves if the object exists, rejects otherwise
+ */
+export async function checkIfObjectExists(s3Key: string): Promise<boolean> {
+  try {
+    const params = {
+      Bucket: bucketName,
+      Key: s3Key
+    };
+
+    // Attempt to get the object metadata
+    await s3Client.send(new GetObjectCommand(params));
+    return true;
+  } catch (error) {
+    console.log(`Object does not exist in S3: ${s3Key}`);
+    return false;
+  }
+}
+
+/**
  * Extract content type from file extension
  * @param s3Key S3 key or filename
  * @returns Content type string

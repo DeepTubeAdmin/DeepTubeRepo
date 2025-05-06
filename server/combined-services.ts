@@ -3,8 +3,8 @@
  * for backward compatibility during the migration
  */
 
-import s3Service from "./services/s3Service";
-import thumbnailService from "./services/simplifiedThumbnailService";
+import { storage as s3Service } from "./services/ThumbnailService";
+import thumbnailService from "./services/ThumbnailService";
 // Using Cloudinary instead of FFmpeg for thumbnail generation
 
 // Export legacy function names that map to new service methods for backward compatibility
@@ -40,7 +40,7 @@ export async function uploadFileToS3(filePath: string, s3Key: string): Promise<s
     }
     
     // Upload to S3
-    return s3Service.uploadToS3(fileBuffer, s3Key, contentType);
+    return s3Service.uploadToS3(fileBuffer, s3Key, { contentType });
   } catch (error) {
     console.error(`Error in uploadFileToS3: ${error}`);
     throw error;
@@ -67,7 +67,7 @@ export async function uploadStringToS3(
     buffer = content;
   }
   
-  return s3Service.uploadToS3(buffer, s3Key, contentType);
+  return s3Service.uploadToS3(buffer, s3Key, { contentType });
 }
 
 // Legacy function to convert local path to S3 key
@@ -78,11 +78,13 @@ export function localPathToS3Key(localPath: string): string {
   if (parts.length > 1 && !isNaN(parseInt(parts[1]))) {
     const contentId = parseInt(parts[1]);
     if (filename.includes('video-')) {
-      return s3Service.getVideoS3Key(contentId, filename);
+      // Create a standard S3 key for video
+      return `uploads/videos/${filename}`;
     } else if (filename.includes('image-')) {
-      return s3Service.getImageS3Key(contentId, filename);
+      // Create a standard S3 key for image
+      return `uploads/images/${filename}`;
     } else if (filename.includes('thumb-')) {
-      return s3Service.getThumbnailS3Key(contentId);
+      return s3Service.getThumbnailS3Key(contentId, 'video');
     }
   }
   
@@ -104,17 +106,16 @@ export async function generateAndStoreS3Thumbnail(
 ): Promise<string> {
   console.log(`Thumbnail generation request for ${contentType} ${contentId} using Cloudinary`);
   try {
-    if (youtubeId) {
-      // Use the YouTube-specific generation function for YouTube content
-      return thumbnailService.generateYouTubeThumbnail(contentId, youtubeId);
-    } else if (sourceUrl) {
-      // Use the standard thumbnail generation for videos with a source URL
-      return thumbnailService.generateThumbnail(contentId, sourceUrl);
-    } else {
-      // For content without a source, return a placeholder
-      console.log(`No source for content ${contentId}, using placeholder`);
-      return `thumbnails/placeholder-${contentId}.svg`;
-    }
+    // Use our unified ThumbnailService
+    const result = await thumbnailService.generateThumbnail({
+      contentId,
+      contentType,
+      sourceUrl: sourceUrl || undefined,
+      youtubeId: youtubeId || undefined,
+      generatePlaceholder: !sourceUrl && !youtubeId
+    });
+    
+    return result.thumbnailPath;
   } catch (error) {
     console.error(`Error in thumbnail generation for ${contentId}:`, error);
     // Generate and return a placeholder in case of any errors
@@ -122,7 +123,20 @@ export async function generateAndStoreS3Thumbnail(
   }
 }
 
-// SVG Placeholder generator using the simplified thumbnail service
+// SVG Placeholder generator using the unified thumbnail service
 export function generateSvgPlaceholder(contentType: string): string {
-  return thumbnailService.generatePlaceholder(contentType);
+  // Create a simple SVG placeholder based on content type
+  const backgroundColor = contentType === 'video' ? '#1a1a1a' : contentType === 'image' ? '#2a2a2a' : '#0f172a';
+  const textColor = '#ff9000'; // Orange brand color
+  const displayType = contentType.charAt(0).toUpperCase() + contentType.slice(1);
+  
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+    <rect width="800" height="450" fill="${backgroundColor}"/>
+    <text x="400" y="210" font-family="Arial" font-size="50" text-anchor="middle" fill="${textColor}">
+      ${displayType} Thumbnail
+    </text>
+    <text x="400" y="270" font-family="Arial" font-size="30" text-anchor="middle" fill="${textColor}">
+      (Placeholder)
+    </text>
+  </svg>`;
 }

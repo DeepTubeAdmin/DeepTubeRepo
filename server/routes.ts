@@ -14,9 +14,11 @@ import path from "path";
 import fs from "fs/promises";
 import fsSync from "fs";
 import { fileURLToPath } from 'url';
-import s3Service from "./services/s3Service";
-import thumbnailService, * as thumbnailUtils from "./services/ThumbnailService";
-import { v2 as cloudinary } from 'cloudinary';
+import thumbnailService from "./services/ThumbnailService";
+// Import specific utilities from their respective modules
+import { cloudinary as cloudinaryUtils, storage as s3Service } from "./services/ThumbnailService";
+// Directly import the cloudinary SDK
+import { v2 as cloudinarySdk } from 'cloudinary';
 import { asc, desc, eq, like, and, sql, or, SQL, inArray } from 'drizzle-orm';
 import { videos } from '@shared/schema';
 import { db } from './db';
@@ -180,7 +182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       // For embeds, extract YouTube ID if available
       else if (contentType === 'embed') {
-        youtubeId = thumbnailUtils.extractYouTubeVideoId(content.embedCode || '');
+        youtubeId = cloudinaryUtils.extractYouTubeVideoId(content.embedCode || '');
         if (youtubeId) {
           sourceUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
         }
