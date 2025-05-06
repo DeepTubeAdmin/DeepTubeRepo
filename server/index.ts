@@ -8,12 +8,12 @@ import { v2 as cloudinary } from 'cloudinary';
 // Configure Cloudinary with environment variables
 console.log("Setting up Cloudinary configuration...");
 
-// Hardcoded cloud name based on previous runs and debugging
-let cloudName = 'defho2yvd'; // We know this from previous runs
+// Use environment variables for Cloudinary configuration
+let cloudName = process.env.CLOUDINARY_CLOUD_NAME || '';
 let apiKey = process.env.CLOUDINARY_API_KEY || '';
 let apiSecret = process.env.CLOUDINARY_API_SECRET || '';
 
-console.log('Using fixed cloud_name:', cloudName);
+console.log(`Using cloud_name from environment: ${cloudName}`);
 
 // Check if we have all required configuration
 if (cloudName && apiKey && apiSecret) {
