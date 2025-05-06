@@ -2639,28 +2639,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.redirect(s3Url);
       }
 
-      // Return existing thumbnail: Determine if it's an S3 key or a path
-      let existingThumbnailPath = content.thumbnail;
-
-      // If using the old API path, convert it to S3 key
-      if (existingThumbnailPath.startsWith('/api/videos/')) {
-        // For backward compatibility - this will be updated on next access
-        const thumbnailS3Key = s3Service.getThumbnailS3Key(content.id);
-        const s3Url = await getSignedS3Url(thumbnailS3Key);
+      // Return existing thumbnail using our unified ThumbnailService
+      console.log(`Using unified ThumbnailService to get URL for existing thumbnail of content ${content.id}`);
+      try {
+        // Use our unified method to get a signed URL
+        const s3Url = await thumbnailService.getThumbnailUrl(
+          content.id, 
+          content.contentType
+        );
+        
+        console.log(`Redirecting to existing thumbnail from unified service: ${s3Url.substring(0, 100)}...`);
+        return res.redirect(s3Url);
+      } catch (urlError) {
+        console.error(`Error getting existing thumbnail URL: ${urlError}`);
+        
+        // If we can't get a URL, fallback to old methods for backward compatibility
+        console.log(`Falling back to compatibility methods for content ${content.id}`);
+        
+        let existingThumbnailPath = content.thumbnail;
+        
+        // If using the old API path, convert to S3 key
+        if (existingThumbnailPath.startsWith('/api/videos/')) {
+          try {
+            // For backward compatibility - this will be updated on next access
+            const thumbnailS3Key = thumbnailService.storage.getThumbnailS3Key(content.id, content.contentType);
+            const s3Url = await thumbnailService.storage.getSignedS3Url(thumbnailS3Key);
+            return res.redirect(s3Url);
+          } catch (oldPathError) {
+            console.error(`Error with old API path: ${oldPathError}`);
+            // Continue to next fallback
+          }
+        }
+        
+        // If all else fails, generate a placeholder
+        console.log(`All methods failed, generating placeholder for ${content.id}`);
+        const placeholderResult = await thumbnailService.generateThumbnail({
+          contentId: content.id,
+          contentType: content.contentType,
+          generatePlaceholder: true
+        });
+        
+        const s3Url = await thumbnailService.storage.getSignedS3Url(placeholderResult.thumbnailPath);
         return res.redirect(s3Url);
       }
-      
-      // If it's an S3 key directly, use it
-      if (existingThumbnailPath.includes('thumbnails/video-')) {
-        const s3Url = await getSignedS3Url(existingThumbnailPath);
-        return res.redirect(s3Url);
-      }
-      
-      // Otherwise, treat it as an S3 URL or placeholder
-      const s3Key = s3Service.getThumbnailS3Key(content.id);
-      const s3Url = await getSignedS3Url(s3Key);
-      console.log(`Redirecting to existing thumbnail: ${s3Url.substring(0, 100)}...`);
-      return res.redirect(s3Url);
     } catch (error) {
       console.error('Thumbnail error:', error);
       // If an error occurs, redirect to a placeholder
@@ -2671,16 +2692,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/placeholder-svg/:type", async (req, res) => {
     try {
       const contentType = req.params.type || 'unknown';
-      // Import the SVG generator
-      const { generateSvgPlaceholder } = await import('./generateThumbnail');
+      console.log(`Generating placeholder SVG for content type: ${contentType}`);
       
-      // Generate the SVG
-      const svg = generateSvgPlaceholder(contentType);
+      // Use our unified ThumbnailService
+      const placeholderResult = await thumbnailService.generateThumbnail({
+        contentId: 999999, // Using a high ID to avoid conflicts
+        contentType: contentType,
+        generatePlaceholder: true
+      });
       
-      // Send it back
+      // Check if we've got a valid result
+      if (placeholderResult && placeholderResult.success) {
+        // Try to get the actual SVG content from S3
+        try {
+          // Get the URL and fetch it
+          const s3Url = await thumbnailService.storage.getSignedS3Url(placeholderResult.thumbnailPath);
+          const svgResponse = await fetch(s3Url);
+          if (svgResponse.ok) {
+            const svgContent = await svgResponse.text();
+            
+            // Send it back
+            res.setHeader('Content-Type', 'image/svg+xml');
+            res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for a day
+            return res.send(svgContent);
+          }
+        } catch (fetchError) {
+          console.error('Error fetching SVG from S3:', fetchError);
+          // Continue to fallback
+        }
+      }
+      
+      // Fallback: Generate on the fly without using S3
+      // Generate a simple placeholder SVG
+      let fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+        <rect width="100%" height="100%" fill="#0f172a"/>
+        <text x="50%" y="50%" font-family="Arial" font-size="24" fill="#f59e0b" text-anchor="middle">
+          DeepTube ${contentType.charAt(0).toUpperCase() + contentType.slice(1)}
+        </text>
+      </svg>`;
+      
       res.setHeader('Content-Type', 'image/svg+xml');
-      res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for a day
-      return res.send(svg);
+      return res.send(fallbackSvg);
     } catch (error) {
       console.error('Error generating SVG placeholder:', error);
       // Fallback to a simple SVG
