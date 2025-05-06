@@ -1255,18 +1255,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const categorySlug = req.query.category as string || '';
-      // Check for both shuffle parameters: the old shuffleSeed and the new direct shuffle param
-      // The timestamp parameter is ignored - it's just for cache busting
-      const shuffle = req.query.shuffle as string || ''; 
-      const shuffleSeed = req.query.shuffleSeed as string || shuffle; 
+      // FORCED DIRECT SHUFFLE APPROACH
+      // Check for shuffle parameter in URL (from clicking logo)
+      const hasShuffleParam = req.query.shuffle !== undefined;
+
+      // For debugging
+      console.log(`Content feed request: page=${page}, category=${categorySlug || 'all'}, hasShuffleInURL=${hasShuffleParam}`);
       
-      // For every request with a shuffle parameter, generate a completely random shuffle seed
-      // This ensures we get different content order each time
-      const effectiveSeed = shuffle 
-        ? Math.random().toString(36).substring(2, 10) + Date.now().toString(36) 
-        : shuffleSeed;
+      // Force shuffle to true when we have a shuffle parameter in URL
+      const shuffle = hasShuffleParam;
       
-      console.log(`Content feed request: page=${page}, category=${categorySlug || 'all'}, shuffle=${!!shuffle}, effectiveSeed=${effectiveSeed}`);
+      // Use either the shuffle param value or generate a completely new random shuffle seed
+      // for maximum randomization effect
+      const effectiveSeed = shuffle
+        ? (req.query.shuffle as string || Math.random().toString(36) + Date.now().toString()) 
+        : '';
+        
+      console.log(`Shuffle mode is ${shuffle ? 'ACTIVE' : 'inactive'}, using seed: ${effectiveSeed || 'none'}`);
+      
+      // Shorthand for use in SQL queries
+      const shuffleSeed = effectiveSeed;
       
       // Get categoryId if category slug is provided
       let categoryId: number | undefined = undefined;
