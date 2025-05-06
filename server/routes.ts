@@ -349,13 +349,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               continue;
             }
             
-            // Generate thumbnail from base64 data using simplified thumbnail service
-            const simplifiedThumbnailService = await import('./services/simplifiedThumbnailService');
-            const s3Key = await simplifiedThumbnailService.generateFromBase64(
-              image.id,
-              image.imageUrl,
-              'image'
-            );
+            // Generate thumbnail from base64 data using our unified ThumbnailService
+            const result = await thumbnailService.generateThumbnail({
+              contentId: image.id,
+              contentType: 'image',
+              base64Data: image.imageUrl,
+              forceRegeneration: true
+            });
             
             // Update the database to use the thumbnail endpoint
             await dbStorage.updateVideo(image.id, {
@@ -370,7 +370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               title: image.title,
               status: 'success',
               source: 'base64',
-              s3Key
+              s3Key: result.thumbnailPath
             });
           }
           // No valid image source, use placeholder
@@ -573,48 +573,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (contentType === 'image' && video.imageUrl) {
         sourceUrl = video.imageUrl;
       } else if (contentType === 'embed' && video.embedCode) {
-        youtubeId = thumbnailService.extractYoutubeVideoId(video.embedCode);
+        youtubeId = thumbnailUtils.extractYouTubeVideoId(video.embedCode);
         if (youtubeId) {
-          sourceUrl = thumbnailService.getYoutubeThumbnailUrl(youtubeId);
+          sourceUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
         }
       }
       
       console.log(`Fixing thumbnail for ${contentType} ${videoId} with Cloudinary`);
       
-      // Generate thumbnail based on content type and source
-      let s3Key;
-      if (youtubeId) {
-        s3Key = await thumbnailService.generateYouTubeThumbnail(videoId, youtubeId);
-      } else if (sourceUrl) {
-        // Convert the URL to an S3 key first if needed
-        const s3KeyFromUrl = sourceUrl.includes('/api/s3/') ? s3Service.urlPathToS3Key(sourceUrl) : null;
-        if (s3KeyFromUrl) {
-          s3Key = await thumbnailService.generateThumbnail(videoId, s3KeyFromUrl);
-        } else {
-          // For remote URLs, try to download and then generate thumbnail
-          try {
-            const response = await fetch(sourceUrl);
-            if (response.ok) {
-              const contentBuffer = Buffer.from(await response.arrayBuffer());
-              const tempS3Key = `uploads/${contentType}s/${contentType}-${videoId}.jpg`;
-              await uploadStringToS3(contentBuffer, tempS3Key, 'image/jpeg');
-              s3Key = await thumbnailService.generateThumbnail(videoId, tempS3Key);
-            } else {
-              throw new Error(`Failed to fetch source URL: ${response.status}`);
-            }
-          } catch (fetchError) {
-            console.error(`Error fetching source URL: ${sourceUrl}`, fetchError);
-            // Use placeholder as fallback
-            const svgContent = thumbnailService.generatePlaceholder(contentType);
-            s3Key = `thumbnails/placeholder-${videoId}.svg`;
-            await uploadStringToS3(svgContent, s3Key, 'image/svg+xml');
-          }
-        }
-      } else {
-        // No suitable source for thumbnail, use placeholder
-        const svgContent = thumbnailService.generatePlaceholder(contentType);
-        s3Key = `thumbnails/placeholder-${videoId}.svg`;
-        await uploadStringToS3(svgContent, s3Key, 'image/svg+xml');
+      // Generate a new thumbnail using our unified ThumbnailService
+      console.log(`Generating a new thumbnail for content ID ${videoId}, type: ${contentType}`);
+      console.log(`Source URL: ${sourceUrl || 'none'}, YouTube ID: ${youtubeId || 'none'}`);
+      
+      // The service will handle all the different cases internally
+      const result = await thumbnailService.generateThumbnail({
+        contentId: videoId,
+        contentType: contentType,
+        sourceUrl: sourceUrl,
+        youtubeId: youtubeId,
+        forceRegeneration: true,
+        generatePlaceholder: !sourceUrl && !youtubeId
+      });
+      
+      // Extract the S3 key from the result
+      const s3Key = result.thumbnailPath;
+      
+      console.log(`Thumbnail generated using method: ${result.method}`);
+      console.log(`Generated thumbnail S3 path: ${s3Key}`);
+      console.log(`Success: ${result.success}`);
+      
+      if (!result.success && result.error) {
+        console.warn(`Warning: Thumbnail generation had issues: ${result.error}`);
       }
       
       // Update the video record to use our thumbnail endpoint
