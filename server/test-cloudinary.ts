@@ -129,3 +129,17 @@ export async function testCloudinaryUpload() {
     };
   }
 }
+
+// Run the test when this script is directly executed
+// Using import.meta.url to check if this is the main module
+if (import.meta.url === `file://${process.argv[1]}`) {
+  console.log('Running Cloudinary test script directly...');
+  testCloudinaryConnection().then(result => {
+    console.log('Connection test result:', result);
+    return testCloudinaryUpload();
+  }).then(result => {
+    console.log('Upload test result:', result);
+  }).catch(error => {
+    console.error('Test failed with error:', error);
+  });
+}

@@ -75,8 +75,8 @@ export async function generateThumbnail(videoId: number, s3Key: string): Promise
             ]
           }
         ],
-        eager_async: false, // Wait for processing to complete
-        eager_notification_url: null // No notification needed
+        eager_async: false // Wait for processing to complete
+        // Remove null value for eager_notification_url
       });
       
       // Get the thumbnail URL from the result
