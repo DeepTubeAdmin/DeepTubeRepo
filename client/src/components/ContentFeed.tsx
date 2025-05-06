@@ -41,8 +41,8 @@ interface ContentFeedResponse {
 }
 
 export default function ContentFeed({ categorySlug }: ContentFeedProps) {
-  // Get shuffle seed from context instead of local state
-  const { shuffleSeed } = useContext(ShuffleContext);
+  // Get shuffle context
+  const { shuffleSeed: contextShuffleSeed, triggerShuffle } = useContext(ShuffleContext);
   
   // State hooks - all defined at the top level
   const [page, setPage] = useState(1);
@@ -55,45 +55,51 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   const previousDataRef = useRef<ContentFeedResponse | undefined>(undefined);
   const sortMenuRef = useRef<HTMLDivElement>(null);
   const sortButtonRef = useRef<HTMLButtonElement>(null);
+  const isInitialMount = useRef(true);
 
-  // Query key for TanStack Query
-  // Generate a shuffle seed if URL indicates shuffle needed
+  // Generate a new shuffle seed on every mount (page refresh) or use URL parameter if available
   const [localShuffleSeed, setLocalShuffleSeed] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    // Check for shuffleSeed parameter (prioritize) or fall back to shuffle parameter for backward compatibility
+    
+    // Priority 1: Use URL shuffleSeed parameter if available
     if (urlParams.has('shuffleSeed')) {
-      return urlParams.get('shuffleSeed') || shuffleSeed;
-    } else if (urlParams.has('shuffle')) {
-      return urlParams.get('shuffle') || shuffleSeed;
+      return urlParams.get('shuffleSeed') || '';
+    } 
+    // Priority 2: Use URL shuffle parameter for backward compatibility
+    else if (urlParams.has('shuffle')) {
+      return urlParams.get('shuffle') || '';
     }
-    return shuffleSeed;
+    // Priority 3: Generate a new random seed for every page refresh
+    else {
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(2, 8);
+      const newSeed = `refresh-${timestamp.toString(36)}-${random}`;
+      console.log('ContentFeed: Generated new shuffle seed on mount:', newSeed);
+      return newSeed;
+    }
   });
 
+  // Always use shuffleSeed in the query key, regardless of URL parameters
   const queryKey = useMemo(() => {
-    // Use the shuffleSeed parameter consistently
-    const urlParams = new URLSearchParams(window.location.search);
-    const hasShuffleSeed = urlParams.has('shuffleSeed') || urlParams.has('shuffle');
-    
     return ['/api/content/feed', { 
       page, 
       category: categorySlug || '', 
-      // Only use shuffleSeed param for consistent ordering
-      shuffleSeed: hasShuffleSeed ? localShuffleSeed : undefined,
+      // Always include shuffle seed for randomization on every page load
+      shuffleSeed: localShuffleSeed,
       sortBy,
-      timestamp: Date.now() // Always use current timestamp to prevent caching
+      // Use current timestamp to prevent caching
+      timestamp: Date.now() 
     }];
   }, [page, categorySlug, localShuffleSeed, sortBy]);
 
-  // Data fetching with TanStack Query first, before using it in effects
+  // Data fetching with TanStack Query
   const { data, isLoading, isError } = useQuery<ContentFeedResponse>({
     queryKey,
     placeholderData: previousDataRef.current,
   });
   
-  // Clean up URL parameters only AFTER data has been loaded successfully
-  // This ensures the shuffle parameters are present during the data fetch
+  // Clean up URL parameters after data has been loaded
   useEffect(() => {
-    // Only run this effect when data is loaded
     if (data && !isLoading) {
       const urlParams = new URLSearchParams(window.location.search);
       const hasUrlParams = urlParams.has('shuffleSeed') || urlParams.has('shuffle');
@@ -211,48 +217,55 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     }
   }, [data, page]);
   
-  // This effect checks for URL shuffle param on initial load and on any URL change
+  // This effect handles both URL parameters and automatic shuffling on page refresh
   useEffect(() => {
-    function checkAndApplyShuffle() {
-      // Check for URL parameters that indicate a shuffle was requested
+    function handleShuffleProcess() {
+      // Check URL parameters first
       const urlParams = new URLSearchParams(window.location.search);
       const hasShuffleSeedParam = urlParams.has('shuffleSeed');
       const shuffleSeedValue = urlParams.get('shuffleSeed');
-      
-      // Fall back to 'shuffle' parameter for backwards compatibility
       const hasShuffleParam = !hasShuffleSeedParam && urlParams.has('shuffle');
       const shuffleValue = hasShuffleParam ? urlParams.get('shuffle') : null;
       
-      // Use either shuffleSeed or shuffle parameter
-      const finalShuffleValue = shuffleSeedValue || shuffleValue;
-      
-      if ((hasShuffleSeedParam || hasShuffleParam) && finalShuffleValue) {
-        console.log('ContentFeed: Processing shuffle with seed:', finalShuffleValue);
+      // If the shuffle is coming from URL parameters
+      if ((hasShuffleSeedParam || hasShuffleParam) && (shuffleSeedValue || shuffleValue)) {
+        const finalShuffleValue = shuffleSeedValue || shuffleValue || '';
+        console.log('ContentFeed: Processing explicit shuffle from URL with seed:', finalShuffleValue);
         
         // Update local shuffle seed to match URL parameter
         setLocalShuffleSeed(finalShuffleValue);
         
-        // Reset pagination
+        // Reset UI state
         setPage(1);
         setPopularBlocks([]);
-        
-        // Reset sorting to trending for best shuffle results
         setSortBy('trending');
         
-        // Force a query client invalidation to refresh data
+        // Force data refresh
         queryClient.invalidateQueries({ queryKey: ['/api/content/feed'] });
+      } 
+      // If we're on mount (first page load)
+      else if (isInitialMount.current) {
+        isInitialMount.current = false;
         
-        // Don't immediately clean up the URL - keep the parameter for this session
-        // This ensures the backend receives the shuffle parameter on subsequent requests
+        // If no URL parameter, we've already created a new random seed in the useState initializer
+        console.log('ContentFeed: Using initial page load shuffle with seed:', localShuffleSeed);
+        
+        // Reset UI state
+        setPage(1);
+        setPopularBlocks([]);
+        setSortBy('trending');
+        
+        // Force data refresh on initial mount
+        queryClient.invalidateQueries({ queryKey: ['/api/content/feed'] });
       }
     }
     
-    // Run the check immediately on mount
-    checkAndApplyShuffle();
+    // Run the handling on mount
+    handleShuffleProcess();
     
-    // Also set up a listener for URL changes (like back/forward navigation)
+    // Also set up a listener for URL changes (back/forward navigation)
     const handleUrlChange = () => {
-      checkAndApplyShuffle();
+      handleShuffleProcess();
     };
     
     window.addEventListener('popstate', handleUrlChange);
@@ -260,7 +273,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     return () => {
       window.removeEventListener('popstate', handleUrlChange);
     };
-  }, []);
+  }, [localShuffleSeed]);
 
   // Effect for detecting screen size and updating column count
   useEffect(() => {

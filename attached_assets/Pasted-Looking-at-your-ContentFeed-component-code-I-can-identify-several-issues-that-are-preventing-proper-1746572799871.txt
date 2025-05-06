@@ -1,0 +1,96 @@
+Looking at your ContentFeed component code, I can identify several issues that are preventing proper shuffling on page refresh:
+Main Issues with the Current Shuffling Implementation
+
+Inconsistent Shuffle Parameter Handling:
+
+Your code is checking for URL parameters (shuffleSeed or shuffle) but isn't consistently applying the shuffle on normal browser refreshes
+The shuffling logic only triggers when these URL parameters are explicitly present
+
+
+Context Usage Problem:
+
+You're importing ShuffleContext and extracting shuffleSeed, but this seed isn't automatically changing on page refresh
+The seed is only used as a fallback when URL parameters aren't present
+
+
+Cache Invalidation Issues:
+
+The current implementation only invalidates the query when URL parameters are detected
+Normal page refreshes don't trigger a new shuffle
+
+
+
+Detailed Explanation of the Issues
+1. Missing Refresh-Based Shuffling Logic
+javascript// This generates a shuffle seed only when URL parameters exist
+const [localShuffleSeed, setLocalShuffleSeed] = useState(() => {
+  const urlParams = new URLSearchParams(window.location.search);
+  // Only checks URL parameters, not browser refresh events
+  if (urlParams.has('shuffleSeed')) {
+    return urlParams.get('shuffleSeed') || shuffleSeed;
+  } else if (urlParams.has('shuffle')) {
+    return urlParams.get('shuffle') || shuffleSeed;
+  }
+  return shuffleSeed; // Uses context value that doesn't change on refresh
+});
+2. Query Key Doesn't Change on Refresh
+javascriptconst queryKey = useMemo(() => {
+  // Use the shuffleSeed parameter consistently
+  const urlParams = new URLSearchParams(window.location.search);
+  const hasShuffleSeed = urlParams.has('shuffleSeed') || urlParams.has('shuffle');
+  
+  return ['/api/content/feed', { 
+    page, 
+    category: categorySlug || '', 
+    // Only uses shuffleSeed if URL has it
+    shuffleSeed: hasShuffleSeed ? localShuffleSeed : undefined,
+    sortBy,
+    timestamp: Date.now() // Current timestamp prevents caching but doesn't change ordering
+  }];
+}, [page, categorySlug, localShuffleSeed, sortBy]);
+3. Shuffle Logic Only Triggered by URL Parameters
+javascriptuseEffect(() => {
+  function checkAndApplyShuffle() {
+    // Check for URL parameters that indicate a shuffle was requested
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasShuffleSeedParam = urlParams.has('shuffleSeed');
+    // Only triggers on URL parameters, not on normal refresh
+    // ...
+  }
+  
+  checkAndApplyShuffle();
+  // ...
+}, []);
+How to Fix the Shuffle Implementation
+To properly shuffle content on every page refresh, you need to:
+
+Generate a new shuffle seed on every page refresh:
+javascriptconst [localShuffleSeed, setLocalShuffleSeed] = useState(() => {
+  // Always generate a new random seed on component mount (page refresh)
+  return Math.random().toString(36).substring(2, 15);
+});
+
+Always include the shuffle seed in the query key:
+javascriptconst queryKey = useMemo(() => {
+  return ['/api/content/feed', { 
+    page, 
+    category: categorySlug || '', 
+    // Always include shuffle seed
+    shuffleSeed: localShuffleSeed,
+    sortBy,
+  }];
+}, [page, categorySlug, localShuffleSeed, sortBy]);
+
+Update the ShuffleContext on page refresh:
+
+You need to ensure the parent component that provides ShuffleContext updates its seed value on page refresh
+
+
+Invalidate the cache on every refresh:
+
+Add logic to invalidate the query on mount, not just when URL parameters exist
+
+
+
+These changes would ensure that every time the page refreshes, you get a new shuffle seed, which would result in freshly shuffled content.
+If you're specifically trying to shuffle on the frontend, your current implementation is focused on backend-driven shuffling (sending parameters to the API). For true frontend shuffling on refresh, you'd need to add client-side array shuffling code to randomize the order of content after it's received from the API.
