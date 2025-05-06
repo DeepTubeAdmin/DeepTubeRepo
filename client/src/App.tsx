@@ -76,30 +76,33 @@ function App() {
     const timestamp = new Date().getTime();
     const random1 = Math.random().toString(36).substring(2, 10);
     const random2 = Math.random().toString(36).substring(2, 10);
+    const randomVal = Math.floor(Math.random() * 1000000).toString();
     const performanceNow = typeof performance !== 'undefined' ? 
       performance.now().toString(36).replace('.', '') : '';
     
-    // Combine all sources for maximum entropy
-    const newSeed = `${timestamp}-${random1}-${random2}-${performanceNow}`;
+    // Combine all sources for maximum entropy, add randomVal for even more entropy
+    const newSeed = `${timestamp}-${random1}-${random2}-${randomVal}-${performanceNow}`;
     console.log('Triggering content shuffle with high-entropy seed:', newSeed);
     
     // First update the shuffle seed state (this will trigger re-renders in components)
     setShuffleSeed(newSeed);
     
-    // Then invalidate specific feed queries to ensure fresh data
+    // Forcefully clear the entire query cache to ensure fresh data on all endpoints
+    queryClient.clear();
+    
+    // For extra measure, also explicitly invalidate key content queries
     queryClient.invalidateQueries({ queryKey: ['/api/content/feed'] });
     queryClient.invalidateQueries({ queryKey: ['/api/videos'] });  
     queryClient.invalidateQueries({ queryKey: ['/api/content/trending'] });
     queryClient.invalidateQueries({ queryKey: ['/api/content/popular'] });
     
-    // Only force a reload if we're on the home page
-    // We need this because sometimes React Query caching is too aggressive
-    if (window.location.pathname === '/') {
-      // Small timeout to ensure React has time to process state changes
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
-    }
+    // Always force a full page reload when shuffling for guaranteed content refresh
+    // The timeout ensures React state changes are processed first
+    setTimeout(() => {
+      window.location.href = window.location.pathname === '/' ? 
+        '/?shuffle=' + newSeed : 
+        '/';
+    }, 200);
   };
   
   useEffect(() => {

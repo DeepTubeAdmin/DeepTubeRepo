@@ -163,14 +163,28 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   
   // Reset to page 1 when shuffle seed changes
   useEffect(() => {
-    // Reset to page 1 whenever shuffle seed changes to ensure fresh content
-    setPage(1);
-    setPopularBlocks([]);
-    
-    // Force a data refetch when shuffle seed changes
-    queryClient.invalidateQueries({ queryKey: ['/api/content/feed'] });
-    
-    console.log('ContentFeed: Shuffle seed changed, resetting to page 1 and refetching');
+    // Only run if shuffleSeed has a value (skip initial undefined)
+    if (shuffleSeed) {
+      console.log('ContentFeed: Shuffle seed changed to', shuffleSeed);
+      
+      // Reset pagination
+      setPage(1);
+      setPopularBlocks([]);
+      
+      // Reset all sorting/filtering as well
+      setSortBy('trending');
+      
+      // Force a complete data refetch by invalidating all content queries
+      queryClient.invalidateQueries({ queryKey: ['/api/content/feed'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/videos'] });  
+      queryClient.invalidateQueries({ queryKey: ['/api/content/trending'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/content/popular'] });
+      
+      console.log('ContentFeed: Data cleared, cache invalidated, reset to page 1');
+      
+      // Force refetch of current query
+      queryClient.refetchQueries({ queryKey: ['/api/content/feed'] });
+    }
   }, [shuffleSeed]);
 
   // Effect for detecting screen size and updating column count

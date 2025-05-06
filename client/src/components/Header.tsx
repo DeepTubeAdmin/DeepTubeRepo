@@ -84,21 +84,24 @@ export default function Header({ simple = false }: HeaderProps) {
   // Handle logo click to trigger content shuffling
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    // Display a toast notification
+    
+    // Generate a unique session ID for this shuffle to show in the toast
+    const shuffleId = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+    
+    // Display a more engaging toast notification
     toast({
-      title: "Shuffling content",
-      description: "Mixing things up for you!",
-      duration: 2000,
+      title: "🔀 Shuffling content #" + shuffleId,
+      description: "Refreshing with all new content just for you!",
+      duration: 3000,
     });
     
-    // First, trigger the shuffle - this will generate a new seed and clear caches
-    triggerShuffle();
-    
-    // The shuffle function will handle the reload for us if we're on the home page
-    // If not on home page, navigate to home page (the reload will happen in triggerShuffle)
-    if (window.location.pathname !== '/') {
-      window.location.href = '/';
-    }
+    // Add a small delay to let the toast show before the page refreshes
+    setTimeout(() => {
+      // First, trigger the shuffle - this will generate a new seed and clear caches
+      triggerShuffle();
+      
+      // The shuffle function in App.tsx will handle the reload and navigation
+    }, 300);
   };
 
   if (simple) {
