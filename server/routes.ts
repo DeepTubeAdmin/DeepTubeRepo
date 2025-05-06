@@ -1568,7 +1568,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Select up to 12 videos for 3 rows
       const selectedRecentVideos = recentVideos.slice(0, 12);
-      selectedRecentVideos.forEach(video => usedContentIds.add(video.id));
+      // Safely add IDs to usedContentIds set, filtering out any undefined items
+      selectedRecentVideos
+        .filter(video => video && typeof video === 'object' && video.id !== undefined)
+        .forEach(video => usedContentIds.add(video.id));
       response.recent.videos = selectedRecentVideos;
       
       // Get newest images with seed-based deterministic shuffling if available
@@ -1604,7 +1607,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Select up to 4 images for 1 row
       const selectedRecentImages = recentImages.slice(0, 4);
-      selectedRecentImages.forEach(image => usedContentIds.add(image.id));
+      // Safely add IDs to usedContentIds set, filtering out any undefined items
+      selectedRecentImages
+        .filter(image => image && typeof image === 'object' && image.id !== undefined)
+        .forEach(image => usedContentIds.add(image.id));
       response.recent.images = selectedRecentImages;
       
       // 4. POPULAR CONTENT SECTION - THE INFINITE SCROLL PART (3 rows videos, 1 row images) repeating
@@ -1649,7 +1655,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Select up to 12 videos for 3 rows
         const selectedPopularVideos = popularVideos.slice(0, 12);
-        selectedPopularVideos.forEach(video => usedContentIds.add(video.id));
+        // Safely add IDs to usedContentIds set, filtering out any undefined items
+        selectedPopularVideos
+          .filter(video => video && typeof video === 'object' && video.id !== undefined)
+          .forEach(video => usedContentIds.add(video.id));
         
         // Get popular images with seed-based deterministic shuffling if available
         let popularImages;
@@ -1684,7 +1693,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Select up to 4 images for 1 row
         const selectedPopularImages = popularImages.slice(0, 4);
-        selectedPopularImages.forEach(image => usedContentIds.add(image.id));
+        // Safely add IDs to usedContentIds set, filtering out any undefined items
+        selectedPopularImages
+          .filter(image => image && typeof image === 'object' && image.id !== undefined)
+          .forEach(image => usedContentIds.add(image.id));
         
         // Add block
         response.popular.blocks.push({
