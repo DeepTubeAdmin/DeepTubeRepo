@@ -2641,15 +2641,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Test endpoint for checking Cloudinary connectivity
   app.get('/api/test-cloudinary', async (req, res) => {
     try {
-      // Import the test module
-      const { testCloudinaryConnection } = await import('./test-cloudinary');
+      // Import the Cloudinary service
+      const cloudinaryService = await import('./services/cloudinaryService').then(m => m.default);
       
       // Run the test
       console.log('Running Cloudinary connection test...');
-      const testResults = await testCloudinaryConnection();
+      const testResults = await cloudinaryService.testConnection();
       
-      // Return results
-      return res.json(testResults);
+      // Return results with additional information
+      return res.json({
+        ...testResults,
+        cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+        apiKeyProvided: !!process.env.CLOUDINARY_API_KEY,
+        apiSecretProvided: !!process.env.CLOUDINARY_API_SECRET,
+        timestamp: new Date().toISOString()
+      });
     } catch (error: any) {
       console.error('Error running Cloudinary test:', error);
       return res.status(500).json({ 
@@ -2662,15 +2668,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Test endpoint that actually uploads a test image to Cloudinary
   app.get('/api/test-cloudinary-upload', async (req, res) => {
     try {
-      // Import the test module
-      const { testCloudinaryUpload } = await import('./test-cloudinary');
+      // Import the Cloudinary service
+      const cloudinaryService = await import('./services/cloudinaryService').then(m => m.default);
       
       // Run the upload test
       console.log('Running Cloudinary upload test...');
-      const testResults = await testCloudinaryUpload();
+      const testResults = await cloudinaryService.uploadTestImage();
       
-      // Return results
-      return res.json(testResults);
+      // Return results with additional information
+      return res.json({
+        ...testResults,
+        cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+        apiKeyProvided: !!process.env.CLOUDINARY_API_KEY,
+        apiSecretProvided: !!process.env.CLOUDINARY_API_SECRET,
+        timestamp: new Date().toISOString()
+      });
     } catch (error: any) {
       console.error('Error running Cloudinary upload test:', error);
       return res.status(500).json({ 

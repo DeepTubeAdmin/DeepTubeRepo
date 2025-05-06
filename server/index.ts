@@ -3,6 +3,29 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
 import { fileURLToPath } from "url";
+import { v2 as cloudinary } from 'cloudinary';
+
+// Configure Cloudinary with environment variables
+if (process.env.CLOUDINARY_URL) {
+  // Most standard format is a complete URL with credentials
+  console.log("Using CLOUDINARY_URL environment variable for configuration");
+} else if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+  // Alternative format is separate env vars
+  console.log("Configuring Cloudinary with separate environment variables");
+  cloudinary.config({ 
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true
+  });
+  
+  // Cloudinary API key info (without revealing actual keys)
+  console.log(`Cloudinary configuration: cloud_name=${process.env.CLOUDINARY_CLOUD_NAME}, ` +
+    `api_key=<${process.env.CLOUDINARY_API_KEY?.length || 0} chars>, ` +
+    `api_secret=<${process.env.CLOUDINARY_API_SECRET?.length || 0} chars>`);
+} else {
+  console.warn("Cloudinary credentials not found in environment variables");
+}
 
 // Get directory paths
 const __filename = fileURLToPath(import.meta.url);
