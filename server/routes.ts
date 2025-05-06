@@ -305,7 +305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Image ${image.id} using URL: ${image.imageUrl}`);
             
             // Generate thumbnail using the imageUrl as source with unified thumbnail service
-            const simplifiedThumbnailService = await import('./services/simplifiedThumbnailService');
+            const thumbnailService = await import('./services/ThumbnailService');
             const imageUrlKey = `uploads/images/image-${image.id}.jpg`;
             
             // First save the image to S3
@@ -314,8 +314,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const imageData = await response.arrayBuffer();
             await uploadStringToS3(Buffer.from(imageData), imageUrlKey, 'image/jpeg');
             
-            // Now generate the thumbnail
-            const s3Key = await simplifiedThumbnailService.generateThumbnail(image.id, imageUrlKey);
+            // Now generate the thumbnail using our new API structure
+            const result = await thumbnailService.default.generateThumbnail({
+              contentId: image.id,
+              contentType: 'image',
+              sourceUrl: imageUrlKey,
+              forceRegeneration: true
+            });
+            const s3Key = result.thumbnailPath;
             
             // Update the database to use the thumbnail endpoint
             await dbStorage.updateVideo(image.id, {
@@ -352,7 +358,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             
             // Generate thumbnail from base64 data using our unified ThumbnailService
-            const result = await thumbnailService.generateThumbnail({
+            const result = await thumbnailService.default.generateThumbnail({
               contentId: image.id,
               contentType: 'image',
               base64Data: image.imageUrl,
@@ -588,7 +594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Source URL: ${sourceUrl || 'none'}, YouTube ID: ${youtubeId || 'none'}`);
       
       // The service will handle all the different cases internally
-      const result = await thumbnailService.generateThumbnail({
+      const result = await thumbnailService.default.generateThumbnail({
         contentId: videoId,
         contentType: contentType,
         sourceUrl: sourceUrl,
