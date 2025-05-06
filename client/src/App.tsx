@@ -70,43 +70,23 @@ function App() {
     return `${timestamp}-${random}`;
   });
   
-  // Function to trigger a new shuffle by generating a new seed with high entropy
+  // Function to trigger a new shuffle (much simpler approach)
   const triggerShuffle = () => {
-    // Use multiple sources of randomness for better distribution
+    // Generate a simple random seed that includes the timestamp
     const timestamp = new Date().getTime();
-    const random1 = Math.random().toString(36).substring(2, 10);
-    const random2 = Math.random().toString(36).substring(2, 10);
-    const randomVal = Math.floor(Math.random() * 1000000).toString();
-    const performanceNow = typeof performance !== 'undefined' ? 
-      performance.now().toString(36).replace('.', '') : '';
+    const random = Math.random().toString(36).substring(2, 8); 
+    const newSeed = `${timestamp}-${random}`;
     
-    // Combine all sources for maximum entropy, add randomVal for even more entropy
-    const newSeed = `${timestamp}-${random1}-${random2}-${randomVal}-${performanceNow}`;
-    console.log('Triggering content shuffle with high-entropy seed:', newSeed);
+    console.log('Triggering content shuffle with seed:', newSeed);
     
-    // First update the shuffle seed state (this will trigger re-renders in components)
+    // Update the shuffle seed state for any components still using it
     setShuffleSeed(newSeed);
     
-    // Forcefully clear the entire query cache to ensure fresh data on all endpoints
-    queryClient.clear();
-    
-    // For extra measure, also explicitly invalidate key content queries
+    // Basic cache clearing is still helpful
     queryClient.invalidateQueries({ queryKey: ['/api/content/feed'] });
-    queryClient.invalidateQueries({ queryKey: ['/api/videos'] });  
-    queryClient.invalidateQueries({ queryKey: ['/api/content/trending'] });
-    queryClient.invalidateQueries({ queryKey: ['/api/content/popular'] });
     
-    // Always force a full page reload when shuffling for guaranteed content refresh
-    // The timeout ensures React state changes are processed first
-    setTimeout(() => {
-      // Create a forced reload URL with timestamp to guarantee cache bust
-      const forcedReloadUrl = window.location.pathname === '/' ?
-        `/?shuffle=${newSeed}&t=${Date.now()}` :
-        `/?t=${Date.now()}`;
-      
-      // Use window.location.replace instead of href for a cleaner history
-      window.location.replace(forcedReloadUrl);
-    }, 200);
+    // We no longer need the forced page reload here
+    // The Header component now handles that directly with its handleLogoClick function
   };
   
   useEffect(() => {

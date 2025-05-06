@@ -1255,9 +1255,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const categorySlug = req.query.category as string || '';
-      const shuffleSeed = req.query.shuffleSeed as string || '';
+      // Check for both shuffle parameters: the old shuffleSeed and the new direct shuffle param
+      // The timestamp parameter is ignored - it's just for cache busting
+      const shuffle = req.query.shuffle as string || ''; 
+      const shuffleSeed = req.query.shuffleSeed as string || shuffle; 
       
-      console.log(`Content feed request: page=${page}, category=${categorySlug || 'all'}, shuffleSeed=${shuffleSeed ? 'provided' : 'none'}`);
+      // For every request with a shuffle parameter, generate a completely random shuffle seed
+      // This ensures we get different content order each time
+      const effectiveSeed = shuffle 
+        ? Math.random().toString(36).substring(2, 10) + Date.now().toString(36) 
+        : shuffleSeed;
+      
+      console.log(`Content feed request: page=${page}, category=${categorySlug || 'all'}, shuffle=${!!shuffle}, effectiveSeed=${effectiveSeed}`);
       
       // Get categoryId if category slug is provided
       let categoryId: number | undefined = undefined;
@@ -1267,7 +1276,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Create cache key based on category and shuffle seed
-      const cacheKey = getCacheKey(categorySlug, 'feed', shuffleSeed);
+      // Always use a new cache key when shuffle parameter is present
+      const cacheKey = getCacheKey(categorySlug, 'feed', shuffle ? Date.now().toString() : effectiveSeed);
       
       // Get or create the set of used content IDs for this view
       if (!infiniteScrollCache.has(cacheKey)) {
@@ -1275,8 +1285,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const usedContentIds = infiniteScrollCache.get(cacheKey)!;
       
-      // Reset cache if we're starting a new page (page 1)
-      if (page === 1) {
+      // Reset cache if we're starting a new page (page 1) or whenever shuffle is triggered
+      if (page === 1 || shuffle) {
         // Create a new set for the used content IDs
         infiniteScrollCache.set(cacheKey, new Set<number>());
         usedCategoriesCache.set(cacheKey, new Set<number>());

@@ -170,31 +170,34 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     }
   }, [data, page]);
   
-  // Reset to page 1 when shuffle seed changes
+  // This effect no longer needs to check for shuffle seed changes
+  // since our new approach uses direct page reload to handle shuffling
+  // We'll keep a simplified version for safety
   useEffect(() => {
-    // Only run if shuffleSeed has a value (skip initial undefined)
-    if (shuffleSeed) {
-      console.log('ContentFeed: Shuffle seed changed to', shuffleSeed);
+    // Check for URL parameters that indicate a shuffle was performed
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasShuffleParam = urlParams.has('shuffle');
+    
+    if (hasShuffleParam) {
+      console.log('ContentFeed: Page was reloaded with shuffle parameter');
       
       // Reset pagination
       setPage(1);
       setPopularBlocks([]);
       
-      // Reset all sorting/filtering as well
+      // Reset sorting
       setSortBy('trending');
-      
-      // Force a complete data refetch by invalidating all content queries
-      queryClient.invalidateQueries({ queryKey: ['/api/content/feed'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/videos'] });  
-      queryClient.invalidateQueries({ queryKey: ['/api/content/trending'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/content/popular'] });
-      
-      console.log('ContentFeed: Data cleared, cache invalidated, reset to page 1');
-      
-      // Force refetch of current query
-      queryClient.refetchQueries({ queryKey: ['/api/content/feed'] });
     }
-  }, [shuffleSeed]);
+    
+    // Clean up URL if we have shuffle parameters (to avoid repeat in browser history)
+    if (hasShuffleParam && window.history.replaceState) {
+      // Keep other params but remove shuffle param
+      urlParams.delete('shuffle');
+      urlParams.delete('t');
+      const newUrl = urlParams.toString() ? `/?${urlParams.toString()}` : '/';
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
 
   // Effect for detecting screen size and updating column count
   useEffect(() => {
