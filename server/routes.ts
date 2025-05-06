@@ -15,7 +15,7 @@ import fs from "fs/promises";
 import fsSync from "fs";
 import { fileURLToPath } from 'url';
 import s3Service from "./services/s3Service";
-import thumbnailService from "./services/ThumbnailService";
+import thumbnailService, * as thumbnailUtils from "./services/ThumbnailService";
 import { v2 as cloudinary } from 'cloudinary';
 import { asc, desc, eq, like, and, sql, or, SQL, inArray } from 'drizzle-orm';
 import { videos } from '@shared/schema';
@@ -180,9 +180,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       // For embeds, extract YouTube ID if available
       else if (contentType === 'embed') {
-        youtubeId = thumbnailService.extractYoutubeVideoId(content.embedCode || '');
+        youtubeId = thumbnailUtils.extractYouTubeVideoId(content.embedCode || '');
         if (youtubeId) {
-          sourceUrl = thumbnailService.getYoutubeThumbnailUrl(youtubeId);
+          sourceUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
         }
       }
       
@@ -215,29 +215,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Generate thumbnail using Cloudinary
         // Generate thumbnail based on content type
         let s3Key;
-        if (youtubeId) {
-          s3Key = await thumbnailService.generateYouTubeThumbnail(videoId, youtubeId);
-        } else if (sourceUrl) {
-          // Convert the URL to an S3 key first if needed
-          const s3KeyFromUrl = sourceUrl.includes('/api/s3/') ? s3Service.urlPathToS3Key(sourceUrl) : null;
-          if (s3KeyFromUrl) {
-            s3Key = await thumbnailService.generateThumbnail(videoId, s3KeyFromUrl);
-          } else {
-            // Use placeholder for now
-            const svgContent = thumbnailService.generatePlaceholder(contentType);
-            const placeholderS3Key = `thumbnails/placeholder-${videoId}.svg`;
-            const { uploadStringToS3 } = await import('./combined-services');
-            await uploadStringToS3(svgContent, placeholderS3Key, 'image/svg+xml');
-            s3Key = placeholderS3Key;
-          }
-        } else {
-          // No suitable source for thumbnail, use placeholder
-          const svgContent = thumbnailService.generatePlaceholder(contentType);
-          const placeholderS3Key = `thumbnails/placeholder-${videoId}.svg`;
-          const { uploadStringToS3 } = await import('./combined-services');
-          await uploadStringToS3(svgContent, placeholderS3Key, 'image/svg+xml');
-          s3Key = placeholderS3Key;
-        }
+        // Generate thumbnail using our unified ThumbnailService
+        const result = await thumbnailService.generateThumbnail({
+          contentId: videoId,
+          contentType: contentType,
+          sourceUrl: sourceUrl,
+          youtubeId: youtubeId,
+          forceRegeneration: true,
+          generatePlaceholder: !sourceUrl && !youtubeId
+        });
+        
+        // Extract the S3 key from the result
+        s3Key = result.thumbnailPath;
         
         // Get signed URL for the thumbnail
         const signedUrl = await s3Service.getSignedS3Url(s3Key);
@@ -2556,12 +2545,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Special case for YouTube embeds - handle them directly without Cloudinary
       if (content.contentType === 'embed' && content.embedCode) {
-        // Extract YouTube video ID using our utility function
-        const youtubeId = youtubeUtils.extractYoutubeVideoId(content.embedCode);
+        // Extract YouTube video ID using our unified ThumbnailService
+        const youtubeId = thumbnailService.extractYouTubeVideoId(content.embedCode);
         
         if (youtubeId) {
-          // Use high quality thumbnail - directly redirect to YouTube
-          const youtubeThumbnailUrl = youtubeUtils.getYoutubeThumbnailUrl(youtubeId, 'hqdefault');
+          // Get the YouTube thumbnail URL directly
+          const youtubeThumbnailUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
           
           console.log(`Directly using YouTube thumbnail for embed ${contentId}: ${youtubeThumbnailUrl}`);
           
