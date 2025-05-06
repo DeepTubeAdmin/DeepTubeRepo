@@ -2266,12 +2266,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const signedS3Url = await getSignedS3Url(s3Key);
             console.log(`Generated signed S3 URL for Cloudinary to access: ${signedS3Url.substring(0, 100)}...`);
             
-            // Import simplified thumbnail service for direct upload
-            const simplifiedThumbnailService = await import('./services/simplifiedThumbnailService');
+            // Use unified ThumbnailService for thumbnail generation
+            const thumbnailService = await import('./services/ThumbnailService');
             
-            // Generate thumbnail using simplified service with direct Cloudinary integration
-            console.log('Using simplified thumbnail service for direct S3 URL processing');
-            const thumbnailS3Key = await simplifiedThumbnailService.generateThumbnail(tempVideoId, s3Key);
+            // Generate thumbnail using unified service
+            console.log('Using unified ThumbnailService for video thumbnail generation');
+            const result = await thumbnailService.generateThumbnail({
+              contentId: tempVideoId,
+              contentType: 'video',
+              sourceUrl: signedS3Url
+            });
+            
+            console.log('Thumbnail generation result:', result);
+            const thumbnailS3Key = result.thumbnailPath, s3Key);
             
             // Set the thumbnail path to be used in the response - use the standard API format
             thumbnailPath = `/api/content/${tempVideoId}/thumbnail`;
