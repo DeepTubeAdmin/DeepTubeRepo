@@ -60,22 +60,25 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   // Generate a shuffle seed if URL indicates shuffle needed
   const [localShuffleSeed, setLocalShuffleSeed] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.has('shuffle') ? 
-      (urlParams.get('shuffle') || Math.random().toString(36) + Date.now().toString()) : 
-      shuffleSeed;
+    // Check for shuffleSeed parameter (prioritize) or fall back to shuffle parameter for backward compatibility
+    if (urlParams.has('shuffleSeed')) {
+      return urlParams.get('shuffleSeed') || shuffleSeed;
+    } else if (urlParams.has('shuffle')) {
+      return urlParams.get('shuffle') || shuffleSeed;
+    }
+    return shuffleSeed;
   });
 
   const queryKey = useMemo(() => {
-    // Check if shuffle param is present in the URL to activate shuffle mode
+    // Use the shuffleSeed parameter consistently
     const urlParams = new URLSearchParams(window.location.search);
-    const hasShuffleParam = urlParams.has('shuffle');
+    const hasShuffleSeed = urlParams.has('shuffleSeed') || urlParams.has('shuffle');
     
     return ['/api/content/feed', { 
       page, 
       category: categorySlug || '', 
-      // Include both shuffle (to activate mode) and shuffleSeed (for consistent ordering)
-      shuffle: hasShuffleParam ? urlParams.get('shuffle') : undefined,
-      shuffleSeed: localShuffleSeed,
+      // Only use shuffleSeed param for consistent ordering
+      shuffleSeed: hasShuffleSeed ? localShuffleSeed : undefined,
       sortBy,
       timestamp: Date.now() // Always use current timestamp to prevent caching
     }];
@@ -84,8 +87,17 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   // Clean up URL parameters after handling shuffle
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('shuffle') && window.history.replaceState) {
-      urlParams.delete('shuffle');
+    const hasUrlParams = urlParams.has('shuffleSeed') || urlParams.has('shuffle');
+    
+    if (hasUrlParams && window.history.replaceState) {
+      // Remove both types of shuffle params for consistency
+      if (urlParams.has('shuffleSeed')) {
+        urlParams.delete('shuffleSeed');
+      }
+      if (urlParams.has('shuffle')) {
+        urlParams.delete('shuffle');
+      }
+      
       const newUrl = urlParams.toString() ? `/?${urlParams.toString()}` : '/';
       window.history.replaceState({}, '', newUrl);
     }
@@ -198,14 +210,21 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     function checkAndApplyShuffle() {
       // Check for URL parameters that indicate a shuffle was requested
       const urlParams = new URLSearchParams(window.location.search);
-      const hasShuffleParam = urlParams.has('shuffle');
-      const shuffleValue = urlParams.get('shuffle');
+      const hasShuffleSeedParam = urlParams.has('shuffleSeed');
+      const shuffleSeedValue = urlParams.get('shuffleSeed');
       
-      if (hasShuffleParam && shuffleValue) {
-        console.log('ContentFeed: Processing shuffle parameter:', shuffleValue);
+      // Fall back to 'shuffle' parameter for backwards compatibility
+      const hasShuffleParam = !hasShuffleSeedParam && urlParams.has('shuffle');
+      const shuffleValue = hasShuffleParam ? urlParams.get('shuffle') : null;
+      
+      // Use either shuffleSeed or shuffle parameter
+      const finalShuffleValue = shuffleSeedValue || shuffleValue;
+      
+      if ((hasShuffleSeedParam || hasShuffleParam) && finalShuffleValue) {
+        console.log('ContentFeed: Processing shuffle with seed:', finalShuffleValue);
         
         // Update local shuffle seed to match URL parameter
-        setLocalShuffleSeed(shuffleValue);
+        setLocalShuffleSeed(finalShuffleValue);
         
         // Reset pagination
         setPage(1);

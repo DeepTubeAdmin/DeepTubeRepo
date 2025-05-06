@@ -102,7 +102,7 @@ export default function Header({ simple = false }: HeaderProps) {
     // Force reload the page with the random shuffle parameter
     setTimeout(() => {
       // Same behavior for both home page and other pages - always go to home with shuffle
-      window.location.href = `/?shuffle=${shuffleId}`;
+      window.location.href = `/?shuffleSeed=${shuffleId}`;
     }, 200); // Short delay to let toast appear
   };
 
