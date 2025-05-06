@@ -193,33 +193,48 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     }
   }, [data, page]);
   
-  // This effect no longer needs to check for shuffle seed changes
-  // since our new approach uses direct page reload to handle shuffling
-  // We'll keep a simplified version for safety
+  // This effect checks for URL shuffle param on initial load and on any URL change
   useEffect(() => {
-    // Check for URL parameters that indicate a shuffle was performed
-    const urlParams = new URLSearchParams(window.location.search);
-    const hasShuffleParam = urlParams.has('shuffle');
-    
-    if (hasShuffleParam) {
-      console.log('ContentFeed: Page was reloaded with shuffle parameter');
+    function checkAndApplyShuffle() {
+      // Check for URL parameters that indicate a shuffle was requested
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasShuffleParam = urlParams.has('shuffle');
+      const shuffleValue = urlParams.get('shuffle');
       
-      // Reset pagination
-      setPage(1);
-      setPopularBlocks([]);
-      
-      // Reset sorting
-      setSortBy('trending');
+      if (hasShuffleParam && shuffleValue) {
+        console.log('ContentFeed: Processing shuffle parameter:', shuffleValue);
+        
+        // Update local shuffle seed to match URL parameter
+        setLocalShuffleSeed(shuffleValue);
+        
+        // Reset pagination
+        setPage(1);
+        setPopularBlocks([]);
+        
+        // Reset sorting to trending for best shuffle results
+        setSortBy('trending');
+        
+        // Force a query client invalidation to refresh data
+        queryClient.invalidateQueries({ queryKey: ['/api/content/feed'] });
+        
+        // Don't immediately clean up the URL - keep the parameter for this session
+        // This ensures the backend receives the shuffle parameter on subsequent requests
+      }
     }
     
-    // Clean up URL if we have shuffle parameters (to avoid repeat in browser history)
-    if (hasShuffleParam && window.history.replaceState) {
-      // Keep other params but remove shuffle param
-      urlParams.delete('shuffle');
-      urlParams.delete('t');
-      const newUrl = urlParams.toString() ? `/?${urlParams.toString()}` : '/';
-      window.history.replaceState({}, '', newUrl);
-    }
+    // Run the check immediately on mount
+    checkAndApplyShuffle();
+    
+    // Also set up a listener for URL changes (like back/forward navigation)
+    const handleUrlChange = () => {
+      checkAndApplyShuffle();
+    };
+    
+    window.addEventListener('popstate', handleUrlChange);
+    
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+    };
   }, []);
 
   // Effect for detecting screen size and updating column count
