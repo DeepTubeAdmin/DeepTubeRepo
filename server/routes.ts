@@ -2648,10 +2648,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Running Cloudinary connection test...');
       const testResults = await cloudinaryService.testConnection();
       
+      // Get the actual configured cloud name from Cloudinary
+      const { v2: cloudinary } = await import('cloudinary');
+      const config = cloudinary.config();
+      
       // Return results with additional information
       return res.json({
         ...testResults,
-        cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+        configuredCloudName: config.cloud_name,
+        rawCloudNameEnv: process.env.CLOUDINARY_CLOUD_NAME,
         apiKeyProvided: !!process.env.CLOUDINARY_API_KEY,
         apiSecretProvided: !!process.env.CLOUDINARY_API_SECRET,
         timestamp: new Date().toISOString()
@@ -2671,14 +2676,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Import the Cloudinary service
       const cloudinaryService = await import('./services/cloudinaryService').then(m => m.default);
       
+      // Get the actual configured cloud name from Cloudinary
+      const { v2: cloudinary } = await import('cloudinary');
+      const config = cloudinary.config();
+      
       // Run the upload test
       console.log('Running Cloudinary upload test...');
+      console.log(`Using cloud_name: ${config.cloud_name}`);
       const testResults = await cloudinaryService.uploadTestImage();
       
       // Return results with additional information
       return res.json({
         ...testResults,
-        cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+        configuredCloudName: config.cloud_name,
+        rawCloudNameEnv: process.env.CLOUDINARY_CLOUD_NAME,
         apiKeyProvided: !!process.env.CLOUDINARY_API_KEY,
         apiSecretProvided: !!process.env.CLOUDINARY_API_SECRET,
         timestamp: new Date().toISOString()

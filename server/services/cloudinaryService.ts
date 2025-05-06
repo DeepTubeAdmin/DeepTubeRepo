@@ -120,31 +120,62 @@ async function testConnection() {
  * Upload a test image to Cloudinary
  */
 async function uploadTestImage() {
-  ensureCloudinaryConfig();
   try {
-    // Simple test SVG
-    const testSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200">
-      <rect width="300" height="200" fill="#ff9000"/>
-      <text x="150" y="100" font-family="Arial" font-size="24" text-anchor="middle" fill="white">
-        Cloudinary Test
-      </text>
+    // Get the current configuration
+    const config = cloudinary.config();
+    console.log(`Uploading test image with cloud_name: ${config.cloud_name}`);
+    
+    // Create an even simpler test SVG
+    const testSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="#ff9000"/>
     </svg>`;
     
     // Upload as a Base64 data URL
     const dataUrl = `data:image/svg+xml;base64,${Buffer.from(testSvg).toString('base64')}`;
     
-    console.log('Uploading test image to Cloudinary...');
-    const result = await cloudinary.uploader.upload(dataUrl, {
-      public_id: 'deeptube-test',
-      overwrite: true,
-      resource_type: 'image'
-    });
-    
-    console.log('Test image uploaded successfully:', result.secure_url);
-    return { success: true, imageUrl: result.secure_url, result };
+    // Simplify the upload options
+    console.log('Uploading test SVG to Cloudinary...');
+    try {
+      const result = await cloudinary.uploader.upload(dataUrl, {
+        public_id: 'test-basic', 
+        overwrite: true,
+        resource_type: 'image'
+      });
+      
+      console.log('Test image uploaded successfully:', result.secure_url);
+      return { 
+        success: true, 
+        imageUrl: result.secure_url,
+        cloudName: config.cloud_name,
+        uploadResult: result
+      };
+    } catch (uploadError: any) {
+      // Try alternative approach
+      if (uploadError.http_code === 404) {
+        console.log('Upload failed with 404, trying fetch test instead...');
+        // Try to fetch a public resource instead
+        const testUrl = `https://res.cloudinary.com/${config.cloud_name}/image/upload/sample`;
+        const response = await fetch(testUrl);
+        
+        return {
+          success: response.ok,
+          status: response.status,
+          message: `Fetch test to ${testUrl} ${response.ok ? 'succeeded' : 'failed'}`,
+          cloudName: config.cloud_name,
+          error: uploadError.message
+        };
+      }
+      
+      throw uploadError;
+    }
   } catch (error: any) {
-    console.error('Cloudinary test upload failed:', error);
-    return { success: false, error: error.message };
+    console.error('Cloudinary test failed:', error);
+    return { 
+      success: false, 
+      error: error.message,
+      cloudName: cloudinary.config().cloud_name,
+      details: error.http_code ? `HTTP Code: ${error.http_code}` : 'Unknown error'
+    };
   }
 }
 
