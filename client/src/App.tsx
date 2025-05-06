@@ -70,15 +70,25 @@ function App() {
     return `${timestamp}-${random}`;
   });
   
-  // Function to trigger a new shuffle by generating a new seed
+  // Function to trigger a new shuffle by generating a new seed with high entropy
   const triggerShuffle = () => {
+    // Use multiple sources of randomness for better distribution
     const timestamp = new Date().getTime();
-    const random = Math.random().toString(36).substring(2, 10);
-    const newSeed = `${timestamp}-${random}`;
-    console.log('Triggering content shuffle with new seed:', newSeed);
+    const random1 = Math.random().toString(36).substring(2, 10);
+    const random2 = Math.random().toString(36).substring(2, 10);
+    const performanceNow = typeof performance !== 'undefined' ? 
+      performance.now().toString(36).replace('.', '') : '';
+    
+    // Combine all sources for maximum entropy
+    const newSeed = `${timestamp}-${random1}-${random2}-${performanceNow}`;
+    console.log('Triggering content shuffle with high-entropy seed');
     
     // Clear the query cache for content feed queries to force a fresh fetch
+    // This ensures we don't mix content from different shuffles
     queryClient.removeQueries({ queryKey: ['/api/content/feed'] });
+    
+    // Invalidate any other queries that might be affected by the shuffle
+    queryClient.invalidateQueries({ queryKey: ['/api/content'] });
     
     // Update the shuffle seed state
     setShuffleSeed(newSeed);

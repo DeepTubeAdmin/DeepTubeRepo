@@ -1159,15 +1159,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // If no seed is provided, use standard Math.random()
     if (!seed) return Math.random;
     
-    // Create a simple seeded random number generator
-    let s = 0;
+    // Create a more robust seeded random number generator using multiple components
+    // Convert seed to a number using multiple hash approaches for better distribution
+    let s1 = 0, s2 = 0, s3 = 0;
+    
+    // Use different parts of the seed for different calculations
     for (let i = 0; i < seed.length; i++) {
-      s += seed.charCodeAt(i);
+      const charCode = seed.charCodeAt(i);
+      s1 = ((s1 << 5) - s1) + charCode; // Jenkins hash
+      s2 += charCode * (i + 1);         // Weighted sum
+      s3 ^= charCode * 747382729;       // XOR with prime
     }
     
+    // Use all three seeds in the random function for better distribution
+    let calls = 0;
     return function() {
-      s = Math.sin(s) * 10000;
-      return s - Math.floor(s);
+      s1 = (s1 * 9301 + 49297) % 233280;
+      s2 = Math.sin(s2 + calls) * 43758.5453;
+      s3 = (s3 ^ (s3 >> 3)) * 0x27d4eb2d;
+      
+      // Mix all three components and normalize to [0, 1)
+      const result = (Math.abs(s1/233280.0 + s2 - Math.floor(s2) + s3/(s3+1))) % 1;
+      calls++;
+      return result;
     };
   }
   
