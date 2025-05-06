@@ -1255,20 +1255,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const categorySlug = req.query.category as string || '';
+      // FORCED DIRECT SHUFFLE APPROACH
       // Check for shuffle parameter in URL (from clicking logo)
       const hasShuffleParam = req.query.shuffle !== undefined;
+
+      // For debugging
+      console.log(`Content feed request: page=${page}, category=${categorySlug || 'all'}, hasShuffleInURL=${hasShuffleParam}`);
       
-      // Get shuffle seed from URL parameter or use empty string
-      const shuffleSeed = hasShuffleParam ? (req.query.shuffle as string) || '' : '';
-      
-      // Enable shuffle mode when parameter is present
+      // Force shuffle to true when we have a shuffle parameter in URL
       const shuffle = hasShuffleParam;
       
-      // Log debugging information
-      console.log(`Content feed request: page=${page}, category=${categorySlug || 'all'}, shuffle=${shuffle}`);
-      if (shuffle) {
-        console.log(`Using shuffle seed: ${shuffleSeed}`);
-      }
+      // Use either the shuffle param value or generate a completely new random shuffle seed
+      // for maximum randomization effect
+      const effectiveSeed = shuffle
+        ? (req.query.shuffle as string || Math.random().toString(36) + Date.now().toString()) 
+        : '';
+        
+      console.log(`Shuffle mode is ${shuffle ? 'ACTIVE' : 'inactive'}, using seed: ${effectiveSeed || 'none'}`);
+      
+      // Shorthand for use in SQL queries
+      const shuffleSeed = effectiveSeed;
       
       // Get categoryId if category slug is provided
       let categoryId: number | undefined = undefined;
@@ -1278,8 +1284,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Create cache key based on category and shuffle seed
-      // Use the shuffle seed as part of the cache key
-      const cacheKey = `${categorySlug || 'all'}_feed_${shuffle ? shuffleSeed : Date.now()}`;
+      // Always use a new cache key when shuffle parameter is present
+      const cacheKey = getCacheKey(categorySlug, 'feed', shuffle ? Date.now().toString() : effectiveSeed);
       
       // Get or create the set of used content IDs for this view
       if (!infiniteScrollCache.has(cacheKey)) {

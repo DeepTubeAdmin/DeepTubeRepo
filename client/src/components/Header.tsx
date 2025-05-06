@@ -95,13 +95,15 @@ export default function Header({ simple = false }: HeaderProps) {
       duration: 1500,
     });
     
-    // Simple approach: navigate to home with a random shuffle parameter
+    // Simple approach: force reload the page with a random parameter to bust cache
     setTimeout(() => {
-      // Generate a random shuffle ID
-      const randomShuffle = Math.random().toString(36).substring(2, 10);
-      
-      // Set the URL with the shuffle parameter and navigate
-      window.location.href = `/?shuffle=${randomShuffle}`;
+      // If already on home page, add/update the random parameter
+      // Otherwise navigate to home with the random parameter
+      if (window.location.pathname === '/') {
+        window.location.href = `/?shuffle=${shuffleId}&t=${Date.now()}`;
+      } else {
+        window.location.href = `/?shuffle=${shuffleId}&t=${Date.now()}`;
+      }
     }, 200); // Short delay to let toast appear
   };
 

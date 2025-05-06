@@ -61,10 +61,9 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     return ['/api/content/feed', { 
       page, 
       category: categorySlug || '', 
-      // Only add shuffle parameter when explicitly needed via URL
       shuffleSeed, 
       sortBy,
-      // Add timestamp for cache busting only when shuffling
+      // Add timestamp to force cache busting on each render
       timestamp: shuffleSeed ? Date.now() : undefined 
     }];
   }, [page, categorySlug, shuffleSeed, sortBy]);
