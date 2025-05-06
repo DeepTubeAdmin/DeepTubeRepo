@@ -159,6 +159,15 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
       }
     }
   }, [data, page]);
+  
+  // Reset to page 1 when shuffle seed changes
+  useEffect(() => {
+    // Reset to page 1 whenever shuffle seed changes to ensure fresh content
+    setPage(1);
+    // Also reset popular blocks to avoid mixing pre-shuffle and post-shuffle content
+    setPopularBlocks([]);
+    console.log('ContentFeed: Shuffle seed changed, resetting to page 1');
+  }, [shuffleSeed]);
 
   // Effect for detecting screen size and updating column count
   useEffect(() => {

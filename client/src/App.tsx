@@ -76,6 +76,11 @@ function App() {
     const random = Math.random().toString(36).substring(2, 10);
     const newSeed = `${timestamp}-${random}`;
     console.log('Triggering content shuffle with new seed:', newSeed);
+    
+    // Clear the query cache for content feed queries to force a fresh fetch
+    queryClient.removeQueries({ queryKey: ['/api/content/feed'] });
+    
+    // Update the shuffle seed state
     setShuffleSeed(newSeed);
   };
   
