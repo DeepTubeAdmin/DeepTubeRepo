@@ -1255,30 +1255,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const categorySlug = req.query.category as string || '';
-      // MAXIMUM FORCED SHUFFLE APPROACH (SUPER AGGRESSIVE)
       // Check for shuffle parameter in URL (from clicking logo)
       const hasShuffleParam = req.query.shuffle !== undefined;
-
-      // For debugging with MUCH MORE DETAIL
-      console.log('-----------------------------------------------------');
-      console.log(`CONTENT FEED REQUEST: page=${page}, category=${categorySlug || 'all'}`);
-      console.log(`URL PARAMETERS: ${JSON.stringify(req.query)}`);
-      console.log(`SHUFFLE PARAM PRESENT: ${hasShuffleParam}`);
       
-      // ALWAYS FORCE SHUFFLE TO TRUE
-      // This guarantees that the content will always be shuffled
-      const shuffle = true;
+      // Get shuffle seed from URL parameter or use empty string
+      const shuffleSeed = hasShuffleParam ? (req.query.shuffle as string) || '' : '';
       
-      // Generate a COMPLETELY RANDOM seed every single time
-      // for maximum randomization effect (guaranteed different results)
-      const effectiveSeed = Date.now().toString() + Math.random().toString(36).substring(2);
-        
-      console.log(`SHUFFLE MODE: ALWAYS ACTIVE`);
-      console.log(`USING RANDOM SEED: ${effectiveSeed}`);
-      console.log('-----------------------------------------------------');
+      // Enable shuffle mode when parameter is present
+      const shuffle = hasShuffleParam;
       
-      // Use the same seed in SQL queries
-      const shuffleSeed = effectiveSeed;
+      // Log debugging information
+      console.log(`Content feed request: page=${page}, category=${categorySlug || 'all'}, shuffle=${shuffle}`);
+      if (shuffle) {
+        console.log(`Using shuffle seed: ${shuffleSeed}`);
+      }
       
       // Get categoryId if category slug is provided
       let categoryId: number | undefined = undefined;
@@ -1288,8 +1278,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Create cache key based on category and shuffle seed
-      // Always use a new cache key when shuffle parameter is present
-      const cacheKey = getCacheKey(categorySlug, 'feed', shuffle ? Date.now().toString() : effectiveSeed);
+      // Use the shuffle seed as part of the cache key
+      const cacheKey = `${categorySlug || 'all'}_feed_${shuffle ? shuffleSeed : Date.now()}`;
       
       // Get or create the set of used content IDs for this view
       if (!infiniteScrollCache.has(cacheKey)) {

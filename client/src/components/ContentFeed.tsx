@@ -56,18 +56,18 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   const sortMenuRef = useRef<HTMLDivElement>(null);
   const sortButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Query key for TanStack Query with FORCED RANDOMIZATION
+  // Query key for TanStack Query
   const queryKey = useMemo(() => {
     return ['/api/content/feed', { 
       page, 
       category: categorySlug || '', 
-      // Force a new random value on every render to ensure complete randomization
-      shuffle: Math.random().toString(36).substring(2, 10) + Date.now(), 
+      // Only add shuffle parameter when explicitly needed via URL
+      shuffleSeed, 
       sortBy,
-      // Always add timestamp for cache busting
-      timestamp: Date.now()
+      // Add timestamp for cache busting only when shuffling
+      timestamp: shuffleSeed ? Date.now() : undefined 
     }];
-  }, [page, categorySlug, sortBy]);
+  }, [page, categorySlug, shuffleSeed, sortBy]);
 
   // Data fetching with TanStack Query
   const { data, isLoading, isError } = useQuery<ContentFeedResponse>({
