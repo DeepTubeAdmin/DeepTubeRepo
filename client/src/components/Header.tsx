@@ -85,8 +85,10 @@ export default function Header({ simple = false }: HeaderProps) {
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
     
-    // Generate a random identifier for this shuffle
-    const shuffleId = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+    // Generate a more complex shuffle ID that includes timestamp for uniqueness
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 8);
+    const shuffleId = `${timestamp.toString(36)}-${random}`;
     
     // Display a toast notification about the shuffle
     toast({
@@ -95,15 +97,12 @@ export default function Header({ simple = false }: HeaderProps) {
       duration: 1500,
     });
     
-    // Simple approach: force reload the page with a random parameter to bust cache
+    console.log('Triggering content shuffle with seed:', shuffleId);
+    
+    // Force reload the page with the random shuffle parameter
     setTimeout(() => {
-      // If already on home page, add/update the random parameter
-      // Otherwise navigate to home with the random parameter
-      if (window.location.pathname === '/') {
-        window.location.href = `/?shuffle=${shuffleId}&t=${Date.now()}`;
-      } else {
-        window.location.href = `/?shuffle=${shuffleId}&t=${Date.now()}`;
-      }
+      // Same behavior for both home page and other pages - always go to home with shuffle
+      window.location.href = `/?shuffle=${shuffleId}`;
     }, 200); // Short delay to let toast appear
   };
 

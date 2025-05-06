@@ -66,12 +66,18 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   });
 
   const queryKey = useMemo(() => {
+    // Check if shuffle param is present in the URL to activate shuffle mode
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasShuffleParam = urlParams.has('shuffle');
+    
     return ['/api/content/feed', { 
       page, 
       category: categorySlug || '', 
+      // Include both shuffle (to activate mode) and shuffleSeed (for consistent ordering)
+      shuffle: hasShuffleParam ? urlParams.get('shuffle') : undefined,
       shuffleSeed: localShuffleSeed,
       sortBy,
-      timestamp: localShuffleSeed ? Date.now() : undefined 
+      timestamp: Date.now() // Always use current timestamp to prevent caching
     }];
   }, [page, categorySlug, localShuffleSeed, sortBy]);
 
