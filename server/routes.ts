@@ -1307,22 +1307,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const categorySlug = req.query.category as string || '';
-      // FORCED DIRECT SHUFFLE APPROACH
-      // Check for shuffle parameter in URL (from clicking logo)
+      // IMPROVED SHUFFLE APPROACH - PRIORITIZE SHUFFLESEED PARAMETER
+      // Check for shuffle parameter in URL (from clicking logo or old links)
       const hasShuffleParam = req.query.shuffle !== undefined;
-
+      // Check for the new shuffleSeed parameter (used by newer client code)
+      const hasShuffleSeedParam = req.query.shuffleSeed !== undefined;
+      
       // For debugging
-      console.log(`Content feed request: page=${page}, category=${categorySlug || 'all'}, hasShuffleInURL=${hasShuffleParam}`);
+      console.log(`Content feed request: page=${page}, category=${categorySlug || 'all'}, hasShuffleInURL=${hasShuffleParam}, hasShuffleSeedParam=${hasShuffleSeedParam}`);
       
-      // Force shuffle to true when we have a shuffle parameter in URL
-      const shuffle = hasShuffleParam;
+      // Force shuffle to true when we have any shuffle parameter in URL
+      const shuffle = hasShuffleParam || hasShuffleSeedParam;
       
-      // Use either the shuffle param value or generate a completely new random shuffle seed
-      // for maximum randomization effect
-      const effectiveSeed = shuffle
-        ? (req.query.shuffle as string || Math.random().toString(36) + Date.now().toString()) 
-        : '';
-        
+      // Generate the seed for shuffling, with priority:
+      // 1. Use shuffleSeed parameter if it exists
+      // 2. Otherwise use shuffle parameter if it exists
+      // 3. Otherwise generate a random seed if shuffle is true
+      // 4. Otherwise empty string (no shuffle)
+      let effectiveSeed = '';
+      if (hasShuffleSeedParam) {
+        effectiveSeed = req.query.shuffleSeed as string;
+      } else if (hasShuffleParam) {
+        effectiveSeed = req.query.shuffle as string || Math.random().toString(36) + Date.now().toString();
+      } else if (shuffle) {
+        effectiveSeed = Math.random().toString(36) + Date.now().toString();
+      }
+      
       console.log(`Shuffle mode is ${shuffle ? 'ACTIVE' : 'inactive'}, using seed: ${effectiveSeed || 'none'}`);
       
       // Shorthand for use in SQL queries
