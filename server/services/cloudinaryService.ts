@@ -38,15 +38,81 @@ function ensureCloudinaryConfig() {
  * Test if Cloudinary connection is working
  */
 async function testConnection() {
-  ensureCloudinaryConfig();
   try {
-    console.log('Testing Cloudinary API connection...');
-    const results = await cloudinary.api.ping();
-    console.log('Cloudinary ping successful:', results);
-    return { success: true, results };
+    ensureCloudinaryConfig();
+    
+    // Get current config for diagnostics
+    const config = cloudinary.config();
+    console.log('Testing Cloudinary configuration');
+    console.log(`Cloud name: ${config.cloud_name}`);
+    console.log(`API key length: ${config.api_key?.length ?? 0} chars`);
+    console.log(`API secret length: ${config.api_secret?.length ?? 0} chars`);
+    
+    if (!config.cloud_name) {
+      throw new Error('Missing cloud_name in Cloudinary configuration');
+    }
+    
+    // Try to generate a URL to verify configuration
+    const baseTestUrl = cloudinary.url('sample', {
+      width: 300,
+      height: 200,
+      crop: 'fill'
+    });
+    
+    console.log(`Generated test URL: ${baseTestUrl}`);
+    
+    // Try to ping Cloudinary API
+    try {
+      console.log('Testing Cloudinary API connection...');
+      const pingResults = await cloudinary.api.ping();
+      console.log('Cloudinary ping successful:', pingResults);
+      
+      return {
+        success: true,
+        results: pingResults,
+        cloudName: config.cloud_name,
+        apiKeyProvided: !!config.api_key,
+        apiSecretProvided: !!config.api_secret,
+        testUrl: baseTestUrl
+      };
+    } catch (error: any) {
+      console.error('Cloudinary API test failed:', error);
+      
+      // Even if API test fails, try a simple HTTP request to check connectivity
+      try {
+        const response = await fetch(`https://res.cloudinary.com/${config.cloud_name}/image/upload/sample`);
+        const status = response.status;
+        
+        return {
+          success: false,
+          error: error.message || 'Unknown API error',
+          httpStatus: status,
+          cloudName: config.cloud_name,
+          apiKeyProvided: !!config.api_key,
+          apiSecretProvided: !!config.api_secret,
+          testUrl: baseTestUrl
+        };
+      } catch (fetchError: any) {
+        return {
+          success: false,
+          error: `API Error: ${error.message || 'Unknown'}, Network Error: ${fetchError.message || 'Unknown'}`,
+          cloudName: config.cloud_name,
+          apiKeyProvided: !!config.api_key,
+          apiSecretProvided: !!config.api_secret,
+          testUrl: baseTestUrl
+        };
+      }
+    }
   } catch (error: any) {
     console.error('Cloudinary connection test failed:', error);
-    return { success: false, error: error.message };
+    return { 
+      success: false, 
+      error: error.message,
+      cloudName: cloudinary.config().cloud_name,
+      apiKeyProvided: !!cloudinary.config().api_key,
+      apiSecretProvided: !!cloudinary.config().api_secret,
+      testUrl: null
+    };
   }
 }
 

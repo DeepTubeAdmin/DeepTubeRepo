@@ -6,25 +6,73 @@ import { fileURLToPath } from "url";
 import { v2 as cloudinary } from 'cloudinary';
 
 // Configure Cloudinary with environment variables
-if (process.env.CLOUDINARY_URL) {
-  // Most standard format is a complete URL with credentials
-  console.log("Using CLOUDINARY_URL environment variable for configuration");
-} else if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
-  // Alternative format is separate env vars
-  console.log("Configuring Cloudinary with separate environment variables");
+console.log("Setting up Cloudinary configuration...");
+
+// Special handling for Replit environment where env vars might have URL prefix
+let cloudName = process.env.CLOUDINARY_CLOUD_NAME || '';
+let apiKey = process.env.CLOUDINARY_API_KEY || '';
+let apiSecret = process.env.CLOUDINARY_API_SECRET || '';
+
+// Check if cloudName contains the entire URL (happens in some environments)
+if (cloudName.startsWith('CLOUDINARY_URL=cloudinary://')) {
+  console.log('Detected CLOUDINARY_URL format in CLOUDINARY_CLOUD_NAME, extracting values...');
+  try {
+    // Extract from format like: CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+    const match = cloudName.match(/CLOUDINARY_URL=cloudinary:\/\/([^:]+):([^@]+)@([^/]+)/);
+    if (match) {
+      const [, extractedApiKey, extractedApiSecret, extractedCloudName] = match;
+      console.log(`Extracted cloud_name: ${extractedCloudName}`);
+      
+      // Override with extracted values
+      cloudName = extractedCloudName;
+      if (!apiKey) apiKey = extractedApiKey;
+      if (!apiSecret) apiSecret = extractedApiSecret;
+    }
+  } catch (error) {
+    console.error('Error extracting Cloudinary credentials from URL format:', error);
+  }
+} else if (process.env.CLOUDINARY_URL) {
+  // Handle dedicated CLOUDINARY_URL format
+  try {
+    const cloudinaryUrl = process.env.CLOUDINARY_URL;
+    console.log("Using CLOUDINARY_URL environment variable for configuration");
+    
+    // Parse the URL format if present
+    if (cloudinaryUrl.startsWith('cloudinary://')) {
+      const match = cloudinaryUrl.match(/cloudinary:\/\/([^:]+):([^@]+)@([^/]+)/);
+      if (match) {
+        const [, extractedApiKey, extractedApiSecret, extractedCloudName] = match;
+        
+        // Override with extracted values
+        cloudName = extractedCloudName;
+        apiKey = extractedApiKey;
+        apiSecret = extractedApiSecret;
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing CLOUDINARY_URL:', error);
+  }
+}
+
+// Check if we have all required configuration
+if (cloudName && apiKey && apiSecret) {
+  console.log("Configuring Cloudinary with extracted credentials");
   cloudinary.config({ 
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+    cloud_name: cloudName,
+    api_key: apiKey,
+    api_secret: apiSecret,
     secure: true
   });
   
-  // Cloudinary API key info (without revealing actual keys)
-  console.log(`Cloudinary configuration: cloud_name=${process.env.CLOUDINARY_CLOUD_NAME}, ` +
-    `api_key=<${process.env.CLOUDINARY_API_KEY?.length || 0} chars>, ` +
-    `api_secret=<${process.env.CLOUDINARY_API_SECRET?.length || 0} chars>`);
+  // Log configuration (without revealing actual keys)
+  console.log(`Cloudinary configuration: cloud_name='${cloudName}', ` +
+    `api_key=<${apiKey.length} chars>, ` +
+    `api_secret=<${apiSecret.length} chars>`);
 } else {
-  console.warn("Cloudinary credentials not found in environment variables");
+  console.warn("Cloudinary credentials incomplete or not found:");
+  console.warn(`- cloud_name: ${cloudName ? 'Present' : 'Missing'}`);
+  console.warn(`- api_key: ${apiKey ? 'Present' : 'Missing'}`);
+  console.warn(`- api_secret: ${apiSecret ? 'Present' : 'Missing'}`);
 }
 
 // Get directory paths
