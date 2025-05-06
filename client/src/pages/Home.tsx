@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import CategoryNavigation from "@/components/CategoryNavigation";
 import VideoPlayer from "@/components/VideoPlayer";
@@ -11,6 +11,7 @@ import Layout from "@/components/Layout";
 import MiniFooter from "@/components/MiniFooter";
 import SEO from "@/components/SEO";
 import { useQuery } from "@tanstack/react-query";
+import { useShuffle } from "@/App";
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState<string>("");
@@ -20,6 +21,27 @@ export default function Home() {
   const [selectedVideoId, setSelectedVideoId] = useState<number | undefined>(undefined);
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  
+  // Get shuffle functionality from context
+  const { triggerShuffle } = useShuffle();
+  
+  // Effect to trigger shuffle on component mount
+  useEffect(() => {
+    // Generate a random number to decide whether to shuffle
+    // This ensures we don't always shuffle on every single page load
+    // but creates enough randomness for content variety
+    const shouldAutoShuffle = Math.random() > 0.5;
+    
+    if (shouldAutoShuffle) {
+      console.log('Home component: Auto-triggering content shuffle on page load');
+      // Add a small delay to let other initialization complete first
+      const timer = setTimeout(() => {
+        triggerShuffle();
+      }, 200);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [triggerShuffle]);
   
   // Fetch categories from API
   const { data: apiCategories, isLoading: isCategoriesLoading } = useQuery<Category[]>({
