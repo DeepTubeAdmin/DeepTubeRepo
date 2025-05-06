@@ -57,16 +57,33 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   const sortButtonRef = useRef<HTMLButtonElement>(null);
 
   // Query key for TanStack Query
+  // Generate a shuffle seed if URL indicates shuffle needed
+  const [localShuffleSeed, setLocalShuffleSeed] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.has('shuffle') ? 
+      (urlParams.get('shuffle') || Math.random().toString(36) + Date.now().toString()) : 
+      shuffleSeed;
+  });
+
   const queryKey = useMemo(() => {
     return ['/api/content/feed', { 
       page, 
       category: categorySlug || '', 
-      shuffleSeed, 
+      shuffleSeed: localShuffleSeed,
       sortBy,
-      // Add timestamp to force cache busting on each render
-      timestamp: shuffleSeed ? Date.now() : undefined 
+      timestamp: localShuffleSeed ? Date.now() : undefined 
     }];
-  }, [page, categorySlug, shuffleSeed, sortBy]);
+  }, [page, categorySlug, localShuffleSeed, sortBy]);
+
+  // Clean up URL parameters after handling shuffle
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('shuffle') && window.history.replaceState) {
+      urlParams.delete('shuffle');
+      const newUrl = urlParams.toString() ? `/?${urlParams.toString()}` : '/';
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
 
   // Data fetching with TanStack Query
   const { data, isLoading, isError } = useQuery<ContentFeedResponse>({
