@@ -48,6 +48,8 @@ export default function AdminPage() {
   const [pendingContent, setPendingContent] = useState<PendingContent[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [activeTab, setActiveTab] = useState('pending');
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
 
   // Handle approving content
   const handleApproveContent = async (videoId: number) => {
@@ -116,6 +118,20 @@ export default function AdminPage() {
       });
     }
   };
+
+  // Filter users based on search query
+  useEffect(() => {
+    if (userSearchQuery.trim() === '') {
+      setFilteredUsers(users);
+    } else {
+      const query = userSearchQuery.toLowerCase();
+      const filtered = users.filter(user => 
+        user.username.toLowerCase().includes(query) || 
+        (user.email && user.email.toLowerCase().includes(query))
+      );
+      setFilteredUsers(filtered);
+    }
+  }, [userSearchQuery, users]);
 
   useEffect(() => {
     // Only admin can access this page (user with ID 1 or 2 as defined in server/routes.ts)
@@ -424,8 +440,26 @@ export default function AdminPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {/* User search input */}
+                <div className="mb-4">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="Search users by username or email..."
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                    />
+                    <div className="absolute right-3 top-2.5 text-gray-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
                 <ScrollArea className="h-[500px]">
-                  {users.length === 0 ? (
+                  {filteredUsers.length === 0 ? (
                     <p className="text-center text-gray-400 py-8">No users found</p>
                   ) : (
                     <Table>
@@ -439,7 +473,7 @@ export default function AdminPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {users.map((user) => (
+                        {filteredUsers.map((user) => (
                           <TableRow key={user.id} className="border-gray-800 hover:bg-gray-800">
                             <TableCell className="text-white font-medium">{user.username}</TableCell>
                             <TableCell className="text-gray-300">{user.email || 'N/A'}</TableCell>
