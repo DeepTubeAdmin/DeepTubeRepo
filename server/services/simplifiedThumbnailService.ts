@@ -38,7 +38,7 @@ export function extractYoutubeVideoId(url: string): string | null {
 /**
  * Get the best quality YouTube thumbnail URL for a given video ID
  */
-export function getYoutubeThumbnailUrl(videoId: string | null): string | null {
+export function getYoutubeThumbnailUrl(videoId: string | null, quality: string = 'maxresdefault'): string | null {
   if (!videoId) return null;
   
   // YouTube offers several thumbnail options:
@@ -48,8 +48,8 @@ export function getYoutubeThumbnailUrl(videoId: string | null): string | null {
   // mqdefault.jpg (320x180)
   // default.jpg (120x90)
   
-  // We'll use the highest quality available
-  return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+  // Use the specified quality or default to highest quality
+  return `https://img.youtube.com/vi/${videoId}/${quality}.jpg`;
 }
 
 // We won't configure Cloudinary directly here
@@ -173,7 +173,10 @@ export async function generateYouTubeThumbnail(videoId: number, youtubeId: strin
     
     // Try the direct YouTube thumbnail approach first (faster and more reliable)
     try {
-      const youtubeThumbnailUrl = getYoutubeThumbnailUrl(youtubeId, 'maxresdefault');
+      const youtubeThumbnailUrl = getYoutubeThumbnailUrl(youtubeId);
+      if (!youtubeThumbnailUrl) {
+        throw new Error('Could not generate YouTube thumbnail URL - invalid YouTube ID');
+      }
       console.log(`Using direct YouTube thumbnail URL: ${youtubeThumbnailUrl}`);
       
       const response = await fetch(youtubeThumbnailUrl);

@@ -15,7 +15,7 @@ import fs from "fs/promises";
 import fsSync from "fs";
 import { fileURLToPath } from 'url';
 import s3Service from "./services/s3Service";
-import cloudinaryService from "./services/cloudinaryService";
+import thumbnailService from "./services/simplifiedThumbnailService";
 import { v2 as cloudinary } from 'cloudinary';
 import { asc, desc, eq, like, and, sql, or, SQL, inArray } from 'drizzle-orm';
 import { videos } from '@shared/schema';
@@ -180,9 +180,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       // For embeds, extract YouTube ID if available
       else if (contentType === 'embed') {
-        youtubeId = cloudinaryService.extractYoutubeVideoId(content.embedCode || '');
+        youtubeId = thumbnailService.extractYoutubeVideoId(content.embedCode || '');
         if (youtubeId) {
-          sourceUrl = cloudinaryService.getYoutubeThumbnailUrl(youtubeId);
+          sourceUrl = thumbnailService.getYoutubeThumbnailUrl(youtubeId);
         }
       }
       
@@ -213,7 +213,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Generating new thumbnail via Cloudinary for ${contentType} ID: ${videoId}`);
         
         // Generate thumbnail using Cloudinary
-        const s3Key = await cloudinaryService.generateThumbnail(videoId, sourceUrl, contentType, youtubeId);
+        // Generate thumbnail based on content type
+        let s3Key;
+        if (youtubeId) {
+          s3Key = await thumbnailService.generateYouTubeThumbnail(videoId, youtubeId);
+        } else if (sourceUrl) {
+          // Convert the URL to an S3 key first if needed
+          const s3KeyFromUrl = sourceUrl.includes('/api/s3/') ? s3Service.urlPathToS3Key(sourceUrl) : null;
+          if (s3KeyFromUrl) {
+            s3Key = await thumbnailService.generateThumbnail(videoId, s3KeyFromUrl);
+          } else {
+            // Use placeholder for now
+            const svgContent = thumbnailService.generatePlaceholder(contentType);
+            const placeholderS3Key = `thumbnails/placeholder-${videoId}.svg`;
+            const { uploadStringToS3 } = await import('./combined-services');
+            await uploadStringToS3(svgContent, placeholderS3Key, 'image/svg+xml');
+            s3Key = placeholderS3Key;
+          }
+        } else {
+          // No suitable source for thumbnail, use placeholder
+          const svgContent = thumbnailService.generatePlaceholder(contentType);
+          const placeholderS3Key = `thumbnails/placeholder-${videoId}.svg`;
+          const { uploadStringToS3 } = await import('./combined-services');
+          await uploadStringToS3(svgContent, placeholderS3Key, 'image/svg+xml');
+          s3Key = placeholderS3Key;
+        }
         
         // Get signed URL for the thumbnail
         const signedUrl = await s3Service.getSignedS3Url(s3Key);
@@ -289,12 +313,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (image.imageUrl.startsWith('http')) {
             console.log(`Image ${image.id} using URL: ${image.imageUrl}`);
             
-            // Generate thumbnail using the imageUrl as source with Cloudinary
-            const s3Key = await cloudinaryService.generateThumbnail(
-              image.id,
-              image.imageUrl,
-              'image'
-            );
+            // Generate thumbnail using the imageUrl as source with unified thumbnail service
+            const simplifiedThumbnailService = await import('./services/simplifiedThumbnailService');
+            const imageUrlKey = `uploads/images/image-${image.id}.jpg`;
+            
+            // First save the image to S3
+            const { uploadStringToS3 } = await import('./combined-services');
+            const response = await fetch(image.imageUrl);
+            const imageData = await response.arrayBuffer();
+            await uploadStringToS3(Buffer.from(imageData), imageUrlKey, 'image/jpeg');
+            
+            // Now generate the thumbnail
+            const s3Key = await simplifiedThumbnailService.generateThumbnail(image.id, imageUrlKey);
             
             // Update the database to use the thumbnail endpoint
             await dbStorage.updateVideo(image.id, {
@@ -330,10 +360,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               continue;
             }
             
-            // Generate thumbnail from base64 data using Cloudinary
-            const s3Key = await cloudinaryService.generateFromBase64(
+            // Generate thumbnail from base64 data using simplified thumbnail service
+            const simplifiedThumbnailService = await import('./services/simplifiedThumbnailService');
+            const s3Key = await simplifiedThumbnailService.generateFromBase64(
               image.id,
-              image.imageUrl
+              image.imageUrl,
+              'image'
             );
             
             // Update the database to use the thumbnail endpoint
@@ -552,16 +584,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (contentType === 'image' && video.imageUrl) {
         sourceUrl = video.imageUrl;
       } else if (contentType === 'embed' && video.embedCode) {
-        youtubeId = cloudinaryService.extractYoutubeVideoId(video.embedCode);
+        youtubeId = thumbnailService.extractYoutubeVideoId(video.embedCode);
         if (youtubeId) {
-          sourceUrl = cloudinaryService.getYoutubeThumbnailUrl(youtubeId);
+          sourceUrl = thumbnailService.getYoutubeThumbnailUrl(youtubeId);
         }
       }
       
       console.log(`Fixing thumbnail for ${contentType} ${videoId} with Cloudinary`);
       
-      // Generate thumbnail via Cloudinary
-      const s3Key = await cloudinaryService.generateThumbnail(videoId, sourceUrl, contentType, youtubeId);
+      // Generate thumbnail based on content type and source
+      let s3Key;
+      if (youtubeId) {
+        s3Key = await thumbnailService.generateYouTubeThumbnail(videoId, youtubeId);
+      } else if (sourceUrl) {
+        // Convert the URL to an S3 key first if needed
+        const s3KeyFromUrl = sourceUrl.includes('/api/s3/') ? s3Service.urlPathToS3Key(sourceUrl) : null;
+        if (s3KeyFromUrl) {
+          s3Key = await thumbnailService.generateThumbnail(videoId, s3KeyFromUrl);
+        } else {
+          // For remote URLs, try to download and then generate thumbnail
+          try {
+            const response = await fetch(sourceUrl);
+            if (response.ok) {
+              const contentBuffer = Buffer.from(await response.arrayBuffer());
+              const tempS3Key = `uploads/${contentType}s/${contentType}-${videoId}.jpg`;
+              await uploadStringToS3(contentBuffer, tempS3Key, 'image/jpeg');
+              s3Key = await thumbnailService.generateThumbnail(videoId, tempS3Key);
+            } else {
+              throw new Error(`Failed to fetch source URL: ${response.status}`);
+            }
+          } catch (fetchError) {
+            console.error(`Error fetching source URL: ${sourceUrl}`, fetchError);
+            // Use placeholder as fallback
+            const svgContent = thumbnailService.generatePlaceholder(contentType);
+            s3Key = `thumbnails/placeholder-${videoId}.svg`;
+            await uploadStringToS3(svgContent, s3Key, 'image/svg+xml');
+          }
+        }
+      } else {
+        // No suitable source for thumbnail, use placeholder
+        const svgContent = thumbnailService.generatePlaceholder(contentType);
+        s3Key = `thumbnails/placeholder-${videoId}.svg`;
+        await uploadStringToS3(svgContent, s3Key, 'image/svg+xml');
+      }
       
       // Update the video record to use our thumbnail endpoint
       await dbStorage.updateVideo(videoId, { 
@@ -2533,7 +2598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (content.contentType === 'embed') {
           youtubeId = cloudinaryService.extractYoutubeVideoId(content.embedCode || '');
           if (youtubeId) {
-            sourceUrl = cloudinaryService.getYoutubeThumbnailUrl(youtubeId);
+            sourceUrl = thumbnailService.getYoutubeThumbnailUrl(youtubeId);
           }
         }
         
@@ -2640,12 +2705,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Test endpoint for checking Cloudinary connectivity
   app.get('/api/test-cloudinary', async (req, res) => {
     try {
-      // Import the Cloudinary service
-      const cloudinaryService = await import('./services/cloudinaryService').then(m => m.default);
+      // Import the thumbnail service
+      const thumbnailService = await import('./services/simplifiedThumbnailService').then(m => m.default);
       
       // Run the test
       console.log('Running Cloudinary connection test...');
-      const testResults = await cloudinaryService.testConnection();
+      const testResults = await thumbnailService.testConnection();
       
       // Get the actual configured cloud name from Cloudinary
       const { v2: cloudinary } = await import('cloudinary');
@@ -2672,8 +2737,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Test endpoint that actually uploads a test image to Cloudinary
   app.get('/api/test-cloudinary-upload', async (req, res) => {
     try {
-      // Import the Cloudinary service
-      const cloudinaryService = await import('./services/cloudinaryService').then(m => m.default);
+      // Import the thumbnail service
+      const thumbnailService = await import('./services/simplifiedThumbnailService').then(m => m.default);
       
       // Get the actual configured cloud name from Cloudinary
       const { v2: cloudinary } = await import('cloudinary');
@@ -2682,7 +2747,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Run the upload test
       console.log('Running Cloudinary upload test...');
       console.log(`Using cloud_name: ${config.cloud_name}`);
-      const testResults = await cloudinaryService.uploadTestImage();
+      const testResults = await thumbnailService.uploadTestImage();
       
       // Return results with additional information
       return res.json({
@@ -2757,22 +2822,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(` - Source URL: ${sourceUrl}`);
       
-      // Import the Cloudinary service
-      const cloudinaryService = await import('./services/cloudinaryService').then(m => m.default);
+      // Import the thumbnail service
+      const thumbnailService = await import('./services/simplifiedThumbnailService').then(m => m.default);
       
       // Detect YouTube embed and extract video ID if present
       let youtubeId = null;
       if (video.contentType === 'embed' && video.embedCode) {
-        youtubeId = cloudinaryService.extractYoutubeVideoId(video.embedCode);
+        youtubeId = thumbnailService.extractYoutubeVideoId(video.embedCode);
       }
       
-      // Force regenerate the thumbnail using Cloudinary
-      const s3Key = await cloudinaryService.generateThumbnail(
-        videoId,
-        sourceUrl,
-        video.contentType,
-        youtubeId
-      );
+      // Generate thumbnail based on content type and source
+      let s3Key;
+      if (youtubeId) {
+        s3Key = await thumbnailService.generateYouTubeThumbnail(videoId, youtubeId);
+      } else if (sourceUrl) {
+        // For local paths or S3 paths
+        const { urlPathToS3Key } = await import('./combined-services');
+        const sourceKey = sourceUrl.includes('/api/s3/') ? urlPathToS3Key(sourceUrl) : sourceUrl;
+        s3Key = await thumbnailService.generateThumbnail(videoId, sourceKey);
+      } else {
+        // No suitable source for thumbnail, use placeholder
+        const svgContent = thumbnailService.generatePlaceholder(video.contentType);
+        const { uploadStringToS3 } = await import('./combined-services');
+        s3Key = `thumbnails/placeholder-${videoId}.svg`;
+        await uploadStringToS3(svgContent, s3Key, 'image/svg+xml');
+      }
       
       // Update the video record with the unified thumbnail path
       await dbStorage.updateVideo(videoId, { 
@@ -2830,8 +2904,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // For non-YouTube content, proceed with normal flow
-      // Import the Cloudinary service
-      const cloudinaryService = await import('./services/cloudinaryService').then(m => m.default);
+      // Import the thumbnail service
+      const thumbnailService = await import('./services/simplifiedThumbnailService').then(m => m.default);
       
       // Get the source URL based on content type
       let sourceUrl = null;
@@ -2843,20 +2917,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sourceUrl = video.imageUrl;
       } else if (video.contentType === 'embed' && video.embedCode) {
         // Try to extract YouTube ID
-        youtubeId = cloudinaryService.extractYoutubeVideoId(video.embedCode);
+        youtubeId = thumbnailService.extractYoutubeVideoId(video.embedCode);
       }
       
       if (!sourceUrl && !youtubeId) {
         return res.status(400).json({ error: "No source URL or YouTube ID found for content" });
       }
       
-      // Force regenerate the thumbnail using Cloudinary
-      const s3Key = await cloudinaryService.generateThumbnail(
-        videoId,
-        sourceUrl,
-        video.contentType,
-        youtubeId
-      );
+      // Generate thumbnail based on content type and source
+      let s3Key;
+      if (youtubeId) {
+        s3Key = await thumbnailService.generateYouTubeThumbnail(videoId, youtubeId);
+      } else if (sourceUrl) {
+        // For local paths or S3 paths
+        const { urlPathToS3Key } = await import('./combined-services');
+        const sourceKey = sourceUrl.includes('/api/s3/') ? urlPathToS3Key(sourceUrl) : sourceUrl;
+        s3Key = await thumbnailService.generateThumbnail(videoId, sourceKey);
+      } else {
+        // No suitable source for thumbnail, use placeholder
+        const svgContent = thumbnailService.generatePlaceholder(video.contentType);
+        const { uploadStringToS3 } = await import('./combined-services');
+        s3Key = `thumbnails/placeholder-${videoId}.svg`;
+        await uploadStringToS3(svgContent, s3Key, 'image/svg+xml');
+      }
       
       // Update to use unified thumbnail path
       await dbStorage.updateVideo(videoId, { 
