@@ -201,6 +201,10 @@ export * as storage from './storage';
 export * as cloudinary from './cloudinary';
 export * as generators from './generators';
 
+// Re-export commonly used functions directly for simpler imports
+export { extractYouTubeVideoId, testCloudinaryConnection, configureCloudinary } from './cloudinary';
+export { getSignedS3Url, getThumbnailS3Key, getS3ResourcePath, checkIfObjectExists } from './storage';
+
 // Default export for backward compatibility
 export default {
   generateThumbnail,
