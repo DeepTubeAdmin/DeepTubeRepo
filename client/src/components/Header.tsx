@@ -95,11 +95,19 @@ export default function Header({ simple = false }: HeaderProps) {
       duration: 1500,
     });
     
-    // Super-simplified approach: just reload with a forced shuffle parameter
+    // Brute-force approach: always reload the page with random parameters
+    // We'll use a direct reload to guarantee a full refresh of all content
     setTimeout(() => {
-      // This will force a complete reload with the shuffle parameter and timestamp
-      // These parameters will be picked up by our server-side API endpoint
-      window.location.replace(`/?shuffle=${shuffleId}&t=${Date.now()}`);
+      // Generate totally random values each time for maximum randomization
+      const randomParameters = {
+        shuffle: Math.random().toString(36).substring(2, 10), 
+        timestamp: Date.now()
+      };
+      
+      // Force the page to completely reload with these parameters
+      // Using .reload(true) to bypass cache entirely
+      window.location.href = `/?shuffle=${randomParameters.shuffle}&t=${randomParameters.timestamp}`;
+      window.location.reload(true);
     }, 200); // Short delay to let toast appear
   };
 
