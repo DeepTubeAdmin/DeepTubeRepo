@@ -84,30 +84,36 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     }];
   }, [page, categorySlug, localShuffleSeed, sortBy]);
 
-  // Clean up URL parameters after handling shuffle
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const hasUrlParams = urlParams.has('shuffleSeed') || urlParams.has('shuffle');
-    
-    if (hasUrlParams && window.history.replaceState) {
-      // Remove both types of shuffle params for consistency
-      if (urlParams.has('shuffleSeed')) {
-        urlParams.delete('shuffleSeed');
-      }
-      if (urlParams.has('shuffle')) {
-        urlParams.delete('shuffle');
-      }
-      
-      const newUrl = urlParams.toString() ? `/?${urlParams.toString()}` : '/';
-      window.history.replaceState({}, '', newUrl);
-    }
-  }, []);
-
-  // Data fetching with TanStack Query
+  // Data fetching with TanStack Query first, before using it in effects
   const { data, isLoading, isError } = useQuery<ContentFeedResponse>({
     queryKey,
     placeholderData: previousDataRef.current,
   });
+  
+  // Clean up URL parameters only AFTER data has been loaded successfully
+  // This ensures the shuffle parameters are present during the data fetch
+  useEffect(() => {
+    // Only run this effect when data is loaded
+    if (data && !isLoading) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasUrlParams = urlParams.has('shuffleSeed') || urlParams.has('shuffle');
+      
+      if (hasUrlParams && window.history.replaceState) {
+        console.log('Clean up URL parameters after data has been loaded');
+        
+        // Remove both types of shuffle params for consistency
+        if (urlParams.has('shuffleSeed')) {
+          urlParams.delete('shuffleSeed');
+        }
+        if (urlParams.has('shuffle')) {
+          urlParams.delete('shuffle');
+        }
+        
+        const newUrl = urlParams.toString() ? `/?${urlParams.toString()}` : '/';
+        window.history.replaceState({}, '', newUrl);
+      }
+    }
+  }, [data, isLoading]);
 
   // Memoized helper functions
   const getItemsBasedOnColumns = useCallback((items: Video[] = [], rows: number) => {
