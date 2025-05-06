@@ -2140,15 +2140,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if ((contentType === "video" || contentType === "videos") && videoUrl) {
         try {
           console.log(`Generating thumbnail for new video upload: ${video.id} with URL ${videoUrl}`);
-          // Import the thumbnail generator function
-          const { generateAndStoreS3Thumbnail } = await import('./generateThumbnail');
+          // Use the unified ThumbnailService
+          const thumbnailService = await import('./services/ThumbnailService');
           
           // Generate the thumbnail
-          const s3Key = await generateAndStoreS3Thumbnail(
-            video.id,
-            contentType,
-            videoUrl
-          );
+          const result = await thumbnailService.generateThumbnail({
+            contentId: video.id,
+            contentType: 'video',
+            sourceUrl: videoUrl,
+            forceRegeneration: true
+          });
           
           // Update the video record with the thumbnail path
           await dbStorage.updateVideo(video.id, { 
