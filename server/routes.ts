@@ -1215,12 +1215,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
   
+  // Helper function to add randomness to database queries based on shuffle seed
+  function addRandomSorting(query: any, seed: string): any {
+    if (!seed) return query;
+    
+    // Use modulo of ASCII values from seed to create a random order
+    // This creates effectively random but deterministic sorting based on the seed
+    let seedValue = 0;
+    for (let i = 0; i < seed.length; i++) {
+      seedValue += seed.charCodeAt(i);
+    }
+    
+    // Use modulo to create different sort orders based on seed value
+    const sortType = seedValue % 4;
+    
+    switch (sortType) {
+      case 0:
+        // Sort by ID ascending
+        return query.orderBy(asc(videos.id));
+      case 1:
+        // Sort by ID descending
+        return query.orderBy(desc(videos.id));
+      case 2:
+        // Sort by title ascending
+        return query.orderBy(asc(videos.title));
+      case 3:
+        // Sort by title descending
+        return query.orderBy(desc(videos.title));
+      default:
+        return query;
+    }
+  }
+
   // New API endpoint for the completely redesigned content feed
   app.get("/api/content/feed", async (req, res) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const categorySlug = req.query.category as string || '';
       const shuffleSeed = req.query.shuffleSeed as string || '';
+      
+      console.log(`Content feed request: page=${page}, category=${categorySlug || 'all'}, shuffleSeed=${shuffleSeed ? 'provided' : 'none'}`);
       
       // Get categoryId if category slug is provided
       let categoryId: number | undefined = undefined;
@@ -1301,8 +1335,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get featured videos (filtered by category if specified)
       let featuredVideos: Video[] = [];
       
-      // Get all featured videos 
-      const featuredVideosQuery = await dbStorage.getVideos(50);
+      // Get all featured videos - use random query for strong shuffling
+      // The random SQL clause will shuffle the order differently based on the seed value
+      const randomSeed = shuffleSeed ? parseInt(shuffleSeed.replace(/[^0-9]/g, '').slice(0, 8) || '1234') : Date.now();
+      const randomOrder = sql`RANDOM() * ${randomSeed}::FLOAT`;
+      
+      // Modify the database query to include ORDER BY with seeded randomization
+      const queryOptions = {
+        orderBy: randomOrder
+      };
+      
+      // Get videos with randomized order from the database
+      const featuredVideosQuery = await db.select().from(videos).orderBy(randomOrder).limit(50);
       
       // Filter for videos (not images) with approved status
       featuredVideos = featuredVideosQuery.filter(v => 
