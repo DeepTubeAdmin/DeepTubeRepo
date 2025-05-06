@@ -25,21 +25,30 @@ export default function Home() {
   // Get shuffle functionality from context
   const { triggerShuffle } = useShuffle();
   
-  // Effect to trigger shuffle on component mount
+  // Effect to trigger shuffle on component mount based on URL parameters
   useEffect(() => {
-    // Generate a random number to decide whether to shuffle
-    // This ensures we don't always shuffle on every single page load
-    // but creates enough randomness for content variety
-    const shouldAutoShuffle = Math.random() > 0.5;
+    // Check if we came from a shuffle (URL parameter)
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasShuffleParam = urlParams.has('shuffle');
     
-    if (shouldAutoShuffle) {
-      console.log('Home component: Auto-triggering content shuffle on page load');
-      // Add a small delay to let other initialization complete first
-      const timer = setTimeout(() => {
-        triggerShuffle();
-      }, 200);
+    // Only do an auto-shuffle if we don't already have a shuffle param
+    // This prevents infinite loops of shuffling
+    if (!hasShuffleParam) {
+      // Generate a random number to decide whether to shuffle
+      // Lower probability (30%) to reduce frequency of auto-shuffles
+      const shouldAutoShuffle = Math.random() > 0.7;
       
-      return () => clearTimeout(timer);
+      if (shouldAutoShuffle) {
+        console.log('Home component: Auto-triggering content shuffle on page load');
+        // Add a small delay to let other initialization complete first
+        const timer = setTimeout(() => {
+          triggerShuffle();
+        }, 500);
+        
+        return () => clearTimeout(timer);
+      }
+    } else {
+      console.log('Home component: Detected shuffle param in URL, skipping auto-shuffle');
     }
   }, [triggerShuffle]);
   

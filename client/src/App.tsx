@@ -99,9 +99,13 @@ function App() {
     // Always force a full page reload when shuffling for guaranteed content refresh
     // The timeout ensures React state changes are processed first
     setTimeout(() => {
-      window.location.href = window.location.pathname === '/' ? 
-        '/?shuffle=' + newSeed : 
-        '/';
+      // Create a forced reload URL with timestamp to guarantee cache bust
+      const forcedReloadUrl = window.location.pathname === '/' ?
+        `/?shuffle=${newSeed}&t=${Date.now()}` :
+        `/?t=${Date.now()}`;
+      
+      // Use window.location.replace instead of href for a cleaner history
+      window.location.replace(forcedReloadUrl);
     }, 200);
   };
   

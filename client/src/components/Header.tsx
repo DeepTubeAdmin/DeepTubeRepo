@@ -95,13 +95,10 @@ export default function Header({ simple = false }: HeaderProps) {
       duration: 3000,
     });
     
-    // Add a small delay to let the toast show before the page refreshes
-    setTimeout(() => {
-      // First, trigger the shuffle - this will generate a new seed and clear caches
-      triggerShuffle();
-      
-      // The shuffle function in App.tsx will handle the reload and navigation
-    }, 300);
+    // Trigger the shuffle immediately - this will generate a new seed and clear caches
+    triggerShuffle();
+    
+    // The shuffle function in App.tsx will handle the reload and navigation
   };
 
   if (simple) {

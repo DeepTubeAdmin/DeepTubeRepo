@@ -57,7 +57,16 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   const sortButtonRef = useRef<HTMLButtonElement>(null);
 
   // Query key for TanStack Query
-  const queryKey = ['/api/content/feed', { page, category: categorySlug || '', shuffleSeed, sortBy }];
+  const queryKey = useMemo(() => {
+    return ['/api/content/feed', { 
+      page, 
+      category: categorySlug || '', 
+      shuffleSeed, 
+      sortBy,
+      // Add timestamp to force cache busting on each render
+      timestamp: shuffleSeed ? Date.now() : undefined 
+    }];
+  }, [page, categorySlug, shuffleSeed, sortBy]);
 
   // Data fetching with TanStack Query
   const { data, isLoading, isError } = useQuery<ContentFeedResponse>({
