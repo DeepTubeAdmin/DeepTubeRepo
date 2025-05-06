@@ -724,8 +724,9 @@ export class DatabaseStorage implements IStorage {
       // When shuffleSeed is provided, use the same randomization algorithm as the main getVideos method
       if (shuffleSeed) {
         console.log(`Using randomized shuffle ordering for trending with seed: ${shuffleSeed}`);
-        // Convert the seed string to a numeric value to use with SQL RANDOM()
-        const seedValue = shuffleSeed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        // Convert the seed string to a numeric value between 0 and 1 to avoid integer overflow
+        const seedHash = shuffleSeed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 100;
+        const seedValue = seedHash / 100;
         
         // Use seed with trending ranking for more deterministic but varied ordering
         queryBuilder = queryBuilder.orderBy(
@@ -775,8 +776,9 @@ export class DatabaseStorage implements IStorage {
       // Apply randomized ordering with shuffle seed if provided
       if (shuffleSeed) {
         console.log(`Using randomized shuffle ordering for popular with seed: ${shuffleSeed}`);
-        // Convert the seed string to a numeric value to use with SQL RANDOM()
-        const seedValue = shuffleSeed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        // Convert the seed string to a numeric value between 0 and 1 to avoid integer overflow
+        const seedHash = shuffleSeed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 100;
+        const seedValue = seedHash / 100;
         
         // Mix popularity ranking with seeded randomness
         queryBuilder = queryBuilder.orderBy(
