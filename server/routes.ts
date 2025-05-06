@@ -1382,7 +1382,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 2. TRENDING NOW SECTION (3 rows of videos, 1 row of images)
       // Get trending videos (not already used in featured)
       // Get trending videos with shuffle seed applied at the database level
-      let trendingVideos = await dbStorage.getTrendingVideos(50, undefined, shuffleSeed);
+      // Enhanced randomization with direct RANDOM() sorting if shuffle parameter exists
+      let trendingVideos = shuffle
+        ? await db.select().from(videos)
+            .where(and(
+              or(eq(videos.contentType, 'video'), eq(videos.contentType, 'embed')),
+              eq(videos.reviewStatus, 'approved')
+            ))
+            .orderBy(sql`RANDOM()`)
+            .limit(50)
+        : await dbStorage.getTrendingVideos(50, undefined, shuffleSeed);
+      
       trendingVideos = trendingVideos.filter(v => 
         (v.contentType === 'video' || v.contentType === 'embed') &&
         !usedContentIds.has(v.id));
@@ -1413,8 +1423,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       response.trending.images = selectedTrendingImages;
       
       // 3. RECENTLY UPLOADED SECTION (3 rows of videos, 1 row of images)
-      // Get newest videos
-      let recentVideos = await dbStorage.getVideos(50, undefined, undefined, 'newest', shuffleSeed);
+      // Get newest videos with forced randomization if shuffle is active
+      let recentVideos = shuffle
+        ? await db.select().from(videos)
+            .where(and(
+              or(eq(videos.contentType, 'video'), eq(videos.contentType, 'embed')),
+              eq(videos.reviewStatus, 'approved')
+            ))
+            .orderBy(sql`RANDOM()`)
+            .limit(50)
+        : await dbStorage.getVideos(50, undefined, undefined, 'newest', shuffleSeed);
+        
       recentVideos = recentVideos.filter(v => 
         (v.contentType === 'video' || v.contentType === 'embed') &&
         !usedContentIds.has(v.id));
@@ -1429,8 +1448,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       selectedRecentVideos.forEach(video => usedContentIds.add(video.id));
       response.recent.videos = selectedRecentVideos;
       
-      // Get newest images
-      let recentImages = await dbStorage.getVideos(20, 'image', undefined, 'newest', shuffleSeed);
+      // Get newest images with forced randomization if shuffle is active
+      let recentImages = shuffle
+        ? await db.select().from(videos)
+            .where(and(
+              eq(videos.contentType, 'image'),
+              eq(videos.reviewStatus, 'approved')
+            ))
+            .orderBy(sql`RANDOM()`)
+            .limit(20)
+        : await dbStorage.getVideos(20, 'image', undefined, 'newest', shuffleSeed);
+        
       recentImages = recentImages.filter(img => 
         img.contentType === 'image' && !usedContentIds.has(img.id));
         
@@ -1452,8 +1480,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Random position for advertisement
         const adPosition = Math.floor(Math.random() * 12); // Random position within 12 videos
         
-        // Get popular videos
-        let popularVideos = await dbStorage.getPopularVideos(50, undefined, shuffleSeed);
+        // Get popular videos with stronger randomization when shuffle is active
+        let popularVideos = shuffle
+          ? await db.select().from(videos)
+              .where(and(
+                or(eq(videos.contentType, 'video'), eq(videos.contentType, 'embed')),
+                eq(videos.reviewStatus, 'approved')
+              ))
+              .orderBy(sql`RANDOM()`)
+              .limit(50)
+          : await dbStorage.getPopularVideos(50, undefined, shuffleSeed);
+          
         popularVideos = popularVideos.filter(v => 
           (v.contentType === 'video' || v.contentType === 'embed') &&
           !usedContentIds.has(v.id));
@@ -1467,8 +1504,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const selectedPopularVideos = popularVideos.slice(0, 12);
         selectedPopularVideos.forEach(video => usedContentIds.add(video.id));
         
-        // Get popular images
-        let popularImages = await dbStorage.getPopularVideos(20, 'image', shuffleSeed);
+        // Get popular images with stronger randomization when shuffle is active
+        let popularImages = shuffle
+          ? await db.select().from(videos)
+              .where(and(
+                eq(videos.contentType, 'image'),
+                eq(videos.reviewStatus, 'approved')
+              ))
+              .orderBy(sql`RANDOM()`)
+              .limit(20)
+          : await dbStorage.getPopularVideos(20, 'image', shuffleSeed);
+          
         popularImages = popularImages.filter(img => 
           img.contentType === 'image' && !usedContentIds.has(img.id));
           
