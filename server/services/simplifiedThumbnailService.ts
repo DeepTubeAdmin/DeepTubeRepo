@@ -9,23 +9,38 @@ import { v2 as cloudinary } from 'cloudinary';
 import s3Service from './s3Service';
 import { getYoutubeThumbnailUrl, extractYoutubeVideoId } from '../youtubeUtils';
 
-// Ensure Cloudinary is properly configured
-const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-const apiKey = process.env.CLOUDINARY_API_KEY;
-const apiSecret = process.env.CLOUDINARY_API_SECRET;
+// We won't configure Cloudinary directly here
+// Instead, we'll use dynamic configuration during runtime to pick up the latest credentials
 
-// Validate configuration
-if (!cloudName || !apiKey || !apiSecret) {
-  console.warn('Cloudinary credentials missing - thumbnail generation will be limited');
+// This function ensures we have the latest Cloudinary configuration
+async function ensureCloudinaryConfig() {
+  // Log current configuration
+  console.log('Ensuring Cloudinary has the latest credentials...');
+  
+  // Extract credentials directly from environment variables
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  
+  // Update the configuration
+  cloudinary.config({
+    cloud_name: cloudName,
+    api_key: apiKey,
+    api_secret: apiSecret,
+    secure: true
+  });
+  
+  // Log configuration status
+  console.log(`Cloudinary configuration updated:`);
+  console.log(`- Cloud name: ${cloudName ? 'Present' : 'Missing'}`);
+  console.log(`- API key: ${apiKey ? 'Present' : 'Missing'}`);
+  console.log(`- API secret: ${apiSecret ? 'Present' : 'Missing'}`);
+  
+  // Validate configuration
+  if (!cloudName || !apiKey || !apiSecret) {
+    console.warn('WARNING: Cloudinary credentials incomplete - thumbnail generation will be limited');
+  }
 }
-
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: cloudName,
-  api_key: apiKey,
-  api_secret: apiSecret,
-  secure: true
-});
 
 /**
  * Generate a thumbnail for video content using Cloudinary's direct API
@@ -34,6 +49,9 @@ cloudinary.config({
 export async function generateThumbnail(videoId: number, s3Key: string): Promise<string> {
   try {
     console.log(`Generating simplified thumbnail for video ${videoId} using Cloudinary direct API`);
+    
+    // Ensure Cloudinary has the latest configuration
+    await ensureCloudinaryConfig();
     
     // Import combined services for simplified access
     const { getSignedS3Url, uploadStringToS3 } = await import('../combined-services');
@@ -44,6 +62,7 @@ export async function generateThumbnail(videoId: number, s3Key: string): Promise
     
     try {
       // Upload to Cloudinary and generate thumbnail
+      console.log('Starting Cloudinary upload with updated credentials...');
       const result = await cloudinary.uploader.upload(s3Url, {
         resource_type: 'video',
         public_id: `video-${videoId}`,
@@ -102,6 +121,9 @@ export async function generateYouTubeThumbnail(videoId: number, youtubeId: strin
   try {
     console.log(`Generating thumbnail for YouTube video ${youtubeId}`);
     
+    // Ensure Cloudinary has the latest configuration
+    await ensureCloudinaryConfig();
+    
     // Import combined services for simplified access
     const { uploadStringToS3 } = await import('../combined-services');
     
@@ -127,7 +149,10 @@ export async function generateYouTubeThumbnail(videoId: number, youtubeId: strin
       // Fall back to Cloudinary for processing
       console.log('Falling back to Cloudinary for YouTube thumbnail generation');
       
+      // Use Cloudinary with updated credentials
       const youtubeUrl = `https://www.youtube.com/watch?v=${youtubeId}`;
+      console.log(`Uploading YouTube URL to Cloudinary: ${youtubeUrl}`);
+      
       const result = await cloudinary.uploader.upload(youtubeUrl, {
         resource_type: 'video',
         public_id: `youtube-${videoId}`,
@@ -143,14 +168,17 @@ export async function generateYouTubeThumbnail(videoId: number, youtubeId: strin
         eager_async: false
       });
       
+      console.log('Cloudinary upload successful, extracting thumbnail URL');
       const thumbnailUrl = result.eager[0].secure_url;
       
       // Save to S3
+      console.log(`Downloading Cloudinary thumbnail: ${thumbnailUrl}`);
       const thumbnailResponse = await fetch(thumbnailUrl);
       const thumbnailBuffer = Buffer.from(await thumbnailResponse.arrayBuffer());
       const thumbnailS3Key = `thumbnails/youtube-${videoId}.jpg`;
       await uploadStringToS3(thumbnailBuffer, thumbnailS3Key, 'image/jpeg');
       
+      console.log(`Successfully saved Cloudinary YouTube thumbnail to S3: ${thumbnailS3Key}`);
       return thumbnailS3Key;
     }
   } catch (error) {
