@@ -2638,6 +2638,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Endpoint '/api/admin/regenerate-video-thumbnails' removed as requested
   
+  // Test endpoint for checking Cloudinary connectivity
+  app.get('/api/test-cloudinary', async (req, res) => {
+    try {
+      // Import the test module
+      const { testCloudinaryConnection } = await import('./test-cloudinary');
+      
+      // Run the test
+      console.log('Running Cloudinary connection test...');
+      const testResults = await testCloudinaryConnection();
+      
+      // Return results
+      return res.json(testResults);
+    } catch (error: any) {
+      console.error('Error running Cloudinary test:', error);
+      return res.status(500).json({ 
+        success: false, 
+        error: error.message || 'Unknown error' 
+      });
+    }
+  });
+  
+  // Test endpoint that actually uploads a test image to Cloudinary
+  app.get('/api/test-cloudinary-upload', async (req, res) => {
+    try {
+      // Import the test module
+      const { testCloudinaryUpload } = await import('./test-cloudinary');
+      
+      // Run the upload test
+      console.log('Running Cloudinary upload test...');
+      const testResults = await testCloudinaryUpload();
+      
+      // Return results
+      return res.json(testResults);
+    } catch (error: any) {
+      console.error('Error running Cloudinary upload test:', error);
+      return res.status(500).json({ 
+        success: false, 
+        error: error.message || 'Unknown error' 
+      });
+    }
+  });
+  
   // Regenerate all thumbnails using Cloudinary
   // Endpoint '/api/regenerate-all-thumbnails' removed as requested
   
