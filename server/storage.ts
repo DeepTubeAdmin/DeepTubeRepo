@@ -380,12 +380,19 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getFeaturedVideos(limit: number = 10): Promise<Video[]> {
-    // Featured videos could be based on criteria like number of purchases
-    // For now, return newest videos
-    const results = await db.select().from(videos).orderBy(desc(videos.id)).limit(limit);
+    // Get videos where featured is true, ordered by newest first
+    const results = await db.select()
+      .from(videos)
+      .where(eq(videos.featured, true))
+      .orderBy(desc(videos.id))
+      .limit(limit);
     
     if (results.length > 0) {
-      console.log(`Featured videos: first few IDs:`, results.slice(0, 3).map(v => v.id));
+      console.log(`Featured videos found: ${results.length}, first few IDs:`, results.slice(0, 3).map(v => v.id));
+    } else {
+      console.log('No featured videos found in database, falling back to newest videos');
+      // Fallback to newest videos if no featured videos exist
+      return await this.getNewVideos(limit);
     }
     
     return results;
