@@ -1477,33 +1477,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         usedContentIds.add(featuredVideos[0].id);
       }
       
-      // 2. TRENDING NOW SECTION (3 rows of videos, 1 row of images)
+      // 2. TRENDING NOW SECTION - Must contain actual trending videos & images (3 rows of videos, 1 row of images)
       // Get trending videos (not already used in featured)
       // Get trending videos with shuffle seed applied at the database level
       // Enhanced randomization - make sure we always use the seed parameter if available
       // Only fall back to direct RANDOM() if shuffle is true but no seed is available
       let trendingVideos;
       
+      // IMPORTANT: Always use getTrendingVideos to get truly trending content
       if (shuffleSeed) {
         // If we have a seed, use the deterministic order from storage layer
         trendingVideos = await dbStorage.getTrendingVideos(50, undefined, shuffleSeed);
         console.log(`Using deterministic seed-based shuffle for trending videos with seed: ${shuffleSeed}`);
       } else if (shuffle) {
-        // Only if shuffle=true but no seed, use direct random
-        trendingVideos = await db.select().from(videos)
-          .where(and(
-            or(eq(videos.contentType, 'video'), eq(videos.contentType, 'embed')),
-            eq(videos.reviewStatus, 'approved')
-          ))
-          .orderBy(sql`RANDOM()`)
-          .limit(50);
-        console.log(`Using direct RANDOM() shuffle for trending videos (no seed)`);
+        // Only if shuffle=true but no seed, use direct random order but still trending content
+        trendingVideos = await dbStorage.getTrendingVideos(50);
+        trendingVideos = shuffleArray(trendingVideos, Math.random().toString());
+        console.log(`Using randomized shuffle ordering for trending with seed: ${shuffleSeed}`);
       } else {
-        // Normal sort, no shuffle
+        // Normal sort, no shuffle, still trending content
         trendingVideos = await dbStorage.getTrendingVideos(50, undefined, '');
         console.log(`Using regular sorting for trending videos (no shuffle)`);
       }
       
+      // Filter to ensure we're excluding any already used content IDs
       trendingVideos = trendingVideos.filter(v => 
         (v.contentType === 'video' || v.contentType === 'embed') &&
         !usedContentIds.has(v.id));
@@ -1521,7 +1518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .forEach(video => usedContentIds.add(video.id));
       response.trending.videos = selectedTrendingVideos;
       
-      // Get trending images
+      // Get trending images - ensure they're actually trending
       let trendingImages = await dbStorage.getTrendingVideos(20, 'image', shuffleSeed);
       trendingImages = trendingImages.filter(img => 
         img.contentType === 'image' && !usedContentIds.has(img.id));
@@ -1539,30 +1536,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .forEach(image => usedContentIds.add(image.id));
       response.trending.images = selectedTrendingImages;
       
-      // 3. RECENTLY UPLOADED SECTION (3 rows of videos, 1 row of images)
+      // 3. RECENTLY UPLOADED SECTION - Must specifically use newest videos (3 rows of videos, 1 row of images)
       // Get newest videos with seed-based deterministic shuffling if available
       let recentVideos;
       
+      // IMPORTANT: Always use newest sort for the "Recently Uploaded" section
+      // This ensures the section shows chronologically newest content
       if (shuffleSeed) {
-        // If we have a seed, use the deterministic order from storage layer
+        // If we have a seed, use the deterministic order from storage layer but always newest
         recentVideos = await dbStorage.getVideos(50, undefined, undefined, 'newest', shuffleSeed);
         console.log(`Using deterministic seed-based shuffle for recent videos with seed: ${shuffleSeed}`);
       } else if (shuffle) {
-        // Only if shuffle=true but no seed, use direct random
-        recentVideos = await db.select().from(videos)
-          .where(and(
-            or(eq(videos.contentType, 'video'), eq(videos.contentType, 'embed')),
-            eq(videos.reviewStatus, 'approved')
-          ))
-          .orderBy(sql`RANDOM()`)
-          .limit(50);
-        console.log(`Using direct RANDOM() shuffle for recent videos (no seed)`);
+        // Get actual newest videos but apply randomization
+        recentVideos = await dbStorage.getVideos(50, undefined, undefined, 'newest');
+        recentVideos = shuffleArray(recentVideos, Math.random().toString());
+        console.log(`Using randomized shuffle ordering with seed: ${shuffleSeed}`);
       } else {
-        // Normal sort, no shuffle
+        // Normal sort by newest, no shuffle 
         recentVideos = await dbStorage.getVideos(50, undefined, undefined, 'newest', '');
         console.log(`Using regular sorting for recent videos (no shuffle)`);
       }
         
+      // Filter already used content IDs to prevent duplicates
       recentVideos = recentVideos.filter(v => 
         (v.contentType === 'video' || v.contentType === 'embed') &&
         !usedContentIds.has(v.id));
@@ -1580,25 +1575,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .forEach(video => usedContentIds.add(video.id));
       response.recent.videos = selectedRecentVideos;
       
-      // Get newest images with seed-based deterministic shuffling if available
+      // Get newest images - ensure we're really getting the newest ones
       let recentImages;
       
+      // IMPORTANT: Always use newest sort for the "Recently Uploaded" section
       if (shuffleSeed) {
-        // If we have a seed, use the deterministic order from storage layer
+        // If we have a seed, use the deterministic order from storage layer but always newest
         recentImages = await dbStorage.getVideos(20, 'image', undefined, 'newest', shuffleSeed);
         console.log(`Using deterministic seed-based shuffle for recent images with seed: ${shuffleSeed}`);
       } else if (shuffle) {
-        // Only if shuffle=true but no seed, use direct random
-        recentImages = await db.select().from(videos)
-          .where(and(
-            eq(videos.contentType, 'image'),
-            eq(videos.reviewStatus, 'approved')
-          ))
-          .orderBy(sql`RANDOM()`)
-          .limit(20);
-        console.log(`Using direct RANDOM() shuffle for recent images (no seed)`);
+        // Get actual newest images but apply randomization
+        recentImages = await dbStorage.getVideos(20, 'image', undefined, 'newest');
+        recentImages = shuffleArray(recentImages, Math.random().toString());
+        console.log(`Using randomized shuffle ordering with seed: ${shuffleSeed}`);
       } else {
-        // Normal sort, no shuffle
+        // Normal sort by newest, no shuffle
         recentImages = await dbStorage.getVideos(20, 'image', undefined, 'newest', '');
         console.log(`Using regular sorting for recent images (no shuffle)`);
       }
@@ -1630,26 +1621,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get popular videos with seed-based deterministic shuffling if available
         let popularVideos;
         
+        // IMPORTANT: Always use getPopularVideos to get truly popular content for this section
         if (shuffleSeed) {
           // If we have a seed, use the deterministic order from storage layer
           popularVideos = await dbStorage.getPopularVideos(50, undefined, shuffleSeed);
           console.log(`Using deterministic seed-based shuffle for popular videos with seed: ${shuffleSeed}`);
         } else if (shuffle) {
-          // Only if shuffle=true but no seed, use direct random
-          popularVideos = await db.select().from(videos)
-            .where(and(
-              or(eq(videos.contentType, 'video'), eq(videos.contentType, 'embed')),
-              eq(videos.reviewStatus, 'approved')
-            ))
-            .orderBy(sql`RANDOM()`)
-            .limit(50);
-          console.log(`Using direct RANDOM() shuffle for popular videos (no seed)`);
+          // Get actual popular videos but apply randomization
+          popularVideos = await dbStorage.getPopularVideos(50);
+          popularVideos = shuffleArray(popularVideos, Math.random().toString());
+          console.log(`Using randomized shuffle ordering for popular with seed: ${shuffleSeed}`);
         } else {
-          // Normal sort, no shuffle
+          // Normal sort by popularity, no shuffle
           popularVideos = await dbStorage.getPopularVideos(50, undefined, '');
           console.log(`Using regular sorting for popular videos (no shuffle)`);
         }
           
+        // Filter to prevent duplicates with content from other sections
         popularVideos = popularVideos.filter(v => 
           (v.contentType === 'video' || v.contentType === 'embed') &&
           !usedContentIds.has(v.id));
@@ -1666,25 +1654,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .filter(video => video && typeof video === 'object' && video.id !== undefined)
           .forEach(video => usedContentIds.add(video.id));
         
-        // Get popular images with seed-based deterministic shuffling if available
+        // Get popular images - ensure they're actually popular
         let popularImages;
         
+        // IMPORTANT: Always use getPopularVideos to get truly popular image content
         if (shuffleSeed) {
           // If we have a seed, use the deterministic order from storage layer
           popularImages = await dbStorage.getPopularVideos(20, 'image', shuffleSeed);
           console.log(`Using deterministic seed-based shuffle for popular images with seed: ${shuffleSeed}`);
         } else if (shuffle) {
-          // Only if shuffle=true but no seed, use direct random
-          popularImages = await db.select().from(videos)
-            .where(and(
-              eq(videos.contentType, 'image'),
-              eq(videos.reviewStatus, 'approved')
-            ))
-            .orderBy(sql`RANDOM()`)
-            .limit(20);
-          console.log(`Using direct RANDOM() shuffle for popular images (no seed)`);
+          // Get actual popular images but apply randomization
+          popularImages = await dbStorage.getPopularVideos(20, 'image');
+          popularImages = shuffleArray(popularImages, Math.random().toString());
+          console.log(`Using randomized shuffle ordering for popular with seed: ${shuffleSeed}`);
         } else {
-          // Normal sort, no shuffle
+          // Normal sort by popularity, no shuffle
           popularImages = await dbStorage.getPopularVideos(20, 'image', '');
           console.log(`Using regular sorting for popular images (no shuffle)`);
         }
