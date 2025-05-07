@@ -47,14 +47,25 @@ export default function Header({ simple = false }: HeaderProps) {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      const searchPath = `/search?q=${encodeURIComponent(searchQuery.trim())}`;
-      console.log('Header search - redirecting to:', searchPath);
+      // Sanitize search query by removing problematic characters
+      // We'll do a basic cleanup here, more thorough sanitization happens on server
+      const sanitizedQuery = searchQuery.trim()
+        .replace(/[^\w\s]/gi, ' ')  // Replace non-word chars with spaces
+        .replace(/\s+/g, ' ')       // Replace multiple spaces with single space
+        .trim();
       
-      // Force a full page navigation instead of using setLocation
-      window.location.href = searchPath;
-      
-      // The line below won't run due to page navigation
-      setSearchQuery(''); 
+      if (sanitizedQuery) {
+        const searchPath = `/search?q=${encodeURIComponent(sanitizedQuery)}`;
+        console.log('Header search - redirecting to:', searchPath, 'sanitized from:', searchQuery);
+        
+        // Force a full page navigation instead of using setLocation
+        window.location.href = searchPath;
+        
+        // The line below won't run due to page navigation
+        setSearchQuery(''); 
+      } else {
+        console.log('Search query was empty after sanitization:', searchQuery);
+      }
     }
   };
   

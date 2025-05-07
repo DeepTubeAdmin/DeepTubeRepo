@@ -553,20 +553,38 @@ export class DatabaseStorage implements IStorage {
   }): Promise<Video[]> {
     const { query, categoryId, contentType, limit = 20, offset = 0 } = options;
     
+    // Sanitize the search query by removing special characters
+    // This prevents SQL injection and improves search results
+    const sanitizedQuery = query.replace(/[^\w\s]/gi, ' ').trim();
+    
+    // Split the query into individual terms to find any matching content
+    const searchTerms = sanitizedQuery.split(/\s+/).filter(Boolean);
+    
+    // Log the sanitized search terms
+    console.log(`Searching for terms: [${searchTerms.join(', ')}] (sanitized from "${query}")`);
+    
+    if (searchTerms.length === 0) {
+      console.log('No valid search terms found after sanitizing');
+      return [];
+    }
+    
     // Start with base query
     let queryBuilder = db.select().from(videos);
     
-    // Search in title and description with ILIKE for case-insensitive search
-    queryBuilder = queryBuilder.where(
-      or(
-        ilike(videos.title, `%${query}%`),
-        ilike(videos.description || '', `%${query}%`),
-        ilike(videos.prompt || '', `%${query}%`)
-      )
-    );
+    // Build dynamic conditions for each search term
+    const conditions = searchTerms.map(term => {
+      return or(
+        ilike(videos.title, `%${term}%`),
+        ilike(videos.description || '', `%${term}%`), 
+        ilike(videos.prompt || '', `%${term}%`)
+      );
+    });
+    
+    // Combine all the term conditions with OR
+    queryBuilder = queryBuilder.where(or(...conditions));
     
     // Add content type filter if specified
-    if (contentType) {
+    if (contentType && contentType !== 'all') {
       queryBuilder = queryBuilder.where(eq(videos.contentType, contentType));
     }
     
@@ -574,6 +592,9 @@ export class DatabaseStorage implements IStorage {
     if (categoryId) {
       queryBuilder = queryBuilder.where(eq(videos.categoryId, categoryId));
     }
+    
+    // Add review status filter - only show approved content in search results
+    queryBuilder = queryBuilder.where(eq(videos.reviewStatus, 'approved'));
     
     // Add ordering (newest first)
     queryBuilder = queryBuilder.orderBy(desc(videos.id));
@@ -585,7 +606,7 @@ export class DatabaseStorage implements IStorage {
     const results = await queryBuilder;
     
     // Log search results
-    console.log(`Search for "${query}" found ${results.length} results`);
+    console.log(`Search for "${query}" found ${results.length} results after sanitizing to "${sanitizedQuery}"`);
     
     return results;
   }

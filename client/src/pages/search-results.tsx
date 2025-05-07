@@ -119,7 +119,23 @@ export default function SearchResults() {
   // Construct the backend API URL with query parameters
   const constructSearchUrl = () => {
     // Always use the current URL query to ensure it's fresh
-    let url = `/api/search?q=${encodeURIComponent(currentQuery)}`;
+    if (!currentQuery) {
+      return '';  // Return empty string when no query is present
+    }
+    
+    // Sanitize the search query (this will be sanitized again on the server)
+    const sanitizedQuery = currentQuery
+      .replace(/[^\w\s]/gi, ' ')  // Replace non-word chars with spaces
+      .replace(/\s+/g, ' ')       // Replace multiple spaces with single space
+      .trim();
+      
+    // Only proceed if we have a valid query after sanitization
+    if (!sanitizedQuery) {
+      console.log('Query was empty after sanitization:', currentQuery);
+      return '';
+    }
+    
+    let url = `/api/search?q=${encodeURIComponent(sanitizedQuery)}`;
     
     if (initialContentType !== 'all') {
       url += `&type=${initialContentType}`;
@@ -129,6 +145,7 @@ export default function SearchResults() {
       url += `&categoryId=${categoryId}`;
     }
     
+    console.log('Constructed search URL with sanitized query:', url);
     return url;
   };
   
