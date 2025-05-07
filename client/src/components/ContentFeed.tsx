@@ -446,7 +446,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
         
         {/* Video Grid (3 rows of videos) */}
         <div className="mb-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mb-4">
             {renderData && insertAdvertisement(renderData.trending.videos, renderData.trending.advertisement.position)
               .map((video, index) => 
                 video ? (
@@ -459,7 +459,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
         </div>
         
         {/* Image Row (1 row of images) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
           {renderData && renderData.trending.images.map((image, index) => (
             <ImageCard key={`trending-image-${image.id}-${index}`} image={image} />
           ))}
@@ -474,7 +474,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
         
         {/* Video Grid (3 rows of videos) */}
         <div className="mb-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mb-4">
             {renderData && insertAdvertisement(renderData.recent.videos, renderData.recent.advertisement.position)
               .map((video, index) => 
                 video ? (
@@ -487,7 +487,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
         </div>
         
         {/* Image Row (1 row of images) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
           {renderData && renderData.recent.images.map((image, index) => (
             <ImageCard key={`recent-image-${image.id}-${index}`} image={image} />
           ))}
@@ -505,7 +505,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
           <div key={`popular-block-${blockIndex}`} className="mb-12">
             {/* Video Grid (3 rows of videos) */}
             <div className="mb-8">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mb-4">
                 {insertAdvertisement(block.videos, block.advertisement.position)
                   .map((video, index) => 
                     video ? (
@@ -518,7 +518,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
             </div>
             
             {/* Image Row (1 row of images) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
               {block.images.map((image, index) => (
                 <ImageCard key={`popular-image-${image.id}-${index}-${blockIndex}`} image={image} />
               ))}

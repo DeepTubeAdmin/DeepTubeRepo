@@ -74,22 +74,27 @@ export default function VideoGrid({
     const updateColumnClass = () => {
       const width = window.innerWidth;
       if (width < 640) {
+        // Mobile: 1 column
         setColumnClass('grid-cols-1');
         setColumnCount(1);
       }
       else if (width < 768) {
+        // Small tablet: 1 column
         setColumnClass('grid-cols-1');
         setColumnCount(1);
       }
       else if (width < 1024) {
+        // Tablet: 1 column
         setColumnClass('grid-cols-1');
         setColumnCount(1);
       }
       else if (width < 1536) {
+        // Desktop: 2 columns
         setColumnClass('grid-cols-2');
         setColumnCount(2);
       }
       else {
+        // Large desktop: 3 columns
         setColumnClass('grid-cols-3');
         setColumnCount(3);
       }
