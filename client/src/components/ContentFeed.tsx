@@ -48,7 +48,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortOption>('trending');
   const [showSortMenu, setShowSortMenu] = useState(false);
-  const [columnCount, setColumnCount] = useState(4); // Default to 4 columns
+  const [columnCount, setColumnCount] = useState(3); // Default to 3 columns for large screens
   const [popularBlocks, setPopularBlocks] = useState<ContentFeedResponse['popular']['blocks']>([]);
 
   // Ref hooks - all defined at the top level
@@ -278,19 +278,19 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   // Effect for detecting screen size and updating column count
   useEffect(() => {
     function updateColumnCount() {
-      // Default is 1 column for mobile
-      let columns = 1;
-      
-      // Match the breakpoints in our Tailwind CSS classes
-      if (window.innerWidth >= 1280) { // xl breakpoint
-        columns = 4;
-      } else if (window.innerWidth >= 1024) { // lg breakpoint
-        columns = 3;
-      } else if (window.innerWidth >= 640) { // sm breakpoint
-        columns = 2;
+      // Match the requested breakpoints
+      if (window.innerWidth >= 1536) { // 2xl breakpoint
+        // Large desktop: 3 columns
+        setColumnCount(3);
+      } 
+      else if (window.innerWidth >= 1024) { // lg breakpoint
+        // Desktop: 2 columns
+        setColumnCount(2);
+      } 
+      else {
+        // Mobile, small tablet, tablet: 1 column
+        setColumnCount(1);
       }
-      
-      setColumnCount(columns);
     }
     
     // Set initial column count
