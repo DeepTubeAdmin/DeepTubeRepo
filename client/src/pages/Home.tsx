@@ -63,22 +63,7 @@ export default function Home() {
 
   const handleCategoryChange = (slug: string) => {
     setActiveCategory(slug);
-    
-    // Provide user feedback when changing categories
-    if (slug) {
-      const categoryName = allCategories.find(cat => cat.slug === slug)?.name || '';
-      toast({
-        title: `${categoryName} Selected`,
-        description: `Showing ${categoryName} content`,
-        duration: 2000,
-      });
-    } else {
-      toast({
-        title: "All Categories",
-        description: "Showing content from all categories",
-        duration: 2000,
-      });
-    }
+    // Category change notification removed as requested
   };
   
   // Handle player functionality

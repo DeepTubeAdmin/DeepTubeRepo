@@ -1465,12 +1465,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Select the first featured video that hasn't been used
-      const unusedFeaturedVideos = featuredVideos.filter(video => !usedContentIds.has(video.id));
+      // Add null check to prevent accessing properties of undefined
+      const unusedFeaturedVideos = featuredVideos.filter(video => video && video.id && !usedContentIds.has(video.id));
       
       if (unusedFeaturedVideos.length > 0) {
         response.featured.video = unusedFeaturedVideos[0];
         usedContentIds.add(unusedFeaturedVideos[0].id);
-      } else if (featuredVideos.length > 0) {
+      } else if (featuredVideos.length > 0 && featuredVideos[0] && featuredVideos[0].id) {
         // If all featured videos have been used, just pick the first one
         response.featured.video = featuredVideos[0];
         usedContentIds.add(featuredVideos[0].id);

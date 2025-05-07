@@ -90,20 +90,13 @@ export default function Header({ simple = false }: HeaderProps) {
     const random = Math.random().toString(36).substring(2, 8);
     const shuffleId = `${timestamp.toString(36)}-${random}`;
     
-    // Display a toast notification about the shuffle
-    toast({
-      title: "🔀 Shuffling content",
-      description: "Refreshing with all new content!",
-      duration: 1500,
-    });
+    // Toast notification removed as requested
     
     console.log('Triggering content shuffle with seed:', shuffleId);
     
     // Force reload the page with the random shuffle parameter
-    setTimeout(() => {
-      // Same behavior for both home page and other pages - always go to home with shuffle
-      window.location.href = `/?shuffleSeed=${shuffleId}`;
-    }, 200); // Short delay to let toast appear
+    // No delay needed since we removed the toast
+    window.location.href = `/?shuffleSeed=${shuffleId}`;
   };
 
   if (simple) {
