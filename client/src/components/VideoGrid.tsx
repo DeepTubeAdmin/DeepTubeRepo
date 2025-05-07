@@ -82,16 +82,16 @@ export default function VideoGrid({
         setColumnCount(1);
       }
       else if (width < 1024) {
+        setColumnClass('grid-cols-1');
+        setColumnCount(1);
+      }
+      else if (width < 1536) {
         setColumnClass('grid-cols-2');
         setColumnCount(2);
       }
-      else if (width < 1536) {
+      else {
         setColumnClass('grid-cols-3');
         setColumnCount(3);
-      }
-      else {
-        setColumnClass('grid-cols-4');
-        setColumnCount(4);
       }
     };
 
