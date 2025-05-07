@@ -4647,6 +4647,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(404).json({ error: "File not found or inaccessible" });
     }
   });
+  
+  // Direct video URL by ID endpoint - better user experience for video previews
+  app.get('/api/videos/:id/direct', async (req, res) => {
+    try {
+      const videoId = parseInt(req.params.id, 10);
+      if (isNaN(videoId)) {
+        return res.status(400).json({ error: 'Invalid video ID' });
+      }
+      
+      const video = await storage.getVideoById(videoId);
+      if (!video) {
+        return res.status(404).json({ error: 'Video not found' });
+      }
+      
+      if (!video.videoUrl) {
+        return res.status(400).json({ error: 'No video URL available' });
+      }
+      
+      // Get the S3 key from the video URL
+      let s3Key = '';
+      
+      if (video.videoUrl.startsWith('/api/s3/')) {
+        s3Key = video.videoUrl.substring('/api/s3/'.length);
+      } else if (video.videoUrl.includes('workspace/uploads/')) {
+        // Handle workspace paths
+        const match = video.videoUrl.match(/workspace\/(.+)/);
+        if (match && match[1]) {
+          s3Key = match[1];
+        }
+      } else if (video.videoUrl.startsWith('/uploads/')) {
+        // Handle relative uploads paths
+        s3Key = video.videoUrl.substring(1); // Remove leading slash
+      } else {
+        // Try to extract filename and use it as key
+        const parts = video.videoUrl.split('/');
+        const filename = parts[parts.length - 1];
+        if (filename) {
+          s3Key = `uploads/videos/${filename}`;
+        }
+      }
+      
+      if (!s3Key) {
+        return res.status(400).json({ error: 'Could not determine S3 key from video URL: ' + video.videoUrl });
+      }
+      
+      // Get signed URL with longer expiry for video playback
+      console.log(`Getting signed URL for video ${videoId}, key: ${s3Key}`);
+      const signedUrl = await getSignedS3Url(s3Key, 86400); // 24 hour expiry for better video caching
+      
+      // Set CORS headers to allow cross-origin video requests
+      res.set({
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, Range',
+        'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Content-Type',
+        'Cross-Origin-Resource-Policy': 'cross-origin',
+        'Cache-Control': 'public, max-age=3600' // Cache for 1 hour
+      });
+      
+      return res.json({ url: signedUrl });
+    } catch (error) {
+      console.error(`Error getting direct video URL for ID ${req.params.id}:`, error);
+      return res.status(500).json({ error: 'Failed to generate video URL' });
+    }
+  });
 
   const httpServer = createServer(app);
   

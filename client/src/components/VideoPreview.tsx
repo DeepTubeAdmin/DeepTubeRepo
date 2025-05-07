@@ -77,13 +77,19 @@ export default function VideoPreview({
         }
       }
       
-      // Always fetch a fresh S3 URL for video previews
+      // Special case for S3 URLs
       if (cleanedSrc.startsWith('/api/s3/')) {
         setIsLoadingUrl(true);
         try {
           console.log(`VideoPreview: Fetching signed URL for ${cleanedSrc}`);
-          const response = await fetch(cleanedSrc + '?getUrl=true');
+          
+          // Add a timestamp to prevent caching
+          const timestamp = Date.now();
+          const url = `${cleanedSrc}?getUrl=true&t=${timestamp}`;
+          
+          const response = await fetch(url);
           const data = await response.json();
+          
           if (data.url) {
             setResolvedUrl(data.url);
             console.log(`VideoPreview: Resolved URL successfully for ${cleanedSrc}`);
@@ -92,18 +98,44 @@ export default function VideoPreview({
           }
         } catch (err) {
           console.error('Failed to resolve video URL:', err);
-          // Fall back to direct path for local development
-          if (cleanedSrc.includes('/uploads/videos/')) {
-            console.log(`VideoPreview: Falling back to direct path: ${cleanedSrc}`);
-            setResolvedUrl(cleanedSrc);
-          } else {
-            setResolvedUrl(cleanedSrc);
+          
+          // Try alternate endpoint format for videos
+          try {
+            // Convert /api/s3/uploads/... to /api/videos/{id} format
+            const filenameParts = cleanedSrc.split('/');
+            const filename = filenameParts[filenameParts.length - 1]; 
+            const fileId = filename.split('-')[1]?.split('.')[0]; // Extract ID from file name
+            
+            if (fileId) {
+              const alternateUrl = `/api/videos/${fileId}/direct?t=${Date.now()}`;
+              console.log(`VideoPreview: Trying alternate URL: ${alternateUrl}`);
+              
+              const altResponse = await fetch(alternateUrl);
+              if (altResponse.ok) {
+                const altData = await altResponse.json();
+                if (altData.url) {
+                  setResolvedUrl(altData.url);
+                  console.log(`VideoPreview: Alternate URL successful for ${cleanedSrc}`);
+                  setIsLoadingUrl(false);
+                  return;
+                }
+              }
+            }
+          } catch (altErr) {
+            console.error('Alternative URL also failed:', altErr);
           }
+          
+          // Last resort - use direct path
+          console.log(`VideoPreview: Using direct path as fallback: ${cleanedSrc}`);
+          setResolvedUrl(cleanedSrc);
+          
         } finally {
           setIsLoadingUrl(false);
         }
         return;
       }
+      
+      // For any other URL formats, use as-is
       setResolvedUrl(cleanedSrc);
     }
 
