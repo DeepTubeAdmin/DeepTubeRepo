@@ -1440,8 +1440,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get featured videos (filtered by category if specified)
       let featuredVideos: Video[] = [];
       
-      // Get all featured videos using the storage layer
-      const featuredVideosQuery = await dbStorage.getVideos(50);
+      // Get all featured videos using the storage layer's getFeaturedVideos method
+      const featuredVideosQuery = await dbStorage.getFeaturedVideos(50);
       console.log(`Retrieved ${featuredVideosQuery.length} featured videos from database`);
       
       // Filter for videos (not images) with approved status
