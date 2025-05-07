@@ -1,5 +1,26 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useContext } from 'react';
 import { fetchS3Url } from '@/lib/utils';
+
+// Global variable to track if user has interacted with the page
+let userHasInteracted = false;
+
+// Helper function to mark user interaction
+const markUserInteraction = () => {
+  userHasInteracted = true;
+  
+  // Remove all listeners once interaction is detected
+  ['click', 'touchstart', 'keydown', 'scroll', 'mousedown'].forEach(event => {
+    window.removeEventListener(event, markUserInteraction);
+  });
+};
+
+// Add global event listeners when this module loads
+if (typeof window !== 'undefined') {
+  // Add listeners for each interaction type
+  ['click', 'touchstart', 'keydown', 'scroll', 'mousedown'].forEach(event => {
+    window.addEventListener(event, markUserInteraction, { once: true });
+  });
+}
 
 interface VideoPreviewProps {
   src: string;
@@ -170,6 +191,9 @@ export default function VideoPreview({
     };
   }, [src, isHovered]); // Added isHovered to dependencies
 
+  // State to track if autoplay was blocked due to lack of user interaction
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+  
   // Function to handle video playback with all necessary error handling
   const playVideo = () => {
     if (!videoRef.current) return;
@@ -179,6 +203,12 @@ export default function VideoPreview({
     try {
       // Reset to beginning for consistent preview experience
       video.currentTime = 0;
+      
+      // Check if user has already interacted with the page
+      if (!userHasInteracted) {
+        console.log(`VideoPreview: User hasn't interacted yet - autoplay may be blocked for ${src.substring(0, 30)}...`);
+        setAutoplayBlocked(true);
+      }
 
       console.log(`VideoPreview: attempting to play video for ${src.substring(0, 30)}...`);
 
@@ -190,27 +220,12 @@ export default function VideoPreview({
           .then(() => {
             console.log(`VideoPreview: successfully playing ${src.substring(0, 30)}...`);
             setIsPlaying(true);
+            setAutoplayBlocked(false); // Reset blocked state on success
           })
           .catch(error => {
             console.error('VideoPreview: autoplay prevented:', error);
             setIsPlaying(false);
-
-            // Try one more time with user interaction simulation
-            const handleUserInteraction = () => {
-              if (videoRef.current && isHovered) {
-                console.log(`VideoPreview: retrying play after user interaction for ${src.substring(0, 30)}...`);
-                videoRef.current.play()
-                  .then(() => {
-                    setIsPlaying(true);
-                  })
-                  .catch(e => {
-                    console.error('VideoPreview: still cannot play after user interaction:', e);
-                  });
-              }
-              document.removeEventListener('mousemove', handleUserInteraction);
-            };
-
-            document.addEventListener('mousemove', handleUserInteraction, { once: true });
+            setAutoplayBlocked(true); // Set blocked state on error
           });
       } else {
         // For older browsers that don't return a promise
@@ -219,6 +234,7 @@ export default function VideoPreview({
     } catch (err) {
       console.error('VideoPreview: Error starting video:', err);
       setIsPlaying(false);
+      setAutoplayBlocked(true);
     }
   };
 
@@ -321,8 +337,41 @@ export default function VideoPreview({
         loop={false}
       />
 
-      {/* Playback icon shown when video is hovered but not yet playing */}
-      {isHovered && !isPlaying && (
+      {/* Autoplay blocked message with manual play option */}
+      {isHovered && autoplayBlocked && (
+        <div 
+          className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 text-white cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent parent click handlers
+            markUserInteraction(); // Mark that user has interacted
+            userHasInteracted = true; // Force the flag to be true
+            setAutoplayBlocked(false); // Clear the blocked state
+            
+            // Try to play the video again after a short delay
+            setTimeout(() => {
+              if (videoRef.current) {
+                videoRef.current.play()
+                  .then(() => {
+                    setIsPlaying(true);
+                    console.log(`VideoPreview: manual play successful for ${src.substring(0, 30)}...`);
+                  })
+                  .catch(err => {
+                    console.error('VideoPreview: manual play failed:', err);
+                  });
+              }
+            }, 50);
+          }}
+        >
+          <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-xs px-4 text-center">Click to enable video previews</p>
+        </div>
+      )}
+
+      {/* Loading spinner when trying to play */}
+      {isHovered && !isPlaying && !autoplayBlocked && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="bg-black/50 rounded-full p-3">
             <div className="w-5 h-5 border-t-2 border-r-2 border-white animate-spin rounded-full"></div>
