@@ -99,13 +99,9 @@ export async function generateVideoThumbnail(options: ThumbnailOptions): Promise
         s3Key = sourceUrl.split('.amazonaws.com/').pop() || sourceUrl;
       }
       
-      // Get a signed URL that Cloudinary can access
-      try {
-        accessibleSourceUrl = await getSignedS3Url(s3Key);
-        console.log(`Got signed S3 URL for video: ${accessibleSourceUrl.substring(0, 100)}...`);
-      } catch (s3Error) {
-        console.warn(`Could not get signed URL, using original: ${s3Error.message}`);
-      }
+      // Use public S3 URL for Cloudinary access
+      accessibleSourceUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
+      console.log(`Using public S3 URL for Cloudinary: ${accessibleSourceUrl.substring(0, 100)}...`);
     }
     
     // Process with Cloudinary

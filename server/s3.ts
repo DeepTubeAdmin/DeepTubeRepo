@@ -33,6 +33,7 @@ export async function uploadFileToS3(filePath: string, s3Key: string): Promise<s
       Key: s3Key,
       Body: fileContent,
       ContentType: getContentType(s3Key),
+      ACL: 'public-read' as ObjectCannedACL,
       ACL: 'public-read' as ObjectCannedACL, // Make the file publicly readable
     };
     
