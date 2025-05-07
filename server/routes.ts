@@ -1444,10 +1444,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const featuredVideosQuery = await dbStorage.getFeaturedVideos(50);
       console.log(`Retrieved ${featuredVideosQuery.length} featured videos from database`);
       
-      // Filter for videos (not images) with approved status
+      // For featured videos, we want to include all videos (including pending ones)
+      // because featured status means they've been manually selected by an admin
       featuredVideos = featuredVideosQuery.filter(v => 
-        (v.contentType === 'video' || v.contentType === 'embed') && 
-        v.reviewStatus === 'approved');
+        (v.contentType === 'video' || v.contentType === 'embed'));
+      
+      console.log(`After filtering, featuredVideos length: ${featuredVideos.length}`);
+      if (featuredVideos.length > 0) {
+        console.log(`First featured video details: ID=${featuredVideos[0].id}, type=${featuredVideos[0].contentType}, status=${featuredVideos[0].reviewStatus}`);
+      }
       
       // If category is specified, filter featured videos by category
       if (categoryId) {
