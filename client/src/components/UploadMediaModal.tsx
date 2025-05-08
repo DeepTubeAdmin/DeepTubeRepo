@@ -153,8 +153,8 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
         ? file.type.startsWith("video/")
         : file.type.startsWith("image/");
       
-      // Check file size (10MB limit for images, 500MB for videos)
-      const maxSize = contentType === "video" ? 500 * 1024 * 1024 : 10 * 1024 * 1024;
+      // Check file size (25MB limit for images, 750MB for videos)
+      const maxSize = contentType === "video" ? 750 * 1024 * 1024 : 25 * 1024 * 1024;
       const isValidSize = file.size <= maxSize;
       
       if (!isValidType) {
@@ -170,7 +170,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
       if (!isValidSize) {
         toast({
           title: "File too large",
-          description: `${contentType === "video" ? "Video" : "Image"} must be less than ${contentType === "video" ? "500MB" : "10MB"}`,
+          description: `${contentType === "video" ? "Video" : "Image"} must be less than ${contentType === "video" ? "750MB" : "25MB"}`,
           variant: "destructive",
         });
         e.target.value = ""; // Reset input
@@ -745,7 +745,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                       <span className="font-semibold text-white">Click to upload</span> or drag and drop
                     </p>
                     <p className="text-xs text-gray-500 text-center">
-                      {selectedFile ? selectedFile.name : "JPG, PNG, GIF, or WebP (max. 10MB)"}
+                      {selectedFile ? selectedFile.name : "JPG, PNG, GIF, or WebP (max. 25MB)"}
                     </p>
                   </div>
                   <input 
