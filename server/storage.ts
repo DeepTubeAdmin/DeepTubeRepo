@@ -596,7 +596,7 @@ export class DatabaseStorage implements IStorage {
         ilike(videos.title, `%${term}%`),
         ilike(videos.description || '', `%${term}%`), 
         ilike(videos.prompt || '', `%${term}%`),
-        ilike(videos.aiGenerator || '', `%${term}%`) // Add AI Generator to search fields
+        ilike(videos.ai_generator || '', `%${term}%`) // Use correct database field name
       );
     });
     
@@ -626,8 +626,13 @@ export class DatabaseStorage implements IStorage {
       queryBuilder = queryBuilder.where(eq(videos.categoryId, categoryId));
     }
     
-    // Add review status filter - only show approved content in search results
-    queryBuilder = queryBuilder.where(eq(videos.reviewStatus, 'approved'));
+    // Add review status filter - only show approved or featured content in search results
+    queryBuilder = queryBuilder.where(
+      or(
+        eq(videos.reviewStatus, 'approved'),
+        eq(videos.featured, true)
+      )
+    );
     
     // Add ordering (newest first)
     queryBuilder = queryBuilder.orderBy(desc(videos.id));
