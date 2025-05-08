@@ -553,32 +553,63 @@ export class DatabaseStorage implements IStorage {
   }): Promise<Video[]> {
     const { query, categoryId, contentType, limit = 20, offset = 0 } = options;
     
-    // Sanitize the search query by removing special characters
-    // This prevents SQL injection and improves search results
-    const sanitizedQuery = query.replace(/[^\w\s]/gi, ' ').trim();
+    if (!query || query.trim() === '') {
+      console.log('Empty search query provided');
+      return [];
+    }
     
-    // Split the query into individual terms to find any matching content
-    const searchTerms = sanitizedQuery.split(/\s+/).filter(Boolean);
+    // Prepare the search query for PostgreSQL's ILIKE operator
+    // Instead of removing special characters completely, we'll escape them properly
     
-    // Log the sanitized search terms
-    console.log(`Searching for terms: [${searchTerms.join(', ')}] (sanitized from "${query}")`);
+    // First, let's do some basic cleaning to help with search quality
+    const preprocessedQuery = query.trim()
+      // Replace multiple spaces with a single space
+      .replace(/\s+/g, ' ')
+      // Convert to lowercase to improve matching
+      .toLowerCase();
     
-    if (searchTerms.length === 0) {
-      console.log('No valid search terms found after sanitizing');
+    console.log(`Original search query: "${query}"`);
+    console.log(`Preprocessed search query: "${preprocessedQuery}"`);
+    
+    // Split the query into individual terms (preserving special characters)
+    const searchTerms = preprocessedQuery.split(' ').filter(Boolean);
+    
+    // Escape the % and _ characters which have special meaning in LIKE/ILIKE patterns
+    const escapedTerms = searchTerms.map(term => 
+      term.replace(/%/g, '\\%').replace(/_/g, '\\_')
+    );
+    
+    console.log(`Search using terms: [${escapedTerms.join(', ')}]`);
+    
+    if (escapedTerms.length === 0) {
+      console.log('No valid search terms found after processing');
       return [];
     }
     
     // Start with base query
     let queryBuilder = db.select().from(videos);
     
-    // Build dynamic conditions for each search term
-    const conditions = searchTerms.map(term => {
+    // For each search term, create a condition that checks if it exists in any searchable field
+    const conditions = escapedTerms.map(term => {
+      // Create ILIKE conditions that will properly handle special characters
       return or(
         ilike(videos.title, `%${term}%`),
         ilike(videos.description || '', `%${term}%`), 
         ilike(videos.prompt || '', `%${term}%`)
       );
     });
+    
+    // Additionally, add a condition for the full preprocessed query to catch exact phrases
+    if (escapedTerms.length > 1) {
+      const fullQueryEscaped = preprocessedQuery.replace(/%/g, '\\%').replace(/_/g, '\\_');
+      conditions.push(
+        or(
+          ilike(videos.title, `%${fullQueryEscaped}%`),
+          ilike(videos.description || '', `%${fullQueryEscaped}%`),
+          ilike(videos.prompt || '', `%${fullQueryEscaped}%`)
+        )
+      );
+    }
     
     // Combine all the term conditions with OR
     queryBuilder = queryBuilder.where(or(...conditions));
@@ -606,7 +637,7 @@ export class DatabaseStorage implements IStorage {
     const results = await queryBuilder;
     
     // Log search results
-    console.log(`Search for "${query}" found ${results.length} results after sanitizing to "${sanitizedQuery}"`);
+    console.log(`Search for "${query}" found ${results.length} results after preprocessing`);
     
     return results;
   }
