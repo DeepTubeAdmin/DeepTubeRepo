@@ -11,7 +11,7 @@ import {
 } from "@shared/schema";
 import { count } from "drizzle-orm";
 import { db } from "./db";
-import { eq, and, desc, asc, sql, or, ilike, gt } from "drizzle-orm";
+import { eq, and, desc, asc, sql, or, ilike, gt, like } from "drizzle-orm";
 import session from "express-session";
 import type { Store as SessionStore } from "express-session";
 import connectPg from "connect-pg-simple";
@@ -265,6 +265,17 @@ export class DatabaseStorage implements IStorage {
       queryBuilder = queryBuilder.where(eq(videos.categoryId, categoryId));
     }
     
+    // Add visibility filter - only show approved content or YouTube embeds
+    queryBuilder = queryBuilder.where(
+      or(
+        eq(videos.reviewStatus, 'approved'),
+        and(
+          eq(videos.contentType, 'embed'),
+          like(videos.embedCode || '', '%youtube%')
+        )
+      )
+    );
+    
     // Add ordering with YouTube-like algorithm
     if (shuffleSeed) {
       // When a shuffleSeed is provided, use a seeded random order to ensure consistent shuffle results
@@ -355,17 +366,31 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getVideosByCategory(categoryId: number, contentType?: string, limit: number = 50): Promise<Video[]> {
-    let builder = db.select().from(videos).where(eq(videos.categoryId, categoryId));
+    // Start with base query
+    let builder = db.select().from(videos);
     
+    // Add category filter
     if (contentType) {
-      // Create a new query with both conditions
-      builder = db.select()
-        .from(videos)
-        .where(and(
-          eq(videos.categoryId, categoryId),
-          eq(videos.contentType, contentType)
-        ));
+      // Create a query with both category and content type conditions
+      builder = builder.where(and(
+        eq(videos.categoryId, categoryId),
+        eq(videos.contentType, contentType)
+      ));
+    } else {
+      // Only filter by category
+      builder = builder.where(eq(videos.categoryId, categoryId));
     }
+    
+    // Add visibility filter - only show approved content or YouTube embeds
+    builder = builder.where(
+      or(
+        eq(videos.reviewStatus, 'approved'),
+        and(
+          eq(videos.contentType, 'embed'),
+          like(videos.embedCode || '', '%youtube%')
+        )
+      )
+    );
     
     // Order by ID to get newest videos first
     const results = await builder.orderBy(desc(videos.id)).limit(limit);
@@ -626,11 +651,14 @@ export class DatabaseStorage implements IStorage {
       queryBuilder = queryBuilder.where(eq(videos.categoryId, categoryId));
     }
     
-    // Add review status filter - only show approved or featured content in search results
+    // Add review status filter - only show approved content or YouTube embeds in search results
     queryBuilder = queryBuilder.where(
       or(
         eq(videos.reviewStatus, 'approved'),
-        eq(videos.featured, true)
+        and(
+          eq(videos.contentType, 'embed'),
+          like(videos.embedCode || '', '%youtube%')
+        )
       )
     );
     
