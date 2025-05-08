@@ -1014,13 +1014,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
       const shuffleSeed = req.query.shuffleSeed as string || '';
       const categoryId = req.query.category ? parseInt(req.query.category as string) : undefined;
+      const contentType = req.query.contentType as string;
+      
+      // Log what we're fetching
+      console.log(`Getting videos with sortBy: newest, contentType: ${contentType || 'all'}`);
       
       // Get videos by category if category parameter is provided
       let videos;
       if (categoryId) {
-        videos = await dbStorage.getVideosByCategory(categoryId, undefined, limit || 50);
+        videos = await dbStorage.getVideosByCategory(categoryId, contentType, limit || 50);
       } else {
-        videos = await dbStorage.getVideos(limit);
+        videos = await dbStorage.getVideos(limit, contentType);
       }
       
       // Shuffle videos if a seed is provided
