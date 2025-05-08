@@ -11,10 +11,39 @@ import { CloudinaryOptions } from './types';
  */
 export function configureCloudinary(): boolean {
   try {
-    // Extract credentials from environment variables
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-    const apiKey = process.env.CLOUDINARY_API_KEY;
-    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+    let cloudName = '';
+    let apiKey = '';
+    let apiSecret = '';
+    
+    // First try to use CLOUDINARY_URL if available (preferred method)
+    if (process.env.CLOUDINARY_URL) {
+      try {
+        // Parse the cloudinary:// URL format
+        // Format: cloudinary://<api_key>:<api_secret>@<cloud_name>
+        const cloudinaryUrl = process.env.CLOUDINARY_URL;
+        const cloudinaryRegex = /^cloudinary:\/\/([^:]+):([^@]+)@(.+)$/;
+        const match = cloudinaryUrl.match(cloudinaryRegex);
+        
+        if (match) {
+          apiKey = match[1];
+          apiSecret = match[2];
+          cloudName = match[3];
+          console.log(`Cloudinary service: Using credentials from CLOUDINARY_URL with cloud_name: ${cloudName}`);
+        } else {
+          console.warn("Cloudinary service: CLOUDINARY_URL format is invalid, falling back to individual credentials");
+        }
+      } catch (error) {
+        console.error("Cloudinary service: Error parsing CLOUDINARY_URL:", error);
+      }
+    }
+    
+    // Fall back to individual environment variables if CLOUDINARY_URL parsing failed
+    if (!cloudName || !apiKey || !apiSecret) {
+      cloudName = process.env.CLOUDINARY_CLOUD_NAME || '';
+      apiKey = process.env.CLOUDINARY_API_KEY || '';
+      apiSecret = process.env.CLOUDINARY_API_SECRET || '';
+      console.log("Cloudinary service: Using individual credential environment variables");
+    }
     
     // Configure Cloudinary
     cloudinary.config({
