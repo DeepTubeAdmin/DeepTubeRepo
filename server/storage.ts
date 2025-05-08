@@ -595,7 +595,8 @@ export class DatabaseStorage implements IStorage {
       return or(
         ilike(videos.title, `%${term}%`),
         ilike(videos.description || '', `%${term}%`), 
-        ilike(videos.prompt || '', `%${term}%`)
+        ilike(videos.prompt || '', `%${term}%`),
+        ilike(videos.aiGenerator || '', `%${term}%`) // Add AI Generator to search fields
       );
     });
     
@@ -606,7 +607,8 @@ export class DatabaseStorage implements IStorage {
         or(
           ilike(videos.title, `%${fullQueryEscaped}%`),
           ilike(videos.description || '', `%${fullQueryEscaped}%`),
-          ilike(videos.prompt || '', `%${fullQueryEscaped}%`)
+          ilike(videos.prompt || '', `%${fullQueryEscaped}%`),
+          ilike(videos.aiGenerator || '', `%${fullQueryEscaped}%`) // Add AI Generator to full query search
         )
       );
     }
