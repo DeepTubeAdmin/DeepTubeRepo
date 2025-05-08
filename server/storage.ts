@@ -238,6 +238,8 @@ export class DatabaseStorage implements IStorage {
     sortBy: 'newest' | 'oldest' | 'viewed' | 'most-viewed' | 'trending' | 'popular' = 'newest',
     shuffleSeed?: string
   ): Promise<Video[]> {
+    console.log(`getVideos called with contentType=${contentType || 'undefined'}, limit=${limit}, sortBy=${sortBy}`);
+    
     // Handle special sort cases that require different query structures
     if (sortBy === 'popular') {
       return this.getPopularVideos(limit, contentType);
@@ -255,6 +257,7 @@ export class DatabaseStorage implements IStorage {
     
     // Add content type filter
     if (contentType) {
+      console.log(`Filtering by contentType: "${contentType}"`);
       queryBuilder = queryBuilder.where(eq(videos.contentType, contentType));
     }
     
