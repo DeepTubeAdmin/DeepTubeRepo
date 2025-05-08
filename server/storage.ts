@@ -361,7 +361,21 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getVideoById(id: number): Promise<Video | undefined> {
-    const [video] = await db.select().from(videos).where(eq(videos.id, id));
+    // Get video by ID with visibility filtering
+    const [video] = await db.select()
+      .from(videos)
+      .where(
+        and(
+          eq(videos.id, id),
+          or(
+            eq(videos.reviewStatus, 'approved'),
+            and(
+              eq(videos.contentType, 'embed'),
+              like(videos.embedCode || '', '%youtube%')
+            )
+          )
+        )
+      );
     return video;
   }
   
@@ -406,6 +420,9 @@ export class DatabaseStorage implements IStorage {
   
   async getFeaturedVideos(limit: number = 10): Promise<Video[]> {
     // Get videos where featured is true, ordered by newest first
+    // Note: We deliberately don't filter by review status for featured videos
+    // since these are explicitly chosen by admins and should be displayed
+    // regardless of their review status
     const results = await db.select()
       .from(videos)
       .where(eq(videos.featured, true))
@@ -564,16 +581,47 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUserWishlist(userId: number): Promise<WishlistItem[]> {
-    return db.select().from(wishlistItems).where(eq(wishlistItems.userId, userId));
+    // Join with videos table to get only approved content or YouTube embeds
+    return db.select({
+        wishlistItem: wishlistItems
+      })
+      .from(wishlistItems)
+      .innerJoin(videos, eq(wishlistItems.videoId, videos.id))
+      .where(
+        and(
+          eq(wishlistItems.userId, userId),
+          or(
+            eq(videos.reviewStatus, 'approved'),
+            and(
+              eq(videos.contentType, 'embed'),
+              like(videos.embedCode || '', '%youtube%')
+            )
+          )
+        )
+      )
+      .orderBy(desc(wishlistItems.createdAt))
+      .then(results => results.map(r => r.wishlistItem));
   }
   
   async isWishlisted(userId: number, videoId: number): Promise<boolean> {
-    const [item] = await db.select().from(wishlistItems)
-      .where(and(
-        eq(wishlistItems.userId, userId),
-        eq(wishlistItems.videoId, videoId)
-      ));
-    return !!item;
+    // Join with videos table to apply visibility filtering
+    const [result] = await db.select()
+      .from(wishlistItems)
+      .innerJoin(videos, eq(wishlistItems.videoId, videos.id))
+      .where(
+        and(
+          eq(wishlistItems.userId, userId),
+          eq(wishlistItems.videoId, videoId),
+          or(
+            eq(videos.reviewStatus, 'approved'),
+            and(
+              eq(videos.contentType, 'embed'),
+              like(videos.embedCode || '', '%youtube%')
+            )
+          )
+        )
+      );
+    return !!result;
   }
 
   // Comment operations
