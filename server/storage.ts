@@ -599,7 +599,7 @@ export class DatabaseStorage implements IStorage {
           )
         )
       )
-      .orderBy(desc(wishlistItems.createdAt))
+      .orderBy(desc(wishlistItems.addedAt))
       .then(results => results.map(r => r.wishlistItem));
   }
   
