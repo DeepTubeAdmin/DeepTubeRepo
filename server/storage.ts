@@ -741,7 +741,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Add review status filter - only show approved content or YouTube embeds in search results
-    queryBuilder = queryBuilder.where(
+    allFilters.push(
       or(
         eq(videos.reviewStatus, 'approved'),
         and(
@@ -750,6 +750,9 @@ export class DatabaseStorage implements IStorage {
         )
       )
     );
+    
+    // Apply all filters together with AND
+    queryBuilder = queryBuilder.where(and(...allFilters));
     
     // Add ordering (newest first)
     queryBuilder = queryBuilder.orderBy(desc(videos.id));
@@ -875,13 +878,17 @@ export class DatabaseStorage implements IStorage {
       // Start with base query
       let queryBuilder = db.select().from(videos);
       
+      // Create an array of filter conditions to apply with AND
+      const conditions = [];
+      
       // Add content type filter if specified
       if (contentType) {
-        queryBuilder = queryBuilder.where(eq(videos.contentType, contentType));
+        conditions.push(eq(videos.contentType, contentType));
+        console.log(`Filtering most viewed by contentType: "${contentType}"`);
       }
       
       // Add visibility filter - only show approved content or YouTube embeds
-      queryBuilder = queryBuilder.where(
+      conditions.push(
         or(
           eq(videos.reviewStatus, 'approved'),
           and(
@@ -890,6 +897,11 @@ export class DatabaseStorage implements IStorage {
           )
         )
       );
+      
+      // Apply all conditions with AND
+      if (conditions.length > 0) {
+        queryBuilder = queryBuilder.where(and(...conditions));
+      }
       
       // Order by views count descending
       queryBuilder = queryBuilder.orderBy(desc(videos.views));
@@ -911,13 +923,17 @@ export class DatabaseStorage implements IStorage {
       // Start with base query
       let queryBuilder = db.select().from(videos);
       
+      // Create an array of filter conditions to apply with AND
+      const conditions = [];
+      
       // Add content type filter if specified
       if (contentType) {
-        queryBuilder = queryBuilder.where(eq(videos.contentType, contentType));
+        conditions.push(eq(videos.contentType, contentType));
+        console.log(`Filtering trending by contentType: "${contentType}"`);
       }
       
       // Add visibility filter - only show approved content or YouTube embeds
-      queryBuilder = queryBuilder.where(
+      conditions.push(
         or(
           eq(videos.reviewStatus, 'approved'),
           and(
@@ -926,6 +942,11 @@ export class DatabaseStorage implements IStorage {
           )
         )
       );
+      
+      // Apply all conditions with AND
+      if (conditions.length > 0) {
+        queryBuilder = queryBuilder.where(and(...conditions));
+      }
       
       // When shuffleSeed is provided, use the same randomization algorithm as the main getVideos method
       if (shuffleSeed) {
@@ -960,7 +981,27 @@ export class DatabaseStorage implements IStorage {
   
   async getPopularVideos(limit: number = 20, contentType?: string, shuffleSeed?: string): Promise<Video[]> {
     try {
-      // Start with base query to count likes
+      // Create an array of filter conditions to apply with AND
+      const conditions = [];
+      
+      // Add content type filter if specified
+      if (contentType) {
+        conditions.push(eq(videos.contentType, contentType));
+        console.log(`Filtering popular by contentType: "${contentType}"`);
+      }
+      
+      // Add visibility filter - only show approved content or YouTube embeds
+      conditions.push(
+        or(
+          eq(videos.reviewStatus, 'approved'),
+          and(
+            eq(videos.contentType, 'embed'),
+            like(videos.embedCode || '', '%youtube%')
+          )
+        )
+      );
+      
+      // Start with base query to count likes with all conditions applied
       let queryBuilder = db
         .select({
           videoId: videos.id,
@@ -970,22 +1011,11 @@ export class DatabaseStorage implements IStorage {
         })
         .from(videos)
         .leftJoin(likes, eq(videos.id, likes.videoId));
-      
-      // Add content type filter if specified
-      if (contentType) {
-        queryBuilder = queryBuilder.where(eq(videos.contentType, contentType));
+        
+      // Apply all conditions together with AND
+      if (conditions.length > 0) {
+        queryBuilder = queryBuilder.where(and(...conditions));
       }
-      
-      // Add visibility filter - only show approved content or YouTube embeds
-      queryBuilder = queryBuilder.where(
-        or(
-          eq(videos.reviewStatus, 'approved'),
-          and(
-            eq(videos.contentType, 'embed'),
-            like(videos.embedCode || '', '%youtube%')
-          )
-        )
-      );
       
       // Group by video ID 
       queryBuilder = queryBuilder.groupBy(videos.id);
