@@ -424,8 +424,18 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getNewVideos(limit: number = 10): Promise<Video[]> {
+    // Add visibility filter to ensure only approved content or YouTube embeds are shown
     const results = await db.select()
       .from(videos)
+      .where(
+        or(
+          eq(videos.reviewStatus, 'approved'),
+          and(
+            eq(videos.contentType, 'embed'),
+            like(videos.embedCode || '', '%youtube%')
+          )
+        )
+      )
       .orderBy(desc(videos.id))
       .limit(limit);
       
@@ -443,10 +453,21 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUserVideos(userId: number): Promise<Video[]> {
-    // Get videos uploaded by this user
+    // Get videos uploaded by this user with visibility filter
     const results = await db.select()
       .from(videos)
-      .where(eq(videos.userId, userId))
+      .where(
+        and(
+          eq(videos.userId, userId),
+          or(
+            eq(videos.reviewStatus, 'approved'),
+            and(
+              eq(videos.contentType, 'embed'),
+              like(videos.embedCode || '', '%youtube%')
+            )
+          )
+        )
+      )
       .orderBy(desc(videos.id));
       
     if (results.length > 0) {
@@ -791,6 +812,17 @@ export class DatabaseStorage implements IStorage {
         queryBuilder = queryBuilder.where(eq(videos.contentType, contentType));
       }
       
+      // Add visibility filter - only show approved content or YouTube embeds
+      queryBuilder = queryBuilder.where(
+        or(
+          eq(videos.reviewStatus, 'approved'),
+          and(
+            eq(videos.contentType, 'embed'),
+            like(videos.embedCode || '', '%youtube%')
+          )
+        )
+      );
+      
       // Order by views count descending
       queryBuilder = queryBuilder.orderBy(desc(videos.views));
       
@@ -815,6 +847,17 @@ export class DatabaseStorage implements IStorage {
       if (contentType) {
         queryBuilder = queryBuilder.where(eq(videos.contentType, contentType));
       }
+      
+      // Add visibility filter - only show approved content or YouTube embeds
+      queryBuilder = queryBuilder.where(
+        or(
+          eq(videos.reviewStatus, 'approved'),
+          and(
+            eq(videos.contentType, 'embed'),
+            like(videos.embedCode || '', '%youtube%')
+          )
+        )
+      );
       
       // When shuffleSeed is provided, use the same randomization algorithm as the main getVideos method
       if (shuffleSeed) {
@@ -864,6 +907,17 @@ export class DatabaseStorage implements IStorage {
       if (contentType) {
         queryBuilder = queryBuilder.where(eq(videos.contentType, contentType));
       }
+      
+      // Add visibility filter - only show approved content or YouTube embeds
+      queryBuilder = queryBuilder.where(
+        or(
+          eq(videos.reviewStatus, 'approved'),
+          and(
+            eq(videos.contentType, 'embed'),
+            like(videos.embedCode || '', '%youtube%')
+          )
+        )
+      );
       
       // Group by video ID 
       queryBuilder = queryBuilder.groupBy(videos.id);
