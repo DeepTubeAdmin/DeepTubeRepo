@@ -584,7 +584,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                       <span className="font-semibold text-white">Click to upload</span> or drag and drop
                     </p>
                     <p className="text-xs text-gray-500 text-center">
-                      {selectedFile ? selectedFile.name : "MP4, WebM, or MOV (max. 500MB)"}
+                      {selectedFile ? selectedFile.name : "MP4, WebM, or MOV (max. 750MB)"}
                     </p>
                   </div>
                   <input 
