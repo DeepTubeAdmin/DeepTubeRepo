@@ -123,19 +123,19 @@ export default function SearchResults() {
       return '';  // Return empty string when no query is present
     }
     
-    // Sanitize the search query (this will be sanitized again on the server)
-    const sanitizedQuery = currentQuery
-      .replace(/[^\w\s]/gi, ' ')  // Replace non-word chars with spaces
-      .replace(/\s+/g, ' ')       // Replace multiple spaces with single space
+    // Just do minimal processing - only normalize whitespace
+    // The server will handle special characters properly now
+    const processedQuery = currentQuery
+      .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
       .trim();
       
-    // Only proceed if we have a valid query after sanitization
-    if (!sanitizedQuery) {
-      console.log('Query was empty after sanitization:', currentQuery);
+    // Only proceed if we have a valid query after processing
+    if (!processedQuery) {
+      console.log('Query was empty after processing:', currentQuery);
       return '';
     }
     
-    let url = `/api/search?q=${encodeURIComponent(sanitizedQuery)}`;
+    let url = `/api/search?q=${encodeURIComponent(processedQuery)}`;
     
     if (initialContentType !== 'all') {
       url += `&type=${initialContentType}`;
@@ -145,7 +145,7 @@ export default function SearchResults() {
       url += `&categoryId=${categoryId}`;
     }
     
-    console.log('Constructed search URL with sanitized query:', url);
+    console.log('Constructed search URL with processed query:', url);
     return url;
   };
   
