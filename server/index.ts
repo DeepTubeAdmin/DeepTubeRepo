@@ -12,8 +12,12 @@ console.log("Setting up Cloudinary configuration...");
 let cloudName = '';
 let apiKey = '';
 let apiSecret = '';
+let credentialSource = '';
 
 if (process.env.CLOUDINARY_URL) {
+  credentialSource = 'CLOUDINARY_URL';
+  console.log(`CLOUDINARY_URL found (length: ${process.env.CLOUDINARY_URL.length} chars)`);
+  
   try {
     // Parse the cloudinary:// URL format
     // Format: cloudinary://<api_key>:<api_secret>@<cloud_name>
@@ -28,9 +32,11 @@ if (process.env.CLOUDINARY_URL) {
       console.log(`Successfully parsed CLOUDINARY_URL, extracted cloud_name: ${cloudName}`);
     } else {
       console.warn("CLOUDINARY_URL format is invalid, falling back to individual credentials");
+      credentialSource = 'individual variables (after URL parse failure)';
     }
   } catch (error) {
     console.error("Error parsing CLOUDINARY_URL:", error);
+    credentialSource = 'individual variables (after URL parse error)';
   }
 } 
 
@@ -39,10 +45,14 @@ if (!cloudName || !apiKey || !apiSecret) {
   cloudName = process.env.CLOUDINARY_CLOUD_NAME || '';
   apiKey = process.env.CLOUDINARY_API_KEY || '';
   apiSecret = process.env.CLOUDINARY_API_SECRET || '';
-  console.log("Using individual Cloudinary credentials from environment variables");
+  
+  if (!credentialSource) {
+    credentialSource = 'individual environment variables';
+  }
+  console.log(`Using individual Cloudinary credentials from environment variables`);
 }
 
-console.log(`Using cloud_name from environment: ${cloudName}`);
+console.log(`Using cloud_name from ${credentialSource}: ${cloudName}`);
 
 // Check if we have all required configuration
 if (cloudName && apiKey && apiSecret) {
