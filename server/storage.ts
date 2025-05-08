@@ -255,21 +255,23 @@ export class DatabaseStorage implements IStorage {
     // Start with base query
     let queryBuilder = db.select().from(videos);
     
+    // Start with all video filters to ensure proper AND relationships
+    let conditions = [];
+    
     // Add content type filter
     if (contentType) {
       console.log(`Filtering by contentType: "${contentType}"`);
-      queryBuilder = queryBuilder.where(eq(videos.contentType, contentType));
+      conditions.push(eq(videos.contentType, contentType));
+      console.log(`SQL with contentType filter (approximate): SELECT * FROM videos WHERE content_type = '${contentType}'`);
     }
     
-    // Add category filter if specified (must be after the first where condition)
-    if (categoryId && contentType) {
-      queryBuilder = queryBuilder.where(eq(videos.categoryId, categoryId));
-    } else if (categoryId) {
-      queryBuilder = queryBuilder.where(eq(videos.categoryId, categoryId));
+    // Add category filter if specified
+    if (categoryId) {
+      conditions.push(eq(videos.categoryId, categoryId));
     }
     
     // Add visibility filter - only show approved content or YouTube embeds
-    queryBuilder = queryBuilder.where(
+    conditions.push(
       or(
         eq(videos.reviewStatus, 'approved'),
         and(
@@ -278,6 +280,11 @@ export class DatabaseStorage implements IStorage {
         )
       )
     );
+    
+    // Apply all conditions with AND
+    if (conditions.length > 0) {
+      queryBuilder = queryBuilder.where(and(...conditions));
+    }
     
     // Add ordering with YouTube-like algorithm
     if (shuffleSeed) {
@@ -386,20 +393,20 @@ export class DatabaseStorage implements IStorage {
     // Start with base query
     let builder = db.select().from(videos);
     
-    // Add category filter
+    // Start with all filter conditions
+    let conditions = [];
+    
+    // Always add category filter
+    conditions.push(eq(videos.categoryId, categoryId));
+    
+    // Add content type filter if specified
     if (contentType) {
-      // Create a query with both category and content type conditions
-      builder = builder.where(and(
-        eq(videos.categoryId, categoryId),
-        eq(videos.contentType, contentType)
-      ));
-    } else {
-      // Only filter by category
-      builder = builder.where(eq(videos.categoryId, categoryId));
+      console.log(`Filtering by category=${categoryId} and contentType="${contentType}"`);
+      conditions.push(eq(videos.contentType, contentType));
     }
     
     // Add visibility filter - only show approved content or YouTube embeds
-    builder = builder.where(
+    conditions.push(
       or(
         eq(videos.reviewStatus, 'approved'),
         and(
@@ -408,6 +415,11 @@ export class DatabaseStorage implements IStorage {
         )
       )
     );
+    
+    // Apply all conditions with AND
+    if (conditions.length > 0) {
+      builder = builder.where(and(...conditions));
+    }
     
     // Order by ID to get newest videos first
     const results = await builder.orderBy(desc(videos.id)).limit(limit);
@@ -710,17 +722,22 @@ export class DatabaseStorage implements IStorage {
       );
     }
     
-    // Combine all the term conditions with OR
-    queryBuilder = queryBuilder.where(or(...conditions));
+    // Start building ALL the filters we want to apply with AND
+    const allFilters = [];
+    
+    // Add the combined search term conditions with OR
+    allFilters.push(or(...conditions));
     
     // Add content type filter if specified
     if (contentType && contentType !== 'all') {
-      queryBuilder = queryBuilder.where(eq(videos.contentType, contentType));
+      allFilters.push(eq(videos.contentType, contentType));
+      console.log(`Filtering search by contentType: "${contentType}"`);
     }
     
     // Add category filter if specified
     if (categoryId) {
-      queryBuilder = queryBuilder.where(eq(videos.categoryId, categoryId));
+      allFilters.push(eq(videos.categoryId, categoryId));
+      console.log(`Filtering search by categoryId: ${categoryId}`);
     }
     
     // Add review status filter - only show approved content or YouTube embeds in search results
