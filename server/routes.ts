@@ -1625,6 +1625,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .forEach(image => usedContentIds.add(image.id));
       response.recent.images = selectedRecentImages;
       
+      // Log how many IDs we're tracking to avoid duplicates across sections
+      console.log(`Before processing popular section, tracking ${usedContentIds.size} unique content IDs to avoid duplicates`);
+      
       // 4. POPULAR CONTENT SECTION - THE INFINITE SCROLL PART (3 rows videos, 1 row images) repeating
       // Number of blocks to show in each page (start with only 1 for page 1, increase for subsequent pages)
       const blocksPerPage = page === 1 ? 1 : 2;
@@ -1644,32 +1647,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // If sortBy is 'newest', 'oldest', or 'most-viewed', use regular getVideos with that sort
         // Otherwise use getPopularVideos to get truly popular content for this section
+        // Get more items for the popular section to account for duplicates
+        // The more pages we've loaded, the more content IDs we've used
+        const fetchCount = 50 + (page * 20); // Increase fetch count for each page
+        
         if (usePopular) {
           // Use popular videos for 'popular' or 'trending' sort options
           if (shuffleSeed) {
             // If we have a seed, use the deterministic order from storage layer
-            popularVideos = await dbStorage.getPopularVideos(50, undefined, shuffleSeed);
-            console.log(`Using deterministic seed-based shuffle for popular videos with seed: ${shuffleSeed}`);
+            popularVideos = await dbStorage.getPopularVideos(fetchCount, undefined, shuffleSeed);
+            console.log(`Using deterministic seed-based shuffle for popular videos with seed: ${shuffleSeed} (fetched ${fetchCount} items)`);
           } else if (shuffle) {
             // Get actual popular videos but apply randomization
-            popularVideos = await dbStorage.getPopularVideos(50);
+            popularVideos = await dbStorage.getPopularVideos(fetchCount);
             popularVideos = shuffleArray(popularVideos, Math.random().toString());
-            console.log(`Using randomized shuffle ordering for popular with seed: ${shuffleSeed}`);
+            console.log(`Using randomized shuffle ordering for popular with seed: ${shuffleSeed} (fetched ${fetchCount} items)`);
           } else {
             // Normal sort by popularity, no shuffle
-            popularVideos = await dbStorage.getPopularVideos(50, undefined, '');
-            console.log(`Using regular sorting for popular videos (no shuffle)`);
+            popularVideos = await dbStorage.getPopularVideos(fetchCount, undefined, '');
+            console.log(`Using regular sorting for popular videos (no shuffle) (fetched ${fetchCount} items)`);
           }
         } else {
           // Use the requested sort order for the popular section
-          console.log(`Using custom sort '${dbPopularSortBy}' for popular videos section`);
+          console.log(`Using custom sort '${dbPopularSortBy}' for popular videos section (fetched ${fetchCount} items)`);
           if (shuffleSeed) {
-            popularVideos = await dbStorage.getVideos(50, undefined, undefined, dbPopularSortBy, shuffleSeed);
+            popularVideos = await dbStorage.getVideos(fetchCount, undefined, undefined, dbPopularSortBy, shuffleSeed);
           } else if (shuffle) {
-            popularVideos = await dbStorage.getVideos(50, undefined, undefined, dbPopularSortBy);
+            popularVideos = await dbStorage.getVideos(fetchCount, undefined, undefined, dbPopularSortBy);
             popularVideos = shuffleArray(popularVideos, Math.random().toString());
           } else {
-            popularVideos = await dbStorage.getVideos(50, undefined, undefined, dbPopularSortBy, '');
+            popularVideos = await dbStorage.getVideos(fetchCount, undefined, undefined, dbPopularSortBy, '');
           }
         }
           
@@ -1693,33 +1700,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get images with seed-based deterministic shuffling if available
         let popularImages;
         
+        // Get more items for popular images as well to account for duplicates
+        // Using a smaller number than videos since we need fewer images per block
+        const imageFetchCount = 20 + (page * 10); // Increase fetch count for each page
+        
         // Use either popular images content or respect the user's sort choice for images too
         if (usePopular) {
           // IMPORTANT: Use getPopularVideos for truly popular image content when sortBy is popular/trending
           if (shuffleSeed) {
             // If we have a seed, use the deterministic order from storage layer
-            popularImages = await dbStorage.getPopularVideos(20, 'image', shuffleSeed);
-            console.log(`Using deterministic seed-based shuffle for popular images with seed: ${shuffleSeed}`);
+            popularImages = await dbStorage.getPopularVideos(imageFetchCount, 'image', shuffleSeed);
+            console.log(`Using deterministic seed-based shuffle for popular images with seed: ${shuffleSeed} (fetched ${imageFetchCount} items)`);
           } else if (shuffle) {
             // Get actual popular images but apply randomization
-            popularImages = await dbStorage.getPopularVideos(20, 'image');
+            popularImages = await dbStorage.getPopularVideos(imageFetchCount, 'image');
             popularImages = shuffleArray(popularImages, Math.random().toString());
-            console.log(`Using randomized shuffle ordering for popular with seed: ${shuffleSeed}`);
+            console.log(`Using randomized shuffle ordering for popular with seed: ${shuffleSeed} (fetched ${imageFetchCount} items)`);
           } else {
             // Normal sort by popularity, no shuffle
-            popularImages = await dbStorage.getPopularVideos(20, 'image', '');
-            console.log(`Using regular sorting for popular images (no shuffle)`);
+            popularImages = await dbStorage.getPopularVideos(imageFetchCount, 'image', '');
+            console.log(`Using regular sorting for popular images (no shuffle) (fetched ${imageFetchCount} items)`);
           }
         } else {
           // Use the requested sort order for the popular section images
-          console.log(`Using custom sort '${dbPopularSortBy}' for popular images section`);
+          console.log(`Using custom sort '${dbPopularSortBy}' for popular images section (fetched ${imageFetchCount} items)`);
           if (shuffleSeed) {
-            popularImages = await dbStorage.getVideos(20, 'image', undefined, dbPopularSortBy, shuffleSeed);
+            popularImages = await dbStorage.getVideos(imageFetchCount, 'image', undefined, dbPopularSortBy, shuffleSeed);
           } else if (shuffle) {
-            popularImages = await dbStorage.getVideos(20, 'image', undefined, dbPopularSortBy);
+            popularImages = await dbStorage.getVideos(imageFetchCount, 'image', undefined, dbPopularSortBy);
             popularImages = shuffleArray(popularImages, Math.random().toString());
           } else {
-            popularImages = await dbStorage.getVideos(20, 'image', undefined, dbPopularSortBy, '');
+            popularImages = await dbStorage.getVideos(imageFetchCount, 'image', undefined, dbPopularSortBy, '');
           }
         }
           
@@ -1746,8 +1757,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Always set hasMore to true for continuous scrolling
-      response.popular.hasMore = true;
+      // Final sanity check to make sure there are no duplicate content IDs anywhere
+      // This is a last-resort protection against any bugs in our filtering logic
+      const allItemIds = new Set<number>();
+      let duplicatesFound = false;
+      
+      // Check for duplicates in featured videos
+      response.featured.forEach(item => {
+        if (item && item.id) {
+          if (allItemIds.has(item.id)) {
+            console.warn(`Duplicate item detected in featured section: ${item.id}, removing it`);
+            duplicatesFound = true;
+          } else {
+            allItemIds.add(item.id);
+          }
+        }
+      });
+      
+      // Check trending videos and images
+      response.trending.videos.forEach(item => {
+        if (item && item.id) {
+          if (allItemIds.has(item.id)) {
+            console.warn(`Duplicate item detected in trending videos: ${item.id}, removing it`);
+            duplicatesFound = true;
+          } else {
+            allItemIds.add(item.id);
+          }
+        }
+      });
+      
+      response.trending.images.forEach(item => {
+        if (item && item.id) {
+          if (allItemIds.has(item.id)) {
+            console.warn(`Duplicate item detected in trending images: ${item.id}, removing it`);
+            duplicatesFound = true;
+          } else {
+            allItemIds.add(item.id);
+          }
+        }
+      });
+      
+      // Check recent videos and images
+      response.recent.videos.forEach(item => {
+        if (item && item.id) {
+          if (allItemIds.has(item.id)) {
+            console.warn(`Duplicate item detected in recent videos: ${item.id}, removing it`);
+            duplicatesFound = true;
+          } else {
+            allItemIds.add(item.id);
+          }
+        }
+      });
+      
+      response.recent.images.forEach(item => {
+        if (item && item.id) {
+          if (allItemIds.has(item.id)) {
+            console.warn(`Duplicate item detected in recent images: ${item.id}, removing it`);
+            duplicatesFound = true;
+          } else {
+            allItemIds.add(item.id);
+          }
+        }
+      });
+      
+      // Check for duplicates in popular blocks
+      response.popular.blocks.forEach((block, blockIndex) => {
+        const filteredVideos = block.videos.filter(item => {
+          if (item && item.id) {
+            if (allItemIds.has(item.id)) {
+              console.warn(`Duplicate item detected in popular videos block ${blockIndex}: ${item.id}, removing it`);
+              duplicatesFound = true;
+              return false;
+            } else {
+              allItemIds.add(item.id);
+              return true;
+            }
+          }
+          return false;
+        });
+        
+        const filteredImages = block.images.filter(item => {
+          if (item && item.id) {
+            if (allItemIds.has(item.id)) {
+              console.warn(`Duplicate item detected in popular images block ${blockIndex}: ${item.id}, removing it`);
+              duplicatesFound = true;
+              return false;
+            } else {
+              allItemIds.add(item.id);
+              return true;
+            }
+          }
+          return false;
+        });
+        
+        // Update block with filtered content
+        block.videos = filteredVideos;
+        block.images = filteredImages;
+      });
+      
+      if (duplicatesFound) {
+        console.log(`Fixed ${usedContentIds.size - allItemIds.size} duplicates in the final response`);
+      }
+      
+      // Only set hasMore to true if we have enough unique content remaining
+      // Count the number of items in the last block to check if we're running out of content
+      const lastBlock = response.popular.blocks[response.popular.blocks.length - 1];
+      const lastBlockItemCount = (lastBlock?.videos?.length || 0) + (lastBlock?.images?.length || 0);
+      
+      // If the last block has fewer than the expected number of items (16: 12 videos + 4 images),
+      // or it's completely empty, we're running out of content
+      response.popular.hasMore = lastBlockItemCount >= 16;
+      
+      // Log the final count of unique content IDs
+      console.log(`Response prepared with ${allItemIds.size} unique content items`);
       
       res.json(response);
     } catch (error) {
