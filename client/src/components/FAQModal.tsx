@@ -31,7 +31,7 @@ export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
             </Button>
           </div>
           <DialogDescription className="text-gray-300 mt-2">
-            Welcome to DeepTube.co, your platform for sharing AI-generated videos in a safe, legal, and creative community.
+            Welcome to DeepTube.co, your platform for sharing AI-generated videos in a safe, legal, and creative community. Below, we answer common questions about what types of AI-generated content are allowed, how to ensure your videos comply with the law, and why certain restrictions (like the ban on nudity) are in place.
           </DialogDescription>
         </DialogHeader>
 
@@ -39,24 +39,44 @@ export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
           <div className="faq-section">
             <h3 className="text-lg font-semibold text-orange-500 mb-2">1. What is AI-generated content?</h3>
             <p className="mb-2">
-              AI-generated content refers to videos created or enhanced using artificial intelligence tools, such as text-to-video generators (e.g., Runway, Pika), AI avatars (e.g., Synthesia), or deepfake technology. On DeepTube.co, this includes videos in our entertainment categories.
+              AI-generated content refers to videos created or enhanced using artificial intelligence tools. On DeepTube.co, this includes videos in our entertainment categories, such as:
             </p>
-            <p>
-              Examples include animated shorts, virtual music videos, or interactive stories created with AI. All content must comply with our strict guidelines, and <strong>nudity or explicit material is strictly forbidden</strong>.
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Animated shorts</li>
+              <li>Virtual music videos</li>
+              <li>Interactive stories</li>
+            </ul>
+            <p className="mt-2 mb-2">
+              Examples of AI tools include:
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Text-to-video generators (e.g., Runway, Kling)</li>
+              <li>AI avatars (e.g., Synthesia)</li>
+              <li>Deepfake technology (with restrictions)</li>
+            </ul>
+            <p className="mt-2">
+              All content must comply with our strict guidelines, and nudity or explicit material is strictly forbidden.
             </p>
           </div>
 
           <div className="faq-section">
             <h3 className="text-lg font-semibold text-orange-500 mb-2">2. What types of AI-generated content are legal to upload?</h3>
             <p className="mb-2">
-              You may upload AI-generated videos that are original, consensual, and compliant with all applicable laws, including U.S. laws (e.g., DMCA, TAKE IT DOWN Act) and international regulations (e.g., EU AI Act, UK Online Safety Act). Legal content includes:
+              You may upload AI-generated videos that are original, consensual, and compliant with all applicable laws, including:
             </p>
             <ul className="list-disc pl-5 space-y-1">
-              <li><strong>AI Avatars</strong>: Videos featuring synthetic characters or avatars for storytelling, comedy, or music videos.</li>
+              <li>U.S. laws (e.g., DMCA, TAKE IT DOWN Act)</li>
+              <li>International regulations (e.g., EU AI Act, UK Online Safety Act)</li>
+            </ul>
+            <p className="mt-2 mb-2">
+              Legal content includes:
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li><strong>AI Avatars</strong>: Videos featuring synthetic characters for storytelling, comedy, or music.</li>
               <li><strong>Text-to-Video Animations</strong>: Videos generated from text prompts, provided they don't depict real individuals without consent.</li>
-              <li><strong>Voice-Over Videos</strong>: AI-generated voiceovers narrating stories using tools like Lyrebird AI.</li>
-              <li><strong>Full-Body Synthetic Videos</strong>: Videos with entirely AI-generated characters, with proper consent if resembling real people.</li>
-              <li><strong>Interactive Videos</strong>: Choose-your-own-adventure stories or gamified content created with tools like Elai.io.</li>
+              <li><strong>Voice-Over Videos</strong>: AI-generated voiceovers (e.g., Lyrebird AI) narrating stories.</li>
+              <li><strong>Full-Body Synthetic Videos</strong>: Videos with entirely AI-generated characters, with consent if resembling real people.</li>
+              <li><strong>Interactive Videos</strong>: Choose-your-own-adventure stories or gamified content (e.g., Elai.io).</li>
             </ul>
             <p className="mt-2">
               All content must be free of nudity, explicit material, or illegal elements (e.g., violence, hate speech). Creators must verify that their videos are original or use licensed/public domain assets.
@@ -66,27 +86,45 @@ export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
           <div className="faq-section">
             <h3 className="text-lg font-semibold text-orange-500 mb-2">3. Are deepfakes allowed on DeepTube.co?</h3>
             <p className="mb-2">
-              Deepfakes—videos that use AI to manipulate or swap faces, voices, or likenesses—are only permitted if they are <strong>ethical, consensual, and clearly labeled as synthetic</strong>. Legal deepfakes include:
+              Deepfake videos are allowed under specific conditions. We permit deepfakes that are:
             </p>
             <ul className="list-disc pl-5 space-y-1">
-              <li><strong>Consensual Parodies</strong>: Spoofs or humorous videos with explicit permission from depicted individuals.</li>
-              <li><strong>Historical Reenactments</strong>: Videos recreating historical figures, provided they are fictionalized and labeled as AI-generated.</li>
-              <li><strong>Fictional Characters</strong>: Deepfakes creating entirely fictional personas with no real-person likenesses involved.</li>
+              <li>Used for parody, satire, or artistic expression, provided they do not defame or harm the subject's reputation.</li>
+              <li>Created for educational or research purposes, such as demonstrating deepfake technology.</li>
+              <li>Made with the explicit consent of the subject.</li>
+            </ul>
+            <p className="mt-2 mb-2">
+              However, we do not allow deepfakes that:
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Portray someone in a false and damaging light (e.g., defamatory or libelous content).</li>
+              <li>Invade privacy or are used to harass, bully, or intimidate.</li>
+              <li>Are used for commercial exploitation without the subject's permission.</li>
+            </ul>
+            <p className="mt-2 mb-2">
+              <strong>What should I do if I want to upload a deepfake video?</strong>
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Obtain explicit consent from the subject (if applicable).</li>
+              <li>Clearly label the video as a deepfake.</li>
+              <li>Ensure it complies with our community guidelines and applicable laws.</li>
             </ul>
             <p className="mt-2">
-              <strong>Prohibited Deepfakes</strong>: Non-consensual deepfakes, including those depicting real individuals without their explicit written consent, are strictly forbidden. Nudity or sexually explicit deepfakes are also banned.
-            </p>
-            <p>
-              Creators must submit metadata or affidavits confirming consent for any deepfake depicting a real person's likeness, per our Content Guidelines.
+              <strong>What happens if I upload a deepfake video that violates these guidelines?</strong><br/>
+              DeepTube.co reserves the right to remove any content that violates our policies or the law. Users who repeatedly upload prohibited content may face account suspension or termination.
             </p>
           </div>
 
           <div className="faq-section">
             <h3 className="text-lg font-semibold text-orange-500 mb-2">4. Why is nudity forbidden on DeepTube.co?</h3>
-            <p>
-              Nudity, pornography, or sexually explicit content is strictly prohibited to maintain a safe, inclusive, and legal platform for all users. This aligns with our 18+ age restriction and compliance with laws like the U.S. TAKE IT DOWN Act and UK Online Safety Act, which prioritize preventing non-consensual or harmful material.
+            <p className="mb-2">
+              Nudity, pornography, or sexually explicit content is strictly prohibited to maintain a safe, inclusive, and legal platform for all users. This aligns with:
             </p>
-            <p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Our 18+ age restriction.</li>
+              <li>Compliance with laws like the U.S. TAKE IT DOWN Act and UK Online Safety Act, which prioritize preventing non-consensual or harmful material.</li>
+            </ul>
+            <p className="mt-2">
               Any video containing nudity or explicit material will be removed, and the uploader's account may be suspended or banned, as outlined in our Terms of Use.
             </p>
           </div>
@@ -122,7 +160,7 @@ export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
           <div className="faq-section">
             <h3 className="text-lg font-semibold text-orange-500 mb-2">7. What happens if I upload illegal AI-generated content?</h3>
             <p className="mb-2">
-              Uploading illegal content, such as non-consensual deepfakes, nudity, or copyrighted material, violates our Terms of Use. Consequences include:
+              Uploading illegal content (e.g., non-consensual deepfakes, nudity, or copyrighted material) violates our Terms of Use. Consequences include:
             </p>
             <ul className="list-disc pl-5 space-y-1">
               <li>Immediate removal of the content.</li>
@@ -133,35 +171,31 @@ export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
           </div>
 
           <div className="faq-section">
-            <h3 className="text-lg font-semibold text-orange-500 mb-2">8. Can I upload AI-generated content depicting real people?</h3>
-            <p>
-              Only if you have <strong>explicit written consent</strong> from the depicted individual. For example, a deepfake parody of a celebrity is allowed if the celebrity has provided permission and the video is labeled as AI-generated. Without consent, such content is prohibited, especially if it includes nudity or defamatory elements.
-            </p>
-          </div>
-
-          <div className="faq-section">
-            <h3 className="text-lg font-semibold text-orange-500 mb-2">9. How does DeepTube.co prevent illegal content?</h3>
+            <h3 className="text-lg font-semibold text-orange-500 mb-2">8. How does DeepTube.co prevent illegal content?</h3>
             <p className="mb-2">
               We take proactive steps to ensure a safe platform:
             </p>
             <ul className="list-disc pl-5 space-y-1">
-              <li><strong>AI Moderation</strong>: Tools to identify non-consensual or illegal content.</li>
               <li><strong>Human Moderation</strong>: Trained moderators review flagged videos for compliance.</li>
               <li><strong>User Reporting</strong>: A "Report" button allows users to flag illegal content.</li>
-              <li><strong>Consent Verification</strong>: Creators must provide metadata for deepfakes depicting real people.</li>
             </ul>
           </div>
 
           <div className="faq-section">
-            <h3 className="text-lg font-semibold text-orange-500 mb-2">10. Where can I learn more about creating legal AI content?</h3>
+            <h3 className="text-lg font-semibold text-orange-500 mb-2">9. Where can I learn more about creating legal AI content?</h3>
             <p className="mb-2">
               We provide resources to help you create ethical AI-generated videos:
             </p>
             <ul className="list-disc pl-5 space-y-1">
-              <li><strong>Creator Tutorials</strong>: Available on our Help Center, covering various AI tools.</li>
               <li><strong>Content Guidelines</strong>: Review our guidelines for detailed rules.</li>
               <li><strong>Support Team</strong>: Contact support@deeptube.co for guidance on specific content.</li>
             </ul>
+          </div>
+          
+          <div className="faq-section">
+            <p className="text-sm italic">
+              Disclaimer: This FAQ is for informational purposes only and does not constitute legal advice. Users are responsible for ensuring their content complies with all applicable laws. For specific legal questions, consult a qualified attorney.
+            </p>
           </div>
         </div>
 
