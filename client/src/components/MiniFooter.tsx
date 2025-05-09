@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import ContactModal from "./ContactModal";
 import FAQModal from "./FAQModal";
@@ -12,6 +12,18 @@ export default function MiniFooter() {
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
+  
+  useEffect(() => {
+    const handleOpenRulesModal = () => {
+      setIsRulesModalOpen(true);
+    };
+    
+    window.addEventListener('open-rules-modal', handleOpenRulesModal);
+    
+    return () => {
+      window.removeEventListener('open-rules-modal', handleOpenRulesModal);
+    };
+  }, []);
 
   return (
     <footer className="fixed bottom-0 left-0 right-0 bg-[#121212] border-t border-gray-800 py-2 px-4 z-40">

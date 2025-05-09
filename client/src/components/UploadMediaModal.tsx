@@ -535,18 +535,27 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
   return (
     <SimpleDialog isOpen={isOpen} onClose={onClose} title="Upload New Media" className="bg-[#1a1a1a] border-gray-800 max-w-md">
       <div className="overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
           <p className="text-sm text-gray-400">
             Share your AI-generated content with the DeepTube community
           </p>
-          <a 
-            href="https://www.synthesia.io/?via=seth-glass" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-xs bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1 rounded flex items-center"
-          >
-            <i className="fas fa-magic mr-1"></i> Create AI Video
-          </a>
+          <p className="text-xs text-gray-400 mt-1">
+            <strong>Rules:</strong><br />
+            No nudity<br />
+            PG-13 only<br />
+            No deepfakes unless:<br />
+            • Written permission<br />
+            • Parody (non-commercial, marked AI/fake, not defamatory)<br />
+            <button 
+              onClick={() => {
+                const event = new CustomEvent('open-rules-modal');
+                window.dispatchEvent(event);
+              }}
+              className="text-orange-500 hover:text-orange-400 underline bg-transparent border-none p-0 cursor-pointer"
+            >
+              Learn more here
+            </button>
+          </p>
         </div>
         
         <Tabs defaultValue="embed" onValueChange={(value) => setContentType(value as "video" | "image" | "embed")}>
