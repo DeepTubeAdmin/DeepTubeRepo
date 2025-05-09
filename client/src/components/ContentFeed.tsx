@@ -519,8 +519,8 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
             
             {/* Image Row (1 row of images) */}
             <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
-              {block.images.map((image, index) => (
-                <ImageCard key={`popular-image-${image.id}-${index}-${blockIndex}`} image={image} />
+              {block.images && block.images.length > 0 && block.images.map((image, index) => (
+                image && <ImageCard key={`popular-image-${image.id}-${index}-${blockIndex}`} image={image} />
               ))}
             </div>
           </div>
