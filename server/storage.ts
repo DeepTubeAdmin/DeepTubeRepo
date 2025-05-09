@@ -370,8 +370,18 @@ export class DatabaseStorage implements IStorage {
     return results;
   }
   
-  async getVideoById(id: number): Promise<Video | undefined> {
-    // Get video by ID with visibility filtering
+  async getVideoById(id: number, skipVisibilityCheck: boolean = false): Promise<Video | undefined> {
+    // If skipVisibilityCheck is true, return the video regardless of review status
+    // This is used for admin operations where we need to see pending content
+    
+    if (skipVisibilityCheck) {
+      const [video] = await db.select()
+        .from(videos)
+        .where(eq(videos.id, id));
+      return video;
+    }
+    
+    // Otherwise get video by ID with visibility filtering
     const [video] = await db.select()
       .from(videos)
       .where(

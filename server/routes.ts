@@ -4146,23 +4146,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       ensureUser(req);
       const contentId = parseInt(req.params.contentId);
+      console.log(`Admin approval request for content ID: ${contentId} by user ID: ${req.user.id}`);
       
-      // Verify the content exists
-      const content = await dbStorage.getVideoById(contentId);
-      if (!content) {
+      // Verify the content exists - using dbStorage.getVideoById WITHOUT visibility filter
+      // This is important because we might be approving content that is currently pending
+      const content = await db
+        .select()
+        .from(videos)
+        .where(eq(videos.id, contentId));
+      
+      if (!content || content.length === 0) {
+        console.error(`Content with ID ${contentId} not found for approval`);
         return res.status(404).json({ error: "Content not found" });
       }
       
+      console.log(`Found content for approval: ${content[0].title} (ID: ${contentId})`);
+      
+      // Update the content review status
       const reviewedContent = await dbStorage.updateContentReviewStatus(
         contentId, 
         'approved', 
         req.user.id
       );
       
+      console.log(`Successfully approved content ID: ${contentId}`);
       res.json(reviewedContent);
     } catch (error) {
       console.error("Error approving content:", error);
-      res.status(500).json({ error: "Failed to approve content" });
+      res.status(500).json({ error: "Failed to approve content", details: error instanceof Error ? error.message : String(error) });
     }
   });
   
@@ -4171,22 +4182,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       ensureUser(req);
       const contentId = parseInt(req.params.contentId);
+      console.log(`Admin feature toggle request for content ID: ${contentId} by user ID: ${req.user.id}`);
       
-      // Verify the content exists
-      const content = await dbStorage.getVideoById(contentId);
+      // Verify the content exists - using skipVisibilityCheck to see pending content
+      const content = await dbStorage.getVideoById(contentId, true);
       if (!content) {
+        console.error(`Content with ID ${contentId} not found for feature toggle`);
         return res.status(404).json({ error: "Content not found" });
       }
+      
+      console.log(`Found content for feature toggle: ${content.title} (ID: ${contentId}), current feature status: ${content.featured}`);
       
       // Toggle the featured status
       const updatedVideo = await dbStorage.updateVideo(contentId, {
         featured: !content.featured
       });
       
+      console.log(`Successfully updated feature status for content ID: ${contentId} to ${updatedVideo.featured}`);
       res.json(updatedVideo);
     } catch (error) {
       console.error("Error toggling feature status:", error);
-      res.status(500).json({ error: "Failed to update feature status" });
+      res.status(500).json({ error: "Failed to update feature status", details: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -4195,12 +4211,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ensureUser(req);
       const contentId = parseInt(req.params.contentId);
       const { reason } = req.body;
+      console.log(`Admin rejection request for content ID: ${contentId} by user ID: ${req.user.id}`);
       
-      // Verify the content exists
-      const content = await dbStorage.getVideoById(contentId);
+      // Verify the content exists - using skipVisibilityCheck to see pending content
+      const content = await dbStorage.getVideoById(contentId, true);
       if (!content) {
+        console.error(`Content with ID ${contentId} not found for rejection`);
         return res.status(404).json({ error: "Content not found" });
       }
+      
+      console.log(`Found content for rejection: ${content.title} (ID: ${contentId})`);
       
       // First update the review status
       await dbStorage.updateContentReviewStatus(
@@ -4210,13 +4230,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reason || 'Content rejected by admin'
       );
       
+      console.log(`Review status updated to rejected for content ID: ${contentId}`);
+      
       // Then delete the content
       await dbStorage.deleteVideo(contentId);
       
+      console.log(`Content ID: ${contentId} successfully deleted after rejection`);
       res.json({ success: true, message: "Content rejected and deleted" });
     } catch (error) {
       console.error("Error rejecting content:", error);
-      res.status(500).json({ error: "Failed to reject content" });
+      res.status(500).json({ error: "Failed to reject content", details: error instanceof Error ? error.message : String(error) });
     }
   });
   
@@ -4227,8 +4250,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const contentId = parseInt(req.params.contentId);
       console.log(`Admin delete request for content ID: ${contentId} by user ID: ${req.user.id}`);
       
-      // Get the content to verify it exists
-      const content = await dbStorage.getVideoById(contentId);
+      // Get the content to verify it exists - using skipVisibilityCheck to see pending content
+      const content = await dbStorage.getVideoById(contentId, true);
       if (!content) {
         console.error(`Content with ID ${contentId} not found`);
         return res.status(404).json({ error: "Content not found" });
