@@ -4,6 +4,8 @@ import SEO from '@/components/SEO';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
 import { Video, User } from '@shared/schema';
+import ThumbnailImage from '@/components/ThumbnailImage';
+import { Link } from "wouter";
 
 // Type augmentation for admin purposes
 type AdminUser = User & { banned: boolean };
@@ -312,6 +314,7 @@ export default function AdminPage() {
                     <Table>
                       <TableHeader>
                         <TableRow className="border-gray-800 hover:bg-gray-800">
+                          <TableHead className="text-gray-300">Thumbnail</TableHead>
                           <TableHead className="text-gray-300">Title</TableHead>
                           <TableHead className="text-gray-300">Uploader</TableHead>
                           <TableHead className="text-gray-300">Content Type</TableHead>
@@ -322,8 +325,27 @@ export default function AdminPage() {
                       <TableBody>
                         {pendingContent.map((content) => (
                           <TableRow key={content.id} className="border-gray-800 hover:bg-gray-800">
+                            <TableCell className="w-24">
+                              <div className="h-16 w-24 overflow-hidden rounded border border-gray-700">
+                                <ThumbnailImage 
+                                  contentId={content.id} 
+                                  contentType={content.contentType} 
+                                  title={content.title}
+                                  className="h-full w-full object-cover"
+                                />
+                              </div>
+                            </TableCell>
                             <TableCell className="text-white font-medium">{content.title}</TableCell>
-                            <TableCell className="text-gray-300">{content.userId || 'Anonymous'}</TableCell>
+                            <TableCell className="text-gray-300">
+                              {content.userId ? (
+                                <Link 
+                                  href={`/user/${content.userId}`} 
+                                  className="text-primary hover:text-primary/80 underline"
+                                >
+                                  User ID: {content.userId}
+                                </Link>
+                              ) : 'Anonymous'}
+                            </TableCell>
                             <TableCell className="text-gray-300 capitalize">{content.contentType}</TableCell>
                             <TableCell className="text-gray-300">
                               {new Date(content.createdAt).toLocaleDateString()}
