@@ -1763,16 +1763,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let duplicatesFound = false;
       
       // Check for duplicates in featured videos
-      response.featured.forEach(item => {
-        if (item && item.id) {
-          if (allItemIds.has(item.id)) {
-            console.warn(`Duplicate item detected in featured section: ${item.id}, removing it`);
-            duplicatesFound = true;
-          } else {
-            allItemIds.add(item.id);
-          }
+      // Featured is an object with a video property which is a Video object or null
+      if (response.featured && response.featured.video && response.featured.video.id) {
+        const item = response.featured.video;
+        if (allItemIds.has(item.id)) {
+          console.warn(`Duplicate item detected in featured section: ${item.id}, removing it`);
+          duplicatesFound = true;
+        } else {
+          allItemIds.add(item.id);
         }
-      });
+      }
       
       // Check trending videos and images
       response.trending.videos.forEach(item => {
