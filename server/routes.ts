@@ -1333,6 +1333,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const categorySlug = req.query.category as string || '';
+      // Add sortBy parameter handling
+      const sortBy = (req.query.sortBy as 'newest' | 'oldest' | 'most-viewed' | 'trending' | 'popular') || 'trending';
       // IMPROVED SHUFFLE APPROACH - PRIORITIZE SHUFFLESEED PARAMETER
       // Check for shuffle parameter in URL (from clicking logo or old links)
       const hasShuffleParam = req.query.shuffle !== undefined;
@@ -1340,7 +1342,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hasShuffleSeedParam = req.query.shuffleSeed !== undefined;
       
       // For debugging
-      console.log(`Content feed request: page=${page}, category=${categorySlug || 'all'}, hasShuffleInURL=${hasShuffleParam}, hasShuffleSeedParam=${hasShuffleSeedParam}`);
+      console.log(`Content feed request: page=${page}, category=${categorySlug || 'all'}, sortBy=${sortBy}, hasShuffleInURL=${hasShuffleParam}, hasShuffleSeedParam=${hasShuffleSeedParam}`);
       
       // Force shuffle to true when we have any shuffle parameter in URL
       const shuffle = hasShuffleParam || hasShuffleSeedParam;
@@ -1544,20 +1546,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get newest videos with seed-based deterministic shuffling if available
       let recentVideos;
       
-      // IMPORTANT: Always use newest sort for the "Recently Uploaded" section
-      // This ensures the section shows chronologically newest content
+      // Use sortBy parameter for the "Recently Uploaded" section when not "trending" or "popular"
+      // This allows the sorting buttons to affect content
+      const recentSortBy = (sortBy !== 'trending' && sortBy !== 'popular') ? sortBy : 'newest';
+      
+      // For database compatibility - convert 'most-viewed' to 'viewed' for the storage layer
+      const dbRecentSortBy = recentSortBy === 'most-viewed' ? 'viewed' : recentSortBy;
+      
+      console.log(`Getting videos with sortBy: ${dbRecentSortBy}, contentType: all`);
+      
       if (shuffleSeed) {
-        // If we have a seed, use the deterministic order from storage layer but always newest
-        recentVideos = await dbStorage.getVideos(50, undefined, undefined, 'newest', shuffleSeed);
+        // If we have a seed, use the deterministic order from storage layer with requested sort
+        recentVideos = await dbStorage.getVideos(50, undefined, undefined, dbRecentSortBy, shuffleSeed);
         console.log(`Using deterministic seed-based shuffle for recent videos with seed: ${shuffleSeed}`);
       } else if (shuffle) {
-        // Get actual newest videos but apply randomization
-        recentVideos = await dbStorage.getVideos(50, undefined, undefined, 'newest');
+        // Get videos with requested sort but apply randomization
+        recentVideos = await dbStorage.getVideos(50, undefined, undefined, dbRecentSortBy);
         recentVideos = shuffleArray(recentVideos, Math.random().toString());
         console.log(`Using randomized shuffle ordering with seed: ${shuffleSeed}`);
       } else {
-        // Normal sort by newest, no shuffle 
-        recentVideos = await dbStorage.getVideos(50, undefined, undefined, 'newest', '');
+        // Normal sort by requested sort, no shuffle 
+        recentVideos = await dbStorage.getVideos(50, undefined, undefined, dbRecentSortBy, '');
         console.log(`Using regular sorting for recent videos (no shuffle)`);
       }
         
@@ -1582,19 +1591,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get newest images - ensure we're really getting the newest ones
       let recentImages;
       
-      // IMPORTANT: Always use newest sort for the "Recently Uploaded" section
+      // Also use the same sortBy parameter for image content
+      console.log(`Getting videos with sortBy: ${dbRecentSortBy}, contentType: image`);
+      
       if (shuffleSeed) {
-        // If we have a seed, use the deterministic order from storage layer but always newest
-        recentImages = await dbStorage.getVideos(20, 'image', undefined, 'newest', shuffleSeed);
+        // If we have a seed, use the deterministic order from storage layer with requested sort
+        recentImages = await dbStorage.getVideos(20, 'image', undefined, dbRecentSortBy, shuffleSeed);
         console.log(`Using deterministic seed-based shuffle for recent images with seed: ${shuffleSeed}`);
       } else if (shuffle) {
-        // Get actual newest images but apply randomization
-        recentImages = await dbStorage.getVideos(20, 'image', undefined, 'newest');
+        // Get actual images with requested sort but apply randomization
+        recentImages = await dbStorage.getVideos(20, 'image', undefined, dbRecentSortBy);
         recentImages = shuffleArray(recentImages, Math.random().toString());
         console.log(`Using randomized shuffle ordering with seed: ${shuffleSeed}`);
       } else {
-        // Normal sort by newest, no shuffle
-        recentImages = await dbStorage.getVideos(20, 'image', undefined, 'newest', '');
+        // Normal sort by requested sort, no shuffle
+        recentImages = await dbStorage.getVideos(20, 'image', undefined, dbRecentSortBy, '');
         console.log(`Using regular sorting for recent images (no shuffle)`);
       }
         
@@ -1622,23 +1633,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Random position for advertisement
         const adPosition = Math.floor(Math.random() * 12); // Random position within 12 videos
         
-        // Get popular videos with seed-based deterministic shuffling if available
+        // Get videos with seed-based deterministic shuffling if available
         let popularVideos;
         
-        // IMPORTANT: Always use getPopularVideos to get truly popular content for this section
-        if (shuffleSeed) {
-          // If we have a seed, use the deterministic order from storage layer
-          popularVideos = await dbStorage.getPopularVideos(50, undefined, shuffleSeed);
-          console.log(`Using deterministic seed-based shuffle for popular videos with seed: ${shuffleSeed}`);
-        } else if (shuffle) {
-          // Get actual popular videos but apply randomization
-          popularVideos = await dbStorage.getPopularVideos(50);
-          popularVideos = shuffleArray(popularVideos, Math.random().toString());
-          console.log(`Using randomized shuffle ordering for popular with seed: ${shuffleSeed}`);
+        // Use either the popular content or respect the user's sort choice
+        const usePopular = sortBy === 'popular' || sortBy === 'trending';
+        
+        // For database compatibility - convert 'most-viewed' to 'viewed' for the storage layer
+        const dbPopularSortBy = sortBy === 'most-viewed' ? 'viewed' : sortBy;
+        
+        // If sortBy is 'newest', 'oldest', or 'most-viewed', use regular getVideos with that sort
+        // Otherwise use getPopularVideos to get truly popular content for this section
+        if (usePopular) {
+          // Use popular videos for 'popular' or 'trending' sort options
+          if (shuffleSeed) {
+            // If we have a seed, use the deterministic order from storage layer
+            popularVideos = await dbStorage.getPopularVideos(50, undefined, shuffleSeed);
+            console.log(`Using deterministic seed-based shuffle for popular videos with seed: ${shuffleSeed}`);
+          } else if (shuffle) {
+            // Get actual popular videos but apply randomization
+            popularVideos = await dbStorage.getPopularVideos(50);
+            popularVideos = shuffleArray(popularVideos, Math.random().toString());
+            console.log(`Using randomized shuffle ordering for popular with seed: ${shuffleSeed}`);
+          } else {
+            // Normal sort by popularity, no shuffle
+            popularVideos = await dbStorage.getPopularVideos(50, undefined, '');
+            console.log(`Using regular sorting for popular videos (no shuffle)`);
+          }
         } else {
-          // Normal sort by popularity, no shuffle
-          popularVideos = await dbStorage.getPopularVideos(50, undefined, '');
-          console.log(`Using regular sorting for popular videos (no shuffle)`);
+          // Use the requested sort order for the popular section
+          console.log(`Using custom sort '${dbPopularSortBy}' for popular videos section`);
+          if (shuffleSeed) {
+            popularVideos = await dbStorage.getVideos(50, undefined, undefined, dbPopularSortBy, shuffleSeed);
+          } else if (shuffle) {
+            popularVideos = await dbStorage.getVideos(50, undefined, undefined, dbPopularSortBy);
+            popularVideos = shuffleArray(popularVideos, Math.random().toString());
+          } else {
+            popularVideos = await dbStorage.getVideos(50, undefined, undefined, dbPopularSortBy, '');
+          }
         }
           
         // Filter to prevent duplicates with content from other sections
@@ -1658,23 +1690,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .filter(video => video && typeof video === 'object' && video.id !== undefined)
           .forEach(video => usedContentIds.add(video.id));
         
-        // Get popular images - ensure they're actually popular
+        // Get images with seed-based deterministic shuffling if available
         let popularImages;
         
-        // IMPORTANT: Always use getPopularVideos to get truly popular image content
-        if (shuffleSeed) {
-          // If we have a seed, use the deterministic order from storage layer
-          popularImages = await dbStorage.getPopularVideos(20, 'image', shuffleSeed);
-          console.log(`Using deterministic seed-based shuffle for popular images with seed: ${shuffleSeed}`);
-        } else if (shuffle) {
-          // Get actual popular images but apply randomization
-          popularImages = await dbStorage.getPopularVideos(20, 'image');
-          popularImages = shuffleArray(popularImages, Math.random().toString());
-          console.log(`Using randomized shuffle ordering for popular with seed: ${shuffleSeed}`);
+        // Use either popular images content or respect the user's sort choice for images too
+        if (usePopular) {
+          // IMPORTANT: Use getPopularVideos for truly popular image content when sortBy is popular/trending
+          if (shuffleSeed) {
+            // If we have a seed, use the deterministic order from storage layer
+            popularImages = await dbStorage.getPopularVideos(20, 'image', shuffleSeed);
+            console.log(`Using deterministic seed-based shuffle for popular images with seed: ${shuffleSeed}`);
+          } else if (shuffle) {
+            // Get actual popular images but apply randomization
+            popularImages = await dbStorage.getPopularVideos(20, 'image');
+            popularImages = shuffleArray(popularImages, Math.random().toString());
+            console.log(`Using randomized shuffle ordering for popular with seed: ${shuffleSeed}`);
+          } else {
+            // Normal sort by popularity, no shuffle
+            popularImages = await dbStorage.getPopularVideos(20, 'image', '');
+            console.log(`Using regular sorting for popular images (no shuffle)`);
+          }
         } else {
-          // Normal sort by popularity, no shuffle
-          popularImages = await dbStorage.getPopularVideos(20, 'image', '');
-          console.log(`Using regular sorting for popular images (no shuffle)`);
+          // Use the requested sort order for the popular section images
+          console.log(`Using custom sort '${dbPopularSortBy}' for popular images section`);
+          if (shuffleSeed) {
+            popularImages = await dbStorage.getVideos(20, 'image', undefined, dbPopularSortBy, shuffleSeed);
+          } else if (shuffle) {
+            popularImages = await dbStorage.getVideos(20, 'image', undefined, dbPopularSortBy);
+            popularImages = shuffleArray(popularImages, Math.random().toString());
+          } else {
+            popularImages = await dbStorage.getVideos(20, 'image', undefined, dbPopularSortBy, '');
+          }
         }
           
         popularImages = popularImages.filter(img => 
