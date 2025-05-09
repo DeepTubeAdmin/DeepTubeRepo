@@ -4,12 +4,14 @@ import ContactModal from "./ContactModal";
 import FAQModal from "./FAQModal";
 import PrivacyPolicyModal from "./PrivacyPolicyModal";
 import TermsOfServiceModal from "./TermsOfServiceModal";
+import RulesModal from "./RulesModal";
 
 export default function MiniFooter() {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isFAQModalOpen, setIsFAQModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
 
   return (
     <footer className="fixed bottom-0 left-0 right-0 bg-[#121212] border-t border-gray-800 py-2 px-4 z-40">
@@ -47,6 +49,13 @@ export default function MiniFooter() {
               Privacy
             </button>
             <span className="text-gray-600 text-xs">•</span>
+            <button
+              onClick={() => setIsRulesModalOpen(true)}
+              className="text-xs text-gray-400 hover:text-white bg-transparent border-none cursor-pointer"
+            >
+              Rules
+            </button>
+            <span className="text-gray-600 text-xs">•</span>
             <button 
               onClick={() => setIsContactModalOpen(true)}
               className="text-xs text-gray-400 hover:text-white bg-transparent border-none cursor-pointer"
@@ -79,6 +88,12 @@ export default function MiniFooter() {
       <TermsOfServiceModal
         isOpen={isTermsModalOpen}
         onClose={() => setIsTermsModalOpen(false)}
+      />
+
+      {/* Rules Modal */}
+      <RulesModal
+        isOpen={isRulesModalOpen}
+        onClose={() => setIsRulesModalOpen(false)}
       />
     </footer>
   );
