@@ -2406,15 +2406,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if ((contentType === "video" || contentType === "videos") && videoUrl) {
         try {
           console.log(`Generating thumbnail for new video upload: ${video.id} with URL ${videoUrl}`);
-          // Import the thumbnail generator function
-          const { generateAndStoreS3Thumbnail } = await import('./generateThumbnail');
+          // Use the unified thumbnail service
+          console.log('Using unified ThumbnailService to generate thumbnail');
           
-          // Generate the thumbnail
-          const s3Key = await generateAndStoreS3Thumbnail(
-            video.id,
+          // Generate the thumbnail using unified ThumbnailService
+          const result = await thumbnailService.generateThumbnail({
+            contentId: video.id,
             contentType,
-            videoUrl
-          );
+            sourceUrl: videoUrl,
+            forceRegeneration: true
+          });
           
           // Update the video record with the thumbnail path
           await dbStorage.updateVideo(video.id, { 
@@ -2437,16 +2438,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const youtubeId = youtubeIdMatch[1];
             console.log(`Extracting YouTube thumbnail for video ${video.id} with YouTube ID ${youtubeId}`);
             
-            // Import the thumbnail generator
-            const { generateAndStoreS3Thumbnail } = await import('./generateThumbnail');
+            // Use the unified thumbnail service
+            console.log('Using unified ThumbnailService to generate YouTube thumbnail');
             
-            // Generate the thumbnail using YouTube ID
-            const s3Key = await generateAndStoreS3Thumbnail(
-              video.id,
-              "embed",
-              null,
-              youtubeId
-            );
+            // Generate the thumbnail using unified ThumbnailService
+            const result = await thumbnailService.generateThumbnail({
+              contentId: video.id,
+              contentType: "embed",
+              youtubeId: youtubeId,
+              forceRegeneration: true
+            });
             
             // Update the video record with the thumbnail path
             await dbStorage.updateVideo(video.id, { 
@@ -3303,7 +3304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             thumbnailUrl: `/api/content/${videoId}/thumbnail`,
             contentType: video.contentType,
             youtubeId,
-            directYoutubeUrl: youtubeUtils.getYoutubeThumbnailUrl(youtubeId, 'hqdefault')
+            directYoutubeUrl: youtubeUtils.getYouTubeThumbnailUrl(youtubeId, 'hqdefault')
           });
         }
       }
