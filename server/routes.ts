@@ -2810,7 +2810,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Special case for YouTube embeds - handle them directly without Cloudinary
       if (content.contentType === 'embed' && content.embedCode) {
         // Extract YouTube video ID using our unified ThumbnailService
-        const youtubeId = thumbnailService.extractYouTubeVideoId(content.embedCode);
+        const youtubeId = thumbnailService.youtube.extractYouTubeVideoId(content.embedCode);
         
         if (youtubeId) {
           // Get the YouTube thumbnail URL directly
@@ -2851,7 +2851,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (content.contentType === 'embed') {
           // Use unified ThumbnailService for YouTube ID extraction
           const thumbnailService = await import('./services/ThumbnailService');
-          youtubeId = thumbnailService.extractYouTubeVideoId(content.embedCode || '');
+          youtubeId = thumbnailService.youtube.extractYouTubeVideoId(content.embedCode || '');
           if (youtubeId) {
             sourceUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
             console.log(`Extracted YouTube ID: ${youtubeId}, using source URL: ${sourceUrl}`);
