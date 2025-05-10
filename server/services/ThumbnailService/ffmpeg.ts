@@ -97,24 +97,48 @@ export function cleanWorkspacePath(filePath: string): string {
     // Remove any workspace/uploads path components that might be duplicated
     relativePath = relativePath.replace(/^home\/runner\/workspace\/uploads\//, '');
     relativePath = relativePath.replace(/^uploads\/uploads\//, '');
-    relativePath = relativePath.replace(/^uploads\//, '');
     
-    // Construct the full path to the file within the project's uploads directory
-    result = path.join(process.cwd(), 'uploads', relativePath);
+    // If the path doesn't contain videos/ or images/, add videos/ prefix 
+    // since most files will be videos and this is the best guess
+    if (!relativePath.includes('videos/') && !relativePath.includes('images/')) {
+      // Determine appropriate subfolder based on file extension
+      const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(relativePath);
+      const subfolder = isImage ? 'images' : 'videos';
+      
+      // Remove any leading uploads/ as we'll add the proper structure
+      relativePath = relativePath.replace(/^uploads\//, '');
+      
+      // Add the appropriate subfolder
+      result = path.join(process.cwd(), 'uploads', subfolder, relativePath);
+    } else {
+      // Already has a subfolder, so use as is
+      result = path.join(process.cwd(), 'uploads', relativePath);
+    }
   }
   // Handle direct S3 URLs
   else if (filePath.includes('.amazonaws.com/')) {
     // Extract the S3 key (everything after the bucket name)
     let s3Key = filePath.split('.amazonaws.com/')[1];
     
-    // Remove any uploads/ prefix as we'll add it back
-    s3Key = s3Key.replace(/^uploads\/uploads\//, 'uploads/');
-    if (!s3Key.startsWith('uploads/')) {
-      s3Key = `uploads/${s3Key}`;
+    // If the path doesn't specify a folder, check for the proper subfolder
+    if (!s3Key.includes('videos/') && !s3Key.includes('images/')) {
+      // Determine appropriate subfolder based on file extension
+      const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(s3Key);
+      const subfolder = isImage ? 'images' : 'videos';
+      
+      // Remove any uploads/ prefix
+      s3Key = s3Key.replace(/^uploads\//, '');
+      
+      // Construct path with the appropriate subfolder
+      result = path.join(process.cwd(), 'uploads', subfolder, s3Key);
+    } else {
+      // Already has subfolder structure
+      if (!s3Key.startsWith('uploads/')) {
+        s3Key = `uploads/${s3Key}`;
+      }
+      // Construct the full path to the file within the project's uploads directory
+      result = path.join(process.cwd(), s3Key);
     }
-    
-    // Construct the full path to the file within the project's uploads directory
-    result = path.join(process.cwd(), s3Key);
   }
   // For paths that already look like local file paths
   else {
@@ -126,7 +150,21 @@ export function cleanWorkspacePath(filePath: string): string {
     
     // If path starts with /uploads, make it relative to the project root
     if (normalizedPath.startsWith('/uploads/')) {
-      result = path.join(process.cwd(), normalizedPath.substring(1));
+      // Check if the path includes a subfolder, if not, add 'videos' as the best guess
+      if (!normalizedPath.includes('/videos/') && !normalizedPath.includes('/images/')) {
+        // Determine appropriate subfolder based on file extension
+        const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(normalizedPath);
+        const subfolder = isImage ? 'images' : 'videos';
+        
+        // Split the path to get just the filename without /uploads/
+        const filename = normalizedPath.substring('/uploads/'.length);
+        
+        // Join with proper subfolder
+        result = path.join(process.cwd(), 'uploads', subfolder, filename);
+      } else {
+        // Already has a subfolder structure
+        result = path.join(process.cwd(), normalizedPath.substring(1));
+      }
     } else {
       result = normalizedPath;
     }
