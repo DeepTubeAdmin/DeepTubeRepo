@@ -3204,7 +3204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Special case for YouTube embeds - handle directly without Cloudinary
       if (video.contentType === 'embed' && video.embedCode) {
         // Extract YouTube video ID
-        const youtubeId = youtubeUtils.extractYoutubeVideoId(video.embedCode);
+        const youtubeId = youtubeUtils.extractYouTubeVideoId(video.embedCode);
         
         if (youtubeId) {
           console.log(` - Detected YouTube embed with ID: ${youtubeId}`);
@@ -3287,7 +3287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Special case for YouTube embeds - handle directly without Cloudinary
       if (video.contentType === 'embed' && video.embedCode) {
         // Extract YouTube video ID
-        const youtubeId = youtubeUtils.extractYoutubeVideoId(video.embedCode);
+        const youtubeId = youtubeUtils.extractYouTubeVideoId(video.embedCode);
         
         if (youtubeId) {
           console.log(`Detected YouTube embed with ID: ${youtubeId} for content ${videoId}`);

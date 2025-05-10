@@ -433,7 +433,13 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
             </div>
           </div>
           <div className="max-w-4xl mx-auto">
-            <VideoCard video={data.featured.video} size="large" />
+            {data.featured.video && <VideoCard video={data.featured.video} size="large" />}
+            {!data.featured.video && (
+              <div className="p-8 bg-gray-800 rounded-lg text-center">
+                <p className="text-white mb-2">Featured content is currently unavailable</p>
+                <p className="text-orange-500 text-sm">Check back later for featured videos</p>
+              </div>
+            )}
           </div>
         </section>
       )}
