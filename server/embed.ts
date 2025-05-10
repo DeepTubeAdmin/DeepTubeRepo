@@ -55,7 +55,7 @@ export function generateEmbedHtml(content: Video, baseUrl: string): string {
         <meta name="generator" content="${content.aiGenerator || 'DeepTube'}">
         <meta property="og:title" content="${content.title}">
         <meta property="og:type" content="image">
-        <meta property="og:image" content="${content.imageUrl || ''}">
+        <meta property="og:image" content="${content.thumbnail || content.imageUrl || ''}">
         <meta property="og:url" content="${baseUrl}/media/${content.id}">
         <title>${content.title} - DeepTube</title>
         <style>

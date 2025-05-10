@@ -14,5 +14,10 @@ export function registerEmbedRoutes(app: Express) {
     handleEmbedRequest(req, res, dbStorage.getVideoById);
   });
   
+  // Alternative route to support the embed URL format in share dialog
+  app.get('/embed/:id', (req, res) => {
+    handleEmbedRequest(req, res, dbStorage.getVideoById);
+  });
+  
   console.log('Embed routes registered successfully');
 }
