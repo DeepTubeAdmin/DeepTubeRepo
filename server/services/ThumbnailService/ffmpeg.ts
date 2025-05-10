@@ -8,6 +8,8 @@ import util from 'util';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fetch from 'node-fetch';
+import { getSignedS3Url } from '../../s3';
 
 const execPromisified = util.promisify(cpExec);
 
@@ -17,6 +19,54 @@ const __dirname = path.dirname(__filename);
 
 // Path for temporary files
 const TEMP_DIR = path.join(__dirname, '../../../.tmp');
+
+/**
+ * Download a file from a URL to a temporary location
+ * @param url URL of the file to download
+ * @returns Path to the downloaded file or null if download failed
+ */
+export async function downloadFileToTemp(url: string): Promise<string | null> {
+  try {
+    // Ensure temp directory exists
+    await ensureTempDir();
+    
+    // Generate a unique filename
+    const filename = `temp-${Date.now()}-${Math.round(Math.random() * 1000000)}.bin`;
+    const outputPath = path.join(TEMP_DIR, filename);
+    
+    console.log(`Downloading file from ${url} to ${outputPath}`);
+    
+    // If it's an S3 URL, try to get a signed URL
+    let fetchUrl = url;
+    if (url.startsWith('/api/s3/')) {
+      const s3Key = url.split('/api/s3/')[1];
+      try {
+        const signedUrl = await getSignedS3Url(s3Key);
+        console.log(`Generated signed URL for download: ${signedUrl.substring(0, 100)}...`);
+        fetchUrl = signedUrl;
+      } catch (error) {
+        console.error(`Error getting signed URL for ${s3Key}:`, error);
+        // Continue with the original URL
+      }
+    }
+    
+    // Download the file
+    const response = await fetch(fetchUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to download file: ${response.status} ${response.statusText}`);
+    }
+    
+    // Write to file
+    const buffer = Buffer.from(await response.arrayBuffer());
+    await fs.writeFile(outputPath, buffer);
+    
+    console.log(`Successfully downloaded ${buffer.length} bytes to ${outputPath}`);
+    return outputPath;
+  } catch (error) {
+    console.error('Error downloading file:', error);
+    return null;
+  }
+}
 
 /**
  * Ensure temp directory exists
@@ -31,13 +81,36 @@ export async function ensureTempDir(): Promise<void> {
 }
 
 /**
- * Clean up a workspace path to ensure it's safe
+ * Clean up a workspace path to ensure it's safe and handle S3 URLs
  * @param filePath File path to clean
- * @returns Cleaned file path
+ * @returns Cleaned file path that points to the actual file on disk
  */
 export function cleanWorkspacePath(filePath: string): string {
+  // Handle /api/s3/ URLs
+  if (filePath.includes('/api/s3/')) {
+    // Extract the relative path after /api/s3/
+    const relativePath = filePath.split('/api/s3/')[1];
+    // Construct the full path to the file within the project's uploads directory
+    return path.join(process.cwd(), 'uploads', relativePath);
+  }
+  
+  // Handle direct S3 URLs
+  if (filePath.includes('.amazonaws.com/')) {
+    // Extract the S3 key (everything after the bucket name)
+    const s3Key = filePath.split('.amazonaws.com/')[1];
+    // Construct the full path to the file within the project's uploads directory
+    return path.join(process.cwd(), 'uploads', s3Key);
+  }
+  
+  // For paths that already look like local file paths
   // Remove any relative path components that might navigate up directories
   const normalizedPath = path.normalize(filePath).replace(/^(\.\.(\/|\\|$))+/, '');
+  
+  // If path starts with /uploads, make it relative to the project root
+  if (normalizedPath.startsWith('/uploads/')) {
+    return path.join(process.cwd(), normalizedPath.substring(1));
+  }
+  
   return normalizedPath;
 }
 
@@ -49,8 +122,18 @@ export function cleanWorkspacePath(filePath: string): string {
 export async function fileExists(filePath: string): Promise<boolean> {
   try {
     await fs.access(filePath);
+    console.log(`File exists: ${filePath}`);
     return true;
-  } catch {
+  } catch (error) {
+    console.log(`File does not exist: ${filePath}`);
+    // Try to list files in the directory to help debug
+    try {
+      const dir = path.dirname(filePath);
+      const files = await fs.readdir(dir);
+      console.log(`Files in directory ${dir}:`, files.slice(0, 10).join(', ') + (files.length > 10 ? '...' : ''));
+    } catch (dirError) {
+      console.log(`Could not read directory for ${filePath}:`, dirError);
+    }
     return false;
   }
 }
@@ -99,9 +182,29 @@ export async function generateThumbnailFromVideo(
   } = options;
   
   // Check if video exists
+  console.log(`Checking if video exists at path: ${videoPath}`);
   if (!await fileExists(videoPath)) {
-    throw new Error(`Video file does not exist: ${videoPath}`);
+    // Try to fetch the file directly if it's a URL
+    if (videoPath.startsWith('/api/s3/') || videoPath.includes('.amazonaws.com/')) {
+      console.log(`Video not found locally. Attempting to download from: ${videoPath}`);
+      try {
+        // Download the file to a temporary location
+        const tempVideoPath = await downloadFileToTemp(videoPath);
+        if (tempVideoPath) {
+          console.log(`Successfully downloaded video to: ${tempVideoPath}`);
+          videoPath = tempVideoPath;
+        } else {
+          throw new Error(`Failed to download video from ${videoPath}`);
+        }
+      } catch (downloadError) {
+        console.error(`Error downloading video:`, downloadError);
+        throw new Error(`Failed to access video file: ${videoPath} - ${downloadError.message}`);
+      }
+    } else {
+      throw new Error(`Video file does not exist: ${videoPath}`);
+    }
   }
+  console.log(`Video file exists, continuing with thumbnail generation`);
   
   // Ensure output directory exists
   const outputDir = path.dirname(outputPath);
