@@ -95,6 +95,7 @@ export async function generateVideoThumbnail(options: ThumbnailOptions): Promise
   try {
     const { contentId, sourceUrl } = options;
     let thumbnailPath = null;
+    let thumbnailS3Key = '';
     
     if (!sourceUrl) {
       throw new Error('No source URL provided for video thumbnail generation');
@@ -135,9 +136,10 @@ export async function generateVideoThumbnail(options: ThumbnailOptions): Promise
       console.log(`FFmpeg successfully generated thumbnail at: ${thumbnailPath}`);
       
       // Read the generated thumbnail
-      if (thumbnailPath) {
+      if (thumbnailPath && typeof thumbnailPath === 'string') {
         const thumbnailBuffer = await fs.readFile(thumbnailPath);
-        const thumbnailS3Key = getThumbnailS3Key(contentId, 'video');
+        // Initialize thumbnailS3Key here for proper scope
+        thumbnailS3Key = getThumbnailS3Key(contentId, 'video');
         
         // Upload to S3
         await uploadToS3(thumbnailBuffer, thumbnailS3Key, { contentType: 'image/jpeg' });
@@ -149,10 +151,9 @@ export async function generateVideoThumbnail(options: ThumbnailOptions): Promise
         throw new Error('Failed to generate thumbnail with FFmpeg');
       }
       
-      const s3Key = getThumbnailS3Key(contentId, 'video');
       return {
         success: true,
-        thumbnailPath: s3Key,
+        thumbnailPath: thumbnailS3Key,
         contentType: 'image/jpeg',
         method: 'ffmpeg-video'
       };
