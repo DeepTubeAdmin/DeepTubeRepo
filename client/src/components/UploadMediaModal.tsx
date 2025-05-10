@@ -533,8 +533,8 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
   }, [title, description, aiGenerator, customAiGenerator, prompt, categoryId, contentType, selectedFile, embedCode, thumbnailUrl, originalYoutubeUrl, originalRedditUrl, toast, onClose]);
 
   return (
-    <SimpleDialog isOpen={isOpen} onClose={onClose} title="Upload New Media" className="bg-[#1a1a1a] border-gray-800 max-w-md max-h-[90vh] overflow-y-auto">
-      <div className="overflow-y-visible">
+    <SimpleDialog isOpen={isOpen} onClose={onClose} title="Upload New Media" className="bg-[#1a1a1a] border-gray-800 max-w-md">
+      <div>
         <div className="mb-4">
           <p className="text-sm text-gray-400">
             Share your AI-generated content with the DeepTube community
