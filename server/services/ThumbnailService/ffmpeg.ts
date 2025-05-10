@@ -86,32 +86,54 @@ export async function ensureTempDir(): Promise<void> {
  * @returns Cleaned file path that points to the actual file on disk
  */
 export function cleanWorkspacePath(filePath: string): string {
+  console.log(`Cleaning path: ${filePath}`);
+  let result = '';
+  
   // Handle /api/s3/ URLs
   if (filePath.includes('/api/s3/')) {
     // Extract the relative path after /api/s3/
-    const relativePath = filePath.split('/api/s3/')[1];
+    let relativePath = filePath.split('/api/s3/')[1];
+    
+    // Remove any workspace/uploads path components that might be duplicated
+    relativePath = relativePath.replace(/^home\/runner\/workspace\/uploads\//, '');
+    relativePath = relativePath.replace(/^uploads\/uploads\//, '');
+    relativePath = relativePath.replace(/^uploads\//, '');
+    
     // Construct the full path to the file within the project's uploads directory
-    return path.join(process.cwd(), 'uploads', relativePath);
+    result = path.join(process.cwd(), 'uploads', relativePath);
   }
-  
   // Handle direct S3 URLs
-  if (filePath.includes('.amazonaws.com/')) {
+  else if (filePath.includes('.amazonaws.com/')) {
     // Extract the S3 key (everything after the bucket name)
-    const s3Key = filePath.split('.amazonaws.com/')[1];
+    let s3Key = filePath.split('.amazonaws.com/')[1];
+    
+    // Remove any uploads/ prefix as we'll add it back
+    s3Key = s3Key.replace(/^uploads\/uploads\//, 'uploads/');
+    if (!s3Key.startsWith('uploads/')) {
+      s3Key = `uploads/${s3Key}`;
+    }
+    
     // Construct the full path to the file within the project's uploads directory
-    return path.join(process.cwd(), 'uploads', s3Key);
+    result = path.join(process.cwd(), s3Key);
   }
-  
   // For paths that already look like local file paths
-  // Remove any relative path components that might navigate up directories
-  const normalizedPath = path.normalize(filePath).replace(/^(\.\.(\/|\\|$))+/, '');
-  
-  // If path starts with /uploads, make it relative to the project root
-  if (normalizedPath.startsWith('/uploads/')) {
-    return path.join(process.cwd(), normalizedPath.substring(1));
+  else {
+    // Remove any relative path components that might navigate up directories
+    let normalizedPath = path.normalize(filePath).replace(/^(\.\.(\/|\\|$))+/, '');
+    
+    // Fix duplicate uploads paths
+    normalizedPath = normalizedPath.replace(/\/uploads\/uploads\//, '/uploads/');
+    
+    // If path starts with /uploads, make it relative to the project root
+    if (normalizedPath.startsWith('/uploads/')) {
+      result = path.join(process.cwd(), normalizedPath.substring(1));
+    } else {
+      result = normalizedPath;
+    }
   }
   
-  return normalizedPath;
+  console.log(`Path cleaned: ${filePath} → ${result}`);
+  return result;
 }
 
 /**
@@ -196,9 +218,9 @@ export async function generateThumbnailFromVideo(
         } else {
           throw new Error(`Failed to download video from ${videoPath}`);
         }
-      } catch (downloadError) {
-        console.error(`Error downloading video:`, downloadError);
-        throw new Error(`Failed to access video file: ${videoPath} - ${downloadError.message}`);
+      } catch (error: any) {
+        console.error(`Error downloading video:`, error);
+        throw new Error(`Failed to access video file: ${videoPath} - ${error.message || 'Unknown error'}`);
       }
     } else {
       throw new Error(`Video file does not exist: ${videoPath}`);
