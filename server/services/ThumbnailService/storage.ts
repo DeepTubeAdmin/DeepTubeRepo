@@ -2,7 +2,7 @@
  * S3 storage utilities for ThumbnailService
  */
 
-import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import fs from 'fs/promises';
 import path from 'path';
@@ -106,6 +106,20 @@ export async function deleteFromS3(s3Key: string): Promise<void> {
  * @param contentType Content type
  * @returns Whether the thumbnail exists
  */
+export async function checkIfObjectExists(s3Key: string): Promise<boolean> {
+  try {
+    const command = new HeadObjectCommand({
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: s3Key
+    });
+    
+    await s3Client.send(command);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 export async function thumbnailExists(contentId: number, contentType?: string): Promise<boolean> {
   const s3Key = getThumbnailS3Key(contentId, contentType);
   

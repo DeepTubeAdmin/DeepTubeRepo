@@ -149,9 +149,10 @@ export async function generateVideoThumbnail(options: ThumbnailOptions): Promise
         throw new Error('Failed to generate thumbnail with FFmpeg');
       }
       
+      const s3Key = getThumbnailS3Key(contentId, 'video');
       return {
         success: true,
-        thumbnailPath: thumbnailS3Key,
+        thumbnailPath: s3Key,
         contentType: 'image/jpeg',
         method: 'ffmpeg-video'
       };
@@ -159,8 +160,8 @@ export async function generateVideoThumbnail(options: ThumbnailOptions): Promise
       console.error('FFmpeg thumbnail generation failed:', ffmpegError);
       
       // Clean up temporary files if they exist
-      if (thumbnailPath && await fileExists(thumbnailPath)) {
-        await cleanupTempFiles(thumbnailPath);
+      if (thumbnailPath && typeof thumbnailPath === 'string' && await fileExists(thumbnailPath)) {
+        await cleanupTempFiles([thumbnailPath]);
       }
       
       throw ffmpegError;
