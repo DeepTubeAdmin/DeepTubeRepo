@@ -1,40 +1,51 @@
 /**
- * FFmpeg module for ThumbnailService
+ * FFmpeg utilities for ThumbnailService
  */
 
+import { FFmpegOptions } from './types';
+import { exec } from 'child_process';
+import util from 'util';
 import fs from 'fs/promises';
-import { execFile } from 'child_process';
 import path from 'path';
-import os from 'os';
-import { promisify } from 'util';
-import { ThumbnailOptions } from './types';
+import { fileURLToPath } from 'url';
 
-const execFilePromise = promisify(execFile);
+const execPromisified = util.promisify(exec);
 
-// Helper function to make a temporary directory
-async function makeTempDir(): Promise<string> {
-  // Create a temporary directory for ffmpeg output
-  const tempDir = path.join(os.tmpdir(), 'deeptubeThumb-' + Date.now());
+// Get the current directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Path for temporary files
+const TEMP_DIR = path.join(__dirname, '../../../.tmp');
+
+/**
+ * Ensure temp directory exists
+ */
+export async function ensureTempDir(): Promise<void> {
   try {
-    await fs.mkdir(tempDir, { recursive: true });
-    return tempDir;
+    await fs.mkdir(TEMP_DIR, { recursive: true });
   } catch (error) {
     console.error('Error creating temp directory:', error);
     throw error;
   }
 }
 
-// Helper function to clean up temporary files
-export async function cleanupTempFiles(filePath: string): Promise<void> {
-  try {
-    await fs.unlink(filePath);
-    console.log(`Cleaned up temporary file: ${filePath}`);
-  } catch (error) {
-    console.warn(`Warning: Failed to clean up temporary file ${filePath}:`, error);
-  }
+/**
+ * Clean up a workspace path to ensure it's safe
+ * @param filePath File path to clean
+ * @returns Cleaned file path
+ */
+export function cleanWorkspacePath(filePath: string): string {
+  // Remove any relative path components that might navigate up directories
+  const normalizedPath = path.normalize(filePath).replace(/^(\.\.(\/|\\|$))+/, '');
+  return normalizedPath;
 }
 
-// Helper function to check if a file exists
+/**
+ * Check if a file exists
+ * @param filePath File path to check
+ * @returns Whether the file exists
+ */
 export async function fileExists(filePath: string): Promise<boolean> {
   try {
     await fs.access(filePath);
@@ -44,129 +55,108 @@ export async function fileExists(filePath: string): Promise<boolean> {
   }
 }
 
-// Helper function to clean up paths for FFmpeg processing
-export function cleanWorkspacePath(urlPath: string): string {
-  // Remove API prefix if it exists
-  let cleanPath = urlPath.replace('/api/s3/', '');
-  
-  // Remove workspace prefix if it exists
-  cleanPath = cleanPath.replace('/home/runner/workspace/', '');
-  
-  // Ensure relative paths from current directory
-  if (!cleanPath.startsWith('./') && !cleanPath.startsWith('/')) {
-    cleanPath = './' + cleanPath;
+/**
+ * Clean up temporary files
+ * @param filePaths Temporary file paths to clean up
+ */
+export async function cleanupTempFiles(filePaths: string[]): Promise<void> {
+  for (const filePath of filePaths) {
+    try {
+      if (await fileExists(filePath)) {
+        await fs.unlink(filePath);
+      }
+    } catch (error) {
+      console.error(`Error cleaning up temp file ${filePath}:`, error);
+    }
   }
-  
-  // Fix any double slashes
-  cleanPath = cleanPath.replace(/\/\//g, '/');
-  
-  return cleanPath;
 }
 
-// Helper function to extract a video frame at a specific timestamp
-export async function extractFrameFromVideo(options: {
-  videoPath: string;
-  outputPath: string;
-  timestamp?: string;
-  width?: number;
-  height?: number;
-}): Promise<boolean> {
-  const { videoPath, outputPath, timestamp = '3', width = 800, height = 450 } = options;
+/**
+ * Generate thumbnail from a video file using FFmpeg
+ * @param videoPath Path to the video file
+ * @param outputPath Path for the thumbnail output
+ * @param options FFmpeg options
+ * @returns Whether the thumbnail generation was successful
+ */
+export async function generateThumbnailFromVideo(
+  videoPath: string, 
+  outputPath: string, 
+  options: FFmpegOptions = {}
+): Promise<boolean> {
+  // Ensure paths are clean
+  videoPath = cleanWorkspacePath(videoPath);
+  outputPath = cleanWorkspacePath(outputPath);
   
-  console.log(`FFmpeg: Extracting frame at ${timestamp}s from ${videoPath} to ${outputPath}`);
-  console.log(`FFmpeg: Output dimensions: ${width}x${height}`);
+  // Ensure the temp directory exists
+  await ensureTempDir();
+  
+  // Default options
+  const {
+    width = 640,
+    height = 360,
+    timestamps = ['00:00:03'], // Default to 3 seconds
+    quality = 3, // Lower is better quality (1-31)
+  } = options;
+  
+  // Check if video exists
+  if (!await fileExists(videoPath)) {
+    throw new Error(`Video file does not exist: ${videoPath}`);
+  }
+  
+  // Ensure output directory exists
+  const outputDir = path.dirname(outputPath);
+  await fs.mkdir(outputDir, { recursive: true });
+  
+  // Build FFmpeg command
+  const timestamp = timestamps[0];
+  const command = `ffmpeg -ss ${timestamp} -i "${videoPath}" -vframes 1 -q:v ${quality} -vf "scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2" "${outputPath}" -y`;
   
   try {
-    // Attempt to extract frame with specified parameters
-    await execFilePromise('ffmpeg', [
-      '-y', // Overwrite output file if it exists
-      '-i', videoPath,
-      '-ss', timestamp, // Seek to timestamp
-      '-vframes', '1', // Extract one frame
-      '-vf', `scale=${width}:${height}`, // Scale to specified dimensions
-      '-q:v', '2', // High quality
-      outputPath
-    ]);
+    // Execute FFmpeg command
+    const { stdout, stderr } = await execPromisified(command);
     
-    // Verify the output was created
-    const exists = await fileExists(outputPath);
-    if (!exists) {
-      throw new Error(`FFmpeg completed but output file ${outputPath} was not created`);
-    }
+    // Log output
+    if (stdout) console.log('FFmpeg stdout:', stdout);
+    if (stderr) console.debug('FFmpeg stderr:', stderr);
     
-    console.log(`FFmpeg: Successfully extracted frame to ${outputPath}`);
-    return true;
+    // Check if the output file was created
+    return await fileExists(outputPath);
   } catch (error) {
-    console.error(`FFmpeg: Failed to extract frame at ${timestamp}s:`, error);
+    console.error('FFmpeg error:', error);
     return false;
   }
 }
 
 /**
- * Generate a thumbnail from a video using FFmpeg
- * 
- * @param videoPath Path to the video file
- * @param options Options for thumbnail generation
- * @returns Path to the generated thumbnail
+ * Test if FFmpeg is available on the system
+ * @returns Test result
  */
-export async function generateThumbnailFromVideo(
-  videoPath: string,
-  options: { width?: number; height?: number; timestamps?: string[] } = {}
-): Promise<string> {
-  const { width = 800, height = 450, timestamps = ['3', '1', '5', '10'] } = options;
-  const tempDir = await makeTempDir();
-  const tempThumb = path.join(tempDir, `thumbnail-${Date.now()}.jpg`);
-  
-  console.log(`FFmpeg: Starting thumbnail generation for ${videoPath}`);
-  console.log(`FFmpeg: Temporary thumbnail path: ${tempThumb}`);
-  
-  // Try each timestamp in sequence until one works
-  let success = false;
-  
-  for (const timestamp of timestamps) {
-    console.log(`FFmpeg: Trying to extract frame at ${timestamp}s...`);
+export async function testFFmpegAvailability(): Promise<{
+  success: boolean;
+  message: string;
+  details?: {
+    version?: string;
+  };
+}> {
+  try {
+    // Try to execute FFmpeg version command
+    const { stdout } = await execPromisified('ffmpeg -version');
     
-    success = await extractFrameFromVideo({
-      videoPath,
-      outputPath: tempThumb,
-      timestamp,
-      width,
-      height
-    });
+    // Parse version from output
+    const versionMatch = stdout.match(/ffmpeg version (\S+)/);
+    const version = versionMatch ? versionMatch[1] : 'unknown';
     
-    if (success) {
-      console.log(`FFmpeg: Successfully generated thumbnail at ${timestamp}s`);
-      break;
-    }
-    
-    console.log(`FFmpeg: Failed to extract frame at ${timestamp}s, trying next timestamp...`);
-  }
-  
-  if (!success) {
-    // Last resort: try without specifying a timestamp
-    console.log('FFmpeg: All timestamps failed, trying default frame extraction...');
-    
-    try {
-      await execFilePromise('ffmpeg', [
-        '-y',
-        '-i', videoPath,
-        '-vframes', '1',
-        '-vf', `scale=${width}:${height}`,
-        tempThumb
-      ]);
-      
-      const exists = await fileExists(tempThumb);
-      if (!exists) {
-        throw new Error('Default frame extraction completed but file not created');
+    return {
+      success: true,
+      message: 'FFmpeg is available',
+      details: {
+        version
       }
-      
-      success = true;
-      console.log('FFmpeg: Default frame extraction succeeded');
-    } catch (error) {
-      console.error('FFmpeg: Default frame extraction failed:', error);
-      throw new Error('Failed to generate thumbnail at any position in the video');
-    }
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `FFmpeg is not available: ${error instanceof Error ? error.message : String(error)}`
+    };
   }
-  
-  return tempThumb;
 }

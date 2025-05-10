@@ -5,7 +5,11 @@
 import { ThumbnailOptions, ThumbnailResult } from './types';
 import { uploadToS3, getThumbnailS3Key, getSignedS3Url } from './storage';
 import fs from 'fs/promises';
-import { extractYouTubeVideoId } from './youtube';
+import { 
+  extractYouTubeVideoId, 
+  getYouTubeThumbnailUrl,
+  downloadYouTubeThumbnail
+} from './youtube';
 import { 
   generateThumbnailFromVideo, 
   cleanWorkspacePath,

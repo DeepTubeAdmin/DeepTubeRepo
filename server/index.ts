@@ -3,77 +3,27 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
 import { fileURLToPath } from "url";
-import { v2 as cloudinary } from 'cloudinary';
+import thumbnailService from "./services/ThumbnailService";
 
-// Configure Cloudinary with environment variables
-console.log("Setting up Cloudinary configuration...");
+// Check if FFmpeg is available
+console.log("Checking FFmpeg availability...");
 
-// First try to use CLOUDINARY_URL if available
-let cloudName = '';
-let apiKey = '';
-let apiSecret = '';
-let credentialSource = '';
-
-if (process.env.CLOUDINARY_URL) {
-  credentialSource = 'CLOUDINARY_URL';
-  console.log(`CLOUDINARY_URL found (length: ${process.env.CLOUDINARY_URL.length} chars)`);
-  
+(async () => {
   try {
-    // Parse the cloudinary:// URL format
-    // Format: cloudinary://<api_key>:<api_secret>@<cloud_name>
-    const cloudinaryUrl = process.env.CLOUDINARY_URL;
-    const cloudinaryRegex = /^cloudinary:\/\/([^:]+):([^@]+)@(.+)$/;
-    const match = cloudinaryUrl.match(cloudinaryRegex);
-    
-    if (match) {
-      apiKey = match[1];
-      apiSecret = match[2];
-      cloudName = match[3];
-      console.log(`Successfully parsed CLOUDINARY_URL, extracted cloud_name: ${cloudName}`);
+    const ffmpegTest = await thumbnailService.testFFmpegAvailability();
+    if (ffmpegTest.success) {
+      console.log(`✓ FFmpeg is available: ${ffmpegTest.message}`);
+      if (ffmpegTest.details?.version) {
+        console.log(`  Version: ${ffmpegTest.details.version}`);
+      }
     } else {
-      console.warn("CLOUDINARY_URL format is invalid, falling back to individual credentials");
-      credentialSource = 'individual variables (after URL parse failure)';
+      console.warn(`⚠ FFmpeg may not be available: ${ffmpegTest.message}`);
+      console.warn("Some thumbnail generation features might not work correctly.");
     }
   } catch (error) {
-    console.error("Error parsing CLOUDINARY_URL:", error);
-    credentialSource = 'individual variables (after URL parse error)';
+    console.error("Error checking FFmpeg:", error);
   }
-} 
-
-// Fall back to individual credentials if CLOUDINARY_URL parsing failed
-if (!cloudName || !apiKey || !apiSecret) {
-  cloudName = process.env.CLOUDINARY_CLOUD_NAME || '';
-  apiKey = process.env.CLOUDINARY_API_KEY || '';
-  apiSecret = process.env.CLOUDINARY_API_SECRET || '';
-  
-  if (!credentialSource) {
-    credentialSource = 'individual environment variables';
-  }
-  console.log(`Using individual Cloudinary credentials from environment variables`);
-}
-
-console.log(`Using cloud_name from ${credentialSource}: ${cloudName}`);
-
-// Check if we have all required configuration
-if (cloudName && apiKey && apiSecret) {
-  console.log("Configuring Cloudinary with extracted credentials");
-  cloudinary.config({ 
-    cloud_name: cloudName,
-    api_key: apiKey,
-    api_secret: apiSecret,
-    secure: true
-  });
-  
-  // Log configuration (without revealing actual keys)
-  console.log(`Cloudinary configuration: cloud_name='${cloudName}', ` +
-    `api_key=<${apiKey.length} chars>, ` +
-    `api_secret=<${apiSecret.length} chars>`);
-} else {
-  console.warn("Cloudinary credentials incomplete or not found:");
-  console.warn(`- cloud_name: ${cloudName ? 'Present' : 'Missing'}`);
-  console.warn(`- api_key: ${apiKey ? 'Present' : 'Missing'}`);
-  console.warn(`- api_secret: ${apiSecret ? 'Present' : 'Missing'}`);
-}
+})();
 
 // Get directory paths
 const __filename = fileURLToPath(import.meta.url);
