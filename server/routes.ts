@@ -24,7 +24,7 @@ import { videos } from '@shared/schema';
 import { db } from './db';
 // Thumbnail routes now integrated directly
 import mongoDb from "./mongodb";
-import { handleEmbedRequest } from "./embed";
+import { registerEmbedRoutes } from "./routes/embed";
 import {
   getSignedS3Url,
   uploadFileToS3,
@@ -146,6 +146,8 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register embed routes
+  registerEmbedRoutes(app);
   // Thumbnail routes are now integrated directly
   
   // Main thumbnail endpoint that generates thumbnails on-demand using Cloudinary

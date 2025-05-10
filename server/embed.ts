@@ -7,7 +7,7 @@
 
 import { Request, Response } from 'express';
 import { Video } from '@shared/schema';
-import * as youtubeUtils from './youtubeUtils';
+import * as youtubeUtils from './lib/youtubeUtils';
 
 // Generate embed HTML for different content types
 export function generateEmbedHtml(content: Video, baseUrl: string): string {
