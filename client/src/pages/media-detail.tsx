@@ -810,7 +810,7 @@ export default function MediaDetail() {
       
       {/* Report dialog */}
       <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
-        <DialogContent className="bg-[#1a1a1a] border-[#333]">
+        <DialogContent className="bg-[#1a1a1a] border-[#333] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Report Content</DialogTitle>
             <DialogDescription>
@@ -848,7 +848,7 @@ export default function MediaDetail() {
       
       {/* Share dialog */}
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
-        <DialogContent className="bg-[#1a1a1a] border-[#333]">
+        <DialogContent className="bg-[#1a1a1a] border-[#333] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Share Content</DialogTitle>
             <DialogDescription>
