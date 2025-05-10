@@ -20,6 +20,12 @@ export function generateEmbedHtml(content: Video, baseUrl: string): string {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="${content.description || `AI-generated content shared on DeepTube`}">
+        <meta name="generator" content="${content.aiGenerator || 'DeepTube'}">
+        <meta property="og:title" content="${content.title}">
+        <meta property="og:type" content="video">
+        <meta property="og:image" content="${content.thumbnail || ''}">
+        <meta property="og:url" content="${baseUrl}/media/${content.id}">
         <title>${content.title} - DeepTube</title>
         <style>
           body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; }
@@ -45,6 +51,12 @@ export function generateEmbedHtml(content: Video, baseUrl: string): string {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="${content.description || `AI-generated image shared on DeepTube`}">
+        <meta name="generator" content="${content.aiGenerator || 'DeepTube'}">
+        <meta property="og:title" content="${content.title}">
+        <meta property="og:type" content="image">
+        <meta property="og:image" content="${content.imageUrl || ''}">
+        <meta property="og:url" content="${baseUrl}/media/${content.id}">
         <title>${content.title} - DeepTube</title>
         <style>
           body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; }

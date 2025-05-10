@@ -305,11 +305,20 @@ export default function MediaDetail() {
     
     // Create different embed code based on content type
     if (media && media.contentType === 'video') {
-      // For videos, create an iframe embed
-      return `<iframe src="${mediaUrl}/embed" width="560" height="315" frameborder="0" allowfullscreen title="${title}"></iframe>`;
+      // For videos, create an iframe embed with responsive wrapper
+      return `<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%;">
+  <iframe src="${mediaUrl}/embed" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allowfullscreen title="${title}"></iframe>
+</div>`;
     } else if (media && media.contentType === 'image') {
-      // For images, create an image with link
-      return `<a href="${mediaUrl}" target="_blank"><img src="${media.imageUrl}" alt="${title}" style="max-width: 100%; height: auto;" /></a>`;
+      // For images, create a responsive image with link
+      return `<div style="text-align:center">
+  <a href="${mediaUrl}" target="_blank" style="display:inline-block;max-width:100%">
+    <img src="${media.imageUrl}" alt="${title}" style="max-width:100%;height:auto;border:0" />
+  </a>
+  <div style="margin-top:4px;font-size:12px;font-family:Arial,sans-serif;">
+    <a href="${mediaUrl}" target="_blank" style="color:#f97316;text-decoration:none">${title} | View on DeepTube</a>
+  </div>
+</div>`;
     } else if (media && media.contentType === 'embed') {
       // For YouTube embeds - detect from embedCode field or URL pattern
       const embedHtml = media.embedCode;
@@ -318,18 +327,36 @@ export default function MediaDetail() {
         // Extract YouTube ID from existing embed code
         const youtubeMatch = embedHtml.match(/youtube\.com\/embed\/([^"&?\/\s]+)/);
         if (youtubeMatch && youtubeMatch[1]) {
-          return `<iframe width="560" height="315" src="https://www.youtube.com/embed/${youtubeMatch[1]}" frameborder="0" allowfullscreen></iframe>`;
+          return `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%">
+  <iframe src="https://www.youtube.com/embed/${youtubeMatch[1]}" style="position:absolute;top:0;left:0;width:100%;height:100%" frameborder="0" allowfullscreen></iframe>
+  <div style="position:absolute;bottom:10px;right:10px;font-size:12px;font-family:Arial,sans-serif;z-index:10">
+    <a href="${mediaUrl}" target="_blank" style="color:#f97316;text-decoration:none">View on DeepTube</a>
+  </div>
+</div>`;
         }
       }
       
       // For Vimeo embeds - use vimeoId property directly
       if (media.vimeoId) {
-        return `<iframe src="https://player.vimeo.com/video/${media.vimeoId}" width="560" height="315" frameborder="0" allowfullscreen></iframe>`;
+        return `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%">
+  <iframe src="https://player.vimeo.com/video/${media.vimeoId}" style="position:absolute;top:0;left:0;width:100%;height:100%" frameborder="0" allowfullscreen></iframe>
+  <div style="position:absolute;bottom:10px;right:10px;font-size:12px;font-family:Arial,sans-serif;z-index:10">
+    <a href="${mediaUrl}" target="_blank" style="color:#f97316;text-decoration:none">View on DeepTube</a>
+  </div>
+</div>`;
       }
       
-      // If we have an embed code, return it directly
+      // If we have an embed code, wrap it in a responsive container
       if (embedHtml) {
-        return embedHtml;
+        // Try to make the embed code responsive by wrapping it
+        return `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%">
+  <div style="position:absolute;top:0;left:0;width:100%;height:100%">
+    ${embedHtml}
+  </div>
+  <div style="position:absolute;bottom:10px;right:10px;font-size:12px;font-family:Arial,sans-serif;z-index:10">
+    <a href="${mediaUrl}" target="_blank" style="color:#f97316;text-decoration:none">View on DeepTube</a>
+  </div>
+</div>`;
       }
     }
     
