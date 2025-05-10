@@ -298,6 +298,66 @@ export default function MediaDetail() {
     }
   };
   
+  // Generate embed code for content
+  const generateEmbedCode = () => {
+    const mediaUrl = `${window.location.origin}/media/${id}`;
+    const title = media ? media.title : "DeepTube content";
+    
+    // Create different embed code based on content type
+    if (media && media.contentType === 'video') {
+      // For videos, create an iframe embed
+      return `<iframe src="${mediaUrl}/embed" width="560" height="315" frameborder="0" allowfullscreen title="${title}"></iframe>`;
+    } else if (media && media.contentType === 'image') {
+      // For images, create an image with link
+      return `<a href="${mediaUrl}" target="_blank"><img src="${media.imageUrl}" alt="${title}" style="max-width: 100%; height: auto;" /></a>`;
+    } else if (media && media.contentType === 'embed' && media.youtubeId) {
+      // For YouTube embeds, use the YouTube embed code
+      return `<iframe width="560" height="315" src="https://www.youtube.com/embed/${media.youtubeId}" frameborder="0" allowfullscreen></iframe>`;
+    } else if (media && media.contentType === 'embed' && media.vimeoId) {
+      // For Vimeo embeds, use the Vimeo embed code
+      return `<iframe src="https://player.vimeo.com/video/${media.vimeoId}" width="560" height="315" frameborder="0" allowfullscreen></iframe>`;
+    }
+    
+    // Default fallback - link with title
+    return `<a href="${mediaUrl}" target="_blank">${title}</a>`;
+  };
+  
+  // Handle copying embed code to clipboard
+  const handleCopyEmbedCode = () => {
+    const embedCode = generateEmbedCode();
+    
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(embedCode)
+        .then(() => {
+          toast({
+            title: "Embed code copied",
+            description: "The embed code has been copied to your clipboard"
+          });
+        })
+        .catch(err => {
+          console.error('Could not copy embed code: ', err);
+          toast({
+            title: "Copy failed",
+            description: "Please try manually selecting and copying the embed code",
+            variant: "destructive"
+          });
+        });
+    } else {
+      // Fallback for browsers that don't support clipboard API
+      const textArea = document.createElement('textarea');
+      textArea.value = embedCode;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      toast({
+        title: "Embed code copied",
+        description: "The embed code has been copied to your clipboard"
+      });
+    }
+  };
+
   // Share to social media
   const handleSocialShare = (platform: string) => {
     const shareUrl = `${window.location.origin}/media/${id}`;
@@ -764,6 +824,35 @@ export default function MediaDetail() {
               {copySuccess && (
                 <p className="text-green-500 text-sm mt-1">{copySuccess}</p>
               )}
+            </div>
+            
+            {/* New Embed Code Section */}
+            <div className="mt-6 mb-6">
+              <label htmlFor="embed-code" className="text-sm font-medium mb-2 block text-gray-300">
+                Embed Code
+                <span className="text-xs text-gray-500 ml-2">
+                  (for sharing on X.com, Facebook, TikTok, Instagram, etc.)
+                </span>
+              </label>
+              <div className="relative">
+                <textarea
+                  id="embed-code"
+                  readOnly
+                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-md text-sm text-gray-300 font-mono h-20 resize-none"
+                  value={generateEmbedCode()}
+                  onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+                />
+                <Button
+                  onClick={handleCopyEmbedCode}
+                  className="absolute top-2 right-2 bg-orange-500 hover:bg-orange-400 text-black p-1 h-auto rounded-sm"
+                  size="sm"
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Copy this code and paste it into your post to embed this content on other platforms.
+              </p>
             </div>
             
             <div className="mt-6">
