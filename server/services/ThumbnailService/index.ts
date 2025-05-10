@@ -6,17 +6,13 @@
  */
 
 import { ThumbnailOptions, ThumbnailResult } from './types';
-import {
-  generateYouTubeThumbnail,
-  generateVideoThumbnail,
-  generateImageThumbnail,
-  generatePlaceholderThumbnail,
-  getYouTubeThumbnailUrl
-} from './generators';
-import { getSignedS3Url, getThumbnailS3Key, getS3ResourcePath, checkIfObjectExists } from './storage';
-import { extractYouTubeVideoId } from './youtube';
-import { fileExists } from './ffmpeg';
+import * as ffmpeg from './ffmpeg';
+import * as storage from './storage';
+import * as youtube from './youtube';
+import * as generators from './generators';
+import path from 'path';
 import fs from 'fs/promises';
+import sharp from 'sharp';
 
 /**
  * Generate a thumbnail for the provided content
@@ -31,89 +27,37 @@ import fs from 'fs/promises';
  */
 export async function generateThumbnail(options: ThumbnailOptions): Promise<ThumbnailResult> {
   try {
-    const { contentId, contentType, youtubeId, sourceUrl, generatePlaceholder } = options;
-    
-    // Basic validation
-    if (!contentId) {
-      throw new Error('Content ID is required for thumbnail generation');
-    }
-    
-    console.log(`Generating thumbnail for content ID ${contentId}, type: ${contentType}`);
-    console.log(`Source URL: ${sourceUrl || 'none'}, YouTube ID: ${youtubeId || 'none'}`);
-    
-    // If placeholders are explicitly requested, generate them right away
-    if (generatePlaceholder) {
-      return await generatePlaceholderThumbnail(options);
-    }
-    
-    // Extract YouTube ID from source URL if not provided directly
-    const extractedYoutubeId = youtubeId || (sourceUrl ? extractYouTubeVideoId(sourceUrl) : null);
-    
-    // Implement the cascading generation strategy
-    try {
-      // Strategy 1: YouTube thumbnails for embeds
-      if (extractedYoutubeId || contentType === 'embed') {
-        if (extractedYoutubeId) {
-          try {
-            console.log(`Using YouTube thumbnail strategy for ID: ${extractedYoutubeId}`);
-            return await generateYouTubeThumbnail({
-              ...options,
-              youtubeId: extractedYoutubeId
-            });
-          } catch (youtubeError) {
-            console.error('YouTube thumbnail strategy failed:', youtubeError);
-            // Fall through to next strategy
-          }
-        }
-      }
-      
-      // Strategy 2: Content type specific generation
-      if (sourceUrl) {
-        try {
-          if (contentType === 'video') {
-            console.log('Using FFmpeg video thumbnail strategy');
-            return await generateVideoThumbnail(options);
-          } else if (contentType === 'image') {
-            console.log('Using Sharp image thumbnail strategy');
-            return await generateImageThumbnail(options);
-          }
-        } catch (mediaError) {
-          console.error(`${contentType} thumbnail strategy failed:`, mediaError);
-          // Fall through to placeholder
-        }
-      }
-      
-      // Strategy 3: Base64 data for images
-      if (options.base64Data && contentType === 'image') {
-        try {
-          console.log('Using base64 image strategy');
-          return await generateImageThumbnail(options);
-        } catch (base64Error) {
-          console.error('Base64 image strategy failed:', base64Error);
-          // Fall through to placeholder
-        }
-      }
-      
-      // Final fallback: Generate placeholder
-      console.log('No suitable source for thumbnail generation, using placeholder');
-      return await generatePlaceholderThumbnail(options);
-      
-    } catch (strategyError) {
-      console.error('All thumbnail strategies failed:', strategyError);
-      return await generatePlaceholderThumbnail(options);
+    // Determine which generator to use based on content type and available data
+    if (options.contentType === 'embed' || options.youtubeId || (options.sourceUrl && youtube.extractYouTubeVideoId(options.sourceUrl))) {
+      return await generators.generateYouTubeThumbnail(options);
+    } else if (options.contentType === 'video' && options.sourceUrl) {
+      return await generators.generateVideoThumbnail(options);
+    } else if (options.contentType === 'image' && options.sourceUrl) {
+      return await generators.generateImageThumbnail(options);
+    } else if (options.base64Data) {
+      return await generators.generateImageThumbnail(options);
+    } else {
+      // Generate a placeholder as last resort
+      return await generators.generatePlaceholderThumbnail(options);
     }
   } catch (error) {
-    console.error('Uncaught error in thumbnail generation:', error);
+    console.error('Error generating thumbnail:', error);
     
-    // Last resort error handling - return minimal error result
-    // with a placeholder path that should work
-    return {
-      success: false,
-      thumbnailPath: getThumbnailS3Key(options.contentId, options.contentType || 'unknown', 'svg'),
-      contentType: 'image/svg+xml',
-      method: 'error-fallback',
-      error: error
-    };
+    // Fallback to placeholder on any error
+    try {
+      return await generators.generatePlaceholderThumbnail(options);
+    } catch (fallbackError) {
+      console.error('Fallback error generating placeholder thumbnail:', fallbackError);
+      
+      // Last resort - return a failure
+      return {
+        success: false,
+        thumbnailPath: '',
+        contentType: 'image/svg+xml',
+        method: 'error',
+        error
+      };
+    }
   }
 }
 
@@ -126,17 +70,8 @@ export async function generateThumbnail(options: ThumbnailOptions): Promise<Thum
  */
 export async function getThumbnailUrl(contentId: number, contentType?: string, expiresIn: number = 3600): Promise<string> {
   try {
-    // Determine the S3 key for the thumbnail
-    let s3Key = getThumbnailS3Key(contentId, contentType || 'unknown');
-    
-    // Check if there's an SVG version (for placeholders)
-    try {
-      const svgKey = getThumbnailS3Key(contentId, contentType || 'unknown', 'svg');
-      return await getSignedS3Url(svgKey, expiresIn);
-    } catch (svgError) {
-      // If no SVG version, use the regular thumbnail
-      return await getSignedS3Url(s3Key, expiresIn);
-    }
+    const s3Key = storage.getThumbnailS3Key(contentId, contentType);
+    return await storage.getSignedS3Url(s3Key, expiresIn);
   } catch (error) {
     console.error(`Error getting thumbnail URL for content ${contentId}:`, error);
     throw error;
@@ -150,13 +85,7 @@ export async function getThumbnailUrl(contentId: number, contentType?: string, e
  * @returns Whether the thumbnail exists
  */
 export async function thumbnailExists(contentId: number, contentType?: string): Promise<boolean> {
-  try {
-    // Try to get a signed URL - will throw if the thumbnail doesn't exist
-    await getThumbnailUrl(contentId, contentType);
-    return true;
-  } catch (error) {
-    return false;
-  }
+  return await storage.thumbnailExists(contentId, contentType);
 }
 
 /**
@@ -164,33 +93,49 @@ export async function thumbnailExists(contentId: number, contentType?: string): 
  * @returns Test results
  */
 export async function testService(): Promise<{
-  ffmpeg: any;
-  thumbnail: any;
+  success: boolean;
+  message: string;
+  details?: any;
 }> {
   try {
     // Test FFmpeg availability
     const ffmpegTest = await testFFmpegAvailability();
     
-    // Test placeholder generation
-    let thumbnailTest;
-    try {
-      thumbnailTest = await generateThumbnail({
-        contentId: 999999, // Use a high number unlikely to conflict
-        contentType: 'test',
-        generatePlaceholder: true
-      });
-    } catch (thumbnailError) {
-      thumbnailTest = { success: false, error: thumbnailError };
+    // Test S3 connection
+    let s3Test = { success: false, message: 'Not tested' };
+    if (process.env.AWS_BUCKET_NAME && process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+      try {
+        // Try to get a signed URL for a test key
+        const testUrl = await storage.getSignedS3Url('test.jpg');
+        s3Test = {
+          success: true,
+          message: `S3 connection successful (${testUrl.substring(0, 30)}...)`
+        };
+      } catch (error) {
+        s3Test = {
+          success: false,
+          message: `S3 connection failed: ${error instanceof Error ? error.message : String(error)}`
+        };
+      }
     }
     
     return {
-      ffmpeg: ffmpegTest,
-      thumbnail: thumbnailTest
+      success: ffmpegTest.success,
+      message: 'Thumbnail service test completed',
+      details: {
+        ffmpeg: ffmpegTest,
+        s3: s3Test,
+        sharp: { 
+          success: true, 
+          message: 'Sharp library is available',
+          version: sharp.versions.sharp
+        }
+      }
     };
   } catch (error) {
     return {
-      ffmpeg: { success: false, error },
-      thumbnail: { success: false, error }
+      success: false,
+      message: `Test failed: ${error instanceof Error ? error.message : String(error)}`
     };
   }
 }
@@ -202,56 +147,39 @@ export async function testService(): Promise<{
 export async function testFFmpegAvailability(): Promise<{
   success: boolean;
   message: string;
-  details?: any;
+  details?: {
+    version?: string;
+  };
 }> {
-  try {
-    const { execFile } = require('child_process');
-    const { promisify } = require('util');
-    const execFilePromise = promisify(execFile);
-    
-    // Run ffmpeg -version to check if it's available
-    const { stdout } = await execFilePromise('ffmpeg', ['-version']);
-    
-    return {
-      success: true,
-      message: 'FFmpeg is available',
-      details: {
-        version: stdout.split('\n')[0]
-      }
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: `FFmpeg is not available: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      details: error
-    };
-  }
+  return await ffmpeg.testFFmpegAvailability();
 }
 
-// Re-export types and sub-modules for direct access
-export * from './types';
-export * as storage from './storage';
-export * as youtube from './youtube';
-export * as generators from './generators';
-export * as ffmpeg from './ffmpeg';
+/**
+ * Get the YouTube thumbnail URL directly
+ * Convenience method to avoid direct module imports elsewhere
+ */
+export function getYouTubeThumbnailUrl(youtubeId: string | null, quality: string = 'hqdefault'): string | null {
+  return youtube.getYouTubeThumbnailUrl(youtubeId, quality);
+}
 
-// Re-export commonly used functions directly for simpler imports
-export { extractYouTubeVideoId } from './youtube';
-export { getSignedS3Url, getThumbnailS3Key, getS3ResourcePath, checkIfObjectExists } from './storage';
-export { cleanWorkspacePath, generateThumbnailFromVideo } from './ffmpeg';
+// Export individual modules for direct access if needed
+export {
+  ffmpeg,
+  storage,
+  youtube
+};
 
-// Default export for backward compatibility
+// Default export for convenience
 export default {
   generateThumbnail,
   getThumbnailUrl,
   thumbnailExists,
   testService,
   testFFmpegAvailability,
+  getYouTubeThumbnailUrl,
   
-  // Commonly used functions from sub-modules
-  extractYouTubeVideoId,
-  getSignedS3Url,
-  getThumbnailS3Key,
-  getS3ResourcePath,
-  getYouTubeThumbnailUrl
+  // Direct module access
+  ffmpeg,
+  storage,
+  youtube
 };
