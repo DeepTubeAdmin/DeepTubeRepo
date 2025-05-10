@@ -8,6 +8,7 @@
 import { Request, Response } from 'express';
 import { Video } from '@shared/schema';
 import * as youtubeUtils from './lib/youtubeUtils';
+import { storage as dbStorage } from './storage';
 
 // Generate embed HTML for different content types
 export function generateEmbedHtml(content: Video, baseUrl: string): string {
@@ -206,8 +207,21 @@ export async function handleEmbedRequest(req: Request, res: Response, getVideoBy
     // Generate HTML
     const embedHtml = generateEmbedHtml(content, baseUrl);
     
+    // Track this embed view for analytics
+    try {
+      // Update view count for embedded content
+      // This helps track popularity of content shared externally
+      await dbStorage.incrementViews(contentId);
+      console.log(`Tracked embed view for content ID: ${contentId}`);
+    } catch (viewError) {
+      console.error('Error tracking embed view:', viewError);
+      // Continue despite error - viewing should still work
+    }
+    
     // Set content type and send the HTML
     res.setHeader('Content-Type', 'text/html');
+    res.setHeader('X-Frame-Options', 'ALLOW-FROM *'); // Allow embedding in iframes
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow cross-origin embedding
     res.send(embedHtml);
     
   } catch (error) {
