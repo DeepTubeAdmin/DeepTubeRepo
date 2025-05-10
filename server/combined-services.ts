@@ -5,7 +5,7 @@
 
 import { storage as s3Service } from "./services/ThumbnailService";
 import thumbnailService from "./services/ThumbnailService";
-// Using Cloudinary instead of FFmpeg for thumbnail generation
+// Using FFmpeg for thumbnail generation
 
 // Export legacy function names that map to new service methods for backward compatibility
 export const getSignedS3Url = s3Service.getSignedS3Url;
@@ -97,14 +97,14 @@ export function urlPathToS3Key(urlPath: string): string {
   return localPathToS3Key(urlPath);
 }
 
-// Map old function to new function using Cloudinary instead of FFmpeg
+// Map old function to new function using FFmpeg for thumbnail generation
 export async function generateAndStoreS3Thumbnail(
   contentId: number,
   contentType: string,
   sourceUrl: string | null = null,
   youtubeId: string | null = null
 ): Promise<string> {
-  console.log(`Thumbnail generation request for ${contentType} ${contentId} using Cloudinary`);
+  console.log(`Thumbnail generation request for ${contentType} ${contentId} using FFmpeg`);
   try {
     // Use our unified ThumbnailService
     const result = await thumbnailService.generateThumbnail({

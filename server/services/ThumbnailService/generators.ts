@@ -4,7 +4,16 @@
 
 import { ThumbnailOptions, ThumbnailResult } from './types';
 import { uploadToS3, getThumbnailS3Key, getSignedS3Url } from './storage';
-import { uploadToCloudinary, getYouTubeThumbnailUrl, extractYouTubeVideoId } from './cloudinary';
+import fs from 'fs/promises';
+import { extractYouTubeVideoId } from './youtube';
+import { 
+  generateThumbnailFromVideo, 
+  cleanWorkspacePath,
+  cleanupTempFiles,
+  fileExists
+} from './ffmpeg';
+import sharp from 'sharp';
+import path from 'path';
 
 /**
  * Generate a thumbnail from a YouTube video
@@ -74,69 +83,68 @@ export async function generateYouTubeThumbnail(options: ThumbnailOptions): Promi
 }
 
 /**
- * Generate a thumbnail from video content using Cloudinary
+ * Generate a thumbnail from video content using FFmpeg
  * @param options Thumbnail options
  * @returns Thumbnail result
  */
 export async function generateVideoThumbnail(options: ThumbnailOptions): Promise<ThumbnailResult> {
   try {
     const { contentId, sourceUrl } = options;
+    let thumbnailPath = null;
     
     if (!sourceUrl) {
       throw new Error('No source URL provided for video thumbnail generation');
     }
     
-    console.log(`Generating video thumbnail for content ${contentId} using Cloudinary`);
+    console.log(`Generating video thumbnail for content ${contentId} using FFmpeg`);
     
-    // Get a signed URL for the source if it's an S3 URL
-    let accessibleSourceUrl = sourceUrl;
-    if (sourceUrl.includes('.s3.') || sourceUrl.includes('/api/s3/')) {
-      // Extract actual S3 key from URL
-      let s3Key = sourceUrl;
-      if (sourceUrl.includes('/api/s3/')) {
-        s3Key = sourceUrl.split('/api/s3/').pop() || sourceUrl;
-      } else if (sourceUrl.includes('.amazonaws.com/')) {
-        s3Key = sourceUrl.split('.amazonaws.com/').pop() || sourceUrl;
+    // Clean the source URL and make it accessible to FFmpeg
+    let videoPath = sourceUrl;
+    if (sourceUrl.includes('/api/s3/') || sourceUrl.includes('.amazonaws.com/')) {
+      // Clean up the path for local FFmpeg access
+      videoPath = cleanWorkspacePath(sourceUrl);
+      console.log(`Cleaned video path for FFmpeg: ${videoPath}`);
+    }
+    
+    try {
+      // Generate thumbnail using FFmpeg
+      thumbnailPath = await generateThumbnailFromVideo(videoPath, {
+        width: options.width || 800,
+        height: options.height || 450,
+        timestamps: ['3', '1', '5', '10'] // Try 3s first, then 1s, 5s, and 10s
+      });
+      
+      console.log(`FFmpeg successfully generated thumbnail at: ${thumbnailPath}`);
+      
+      // Read the generated thumbnail
+      const thumbnailBuffer = await fs.readFile(thumbnailPath);
+      const thumbnailS3Key = getThumbnailS3Key(contentId, 'video');
+      
+      // Upload to S3
+      await uploadToS3(thumbnailBuffer, thumbnailS3Key, { contentType: 'image/jpeg' });
+      console.log(`Saved FFmpeg video thumbnail to S3: ${thumbnailS3Key}`);
+      
+      // Clean up temporary files
+      if (thumbnailPath) {
+        await cleanupTempFiles(thumbnailPath);
       }
       
-      // Use public S3 URL for Cloudinary access
-      accessibleSourceUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
-      console.log(`Using public S3 URL for Cloudinary: ${accessibleSourceUrl.substring(0, 100)}...`);
+      return {
+        success: true,
+        thumbnailPath: thumbnailS3Key,
+        contentType: 'image/jpeg',
+        method: 'ffmpeg-video'
+      };
+    } catch (ffmpegError) {
+      console.error('FFmpeg thumbnail generation failed:', ffmpegError);
+      
+      // Clean up temporary files if they exist
+      if (thumbnailPath && await fileExists(thumbnailPath)) {
+        await cleanupTempFiles(thumbnailPath);
+      }
+      
+      throw ffmpegError;
     }
-    
-    // Process with Cloudinary
-    console.log('Starting Cloudinary upload with updated credentials...');
-    const result = await uploadToCloudinary(accessibleSourceUrl, {
-      resourceType: 'video',
-      publicId: `video-${contentId}`,
-      transformation: [
-        { width: 800, height: 450, crop: 'fill' },
-        { start_offset: '0' }
-      ],
-      format: 'jpg'
-    });
-    
-    // Save result to S3
-    const thumbnailUrl = result.eager?.[0]?.secure_url || result.secure_url;
-    console.log(`Downloading Cloudinary result: ${thumbnailUrl}`);
-    
-    const thumbnailResponse = await fetch(thumbnailUrl);
-    if (!thumbnailResponse.ok) {
-      throw new Error(`Failed to download Cloudinary thumbnail: ${thumbnailResponse.status}`);
-    }
-    
-    const thumbnailBuffer = Buffer.from(await thumbnailResponse.arrayBuffer());
-    const thumbnailS3Key = getThumbnailS3Key(contentId, 'video');
-    
-    await uploadToS3(thumbnailBuffer, thumbnailS3Key, { contentType: 'image/jpeg' });
-    console.log(`Saved Cloudinary video thumbnail to S3: ${thumbnailS3Key}`);
-    
-    return {
-      success: true,
-      thumbnailPath: thumbnailS3Key,
-      contentType: 'image/jpeg',
-      method: 'cloudinary-video'
-    };
   } catch (error) {
     console.error('Video thumbnail generation failed:', error);
     throw error;
@@ -160,16 +168,25 @@ export async function generateImageThumbnail(options: ThumbnailOptions): Promise
       const base64Content = base64Data.replace(/^data:image\/\w+;base64,/, '');
       const buffer = Buffer.from(base64Content, 'base64');
       
+      // Process with Sharp to resize
+      const resizedBuffer = await sharp(buffer)
+        .resize(options.width || 800, options.height || 450, {
+          fit: 'cover',
+          position: 'center'
+        })
+        .jpeg({ quality: 90 })
+        .toBuffer();
+      
       // Save directly to S3
       const thumbnailS3Key = getThumbnailS3Key(contentId, 'image');
-      await uploadToS3(buffer, thumbnailS3Key, { contentType: 'image/jpeg' });
-      console.log(`Saved base64 image thumbnail to S3: ${thumbnailS3Key}`);
+      await uploadToS3(resizedBuffer, thumbnailS3Key, { contentType: 'image/jpeg' });
+      console.log(`Saved resized base64 image thumbnail to S3: ${thumbnailS3Key}`);
       
       return {
         success: true,
         thumbnailPath: thumbnailS3Key,
         contentType: 'image/jpeg',
-        method: 'direct-base64'
+        method: 'sharp-base64'
       };
     }
     
@@ -180,57 +197,80 @@ export async function generateImageThumbnail(options: ThumbnailOptions): Promise
     
     console.log(`Generating image thumbnail for content ${contentId} from URL`);
     
-    // Get a signed URL for the source if it's an S3 URL
-    let accessibleSourceUrl = sourceUrl;
-    if (sourceUrl.includes('.s3.') || sourceUrl.includes('/api/s3/')) {
-      // Extract actual S3 key from URL
-      let s3Key = sourceUrl;
-      if (sourceUrl.includes('/api/s3/')) {
-        s3Key = sourceUrl.split('/api/s3/').pop() || sourceUrl;
-      } else if (sourceUrl.includes('.amazonaws.com/')) {
-        s3Key = sourceUrl.split('.amazonaws.com/').pop() || sourceUrl;
-      }
+    // Get a properly formatted image path
+    let imagePath = sourceUrl;
+    let imageBuffer: Buffer;
+    
+    if (sourceUrl.includes('/api/s3/') || sourceUrl.includes('.amazonaws.com/')) {
+      // For S3 URLs, try to get a local filesystem path
+      imagePath = cleanWorkspacePath(sourceUrl);
+      console.log(`Cleaned image path: ${imagePath}`);
       
-      // Get a signed URL that Cloudinary can access
       try {
-        accessibleSourceUrl = await getSignedS3Url(s3Key);
-        console.log(`Got signed S3 URL for image: ${accessibleSourceUrl.substring(0, 100)}...`);
-      } catch (s3Error) {
-        console.warn(`Could not get signed URL, using original: ${s3Error.message}`);
+        // Try to read directly from filesystem
+        imageBuffer = await fs.readFile(imagePath);
+        console.log(`Successfully read image from filesystem: ${imagePath}`);
+      } catch (error) {
+        const fsError = error as Error;
+        console.log(`Couldn't read from filesystem, fetching from URL: ${fsError.message}`);
+        
+        // If local file access fails, try to get a signed URL
+        try {
+          const s3Key = sourceUrl.split('/api/s3/').pop() || 
+                        sourceUrl.split('.amazonaws.com/').pop() || 
+                        sourceUrl;
+          
+          const signedUrl = await getSignedS3Url(s3Key);
+          console.log(`Got signed S3 URL for image: ${signedUrl.substring(0, 100)}...`);
+          
+          const response = await fetch(signedUrl);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch image: ${response.status}`);
+          }
+          
+          imageBuffer = Buffer.from(await response.arrayBuffer());
+          console.log(`Successfully fetched image from signed URL`);
+        } catch (urlError) {
+          console.error(`Failed to get image from S3:`, urlError);
+          throw urlError;
+        }
+      }
+    } else {
+      // For external URLs, fetch directly
+      try {
+        const response = await fetch(sourceUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch image: ${response.status}`);
+        }
+        
+        imageBuffer = Buffer.from(await response.arrayBuffer());
+        console.log(`Successfully fetched image from URL: ${sourceUrl}`);
+      } catch (fetchError) {
+        console.error(`Failed to fetch image from URL:`, fetchError);
+        throw fetchError;
       }
     }
     
-    // Process with Cloudinary for resizing/optimization
-    console.log('Processing image with Cloudinary...');
-    const result = await uploadToCloudinary(accessibleSourceUrl, {
-      resourceType: 'image',
-      publicId: `image-${contentId}`,
-      transformation: [
-        { width: 800, height: 450, crop: 'fill' }
-      ],
-      format: 'jpg'
-    });
+    // Process with Sharp for resizing/optimization
+    console.log('Processing image with Sharp...');
+    const resizedBuffer = await sharp(imageBuffer)
+      .resize(options.width || 800, options.height || 450, {
+        fit: 'cover',
+        position: 'center'
+      })
+      .jpeg({ quality: 90 })
+      .toBuffer();
     
-    // Save result to S3
-    const thumbnailUrl = result.secure_url;
-    console.log(`Downloading Cloudinary result: ${thumbnailUrl}`);
-    
-    const thumbnailResponse = await fetch(thumbnailUrl);
-    if (!thumbnailResponse.ok) {
-      throw new Error(`Failed to download Cloudinary image: ${thumbnailResponse.status}`);
-    }
-    
-    const thumbnailBuffer = Buffer.from(await thumbnailResponse.arrayBuffer());
+    // Save to S3
     const thumbnailS3Key = getThumbnailS3Key(contentId, 'image');
-    
-    await uploadToS3(thumbnailBuffer, thumbnailS3Key, { contentType: 'image/jpeg' });
-    console.log(`Saved Cloudinary image thumbnail to S3: ${thumbnailS3Key}`);
+    await uploadToS3(resizedBuffer, thumbnailS3Key, { contentType: 'image/jpeg' });
+    console.log(`Saved Sharp-processed image thumbnail to S3: ${thumbnailS3Key}`);
     
     return {
       success: true,
       thumbnailPath: thumbnailS3Key,
       contentType: 'image/jpeg',
-      method: 'cloudinary-image'
+      method: 'sharp-image'
     };
   } catch (error) {
     console.error('Image thumbnail generation failed:', error);
@@ -279,4 +319,15 @@ export async function generatePlaceholderThumbnail(options: ThumbnailOptions): P
     console.error('Placeholder thumbnail generation failed:', error);
     throw error;
   }
+}
+
+/**
+ * Get YouTube thumbnail URL
+ * @param youtubeId YouTube video ID
+ * @param quality Thumbnail quality ('maxresdefault', 'hqdefault', 'mqdefault', 'default')
+ * @returns YouTube thumbnail URL
+ */
+export function getYouTubeThumbnailUrl(youtubeId: string | null, quality: string = 'maxresdefault'): string | null {
+  if (!youtubeId) return null;
+  return `https://img.youtube.com/vi/${youtubeId}/${quality}.jpg`;
 }

@@ -10,10 +10,13 @@ import {
   generateYouTubeThumbnail,
   generateVideoThumbnail,
   generateImageThumbnail,
-  generatePlaceholderThumbnail
+  generatePlaceholderThumbnail,
+  getYouTubeThumbnailUrl
 } from './generators';
-import { getSignedS3Url, getThumbnailS3Key, getS3ResourcePath } from './storage';
-import { configureCloudinary, testCloudinaryConnection, extractYouTubeVideoId } from './cloudinary';
+import { getSignedS3Url, getThumbnailS3Key, getS3ResourcePath, checkIfObjectExists } from './storage';
+import { extractYouTubeVideoId } from './youtube';
+import { fileExists } from './ffmpeg';
+import fs from 'fs/promises';
 
 /**
  * Generate a thumbnail for the provided content
@@ -37,9 +40,6 @@ export async function generateThumbnail(options: ThumbnailOptions): Promise<Thum
     
     console.log(`Generating thumbnail for content ID ${contentId}, type: ${contentType}`);
     console.log(`Source URL: ${sourceUrl || 'none'}, YouTube ID: ${youtubeId || 'none'}`);
-    
-    // First, ensure Cloudinary is configured
-    configureCloudinary();
     
     // If placeholders are explicitly requested, generate them right away
     if (generatePlaceholder) {
@@ -71,10 +71,10 @@ export async function generateThumbnail(options: ThumbnailOptions): Promise<Thum
       if (sourceUrl) {
         try {
           if (contentType === 'video') {
-            console.log('Using video thumbnail strategy');
+            console.log('Using FFmpeg video thumbnail strategy');
             return await generateVideoThumbnail(options);
           } else if (contentType === 'image') {
-            console.log('Using image thumbnail strategy');
+            console.log('Using Sharp image thumbnail strategy');
             return await generateImageThumbnail(options);
           }
         } catch (mediaError) {
@@ -164,12 +164,12 @@ export async function thumbnailExists(contentId: number, contentType?: string): 
  * @returns Test results
  */
 export async function testService(): Promise<{
-  cloudinary: any;
+  ffmpeg: any;
   thumbnail: any;
 }> {
   try {
-    // Test Cloudinary connection
-    const cloudinaryTest = await testCloudinaryConnection();
+    // Test FFmpeg availability
+    const ffmpegTest = await testFFmpegAvailability();
     
     // Test placeholder generation
     let thumbnailTest;
@@ -184,13 +184,46 @@ export async function testService(): Promise<{
     }
     
     return {
-      cloudinary: cloudinaryTest,
+      ffmpeg: ffmpegTest,
       thumbnail: thumbnailTest
     };
   } catch (error) {
     return {
-      cloudinary: { success: false, error },
+      ffmpeg: { success: false, error },
       thumbnail: { success: false, error }
+    };
+  }
+}
+
+/**
+ * Test if FFmpeg is available on the system
+ * @returns Test result
+ */
+export async function testFFmpegAvailability(): Promise<{
+  success: boolean;
+  message: string;
+  details?: any;
+}> {
+  try {
+    const { execFile } = require('child_process');
+    const { promisify } = require('util');
+    const execFilePromise = promisify(execFile);
+    
+    // Run ffmpeg -version to check if it's available
+    const { stdout } = await execFilePromise('ffmpeg', ['-version']);
+    
+    return {
+      success: true,
+      message: 'FFmpeg is available',
+      details: {
+        version: stdout.split('\n')[0]
+      }
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `FFmpeg is not available: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      details: error
     };
   }
 }
@@ -198,12 +231,14 @@ export async function testService(): Promise<{
 // Re-export types and sub-modules for direct access
 export * from './types';
 export * as storage from './storage';
-export * as cloudinary from './cloudinary';
+export * as youtube from './youtube';
 export * as generators from './generators';
+export * as ffmpeg from './ffmpeg';
 
 // Re-export commonly used functions directly for simpler imports
-export { extractYouTubeVideoId, testCloudinaryConnection, configureCloudinary } from './cloudinary';
+export { extractYouTubeVideoId } from './youtube';
 export { getSignedS3Url, getThumbnailS3Key, getS3ResourcePath, checkIfObjectExists } from './storage';
+export { cleanWorkspacePath, generateThumbnailFromVideo } from './ffmpeg';
 
 // Default export for backward compatibility
 export default {
@@ -211,12 +246,12 @@ export default {
   getThumbnailUrl,
   thumbnailExists,
   testService,
+  testFFmpegAvailability,
   
   // Commonly used functions from sub-modules
   extractYouTubeVideoId,
   getSignedS3Url,
   getThumbnailS3Key,
   getS3ResourcePath,
-  configureCloudinary,
-  testCloudinaryConnection
+  getYouTubeThumbnailUrl
 };

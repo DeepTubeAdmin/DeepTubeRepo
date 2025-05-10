@@ -24,16 +24,16 @@ export interface ThumbnailResult {
   thumbnailPath: string; // S3 key for the thumbnail
   contentType: string; // MIME type
   url?: string; // Fully qualified URL (if available)
-  method: string; // How the thumbnail was generated ('youtube', 'cloudinary', 'placeholder', etc.)
+  method: string; // How the thumbnail was generated ('youtube', 'ffmpeg', 'sharp', 'placeholder', etc.)
   error?: any; // Error object if generation failed
 }
 
-// Cloudinary specific options
-export interface CloudinaryOptions {
-  resourceType?: 'image' | 'video' | 'auto';
-  transformation?: any[];
-  format?: string;
-  publicId?: string;
+// FFmpeg options
+export interface FFmpegOptions {
+  width?: number;
+  height?: number;
+  timestamps?: string[];
+  quality?: number;
 }
 
 // S3 storage options

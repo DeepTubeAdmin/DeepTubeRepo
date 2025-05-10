@@ -7,7 +7,7 @@ import { randomBytes } from "crypto";
 import { sendPasswordResetEmail } from "./sendgrid";
 import { z } from "zod";
 import { insertCategorySchema, insertVideoSchema, type Video, type Category, type InsertLike } from "@shared/schema";
-import * as youtubeUtils from "./youtubeUtils";
+import * as localYoutubeUtils from "./youtubeUtils";
 // Vimeo service no longer used as we've migrated to S3
 import multer from "multer";
 import path from "path";
@@ -16,9 +16,7 @@ import fsSync from "fs";
 import { fileURLToPath } from 'url';
 import thumbnailService from "./services/ThumbnailService";
 // Import specific utilities from their respective modules
-import { cloudinary as cloudinaryUtils, storage as s3Service } from "./services/ThumbnailService";
-// Directly import the cloudinary SDK
-import { v2 as cloudinarySdk } from 'cloudinary';
+import { youtube as youtubeUtils, storage as s3Service, ffmpeg as ffmpegUtils } from "./services/ThumbnailService";
 import { asc, desc, eq, like, and, sql, or, SQL, inArray } from 'drizzle-orm';
 import { videos } from '@shared/schema';
 import { db } from './db';
@@ -1169,41 +1167,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cache all categories to avoid multiple DB calls
   let cachedCategories: Category[] = [];
 
-  // Simple test endpoint for Cloudinary
-  app.get('/api/test-cloudinary', async (req, res) => {
+  // Simple test endpoint for FFmpeg
+  app.get('/api/test-ffmpeg', async (req, res) => {
     try {
-      console.log('Testing Cloudinary configuration');
-      console.log(`Cloud name: ${process.env.CLOUDINARY_CLOUD_NAME}`);
-      console.log(`API key length: ${process.env.CLOUDINARY_API_KEY?.length || 0} chars`);
-      console.log(`API secret length: ${process.env.CLOUDINARY_API_SECRET?.length || 0} chars`);
+      console.log('Testing FFmpeg availability');
       
-      // Create a simple transformation URL
-      const testUrl = cloudinary.url('sample', {
-        width: 300,
-        height: 200,
-        crop: 'fill',
-        format: 'jpg',
-        sign_url: true
-      });
+      // Test FFmpeg availability
+      const ffmpegTest = await thumbnailService.testFFmpegAvailability();
       
-      console.log(`Generated test URL: ${testUrl}`);
-      
-      // Try to fetch the test image
-      const response = await fetch(testUrl);
-      const success = response.ok;
-      const status = response.status;
+      console.log(`FFmpeg test result: ${ffmpegTest.success ? 'Success' : 'Failed'}`);
+      console.log(`Message: ${ffmpegTest.message}`);
       
       // Return the test results
       return res.json({
-        success,
-        status,
-        cloudName: process.env.CLOUDINARY_CLOUD_NAME,
-        apiKeyProvided: Boolean(process.env.CLOUDINARY_API_KEY),
-        apiSecretProvided: Boolean(process.env.CLOUDINARY_API_SECRET),
-        testUrl: success ? testUrl : null
+        success: ffmpegTest.success,
+        message: ffmpegTest.message,
+        details: ffmpegTest.details,
+        timestamp: new Date().toISOString()
       });
     } catch (error) {
-      console.error('Cloudinary test error:', error);
+      console.error('FFmpeg test error:', error);
       res.status(500).json({
         success: false,
         error: String(error)
