@@ -2,20 +2,22 @@
  * YouTube utilities for ThumbnailService
  */
 
+import fetch from 'node-fetch';
+import fs from 'fs/promises';
+import path from 'path';
+
 /**
  * Extract YouTube video ID from a URL
  * @param url YouTube URL
- * @returns YouTube video ID or null if not found
+ * @returns YouTube video ID or null
  */
-export function extractYouTubeVideoId(url: string | null): string | null {
+export function extractYouTubeVideoId(url: string): string | null {
   if (!url) return null;
   
-  // Match various YouTube URL formats
+  // YouTube URL patterns
   const patterns = [
-    /(?:youtube\.com\/vi\/|img\.youtube\.com\/vi\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/user\/\w+\/\w+\/|youtube\.com\/attribution_link\?a=\w+&u=\/watch\?v=)([^#&?]*).*/,
+    /(?:youtube.com\/shorts\/)([^#&?]*).*/
   ];
   
   for (const pattern of patterns) {
@@ -29,51 +31,50 @@ export function extractYouTubeVideoId(url: string | null): string | null {
 }
 
 /**
- * YouTube thumbnail quality options
- */
-type YouTubeThumbnailQuality = 'default' | 'hqdefault' | 'mqdefault' | 'sddefault' | 'maxresdefault';
-
-/**
- * Get YouTube thumbnail URL for a video ID
+ * Get YouTube thumbnail URL
  * @param youtubeId YouTube video ID
- * @param quality Thumbnail quality (default, hqdefault, mqdefault, sddefault, maxresdefault)
+ * @param quality Thumbnail quality ('maxresdefault', 'hqdefault', 'mqdefault', 'default')
  * @returns YouTube thumbnail URL
  */
-export function getYouTubeThumbnailUrl(youtubeId: string | null, quality: string = 'hqdefault'): string | null {
+export function getYouTubeThumbnailUrl(youtubeId: string | null, quality: string = 'maxresdefault'): string | null {
   if (!youtubeId) return null;
-  
-  // Ensure quality is a valid option
-  const validQualities: YouTubeThumbnailQuality[] = ['default', 'hqdefault', 'mqdefault', 'sddefault', 'maxresdefault'];
-  const thumbnailQuality = validQualities.includes(quality as YouTubeThumbnailQuality) 
-    ? quality 
-    : 'hqdefault';
-  
-  return `https://img.youtube.com/vi/${youtubeId}/${thumbnailQuality}.jpg`;
+  return `https://img.youtube.com/vi/${youtubeId}/${quality}.jpg`;
 }
 
 /**
- * Download a YouTube thumbnail
+ * Download a YouTube thumbnail to a local file
  * @param youtubeId YouTube video ID
+ * @param outputPath Path to save the thumbnail
  * @param quality Thumbnail quality
- * @returns The thumbnail binary data or null if an error occurred
+ * @returns Whether the download was successful
  */
-export async function downloadYouTubeThumbnail(youtubeId: string | null, quality: string = 'hqdefault'): Promise<Buffer | null> {
-  if (!youtubeId) return null;
-  
-  const thumbnailUrl = getYouTubeThumbnailUrl(youtubeId, quality);
-  if (!thumbnailUrl) return null;
-  
+export async function downloadYouTubeThumbnail(
+  youtubeId: string,
+  outputPath: string,
+  quality: string = 'maxresdefault'
+): Promise<boolean> {
   try {
-    const response = await fetch(thumbnailUrl);
+    const url = getYouTubeThumbnailUrl(youtubeId, quality);
+    if (!url) return false;
+    
+    const response = await fetch(url);
     if (!response.ok) {
-      console.error(`Failed to download YouTube thumbnail: ${response.status} ${response.statusText}`);
-      return null;
+      console.error(`Failed to download YouTube thumbnail: ${response.status}`);
+      return false;
     }
     
-    const arrayBuffer = await response.arrayBuffer();
-    return Buffer.from(arrayBuffer);
+    const buffer = Buffer.from(await response.arrayBuffer());
+    
+    // Ensure output directory exists
+    const dir = path.dirname(outputPath);
+    await fs.mkdir(dir, { recursive: true });
+    
+    // Write the thumbnail file
+    await fs.writeFile(outputPath, buffer);
+    
+    return true;
   } catch (error) {
     console.error('Error downloading YouTube thumbnail:', error);
-    return null;
+    return false;
   }
 }

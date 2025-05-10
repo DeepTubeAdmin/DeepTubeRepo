@@ -111,26 +111,42 @@ export async function generateVideoThumbnail(options: ThumbnailOptions): Promise
     }
     
     try {
+      // Create a temporary output path for the thumbnail
+      const tempOutputPath = path.join(
+        path.dirname(videoPath), 
+        `thumb-${Date.now()}-${contentId}.jpg`
+      );
+      
       // Generate thumbnail using FFmpeg
-      thumbnailPath = await generateThumbnailFromVideo(videoPath, {
-        width: options.width || 800,
-        height: options.height || 450,
-        timestamps: ['3', '1', '5', '10'] // Try 3s first, then 1s, 5s, and 10s
-      });
+      const success = await generateThumbnailFromVideo(
+        videoPath,
+        tempOutputPath,
+        {
+          width: options.width || 800,
+          height: options.height || 450,
+          timestamps: ['00:00:03', '00:00:01', '00:00:05', '00:00:10'] // Try different timestamps
+        }
+      );
+      
+      if (success) {
+        thumbnailPath = tempOutputPath;
+      }
       
       console.log(`FFmpeg successfully generated thumbnail at: ${thumbnailPath}`);
       
       // Read the generated thumbnail
-      const thumbnailBuffer = await fs.readFile(thumbnailPath);
-      const thumbnailS3Key = getThumbnailS3Key(contentId, 'video');
-      
-      // Upload to S3
-      await uploadToS3(thumbnailBuffer, thumbnailS3Key, { contentType: 'image/jpeg' });
-      console.log(`Saved FFmpeg video thumbnail to S3: ${thumbnailS3Key}`);
-      
-      // Clean up temporary files
       if (thumbnailPath) {
-        await cleanupTempFiles(thumbnailPath);
+        const thumbnailBuffer = await fs.readFile(thumbnailPath);
+        const thumbnailS3Key = getThumbnailS3Key(contentId, 'video');
+        
+        // Upload to S3
+        await uploadToS3(thumbnailBuffer, thumbnailS3Key, { contentType: 'image/jpeg' });
+        console.log(`Saved FFmpeg video thumbnail to S3: ${thumbnailS3Key}`);
+        
+        // Clean up temporary files
+        await cleanupTempFiles([thumbnailPath]);
+      } else {
+        throw new Error('Failed to generate thumbnail with FFmpeg');
       }
       
       return {

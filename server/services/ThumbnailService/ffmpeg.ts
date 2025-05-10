@@ -3,13 +3,13 @@
  */
 
 import { FFmpegOptions } from './types';
-import { exec } from 'child_process';
+import { exec as cpExec } from 'child_process';
 import util from 'util';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const execPromisified = util.promisify(exec);
+const execPromisified = util.promisify(cpExec);
 
 // Get the current directory
 const __filename = fileURLToPath(import.meta.url);
@@ -136,27 +136,50 @@ export async function testFFmpegAvailability(): Promise<{
   message: string;
   details?: {
     version?: string;
+    path?: string;
   };
 }> {
   try {
-    // Try to execute FFmpeg version command
-    const { stdout } = await execPromisified('ffmpeg -version');
+    // Use shell check for ffmpeg availability
+    const { stdout, stderr } = await execPromisified('which ffmpeg || echo "not found"');
     
-    // Parse version from output
-    const versionMatch = stdout.match(/ffmpeg version (\S+)/);
-    const version = versionMatch ? versionMatch[1] : 'unknown';
+    const ffmpegPath = stdout.trim();
+    if (ffmpegPath === 'not found') {
+      return {
+        success: false,
+        message: 'FFmpeg executable not found in PATH',
+        details: { }
+      };
+    }
     
-    return {
-      success: true,
-      message: 'FFmpeg is available',
-      details: {
-        version
-      }
-    };
+    // Now try to get the version
+    try {
+      const versionResult = await execPromisified('ffmpeg -version');
+      const versionMatch = versionResult.stdout.match(/ffmpeg version (\S+)/);
+      const version = versionMatch ? versionMatch[1] : 'unknown';
+      
+      return {
+        success: true,
+        message: `FFmpeg is available at ${ffmpegPath}`,
+        details: {
+          version,
+          path: ffmpegPath
+        }
+      };
+    } catch (versionError) {
+      return {
+        success: true,
+        message: `FFmpeg found at ${ffmpegPath} but couldn't get version info`,
+        details: {
+          path: ffmpegPath
+        }
+      };
+    }
   } catch (error) {
     return {
       success: false,
-      message: `FFmpeg is not available: ${error instanceof Error ? error.message : String(error)}`
+      message: `Error checking FFmpeg: ${error instanceof Error ? error.message : String(error)}`,
+      details: { }
     };
   }
 }
