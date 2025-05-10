@@ -24,6 +24,7 @@ import { videos } from '@shared/schema';
 import { db } from './db';
 // Thumbnail routes now integrated directly
 import mongoDb from "./mongodb";
+import { handleEmbedRequest } from "./embed";
 import {
   getSignedS3Url,
   uploadFileToS3,
