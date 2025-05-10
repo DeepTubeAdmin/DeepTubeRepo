@@ -310,12 +310,27 @@ export default function MediaDetail() {
     } else if (media && media.contentType === 'image') {
       // For images, create an image with link
       return `<a href="${mediaUrl}" target="_blank"><img src="${media.imageUrl}" alt="${title}" style="max-width: 100%; height: auto;" /></a>`;
-    } else if (media && media.contentType === 'embed' && media.youtubeId) {
-      // For YouTube embeds, use the YouTube embed code
-      return `<iframe width="560" height="315" src="https://www.youtube.com/embed/${media.youtubeId}" frameborder="0" allowfullscreen></iframe>`;
-    } else if (media && media.contentType === 'embed' && media.vimeoId) {
-      // For Vimeo embeds, use the Vimeo embed code
-      return `<iframe src="https://player.vimeo.com/video/${media.vimeoId}" width="560" height="315" frameborder="0" allowfullscreen></iframe>`;
+    } else if (media && media.contentType === 'embed') {
+      // For YouTube embeds - detect from embedCode field or URL pattern
+      const embedHtml = media.embedCode;
+      
+      if (embedHtml && embedHtml.includes('youtube.com/embed/')) {
+        // Extract YouTube ID from existing embed code
+        const youtubeMatch = embedHtml.match(/youtube\.com\/embed\/([^"&?\/\s]+)/);
+        if (youtubeMatch && youtubeMatch[1]) {
+          return `<iframe width="560" height="315" src="https://www.youtube.com/embed/${youtubeMatch[1]}" frameborder="0" allowfullscreen></iframe>`;
+        }
+      }
+      
+      // For Vimeo embeds - use vimeoId property directly
+      if (media.vimeoId) {
+        return `<iframe src="https://player.vimeo.com/video/${media.vimeoId}" width="560" height="315" frameborder="0" allowfullscreen></iframe>`;
+      }
+      
+      // If we have an embed code, return it directly
+      if (embedHtml) {
+        return embedHtml;
+      }
     }
     
     // Default fallback - link with title
