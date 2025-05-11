@@ -2,6 +2,15 @@ import { Video } from "@shared/schema";
 import express, { Request, Response } from "express";
 import { storage as dbStorage } from './storage';
 
+/**
+ * Helper function to get category ID from slug
+ */
+async function getCategoryId(slug: string): Promise<number | undefined> {
+  const categories = await dbStorage.getCategories();
+  const category = categories.find(c => c.slug === slug);
+  return category?.id;
+}
+
 // Variable to store cache of content response
 let contentCache: { [key: string]: any } = {};
 // Variable to store cached categories
@@ -132,52 +141,44 @@ export async function handleContentFeed(req: Request, res: Response) {
       console.log(`Using randomized shuffle ordering for trending with seed: ${shuffleSeed}`);
       const trendingVideos = await dbStorage.getTrendingVideos(
         videoLimit, 
-        categorySlug, 
-        shuffle ? shuffleSeed : '', 
-        'video'
+        'video',
+        shuffle ? shuffleSeed : undefined
       );
       console.log(`Retrieved ${trendingVideos.length} trending videos. First few IDs: [ ${trendingVideos.slice(0, 3).map((v: Video) => v.id).join(', ')} ]`);
       
       // Get new videos
-      const newVideos = await dbStorage.getVideos({
-        sortBy: 'newest',
-        limit: videoLimit,
-        contentType: 'video',
-        category: categorySlug,
-        shuffle: shuffle,
-        shuffleSeed: shuffleSeed,
-        offset: 0
-      });
+      const newVideos = await dbStorage.getVideos(
+        videoLimit,
+        'video',
+        categorySlug ? await getCategoryId(categorySlug) : undefined,
+        'newest',
+        shuffleSeed
+      );
       
       // Get popular videos (most viewed)
-      const popularVideos = await dbStorage.getVideos({
-        sortBy: 'most-viewed',
-        limit: videoLimit,
-        contentType: 'video',
-        category: categorySlug,
-        shuffle: shuffle,
-        shuffleSeed: shuffleSeed,
-        offset: 0
-      });
+      const popularVideos = await dbStorage.getVideos(
+        videoLimit,
+        'video',
+        categorySlug ? await getCategoryId(categorySlug) : undefined,
+        'most-viewed',
+        shuffleSeed
+      );
       
       // Get trending images
       const trendingImages = await dbStorage.getTrendingVideos(
         imageLimit, 
-        categorySlug, 
-        shuffle ? shuffleSeed : '', 
-        'image'
+        'image',
+        shuffle ? shuffleSeed : undefined
       );
       
       // Get new images
-      const newImages = await dbStorage.getVideos({
-        sortBy: 'newest',
-        limit: imageLimit,
-        contentType: 'image',
-        category: categorySlug,
-        shuffle: shuffle,
-        shuffleSeed: shuffleSeed,
-        offset: 0
-      });
+      const newImages = await dbStorage.getVideos(
+        imageLimit,
+        'image',
+        categorySlug ? await getCategoryId(categorySlug) : undefined,
+        'newest',
+        shuffleSeed
+      );
       
       // Combine everything with de-duplication
       videos = mergeAndDeduplicate([...trendingVideos, ...newVideos, ...popularVideos], uniqueContentIds);
