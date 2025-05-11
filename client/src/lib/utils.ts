@@ -14,17 +14,7 @@ export function calculatePrice(credits: number): string {
   return `$${price}`;
 }
 
-export function extractVideoId(vimeoUrl: string | null): string | null {
-  if (!vimeoUrl) return null;
-  
-  // Match patterns like:
-  // https://vimeo.com/123456789
-  // https://player.vimeo.com/video/123456789
-  const regex = /(?:vimeo\.com\/|player\.vimeo\.com\/video\/)([0-9]+)/;
-  const match = vimeoUrl.match(regex);
-  
-  return match ? match[1] : null;
-}
+// Vimeo support has been removed
 
 // Extract YouTube video ID from various YouTube URL formats
 export function extractYoutubeVideoId(url: string): string | null {

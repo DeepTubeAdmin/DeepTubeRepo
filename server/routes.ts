@@ -1695,93 +1695,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Endpoint '/api/admin/regenerate-video-thumbnails' removed as requested
   
-  // Test endpoint for checking Cloudinary connectivity
-  app.get('/api/test-cloudinary', async (req, res) => {
-    try {
-      // Use the new unified ThumbnailService
-      console.log('Running Cloudinary connection test...');
-      const testResults = await thumbnailService.testCloudinaryConnection();
-      
-      // Get the actual configured cloud name from Cloudinary
-      const { v2: cloudinary } = await import('cloudinary');
-      const config = cloudinary.config();
-      
-      // Return results with additional information
-      return res.json({
-        ...testResults,
-        configuredCloudName: config.cloud_name,
-        rawCloudNameEnv: process.env.CLOUDINARY_CLOUD_NAME,
-        apiKeyProvided: !!process.env.CLOUDINARY_API_KEY,
-        apiSecretProvided: !!process.env.CLOUDINARY_API_SECRET,
-        timestamp: new Date().toISOString()
-      });
-    } catch (error: any) {
-      console.error('Error running Cloudinary test:', error);
-      return res.status(500).json({ 
-        success: false, 
-        error: error.message || 'Unknown error' 
-      });
-    }
-  });
+  // Cloudinary test endpoints removed
   
-  // Test endpoint that actually uploads a test image to Cloudinary
-  app.get('/api/test-cloudinary-upload', async (req, res) => {
-    try {
-      // Get the actual configured cloud name from Cloudinary
-      const { v2: cloudinary } = await import('cloudinary');
-      const config = cloudinary.config();
-      
-      // Run the upload test
-      console.log('Running Cloudinary upload test...');
-      console.log(`Using cloud_name: ${config.cloud_name}`);
-      
-      // Use our new ThumbnailService for testing
-      const testResults = await thumbnailService.testService();
-      
-      // Parse CLOUDINARY_URL if available
-      let parsedCloudinaryUrl = null;
-      if (process.env.CLOUDINARY_URL) {
-        try {
-          const cloudinaryUrl = process.env.CLOUDINARY_URL;
-          const cloudinaryRegex = /^cloudinary:\/\/([^:]+):([^@]+)@(.+)$/;
-          const match = cloudinaryUrl.match(cloudinaryRegex);
-          
-          if (match) {
-            parsedCloudinaryUrl = {
-              apiKey: match[1],
-              cloudName: match[3]
-            };
-          }
-        } catch (error) {
-          console.error('Error parsing CLOUDINARY_URL in test endpoint:', error);
-        }
-      }
-      
-      // Return results with additional information
-      return res.json({
-        ...testResults,
-        configuredCloudName: config.cloud_name,
-        rawCloudNameEnv: process.env.CLOUDINARY_CLOUD_NAME,
-        apiKeyProvided: !!process.env.CLOUDINARY_API_KEY,
-        apiSecretProvided: !!process.env.CLOUDINARY_API_SECRET,
-        hasCloudinaryUrl: !!process.env.CLOUDINARY_URL,
-        cloudinaryUrlValid: !!parsedCloudinaryUrl,
-        cloudinaryUrlParsedName: parsedCloudinaryUrl?.cloudName || null,
-        activeCloudinaryConfig: {
-          cloudName: config.cloud_name,
-          hasApiKey: !!config.api_key,
-          hasApiSecret: !!config.api_secret
-        },
-        timestamp: new Date().toISOString()
-      });
-    } catch (error: any) {
-      console.error('Error running Cloudinary upload test:', error);
-      return res.status(500).json({ 
-        success: false, 
-        error: error.message || 'Unknown error' 
-      });
-    }
-  });
+  // Cloudinary test endpoints removed
   
   // New dedicated endpoint to test Cloudinary URL format
   app.get('/api/test-cloudinary-url', async (req, res) => {
