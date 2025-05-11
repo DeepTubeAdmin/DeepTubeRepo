@@ -23,6 +23,7 @@ import ResetPassword from "@/pages/reset-password";
 import { AuthProvider } from "@/hooks/use-auth";
 import Layout from "@/components/Layout";
 import AgeVerificationModal from "@/components/AgeVerificationModal";
+import AdSenseInitializer from "@/components/AdSenseInitializer";
 
 // Create a context for shuffle functionality
 export const ShuffleContext = createContext<{
@@ -114,6 +115,8 @@ function App() {
         <ShuffleContext.Provider value={{ shuffleSeed, triggerShuffle }}>
           <TooltipProvider>
             <div className="bg-background">
+              {/* Initialize AdSense when the app loads */}
+              <AdSenseInitializer />
               <Toaster />
               <AgeVerificationModal 
                 isOpen={showAgeVerification}

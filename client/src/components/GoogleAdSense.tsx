@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
+import { adsenseConfig } from '../config/adsense';
 
 interface GoogleAdSenseProps {
   className?: string;
@@ -21,10 +22,15 @@ export default function GoogleAdSense({
   responsive = true,
   style = {}
 }: GoogleAdSenseProps) {
-  // We use a useEffect hook to initialize ads, no ref needed
-  const clientId = import.meta.env.VITE_GOOGLE_ADSENSE_CLIENT_ID;
+  const clientId = adsenseConfig.clientId;
+  const isConfigured = adsenseConfig.isConfigured();
   
   useEffect(() => {
+    // Only run if AdSense is properly configured
+    if (!isConfigured) {
+      return;
+    }
+    
     try {
       // Initialize adsbygoogle if it doesn't exist
       if (!window.adsbygoogle) {
@@ -34,25 +40,20 @@ export default function GoogleAdSense({
       // Push the ad to the queue for processing
       window.adsbygoogle.push({});
       
-      console.log('AdSense ad pushed to queue');
+      console.log(`AdSense ad pushed to queue with slot: ${slot}`);
     } catch (error) {
       console.error('Error initializing AdSense ad:', error);
     }
-    
-    // Cleanup function (if needed)
-    return () => {
-      // Any cleanup needed when component unmounts
-    };
-  }, []);
+  }, [slot, isConfigured]);
   
   // If client ID is not available, show a placeholder
-  if (!clientId) {
+  if (!isConfigured) {
     return (
       <div 
         className={`bg-gray-800 text-white flex items-center justify-center text-sm p-4 ${className}`}
         style={style}
       >
-        <p>AdSense Client ID not configured</p>
+        <p>AdSense not yet configured</p>
       </div>
     );
   }
