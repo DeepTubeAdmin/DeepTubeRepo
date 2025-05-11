@@ -3186,26 +3186,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Messaging API endpoints
   app.post("/api/messages", isAuthenticated, async (req, res) => {
     try {
+      console.log("Message sending attempt received");
       ensureUser(req);
+      console.log("User authenticated:", req.user.id);
       
       const { receiverId, content } = req.body;
+      console.log("Message data:", { receiverId, content, senderUserId: req.user.id });
+      
       if (!receiverId || !content) {
+        console.log("Missing required fields");
         return res.status(400).json({ error: "Receiver ID and content are required" });
       }
       
       // Check if receiver exists
+      console.log("Looking up receiver with ID:", receiverId);
       const receiver = await dbStorage.getUser(receiverId);
       if (!receiver) {
+        console.log("Receiver not found:", receiverId);
         return res.status(404).json({ error: "Receiver not found" });
       }
+      console.log("Receiver found:", receiver.username);
       
       // Create message
-      const message = await dbStorage.createMessage({
+      console.log("Creating message in database");
+      const messageData: InsertMessage = {
         senderId: req.user.id,
         receiverId,
         content,
         read: false
-      });
+      };
+      
+      const message = await dbStorage.createMessage(messageData);
+      console.log("Message created successfully with ID:", message.id);
       
       // Add sender username to the response
       const messageWithUsername = {
@@ -3216,6 +3228,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(messageWithUsername);
     } catch (error) {
       console.error("Error sending message:", error);
+      if (error instanceof Error) {
+        console.error("Error details:", error.message, error.stack);
+      }
       res.status(500).json({ error: "Failed to send message" });
     }
   });
