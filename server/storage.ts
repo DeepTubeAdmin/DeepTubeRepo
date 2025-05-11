@@ -81,8 +81,8 @@ export interface IStorage {
   // View tracking operations
   incrementViews(videoId: number): Promise<number>;
   getMostViewedVideos(limit?: number, contentType?: string): Promise<Video[]>;
-  getTrendingVideos(limit?: number, contentType?: string): Promise<Video[]>;
-  getPopularVideos(limit?: number, contentType?: string): Promise<Video[]>;
+  getTrendingVideos(limit?: number, contentType?: string, shuffleSeed?: string, categoryId?: number): Promise<Video[]>;
+  getPopularVideos(limit?: number, contentType?: string, shuffleSeed?: string, categoryId?: number): Promise<Video[]>;
   
   // Messaging operations
   createMessage(message: InsertMessage): Promise<Message>;
@@ -928,7 +928,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async getTrendingVideos(limit: number = 20, contentType?: string, shuffleSeed?: string): Promise<Video[]> {
+  async getTrendingVideos(limit: number = 20, contentType?: string, shuffleSeed?: string, categoryId?: number): Promise<Video[]> {
     try {
       // Start with base query
       let queryBuilder = db.select().from(videos);
@@ -940,6 +940,12 @@ export class DatabaseStorage implements IStorage {
       if (contentType) {
         conditions.push(eq(videos.contentType, contentType));
         console.log(`Filtering trending by contentType: "${contentType}"`);
+      }
+      
+      // Add category filter if specified
+      if (categoryId) {
+        conditions.push(eq(videos.categoryId, categoryId));
+        console.log(`Filtering trending by categoryId: ${categoryId}`);
       }
       
       // Add visibility filter - only show approved content or YouTube embeds
@@ -989,7 +995,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async getPopularVideos(limit: number = 20, contentType?: string, shuffleSeed?: string): Promise<Video[]> {
+  async getPopularVideos(limit: number = 20, contentType?: string, shuffleSeed?: string, categoryId?: number): Promise<Video[]> {
     try {
       // Create an array of filter conditions to apply with AND
       const conditions = [];
@@ -998,6 +1004,12 @@ export class DatabaseStorage implements IStorage {
       if (contentType) {
         conditions.push(eq(videos.contentType, contentType));
         console.log(`Filtering popular by contentType: "${contentType}"`);
+      }
+      
+      // Add category filter if specified
+      if (categoryId) {
+        conditions.push(eq(videos.categoryId, categoryId));
+        console.log(`Filtering popular by categoryId: ${categoryId}`);
       }
       
       // Add visibility filter - only show approved content or YouTube embeds
