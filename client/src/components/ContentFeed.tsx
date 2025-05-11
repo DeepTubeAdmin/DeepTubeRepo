@@ -242,7 +242,9 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
         
         // Reset UI state
         setPage(1);
-        setPopularBlocks([]);
+        setLoadedVideos([]);
+        setLoadedImages([]);
+        setAdPositions([]);
         setSortBy('trending');
         
         // Force data refresh
@@ -257,7 +259,9 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
         
         // Reset UI state
         setPage(1);
-        setPopularBlocks([]);
+        setLoadedVideos([]);
+        setLoadedImages([]);
+        setAdPositions([]);
         setSortBy('trending');
         
         // Force data refresh on initial mount
@@ -313,7 +317,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     // Create an observer for the loading indicator
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0].isIntersecting && data?.popular?.hasMore) {
+        if (entries[0].isIntersecting && data?.content?.hasMore) {
           setPage(prevPage => prevPage + 1);
         }
       },
@@ -364,16 +368,32 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     return null;
   }
 
+  // Function to randomly place an ad in content
+  const insertAdvertisementInContent = useCallback((contentItems: Video[], adType: 'video' | 'image'): (Video | null)[] => {
+    if (!contentItems || contentItems.length === 0) return [];
+    
+    // Create a copy of the content array
+    const result = [...contentItems];
+    
+    // Randomly select a position for the ad (avoiding the first 2 items)
+    const minPosition = Math.min(2, result.length - 1);
+    const adPosition = Math.floor(Math.random() * (result.length - minPosition)) + minPosition;
+    
+    // Replace the item at that position with null (to be rendered as an ad)
+    result[adPosition] = null as unknown as Video;
+    
+    return result;
+  }, []);
+
   // Render the content feed
   return (
     <div className="container mx-auto px-4 py-8 space-y-12">
-      {/* Featured Video (Large Hero) */}
-      {data.featured.video && (
+      {/* Featured Video (no title as requested) */}
+      {data?.featured?.video && (
         <section className="mb-12">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold text-white border-l-4 border-orange-500 pl-4">
-              {data.featured.title}
-            </h2>
+            {/* Only show the sort button, no section title */}
+            <div className="flex-1"></div>
             
             {/* Controls: Sort Button */}
             <div className="flex items-center">
@@ -449,97 +469,62 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
         </section>
       )}
 
-      {/* Trending Now Section */}
-      <section className="mb-12">
-        <h2 className="text-3xl font-bold mb-6 text-white border-l-4 border-orange-500 pl-4">
-          Trending Now
-        </h2>
-        
-        {/* Video Grid (3 rows of videos) */}
-        <div className="mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mb-4">
-            {renderData && insertAdvertisement(renderData.trending.videos, renderData.trending.advertisement.position)
-              .map((video, index) => 
-                video ? (
-                  <VideoCard key={`trending-video-${video.id}-${index}`} video={video} />
-                ) : (
-                  <AdvertisementCard key={`trending-ad-${index}`} type="video" />
-                )
+      {/* Endless Content Section - No section title as requested */}
+      <section>
+        {/* Render content chunks (4 rows video + 2 rows images, repeating) */}
+        {renderContent && renderContent.map((chunk, chunkIndex) => {
+          // Determine if this chunk should contain an ad
+          const shouldDisplayAd = chunk.hasAd;
+          
+          // For every chunk, render videos first then images
+          return (
+            <div key={`content-chunk-${chunkIndex}`} className="mb-12">
+              {/* Video Grid (4 rows of videos) */}
+              {chunk.videos.length > 0 && (
+                <div className="mb-8">
+                  <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mb-4">
+                    {/* Insert ad in video section if this is the right chunk */}
+                    {shouldDisplayAd && chunkIndex % 2 === 0 
+                      ? insertAdvertisementInContent(chunk.videos, 'video').map((video, index) => 
+                          video ? (
+                            <VideoCard key={`content-video-${video.id}-${chunkIndex}-${index}`} video={video} />
+                          ) : (
+                            <AdvertisementCard key={`content-ad-${chunkIndex}-${index}`} type="video" />
+                          )
+                        )
+                      : chunk.videos.map((video, index) => (
+                          <VideoCard key={`content-video-${video.id}-${chunkIndex}-${index}`} video={video} />
+                        ))
+                    }
+                  </div>
+                </div>
               )}
-          </div>
-        </div>
-        
-        {/* Image Row (1 row of images) */}
-        <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
-          {renderData && renderData.trending.images.map((image, index) => (
-            <ImageCard key={`trending-image-${image.id}-${index}`} image={image} />
-          ))}
-        </div>
-      </section>
-
-      {/* Recently Uploaded Section */}
-      <section className="mb-12">
-        <h2 className="text-3xl font-bold mb-6 text-white border-l-4 border-orange-500 pl-4">
-          Recently Uploaded
-        </h2>
-        
-        {/* Video Grid (3 rows of videos) */}
-        <div className="mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mb-4">
-            {renderData && insertAdvertisement(renderData.recent.videos, renderData.recent.advertisement.position)
-              .map((video, index) => 
-                video ? (
-                  <VideoCard key={`recent-video-${video.id}-${index}`} video={video} />
-                ) : (
-                  <AdvertisementCard key={`recent-ad-${index}`} type="video" />
-                )
+              
+              {/* Image Grid (2 rows of images) */}
+              {chunk.images.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
+                  {/* Insert ad in image section if this is the right chunk */}
+                  {shouldDisplayAd && chunkIndex % 2 === 1
+                    ? insertAdvertisementInContent(chunk.images, 'image').map((image, index) => 
+                        image ? (
+                          <ImageCard key={`content-image-${image.id}-${chunkIndex}-${index}`} image={image} />
+                        ) : (
+                          <AdvertisementCard key={`content-ad-${chunkIndex}-${index}`} type="image" />
+                        )
+                      )
+                    : chunk.images.map((image, index) => (
+                        <ImageCard key={`content-image-${image.id}-${chunkIndex}-${index}`} image={image} />
+                      ))
+                  }
+                </div>
               )}
-          </div>
-        </div>
-        
-        {/* Image Row (1 row of images) */}
-        <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
-          {renderData && renderData.recent.images.map((image, index) => (
-            <ImageCard key={`recent-image-${image.id}-${index}`} image={image} />
-          ))}
-        </div>
-      </section>
-
-      {/* Popular Content Section - Infinite Scroll */}
-      <section className="mb-12">
-        <h2 className="text-3xl font-bold mb-6 text-white border-l-4 border-orange-500 pl-4">
-          Popular Content
-        </h2>
-        
-        {/* Render all loaded popular blocks */}
-        {renderData && renderData.popular.map((block, blockIndex) => (
-          <div key={`popular-block-${blockIndex}`} className="mb-12">
-            {/* Video Grid (3 rows of videos) */}
-            <div className="mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mb-4">
-                {insertAdvertisement(block.videos, block.advertisement.position)
-                  .map((video, index) => 
-                    video ? (
-                      <VideoCard key={`popular-video-${video?.id || index}-${blockIndex}`} video={video} />
-                    ) : (
-                      <AdvertisementCard key={`popular-ad-${blockIndex}-${index}`} type="video" />
-                    )
-                  )}
-              </div>
             </div>
-            
-            {/* Image Row (1 row of images) */}
-            <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
-              {block.images && block.images.length > 0 && block.images.map((image, index) => (
-                image && <ImageCard key={`popular-image-${image.id}-${index}-${blockIndex}`} image={image} />
-              ))}
-            </div>
-          </div>
-        ))}
+          );
+        })}
 
         {/* Loading indicator for infinite scroll */}
         <div id="loading-indicator" className="flex justify-center p-8">
-          {data.popular.hasMore && (
+          {data?.content?.hasMore && (
             <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
           )}
         </div>
