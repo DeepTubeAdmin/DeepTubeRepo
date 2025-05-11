@@ -143,14 +143,14 @@ export async function handleContentFeed(req: Request, res: Response) {
       // Load videos and images based on sort preference
       if (sortBy === 'trending') {
         // For trending, we'll still mix content types for a better experience
-        // Get trending videos
+        // Get trending videos - always pass categoryId regardless of shuffle
         const trendingVideos = await dbStorage.getTrendingVideos(
           videoLimit, 
           'video',
           shuffle ? shuffleSeed : undefined,
           categoryId
         );
-        console.log(`Retrieved ${trendingVideos.length} trending videos. First few IDs: [ ${trendingVideos.slice(0, 3).map((v: Video) => v.id).join(', ')} ]`);
+        console.log(`Retrieved ${trendingVideos.length} trending videos with category ${categoryId || 'none'}. First few IDs: [ ${trendingVideos.slice(0, 3).map((v: Video) => v.id).join(', ')} ]`);
         
         // Get new videos
         const newVideos = await dbStorage.getVideos(
