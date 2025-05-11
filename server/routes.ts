@@ -184,7 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       // For embeds, extract YouTube ID if available
       else if (contentType === 'embed') {
-        youtubeId = cloudinaryUtils.extractYouTubeVideoId(content.embedCode || '');
+        youtubeId = youtubeUtils.extractYouTubeVideoId(content.embedCode || '');
         if (youtubeId) {
           sourceUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
         }
@@ -583,8 +583,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (contentType === 'image' && video.imageUrl) {
         sourceUrl = video.imageUrl;
       } else if (contentType === 'embed' && video.embedCode) {
-        const { extractYouTubeVideoId } = await import('./services/ThumbnailService/cloudinary');
-        youtubeId = extractYouTubeVideoId(video.embedCode);
+        // Use the youtube utility from ThumbnailService
+        youtubeId = youtubeUtils.extractYouTubeVideoId(video.embedCode);
         if (youtubeId) {
           sourceUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
         }
@@ -1753,8 +1753,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Detect YouTube embed and extract video ID if present
       let youtubeId = null;
       if (video.contentType === 'embed' && video.embedCode) {
-        const { extractYouTubeVideoId } = await import('./services/ThumbnailService/cloudinary');
-        youtubeId = extractYouTubeVideoId(video.embedCode);
+        // Use the youtube utility from ThumbnailService
+        youtubeId = youtubeUtils.extractYouTubeVideoId(video.embedCode);
       }
       
       console.log(` - Source URL: ${sourceUrl || 'None (embed)'}`);
@@ -1834,9 +1834,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (video.contentType === 'image' || video.contentType === 'images') {
         sourceUrl = video.imageUrl;
       } else if (video.contentType === 'embed' && video.embedCode) {
-        // Try to extract YouTube ID
-        const { extractYouTubeVideoId } = await import('./services/ThumbnailService/cloudinary');
-        youtubeId = extractYouTubeVideoId(video.embedCode);
+        // Try to extract YouTube ID using the ThumbnailService youtube utility
+        youtubeId = youtubeUtils.extractYouTubeVideoId(video.embedCode);
       }
       
       // If no source URL or YouTube ID is available, we'll use a placeholder
