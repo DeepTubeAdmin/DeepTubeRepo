@@ -2,6 +2,7 @@ import { useState, useEffect, createContext, useContext } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
+import { ProtectedRoute } from "./lib/protected-route";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/Home";
@@ -49,9 +50,9 @@ function Router() {
       <Route path="/forum" component={ForumPage} />
       <Route path="/terms-of-service" component={TermsOfService} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
-      <Route path="/my-videos" component={MyVideosPage} />
-      <Route path="/my-messages" component={MyMessages} />
-      <Route path="/profile" component={ProfilePage} />
+      <ProtectedRoute path="/my-videos" component={MyVideosPage} />
+      <ProtectedRoute path="/my-messages" component={MyMessages} />
+      <ProtectedRoute path="/profile" component={ProfilePage} />
       <Route path="/user/:username" component={UserPage} />
       <Route path="/admin" component={AdminPage} />
       <Route path="/access-denied" component={AccessDenied} />
