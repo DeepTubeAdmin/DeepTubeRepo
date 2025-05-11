@@ -170,13 +170,14 @@ export async function handleContentFeed(req: Request, res: Response) {
           shuffleSeed
         );
         
-        // Get trending images
+        // Get trending images - always pass categoryId regardless of shuffle
         const trendingImages = await dbStorage.getTrendingVideos(
           imageLimit, 
           'image',
           shuffle ? shuffleSeed : undefined,
           categoryId
         );
+        console.log(`Retrieved ${trendingImages.length} trending images with category ${categoryId || 'none'}. First few IDs: [ ${trendingImages.slice(0, 3).map((v: Video) => v.id).join(', ')} ]`);
         
         // Get new images
         const newImages = await dbStorage.getVideos(

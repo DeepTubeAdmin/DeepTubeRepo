@@ -80,7 +80,7 @@ export interface IStorage {
   
   // View tracking operations
   incrementViews(videoId: number): Promise<number>;
-  getMostViewedVideos(limit?: number, contentType?: string): Promise<Video[]>;
+  getMostViewedVideos(limit?: number, contentType?: string, categoryId?: number): Promise<Video[]>;
   getTrendingVideos(limit?: number, contentType?: string, shuffleSeed?: string, categoryId?: number): Promise<Video[]>;
   getPopularVideos(limit?: number, contentType?: string, shuffleSeed?: string, categoryId?: number): Promise<Video[]>;
   
@@ -883,7 +883,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async getMostViewedVideos(limit: number = 20, contentType?: string): Promise<Video[]> {
+  async getMostViewedVideos(limit: number = 20, contentType?: string, categoryId?: number): Promise<Video[]> {
     try {
       // Start with base query
       let queryBuilder = db.select().from(videos);
@@ -895,6 +895,12 @@ export class DatabaseStorage implements IStorage {
       if (contentType) {
         conditions.push(eq(videos.contentType, contentType));
         console.log(`Filtering most viewed by contentType: "${contentType}"`);
+      }
+      
+      // Add category filter if specified
+      if (categoryId) {
+        conditions.push(eq(videos.categoryId, categoryId));
+        console.log(`Filtering most viewed by categoryId: ${categoryId}`);
       }
       
       // Add visibility filter - only show approved content or YouTube embeds
