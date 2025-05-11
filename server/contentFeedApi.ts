@@ -1,6 +1,6 @@
 import { Video } from "@shared/schema";
 import express, { Request, Response } from "express";
-import { storage } from './storage';
+import { storage as dbStorage } from './storage';
 
 // Variable to store cache of content response
 let contentCache: { [key: string]: any } = {};
@@ -52,7 +52,7 @@ export async function handleContentFeed(req: Request, res: Response) {
     
     // Cache categories to avoid multiple DB calls
     if (cachedCategories.length === 0) {
-      cachedCategories = await storage.getCategories();
+      cachedCategories = await dbStorage.getCategories();
       console.log(`Cached ${cachedCategories.length} categories for content selection`);
     }
 
@@ -88,7 +88,7 @@ export async function handleContentFeed(req: Request, res: Response) {
       }
       
       // 1. Get Featured Video - Pick a random approved video
-      const featuredVideos = await storage.getFeaturedVideos(categorySlug);
+      const featuredVideos = await dbStorage.getFeaturedVideos(categorySlug);
       console.log(`Featured videos found: ${featuredVideos.length}, first few IDs: [ ${featuredVideos.slice(0, 3).map((v: Video) => v.id).join(', ')} ]`);
       
       if (featuredVideos.length > 0) {
@@ -130,7 +130,7 @@ export async function handleContentFeed(req: Request, res: Response) {
     if (page === 1) {
       // Get trending videos
       console.log(`Using randomized shuffle ordering for trending with seed: ${shuffleSeed}`);
-      const trendingVideos = await storage.getTrendingVideos(
+      const trendingVideos = await dbStorage.getTrendingVideos(
         videoLimit, 
         categorySlug, 
         shuffle ? shuffleSeed : '', 
@@ -139,7 +139,7 @@ export async function handleContentFeed(req: Request, res: Response) {
       console.log(`Retrieved ${trendingVideos.length} trending videos. First few IDs: [ ${trendingVideos.slice(0, 3).map((v: Video) => v.id).join(', ')} ]`);
       
       // Get new videos
-      const newVideos = await storage.getVideos({
+      const newVideos = await dbStorage.getVideos({
         sortBy: 'newest',
         limit: videoLimit,
         contentType: 'video',
@@ -150,7 +150,7 @@ export async function handleContentFeed(req: Request, res: Response) {
       });
       
       // Get popular videos (most viewed)
-      const popularVideos = await storage.getVideos({
+      const popularVideos = await dbStorage.getVideos({
         sortBy: 'most-viewed',
         limit: videoLimit,
         contentType: 'video',
@@ -161,7 +161,7 @@ export async function handleContentFeed(req: Request, res: Response) {
       });
       
       // Get trending images
-      const trendingImages = await storage.getTrendingVideos(
+      const trendingImages = await dbStorage.getTrendingVideos(
         imageLimit, 
         categorySlug, 
         shuffle ? shuffleSeed : '', 
@@ -169,7 +169,7 @@ export async function handleContentFeed(req: Request, res: Response) {
       );
       
       // Get new images
-      const newImages = await storage.getVideos({
+      const newImages = await dbStorage.getVideos({
         sortBy: 'newest',
         limit: imageLimit,
         contentType: 'image',
