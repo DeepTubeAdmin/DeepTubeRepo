@@ -540,7 +540,7 @@ export default function MediaDetail() {
               )}
               
               {media.contentType === 'image' && media.imageUrl && (
-                <div className="flex items-center justify-center bg-black relative">
+                <div className="flex items-center justify-center bg-black relative group">
                   <img 
                     src={media.imageUrl} 
                     alt={media.title} 
@@ -579,6 +579,20 @@ export default function MediaDetail() {
                       }
                     }}
                   />
+                  {/* Fullscreen button */}
+                  <button 
+                    onClick={() => {
+                      // Open the image in a new tab for fullscreen viewing
+                      window.open(media.imageUrl, '_blank');
+                    }}
+                    className="absolute bottom-4 right-4 bg-black bg-opacity-70 p-2 rounded-full text-white 
+                              hover:bg-orange-600 transition-colors duration-200 opacity-0 group-hover:opacity-100"
+                    aria-label="View fullscreen"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                    </svg>
+                  </button>
                   {media.aiGenerator && <AIWatermark aiGenerator={media.aiGenerator} position="bottom-right" size="medium" />}
                 </div>
               )}
