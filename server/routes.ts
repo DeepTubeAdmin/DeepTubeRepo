@@ -3293,9 +3293,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/messages/conversations", isAuthenticated, async (req, res) => {
     try {
       ensureUser(req);
+      console.log(`Getting conversations for user ${req.user.id} (${req.user.username})`);
       
       // First, get all messages for the user (sent or received)
       const allMessages = await dbStorage.getAllUserMessages(req.user.id);
+      console.log(`Retrieved ${allMessages.length} messages for user ${req.user.id}`);
+      console.log(`Sample messages:`, allMessages.slice(0, 2));
       
       // Create a map of user IDs to their conversations
       const conversationsMap = new Map();
@@ -3305,14 +3308,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const isUserSender = message.senderId === req.user.id;
         const otherUserId = isUserSender ? message.receiverId : message.senderId;
         
+        console.log(`Processing message ID=${message.id}, isUserSender=${isUserSender}, otherUserId=${otherUserId}`);
+        
         // Skip if this is a message to self
-        if (otherUserId === req.user.id) continue;
+        if (otherUserId === req.user.id) {
+          console.log(`Skipping message ID=${message.id} (message to self)`);
+          continue;
+        }
         
         // Get or create conversation entry
         if (!conversationsMap.has(otherUserId)) {
           // Get other user's information
           const otherUser = await dbStorage.getUser(otherUserId);
-          if (!otherUser) continue; // Skip if user no longer exists
+          
+          if (!otherUser) {
+            console.log(`Skipping message ID=${message.id} (other user ${otherUserId} not found)`);
+            continue; // Skip if user no longer exists
+          }
+          
+          console.log(`Creating new conversation with user ${otherUser.id} (${otherUser.username})`);
           
           conversationsMap.set(otherUserId, {
             userId: otherUserId,
@@ -3328,6 +3342,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const lastMessageDate = new Date(conversation.lastMessageDate);
           
           if (messageDate > lastMessageDate) {
+            console.log(`Updating conversation with user ${otherUserId} with newer message`);
             conversation.lastMessage = message.content;
             conversation.lastMessageDate = message.createdAt;
           }
@@ -3335,6 +3350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Count unread messages from other user
         if (!isUserSender && !message.read) {
+          console.log(`Incrementing unread count for user ${otherUserId}`);
           conversationsMap.get(otherUserId).unreadCount++;
         }
       }
@@ -3343,9 +3359,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const conversations = Array.from(conversationsMap.values())
         .sort((a, b) => new Date(b.lastMessageDate).getTime() - new Date(a.lastMessageDate).getTime());
       
+      console.log(`Returning ${conversations.length} conversations`);
       res.json(conversations);
     } catch (error) {
       console.error("Error getting conversations:", error);
+      if (error instanceof Error) {
+        console.error("Error details:", error.message, error.stack);
+      }
       res.status(500).json({ error: "Failed to get conversations" });
     }
   });

@@ -1127,14 +1127,26 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getAllUserMessages(userId: number): Promise<Message[]> {
-    // Get all messages that involve this user (sent or received)
-    return db.select()
-      .from(messages)
-      .where(or(
-        eq(messages.senderId, userId),
-        eq(messages.receiverId, userId)
-      ))
-      .orderBy(desc(messages.createdAt));
+    console.log(`Getting all messages for user ${userId}`);
+    try {
+      // Get all messages that involve this user (sent or received)
+      const result = await db.select()
+        .from(messages)
+        .where(or(
+          eq(messages.senderId, userId),
+          eq(messages.receiverId, userId)
+        ))
+        .orderBy(desc(messages.createdAt));
+      
+      console.log(`Found ${result.length} messages for user ${userId}`);
+      return result;
+    } catch (error) {
+      console.error(`Error getting messages for user ${userId}:`, error);
+      if (error instanceof Error) {
+        console.error(`Error stack:`, error.stack);
+      }
+      return [];
+    }
   }
   
   async markAllMessagesAsRead(receiverId: number, senderId: number): Promise<void> {
