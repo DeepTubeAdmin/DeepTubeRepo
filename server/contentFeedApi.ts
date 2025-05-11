@@ -138,11 +138,13 @@ export async function handleContentFeed(req: Request, res: Response) {
     // First page loads - get a mix of trending, new, and popular
     if (page === 1) {
       // Get trending videos
-      console.log(`Using randomized shuffle ordering for trending with seed: ${shuffleSeed}`);
+      const categoryId = categorySlug ? await getCategoryId(categorySlug) : undefined;
+      console.log(`Using randomized shuffle ordering for trending with seed: ${shuffleSeed}, categoryId: ${categoryId || 'none'}`);
       const trendingVideos = await dbStorage.getTrendingVideos(
         videoLimit, 
         'video',
-        shuffle ? shuffleSeed : undefined
+        shuffle ? shuffleSeed : undefined,
+        categoryId
       );
       console.log(`Retrieved ${trendingVideos.length} trending videos. First few IDs: [ ${trendingVideos.slice(0, 3).map((v: Video) => v.id).join(', ')} ]`);
       
@@ -168,7 +170,8 @@ export async function handleContentFeed(req: Request, res: Response) {
       const trendingImages = await dbStorage.getTrendingVideos(
         imageLimit, 
         'image',
-        shuffle ? shuffleSeed : undefined
+        shuffle ? shuffleSeed : undefined,
+        categoryId
       );
       
       // Get new images
