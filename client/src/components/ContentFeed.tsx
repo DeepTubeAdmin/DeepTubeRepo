@@ -15,27 +15,15 @@ interface ContentFeedProps {
 
 type SortOption = 'newest' | 'oldest' | 'most-viewed' | 'trending' | 'popular';
 
+// Updated response interface for new content feed structure
 interface ContentFeedResponse {
   featured: {
     video: Video | null;
-    title: string;
   };
-  trending: {
+  content: {
     videos: Video[];
     images: Video[];
-    advertisement: { position: number };
-  };
-  recent: {
-    videos: Video[];
-    images: Video[];
-    advertisement: { position: number };
-  };
-  popular: {
-    blocks: Array<{
-      videos: Video[];
-      images: Video[];
-      advertisement: { position: number };
-    }>;
+    adPositions: number[];
     hasMore: boolean;
   };
 }
@@ -49,7 +37,9 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   const [sortBy, setSortBy] = useState<SortOption>('trending');
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [columnCount, setColumnCount] = useState(3); // Default to 3 columns for large screens
-  const [popularBlocks, setPopularBlocks] = useState<ContentFeedResponse['popular']['blocks']>([]);
+  const [loadedVideos, setLoadedVideos] = useState<Video[]>([]);
+  const [loadedImages, setLoadedImages] = useState<Video[]>([]);
+  const [adPositions, setAdPositions] = useState<number[]>([]);
 
   // Ref hooks - all defined at the top level
   const previousDataRef = useRef<ContentFeedResponse | undefined>(undefined);
@@ -152,30 +142,41 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   }, []);
 
   // Process data for rendering - dynamic column/row adjustments
-  const renderData = useMemo(() => {
-    if (!data) return null;
+  const renderContent = useMemo(() => {
+    if (!loadedVideos.length && !loadedImages.length) return null;
     
-    // Process popular blocks with dynamic column/row logic
-    const processedPopularBlocks = popularBlocks.map(block => ({
-      videos: getItemsBasedOnColumns(block.videos, 3), // Always 3 rows of videos
-      images: getItemsBasedOnColumns(block.images, 1), // Always 1 row of images
-      advertisement: block.advertisement
-    }));
+    // Create chunks of content that alternate between 4 video rows and 2 image rows
+    const videoChunkSize = 4 * columnCount; // 4 rows of videos
+    const imageChunkSize = 2 * columnCount; // 2 rows of images
     
-    return {
-      trending: {
-        videos: getItemsBasedOnColumns(data?.trending?.videos, 3), // Always 3 rows of videos
-        images: getItemsBasedOnColumns(data?.trending?.images, 1),  // Always 1 row of images
-        advertisement: data?.trending?.advertisement
-      },
-      recent: {
-        videos: getItemsBasedOnColumns(data?.recent?.videos, 3), // Always 3 rows of videos
-        images: getItemsBasedOnColumns(data?.recent?.images, 1),  // Always 1 row of images
-        advertisement: data?.recent?.advertisement
-      },
-      popular: processedPopularBlocks
-    };
-  }, [data, popularBlocks, getItemsBasedOnColumns]);
+    const videoChunks: Video[][] = [];
+    const imageChunks: Video[][] = [];
+    
+    // Split videos into chunks of 4 rows
+    for (let i = 0; i < loadedVideos.length; i += videoChunkSize) {
+      videoChunks.push(loadedVideos.slice(i, i + videoChunkSize));
+    }
+    
+    // Split images into chunks of 2 rows
+    for (let i = 0; i < loadedImages.length; i += imageChunkSize) {
+      imageChunks.push(loadedImages.slice(i, i + imageChunkSize));
+    }
+    
+    // Combine into merged chunks where each chunk has 4 rows of videos and 2 rows of images
+    const contentChunks = [];
+    const maxChunks = Math.max(videoChunks.length, imageChunks.length);
+    
+    for (let i = 0; i < maxChunks; i++) {
+      contentChunks.push({
+        videos: videoChunks[i] || [],
+        images: imageChunks[i] || [],
+        hasAd: adPositions.includes(i),
+        adPosition: i,
+      });
+    }
+    
+    return contentChunks;
+  }, [loadedVideos, loadedImages, adPositions, columnCount]);
 
   // Effect for handling clicks outside the sort menu
   useEffect(() => {
@@ -204,15 +205,19 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     }
   }, [data]);
 
-  // Effect for handling popular blocks updates
+  // Effect for handling content updates
   useEffect(() => {
-    if (data?.popular?.blocks) {
+    if (data?.content) {
       if (page === 1) {
-        // Reset blocks on first page
-        setPopularBlocks(data.popular.blocks);
+        // Reset content on first page
+        setLoadedVideos(data.content.videos);
+        setLoadedImages(data.content.images);
+        setAdPositions(data.content.adPositions);
       } else {
-        // Append new blocks for subsequent pages
-        setPopularBlocks(prev => [...prev, ...data.popular.blocks]);
+        // Append new content for subsequent pages
+        setLoadedVideos(prev => [...prev, ...data.content.videos]);
+        setLoadedImages(prev => [...prev, ...data.content.images]);
+        setAdPositions(prev => [...prev, ...data.content.adPositions]);
       }
     }
   }, [data, page]);
