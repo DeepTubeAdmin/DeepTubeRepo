@@ -172,10 +172,16 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     const maxChunks = Math.max(videoChunks.length, imageChunks.length);
     
     for (let i = 0; i < maxChunks; i++) {
+      // For each chunk that needs an ad, randomly decide if it goes in video or image section
+      const hasAd = adPositions.includes(i);
+      const adInVideoSection = hasAd ? Math.random() > 0.5 : false;
+      const adInImageSection = hasAd ? !adInVideoSection : false;
+      
       contentChunks.push({
         videos: videoChunks[i] || [],
         images: imageChunks[i] || [],
-        hasAd: adPositions.includes(i),
+        hasAdInVideo: adInVideoSection,
+        hasAdInImage: adInImageSection,
         adPosition: i,
       });
     }
@@ -461,8 +467,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
       <section>
         {/* Render content chunks (4 rows video + 2 rows images, repeating) */}
         {renderContent && renderContent.map((chunk, chunkIndex) => {
-          // Determine if this chunk should contain an ad
-          const shouldDisplayAd = chunk.hasAd;
+          // Ad display is now controlled by hasAdInVideo and hasAdInImage properties
           
           // For every chunk, render videos first then images
           return (
@@ -471,8 +476,8 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
               {chunk.videos.length > 0 && (
                 <div className="mb-8">
                   <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mb-4">
-                    {/* Insert ad in video section for every chunk */}
-                    {shouldDisplayAd
+                    {/* Insert ad in video section only if randomly selected for this section */}
+                    {chunk.hasAdInVideo
                       ? insertAdvertisementInContent(chunk.videos, 'video').map((video, index) => 
                           video ? (
                             <VideoCard key={`content-video-${video.id}-${chunkIndex}-${index}`} video={video} />
@@ -491,8 +496,8 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
               {/* Image Grid (2 rows of images) */}
               {chunk.images.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
-                  {/* Insert ad in image section for every chunk */}
-                  {shouldDisplayAd
+                  {/* Insert ad in image section only if randomly selected for this section */}
+                  {chunk.hasAdInImage
                     ? insertAdvertisementInContent(chunk.images, 'image').map((image, index) => 
                         image ? (
                           <ImageCard key={`content-image-${image.id}-${chunkIndex}-${index}`} image={image} />
