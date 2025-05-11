@@ -417,9 +417,12 @@ export default function ForumPage() {
                       <span>New Thread</span>
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-lg">
+                  <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" aria-describedby="create-thread-description">
                     <DialogHeader>
                       <DialogTitle>Create a New Discussion Thread</DialogTitle>
+                      <p id="create-thread-description" className="text-sm text-muted-foreground">
+                        Share your ideas, questions, or insights with the community
+                      </p>
                     </DialogHeader>
                     <div className="space-y-4 mt-4">
                       <div className="space-y-2">
