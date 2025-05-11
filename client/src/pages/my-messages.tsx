@@ -80,18 +80,46 @@ export default function MyMessages() {
     });
 
   // Fetch specific conversation messages
-  const { data: messages, isLoading: isLoadingMessages, refetch: refetchMessages } = 
+  const { data: messages, isLoading: isLoadingMessages, refetch: refetchMessages, error: messagesError } = 
     useQuery<Message[]>({
       queryKey: ["/api/messages/conversation", activeConversation],
       queryFn: async () => {
-        if (!activeConversation) return [];
-        const response = await apiRequest("GET", `/api/messages/conversation/${activeConversation}`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch messages");
+        if (!activeConversation) {
+          console.log("No active conversation selected");
+          return [];
         }
-        return response.json();
+        
+        console.log(`Fetching messages for conversation with user ${activeConversation}`);
+        const response = await apiRequest("GET", `/api/messages/conversation/${activeConversation}`);
+        
+        console.log("Messages response status:", response.status);
+        
+        if (response.status === 401) {
+          console.warn("Not authenticated, will redirect to login");
+          navigate("/auth");
+          return []; // Return empty array to avoid error
+        }
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Failed to fetch messages: ${response.status} - ${errorText}`);
+          throw new Error(`Failed to fetch messages: ${response.status} - ${errorText}`);
+        }
+        
+        const data = await response.json();
+        console.log("Received messages data:", data);
+        return data;
       },
       enabled: !!activeConversation && !!user,
+      retry: false,
+      onError: (error) => {
+        console.error("Error fetching messages:", error);
+        toast({
+          title: "Error loading messages",
+          description: error instanceof Error ? error.message : "Unknown error",
+          variant: "destructive",
+        });
+      }
     });
 
   // Mark messages as read when viewing a conversation

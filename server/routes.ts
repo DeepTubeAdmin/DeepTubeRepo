@@ -3300,6 +3300,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Getting conversations for user ${req.user.id} (${req.user.username})`);
       
+      // First, directly check if there are any messages in the database
+      const messageCount = await db.select({ count: sql`count(*)` })
+        .from(messages)
+        .where(or(
+          eq(messages.senderId, req.user.id),
+          eq(messages.receiverId, req.user.id)
+        ));
+
+      console.log(`Database reports ${messageCount[0].count} messages for user ${req.user.id}`);
+
       // First, get all messages for the user (sent or received)
       const allMessages = await dbStorage.getAllUserMessages(req.user.id);
       console.log(`Retrieved ${allMessages.length} messages for user ${req.user.id}`);
