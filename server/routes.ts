@@ -8,6 +8,7 @@ import { sendPasswordResetEmail } from "./sendgrid";
 import { z } from "zod";
 import { insertCategorySchema, insertVideoSchema, type Video, type Category, type InsertLike } from "@shared/schema";
 import * as localYoutubeUtils from "./youtubeUtils";
+import { handleContentFeed } from './contentFeedApi';
 // Vimeo service no longer used as we've migrated to S3
 import multer from "multer";
 import path from "path";
@@ -1156,16 +1157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get paginated content with alternating pattern (3 rows videos, 2 rows images)
-  // Track used content IDs for the infinite scroll feature
-  // Use a Map with category+sortBy as keys to store used IDs for different views
-  const infiniteScrollCache = new Map<string, Set<number>>();
-  
-  // Track used categories to ensure variety in blocks
-  // This must be a persistent map that exists across requests
-  const usedCategoriesCache = new Map<string, Set<number>>();
-  
-  // Cache all categories to avoid multiple DB calls
-  let cachedCategories: Category[] = [];
+  // Cache declarations and implementation moved to contentFeedApi.ts
 
   // Simple test endpoint for FFmpeg
   app.get('/api/test-ffmpeg', async (req, res) => {
@@ -1315,125 +1307,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // New API endpoint for the completely redesigned content feed
-  app.get("/api/content/feed", async (req, res) => {
-    try {
-      const page = parseInt(req.query.page as string) || 1;
-      const categorySlug = req.query.category as string || '';
-      // Add sortBy parameter handling
-      const sortBy = (req.query.sortBy as 'newest' | 'oldest' | 'most-viewed' | 'trending' | 'popular') || 'trending';
-      // IMPROVED SHUFFLE APPROACH - PRIORITIZE SHUFFLESEED PARAMETER
-      // Check for shuffle parameter in URL (from clicking logo or old links)
-      const hasShuffleParam = req.query.shuffle !== undefined;
-      // Check for the new shuffleSeed parameter (used by newer client code)
-      const hasShuffleSeedParam = req.query.shuffleSeed !== undefined;
-      
-      // For debugging
-      console.log(`Content feed request: page=${page}, category=${categorySlug || 'all'}, sortBy=${sortBy}, hasShuffleInURL=${hasShuffleParam}, hasShuffleSeedParam=${hasShuffleSeedParam}`);
-      
-      // Force shuffle to true when we have any shuffle parameter in URL
-      const shuffle = hasShuffleParam || hasShuffleSeedParam;
-      
-      // Generate the seed for shuffling, with priority:
-      // 1. Use shuffleSeed parameter if it exists
-      // 2. Otherwise use shuffle parameter if it exists
-      // 3. Otherwise generate a random seed if shuffle is true
-      // 4. Otherwise empty string (no shuffle)
-      let effectiveSeed = '';
-      if (hasShuffleSeedParam) {
-        effectiveSeed = req.query.shuffleSeed as string;
-      } else if (hasShuffleParam) {
-        effectiveSeed = req.query.shuffle as string || Math.random().toString(36) + Date.now().toString();
-      } else if (shuffle) {
-        effectiveSeed = Math.random().toString(36) + Date.now().toString();
-      }
-      
-      console.log(`Shuffle mode is ${shuffle ? 'ACTIVE' : 'inactive'}, using seed: ${effectiveSeed || 'none'}`);
-      
-      // Shorthand for use in SQL queries
-      const shuffleSeed = effectiveSeed;
-      
-      // Get categoryId if category slug is provided
-      let categoryId: number | undefined = undefined;
-      if (categorySlug) {
-        const category = await dbStorage.getCategoryBySlug(categorySlug);
-        categoryId = category?.id;
-      }
-      
-      // Create cache key based on category and shuffle seed
-      // Always use a new cache key when shuffle parameter is present
-      const cacheKey = getCacheKey(categorySlug, 'feed', shuffle ? Date.now().toString() : effectiveSeed);
-      
-      // Get or create the set of used content IDs for this view
-      if (!infiniteScrollCache.has(cacheKey)) {
-        infiniteScrollCache.set(cacheKey, new Set<number>());
-      }
-      const usedContentIds = infiniteScrollCache.get(cacheKey)!;
-      
-      // Reset cache if we're starting a new page (page 1) or whenever shuffle is triggered
-      if (page === 1 || shuffle) {
-        // Create a new set for the used content IDs
-        infiniteScrollCache.set(cacheKey, new Set<number>());
-        usedCategoriesCache.set(cacheKey, new Set<number>());
-        console.log(`Reset content cache for ${cacheKey}, fresh shuffle`); 
-      }
-      
-      // Cache categories to avoid multiple DB calls
-      if (cachedCategories.length === 0) {
-        cachedCategories = await dbStorage.getCategories();
-        console.log(`Cached ${cachedCategories.length} categories for content selection`);
-      }
+  app.get("/api/content/feed", handleContentFeed);
 
-      // Response structure
-      const response: {
-        featured: {
-          video: Video | null,
-          title: string
-        },
-        trending: {
-          videos: Video[],
-          images: Video[],
-          advertisement: { position: number }
-        },
-        recent: {
-          videos: Video[],
-          images: Video[],
-          advertisement: { position: number }
-        },
-        popular: {
-          blocks: Array<{
-            videos: Video[],
-            images: Video[],
-            advertisement: { position: number }
-          }>,
-          hasMore: boolean
-        }
-      } = {
-        featured: {
-          video: null,
-          title: 'Featured Video'
-        },
-        trending: {
-          videos: [],
-          images: [],
-          advertisement: { position: Math.floor(Math.random() * 12) } // Random position within 12 items
-        },
-        recent: {
-          videos: [],
-          images: [],
-          advertisement: { position: Math.floor(Math.random() * 12) } // Random position within 12 items
-        },
-        popular: {
-          blocks: [],
-          hasMore: true
-        }
-      };
-
-      // 1. FEATURED VIDEO SECTION
-      // Get featured videos (filtered by category if specified)
-      let featuredVideos: Video[] = [];
-      
-      // Get all featured videos using the storage layer's getFeaturedVideos method
-      const featuredVideosQuery = await dbStorage.getFeaturedVideos(50);
+  // Deprecated endpoint - redirect to the new feed API
+  app.get("/api/content/infinite", async (req, res) => {
+    return res.status(301).json({ error: "This API endpoint has been deprecated. Please use /api/content/feed instead." });
+  });
       console.log(`Retrieved ${featuredVideosQuery.length} featured videos from database`);
       
       // For featured videos, we want to include all videos (including pending ones)
@@ -1846,23 +1725,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only set hasMore to true if we have enough unique content remaining
-      // Count the number of items in the last block to check if we're running out of content
-      const lastBlock = response.popular.blocks[response.popular.blocks.length - 1];
-      const lastBlockItemCount = (lastBlock?.videos?.length || 0) + (lastBlock?.images?.length || 0);
-      
-      // If the last block has fewer than the expected number of items (16: 12 videos + 4 images),
-      // or it's completely empty, we're running out of content
-      response.popular.hasMore = lastBlockItemCount >= 16;
-      
-      // Log the final count of unique content IDs
-      console.log(`Response prepared with ${allItemIds.size} unique content items`);
-      
-      res.json(response);
-    } catch (error) {
-      console.error("Error fetching content feed:", error);
-      res.status(500).json({ error: "Failed to fetch content feed" });
-    }
-  });
+  // Removed old content feed API implementation
   
   // Deprecated endpoint - redirect to the new feed API
   app.get("/api/content/infinite", async (req, res) => {
