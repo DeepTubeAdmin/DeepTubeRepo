@@ -471,8 +471,8 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
               {chunk.videos.length > 0 && (
                 <div className="mb-8">
                   <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mb-4">
-                    {/* Insert ad in video section if this is the right chunk */}
-                    {shouldDisplayAd && chunkIndex % 2 === 0 
+                    {/* Insert ad in video section for every chunk */}
+                    {shouldDisplayAd
                       ? insertAdvertisementInContent(chunk.videos, 'video').map((video, index) => 
                           video ? (
                             <VideoCard key={`content-video-${video.id}-${chunkIndex}-${index}`} video={video} />
@@ -491,8 +491,8 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
               {/* Image Grid (2 rows of images) */}
               {chunk.images.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
-                  {/* Insert ad in image section if this is the right chunk */}
-                  {shouldDisplayAd && chunkIndex % 2 === 1
+                  {/* Insert ad in image section for every chunk */}
+                  {shouldDisplayAd
                     ? insertAdvertisementInContent(chunk.images, 'image').map((image, index) => 
                         image ? (
                           <ImageCard key={`content-image-${image.id}-${chunkIndex}-${index}`} image={image} />

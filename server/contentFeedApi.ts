@@ -214,13 +214,11 @@ export async function handleContentFeed(req: Request, res: Response) {
       Math.ceil(images.length / (2 * 3))  // 2 rows of images with 3 columns
     );
     
-    // Place ads randomly, approximately once every 6 rows (1 per chunk)
+    // Place ads exactly once every 6 rows (content chunks)
     const adPositions = [];
-    for (let i = 0; i < numChunks; i += 1) {
-      // 50% chance for each chunk to have an ad
-      if (Math.random() > 0.5) {
-        adPositions.push(i);
-      }
+    for (let i = 0; i < numChunks; i++) {
+      // Ensure each chunk has an ad (every chunk contains 6 rows: 4 video + 2 image)
+      adPositions.push(i);
     }
     
     // Add content to response
