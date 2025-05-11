@@ -242,15 +242,15 @@ export class DatabaseStorage implements IStorage {
     
     // Handle special sort cases that require different query structures
     if (sortBy === 'popular') {
-      return this.getPopularVideos(limit, contentType);
+      return this.getPopularVideos(limit, contentType, undefined, categoryId);
     }
     
     if (sortBy === 'trending') {
-      return this.getTrendingVideos(limit, contentType);
+      return this.getTrendingVideos(limit, contentType, undefined, categoryId);
     }
     
     if (sortBy === 'most-viewed') {
-      return this.getMostViewedVideos(limit, contentType);
+      return this.getMostViewedVideos(limit, contentType, categoryId);
     }
     // Start with base query
     let queryBuilder = db.select().from(videos);
@@ -924,7 +924,7 @@ export class DatabaseStorage implements IStorage {
       
       // Add limit
       const results = await queryBuilder.limit(limit);
-      console.log(`Retrieved ${results.length} most viewed videos. First few IDs:`, 
+      console.log(`Retrieved ${results.length} most viewed videos with category ${categoryId || 'none'}. First few IDs:`, 
         results.length > 0 ? results.slice(0, 3).map(v => v.id) : 'none');
         
       return results;
