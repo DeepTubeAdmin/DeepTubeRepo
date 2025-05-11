@@ -19,9 +19,8 @@ interface GenericVideoEmbedProps {
 }
 
 /**
- * A generic component for embedding videos from various sources including Vimeo
- * This provides compatibility for legacy videos still hosted on Vimeo while
- * we transition to AWS S3 storage for all new videos
+ * A generic component for embedding videos from various sources 
+ * Supports MP4 videos from S3, YouTube embeds, and direct video URLs
  */
 const GenericVideoEmbed = ({
   videoUrl,
@@ -65,22 +64,7 @@ const GenericVideoEmbed = ({
     }
 
     // Parse the video URL to determine the source type
-    if (videoUrl.includes('vimeo.com')) {
-      // Handle Vimeo URLs
-      const vimeoIdMatch = videoUrl.match(/vimeo\.com\/(?:video\/)?([0-9]+)/);
-      if (vimeoIdMatch && vimeoIdMatch[1]) {
-        const vimeoId = vimeoIdMatch[1];
-        // Construct URL parameters
-        const params = new URLSearchParams({
-          autoplay: autoplay ? '1' : '0',
-          loop: loop ? '1' : '0',
-          title: showTitle ? '1' : '0',
-          byline: showByline ? '1' : '0',
-          portrait: showPortrait ? '1' : '0',
-        });
-        setEmbedUrl(`https://player.vimeo.com/video/${vimeoId}?${params.toString()}`);
-      }
-    } else if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+    if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
       // Handle YouTube URLs
       let youtubeId = '';
       

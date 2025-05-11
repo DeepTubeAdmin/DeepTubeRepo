@@ -338,15 +338,7 @@ export default function MediaDetail() {
         }
       }
       
-      // For Vimeo embeds - use vimeoId property directly
-      if (media.vimeoId) {
-        return `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%">
-  <iframe src="https://player.vimeo.com/video/${media.vimeoId}" style="position:absolute;top:0;left:0;width:100%;height:100%" frameborder="0" allowfullscreen></iframe>
-  <div style="position:absolute;bottom:10px;right:10px;font-size:12px;font-family:Arial,sans-serif;z-index:10">
-    <a href="${mediaUrl}" target="_blank" style="color:#f97316;text-decoration:none">View on DeepTube</a>
-  </div>
-</div>`;
-      }
+      // Only handle YouTube, S3, and images now
       
       // If we have an embed code, wrap it in a responsive container
       if (embedHtml) {
@@ -519,9 +511,7 @@ export default function MediaDetail() {
               {media.contentType === 'video' && (
                 <div className="aspect-video">
                   <GenericVideoEmbed 
-                    videoUrl={media.vimeoId ? `https://vimeo.com/${media.vimeoId}` : 
-                             media.videoUrl ? media.videoUrl : 
-                             ''}
+                    videoUrl={media.videoUrl ? media.videoUrl : ''}
                     title={media.title}
                     responsive={true}
                     autoplay={true}
@@ -650,7 +640,7 @@ export default function MediaDetail() {
                 </div>
               )}
               
-              {!media.vimeoId && !media.videoUrl && !media.imageUrl && !media.embedCode && (
+              {!media.videoUrl && !media.imageUrl && !media.embedCode && (
                 <div className="aspect-video flex items-center justify-center bg-[#0a0a0a]">
                   <div className="text-gray-500">No media available</div>
                 </div>

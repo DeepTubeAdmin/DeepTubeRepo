@@ -340,7 +340,6 @@ export default function SearchResults() {
                     aiGenerator: video.aiGenerator || undefined,
                     prompt: video.prompt || undefined,
                     contentType: video.contentType as "video" | "image" | "embed" || undefined,
-                    vimeoId: video.vimeoId || undefined,
                     videoUrl: video.videoUrl || undefined,
                     imageUrl: video.imageUrl || undefined,
                     embedCode: video.embedCode || undefined,
