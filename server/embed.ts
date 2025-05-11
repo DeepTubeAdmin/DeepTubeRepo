@@ -76,7 +76,7 @@ export function generateEmbedHtml(content: Video, baseUrl: string): string {
       </html>
     `;
   } else if (content.contentType === 'embed' && content.embedCode) {
-    // For embeds like YouTube or Vimeo, parse the embed code
+    // For embeds like YouTube, parse the embed code
     // First check if it's YouTube
     const youtubeId = youtubeUtils.extractYouTubeVideoId(content.embedCode);
     
@@ -104,31 +104,7 @@ export function generateEmbedHtml(content: Video, baseUrl: string): string {
         </body>
         </html>
       `;
-    } else if (content.vimeoId) {
-      // For Vimeo
-      return `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>${content.title} - DeepTube</title>
-          <style>
-            body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
-            .embed-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; }
-            .embed-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-            .watermark { position: absolute; bottom: 10px; right: 10px; color: rgba(255,255,255,0.7); font-family: Arial, sans-serif; font-size: 14px; z-index: 10; }
-            a { color: #f97316; text-decoration: none; }
-          </style>
-        </head>
-        <body>
-          <div class="embed-container">
-            <iframe src="https://player.vimeo.com/video/${content.vimeoId}" frameborder="0" allowfullscreen></iframe>
-            <div class="watermark">Shared via <a href="${baseUrl}/media/${content.id}" target="_blank">DeepTube</a></div>
-          </div>
-        </body>
-        </html>
-      `;
+    // Vimeo support has been removed
     } else {
       // Generic embed code
       return `
