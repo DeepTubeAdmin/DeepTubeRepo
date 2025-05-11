@@ -376,12 +376,12 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   // Render the content feed
   return (
     <div className="container mx-auto px-4 py-8 space-y-12">
-      {/* Featured Video (no title as requested) */}
+      {/* Featured Video with title */}
       {data?.featured?.video && (
         <section className="mb-12">
           <div className="flex justify-between items-center mb-6">
-            {/* Only show the sort button, no section title */}
-            <div className="flex-1"></div>
+            {/* Section title added back as requested */}
+            <h2 className="text-xl font-bold text-white">Featured Video</h2>
             
             {/* Controls: Sort Button */}
             <div className="flex items-center">
