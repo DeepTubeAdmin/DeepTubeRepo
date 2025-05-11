@@ -147,13 +147,22 @@ export default function MyMessages() {
     setIsSendingReply(true);
 
     try {
-      const response = await apiRequest("POST", "/api/messages", {
+      console.log("Sending message to user:", activeConversation);
+      const response = await apiRequest("POST", "/api/messages/send", {
         receiverId: activeConversation,
         content: replyContent,
       });
 
+      if (response.status === 401) {
+        console.warn("Not authenticated when sending message, will redirect to login");
+        navigate("/auth");
+        throw new Error("Authentication required to send messages");
+      }
+      
       if (!response.ok) {
-        throw new Error("Failed to send message");
+        const errorText = await response.text();
+        console.error(`Failed to send message: ${response.status} - ${errorText}`);
+        throw new Error(`Failed to send message: ${errorText || response.statusText}`);
       }
 
       setReplyContent("");
