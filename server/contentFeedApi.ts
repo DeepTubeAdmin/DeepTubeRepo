@@ -97,7 +97,7 @@ export async function handleContentFeed(req: Request, res: Response) {
       }
       
       // 1. Get Featured Video - Pick a random approved video
-      const featuredVideos = await dbStorage.getFeaturedVideos(categorySlug);
+      const featuredVideos = await dbStorage.getFeaturedVideos(6);
       console.log(`Featured videos found: ${featuredVideos.length}, first few IDs: [ ${featuredVideos.slice(0, 3).map((v: Video) => v.id).join(', ')} ]`);
       
       if (featuredVideos.length > 0) {
@@ -187,26 +187,22 @@ export async function handleContentFeed(req: Request, res: Response) {
     // Subsequent pages - focus more on popular/trending content
     else {
       // Get more videos of user's selected sort preference
-      const moreVideos = await dbStorage.getVideos({
+      const moreVideos = await dbStorage.getVideos(
+        videoLimit,
+        'video',
+        categorySlug ? await getCategoryId(categorySlug) : undefined,
         sortBy,
-        limit: videoLimit,
-        contentType: 'video',
-        category: categorySlug,
-        shuffle: shuffle,
-        shuffleSeed: `${shuffleSeed}-page${page}`,
-        offset: (page - 1) * videoLimit
-      });
+        shuffle ? `${shuffleSeed}-page${page}` : undefined
+      );
       
       // Get more images of user's selected sort preference
-      const moreImages = await dbStorage.getVideos({
+      const moreImages = await dbStorage.getVideos(
+        imageLimit,
+        'image',
+        categorySlug ? await getCategoryId(categorySlug) : undefined,
         sortBy,
-        limit: imageLimit,
-        contentType: 'image',
-        category: categorySlug,
-        shuffle: shuffle,
-        shuffleSeed: `${shuffleSeed}-page${page}`,
-        offset: (page - 1) * imageLimit
-      });
+        shuffle ? `${shuffleSeed}-page${page}` : undefined
+      );
       
       videos = mergeAndDeduplicate(moreVideos, uniqueContentIds);
       images = mergeAndDeduplicate(moreImages, uniqueContentIds);
