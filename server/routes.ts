@@ -6,7 +6,7 @@ import { setupAuth, comparePasswords, hashPassword } from "./auth";
 import { randomBytes } from "crypto";
 import { sendPasswordResetEmail } from "./sendgrid";
 import { z } from "zod";
-import { insertCategorySchema, insertVideoSchema, type Video, type Category, type InsertLike } from "@shared/schema";
+import { insertCategorySchema, insertVideoSchema, type Video, type Category, type InsertLike, type InsertMessage } from "@shared/schema";
 import * as localYoutubeUtils from "./youtubeUtils";
 import { handleContentFeed } from './contentFeedApi';
 // Vimeo service no longer used as we've migrated to S3
@@ -19,7 +19,7 @@ import thumbnailService from "./services/ThumbnailService";
 // Import specific utilities from their respective modules
 import { youtube as youtubeUtils, storage as s3Service, ffmpeg as ffmpegUtils } from "./services/ThumbnailService";
 import { asc, desc, eq, like, and, sql, or, SQL, inArray } from 'drizzle-orm';
-import { videos } from '@shared/schema';
+import { videos, messages } from '@shared/schema';
 import { db } from './db';
 // Thumbnail routes now integrated directly
 import mongoDb from "./mongodb";

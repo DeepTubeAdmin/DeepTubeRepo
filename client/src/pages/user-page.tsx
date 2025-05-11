@@ -126,7 +126,8 @@ export default function UserPage() {
       });
       
       if (!response.ok) {
-        throw new Error("Failed to send message");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to send message");
       }
       
       setMessageContent("");
@@ -134,11 +135,11 @@ export default function UserPage() {
         title: "Message sent",
         description: `Your message has been sent to ${username}`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error sending message:", error);
       toast({
         title: "Error",
-        description: "Failed to send message. Please try again.",
+        description: error.message || "Failed to send message. Please try again.",
         variant: "destructive",
       });
     } finally {
