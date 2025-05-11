@@ -3184,7 +3184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Messaging API endpoints
-  app.post("/api/messages", isAuthenticated, async (req, res) => {
+  app.post("/api/messages/send", isAuthenticated, async (req, res) => {
     try {
       console.log("Message sending attempt received");
       ensureUser(req);
@@ -3235,8 +3235,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get conversation between current user and another user
-  app.get("/api/messages/:userId", isAuthenticated, async (req, res) => {
+  // Get conversation between current user and another user (deprecated route)
+  app.get("/api/messages/user/:userId", isAuthenticated, async (req, res) => {
     try {
       ensureUser(req);
       

@@ -65,16 +65,27 @@ export const getQueryFn: <T>(options: {
     
     console.log('Making API request to:', finalUrl);
     
-    const res = await fetch(finalUrl, {
-      credentials: "include",
-    });
+    try {
+      const res = await fetch(finalUrl, {
+        credentials: "include",
+        headers: {
+          "Accept": "application/json",
+        }
+      });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+      if (res.status === 401) {
+        console.warn(`Authentication failed for GET ${finalUrl} - received 401 Unauthorized`);
+        if (unauthorizedBehavior === "returnNull") {
+          return null;
+        }
+      }
+
+      await throwIfResNotOk(res);
+      return await res.json();
+    } catch (error) {
+      console.error(`Error fetching ${finalUrl}:`, error);
+      throw error;
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({
