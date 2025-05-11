@@ -47,17 +47,36 @@ export default function MyMessages() {
   }, [user, navigate]);
 
   // Fetch user's conversations
-  const { data: conversations, isLoading: isLoadingConversations, refetch: refetchConversations } = 
+  const { data: conversations, isLoading: isLoadingConversations, refetch: refetchConversations, error: conversationsError } = 
     useQuery<Conversation[]>({
       queryKey: ["/api/messages/conversations"],
       queryFn: async () => {
+        console.log("Fetching conversations with user:", user?.id);
         const response = await apiRequest("GET", "/api/messages/conversations");
+        
+        // Log response status for debugging
+        console.log("Conversations response status:", response.status);
+        
+        if (response.status === 401) {
+          console.warn("Not authenticated, will redirect to login");
+          navigate("/auth");
+          return []; // Return empty array to avoid error
+        }
+        
         if (!response.ok) {
+          console.error("Failed to fetch conversations:", await response.text());
           throw new Error("Failed to fetch conversations");
         }
-        return response.json();
+        
+        const data = await response.json();
+        console.log("Received conversations data:", data);
+        return data;
       },
       enabled: !!user,
+      retry: false,
+      onError: (error) => {
+        console.error("Error fetching conversations:", error);
+      }
     });
 
   // Fetch specific conversation messages

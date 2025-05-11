@@ -3292,7 +3292,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all conversations for the current user
   app.get("/api/messages/conversations", isAuthenticated, async (req, res) => {
     try {
-      ensureUser(req);
+      // Make sure req.user exists and has an id property
+      if (!req.user || !req.user.id) {
+        console.error("User object missing or invalid:", req.user);
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      
       console.log(`Getting conversations for user ${req.user.id} (${req.user.username})`);
       
       // First, get all messages for the user (sent or received)
