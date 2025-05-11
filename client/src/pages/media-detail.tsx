@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Heart, Flag, Share, MessageSquare, ThumbsUp, Flag as FlagIcon, Twitter, Facebook, Linkedin, Link as LinkIcon, Copy, X as XIcon, Terminal } from "lucide-react";
+import { Heart, Flag, Share, MessageSquare, ThumbsUp, Flag as FlagIcon, Twitter, Facebook, Linkedin, Link as LinkIcon, Copy, X as XIcon, Terminal, Maximize } from "lucide-react";
 import GenericVideoEmbed from "@/components/GenericVideoEmbed";
 import MiniFooter from "@/components/MiniFooter";
 import SEO from "@/components/SEO";
@@ -16,6 +16,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { generateVideoStructuredData, generateImageStructuredData } from "@/lib/structuredData";
 import AIWatermark from "@/components/AIWatermark";
 import VideoCard from "@/components/VideoCard";
+import FullscreenImageModal from "@/components/FullscreenImageModal";
 import { 
   Dialog,
   DialogContent,
@@ -58,6 +59,7 @@ export default function MediaDetail() {
   const [commentText, setCommentText] = useState("");
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [fullscreenImageOpen, setFullscreenImageOpen] = useState(false);
   const [reportReason, setReportReason] = useState<string>("");
   const [copySuccess, setCopySuccess] = useState("");
   const shareUrlRef = useRef<HTMLInputElement>(null);
@@ -581,22 +583,25 @@ export default function MediaDetail() {
                   />
                   {/* Fullscreen button */}
                   <button 
-                    onClick={() => {
-                      // Open the image in a new tab for fullscreen viewing
-                      if (media.imageUrl) {
-                        window.open(media.imageUrl.toString(), '_blank');
-                      }
-                    }}
+                    onClick={() => setFullscreenImageOpen(true)}
                     className="absolute bottom-4 right-4 bg-black bg-opacity-70 p-2 rounded-full text-white 
                               hover:bg-orange-600 transition-colors duration-200 opacity-0 group-hover:opacity-100"
                     aria-label="View fullscreen"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-                    </svg>
+                    <Maximize size={24} />
                   </button>
                   {media.aiGenerator && <AIWatermark aiGenerator={media.aiGenerator} position="bottom-right" size="medium" />}
                 </div>
+              )}
+              
+              {/* Fullscreen Image Modal */}
+              {media.contentType === 'image' && media.imageUrl && (
+                <FullscreenImageModal
+                  imageUrl={media.imageUrl}
+                  alt={media.title || 'Image'}
+                  isOpen={fullscreenImageOpen}
+                  onClose={() => setFullscreenImageOpen(false)}
+                />
               )}
               
               {media.contentType === 'embed' && media.embedCode && (
