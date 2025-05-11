@@ -63,16 +63,11 @@ export default function Home() {
   const allCategories = apiCategories || [];
 
   const handleCategoryChange = (slug: string) => {
+    console.log(`Home: Changing category to: ${slug || 'all'}`);
     setActiveCategory(slug);
     
-    // When category changes, invalidate content feed queries to refresh with new category
-    // We don't reset the sort option here, so sorting will be preserved
-    queryClient.invalidateQueries({ 
-      predicate: (query: any) => {
-        // Only invalidate content feed queries
-        return Array.isArray(query.queryKey) && query.queryKey[0] === '/api/content/feed';
-      }
-    });
+    // We don't need to explicitly invalidate here since the ContentFeed
+    // component will handle that when it receives the new category prop
   };
   
   // Handle player functionality

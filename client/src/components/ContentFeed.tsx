@@ -232,6 +232,28 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
       previousDataRef.current = data;
     }
   }, [data]);
+  
+  // Effect to reset content when category changes
+  useEffect(() => {
+    // Skip on initial mount
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    
+    console.log(`Category changed to: ${categorySlug || 'all'}, maintaining sort option: ${sortBy}`);
+    
+    // Reset page and content when category changes
+    setPage(1);
+    setLoadedVideos([]);
+    setLoadedImages([]);
+    setAdPositions([]);
+    
+    // Force data refresh with new category
+    queryClient.invalidateQueries({
+      queryKey: ['/api/content/feed']
+    });
+  }, [categorySlug, sortBy]);
 
   // Effect for handling content updates
   useEffect(() => {
