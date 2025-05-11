@@ -851,6 +851,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
   
+  // Cache variables for content management
+  const usedCategoriesCache = new Map<string, Set<number>>();
+  const infiniteScrollCache = new Map<string, any[]>();
+  let cachedCategories: Category[] = [];
+  
   // Function to log detailed category state information
   function logCategoryState(key: string) {
     const categories = usedCategoriesCache.get(key);
@@ -2256,6 +2261,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         setTimeout(async () => {
                           try {
                             // Use imageUrl directly to get the image
+                            if (!video.imageUrl) {
+                              console.warn("Thumbnail migration failed - no source image URL");
+                              return;
+                            }
                             const imageResponse = await fetch(video.imageUrl, { method: 'GET' });
                             if (imageResponse.ok) {
                               const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
@@ -3449,7 +3458,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Invalid video ID' });
       }
       
-      const video = await storage.getVideoById(videoId);
+      const video = await dbStorage.getVideoById(videoId);
       if (!video) {
         return res.status(404).json({ error: 'Video not found' });
       }
