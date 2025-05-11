@@ -144,6 +144,13 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     setShowSortMenu(false);
     // Reset page when sort changes
     setPage(1);
+    setLoadedVideos([]);
+    setLoadedImages([]);
+    setAdPositions([]);
+    
+    // Force data refresh with new sort option
+    console.log(`Changing sort option to: ${option}`);
+    queryClient.invalidateQueries({ queryKey: ['/api/content/feed'] });
   }, []);
 
   // Process data for rendering - dynamic column/row adjustments
