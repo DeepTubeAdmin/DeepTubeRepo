@@ -32,7 +32,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   // Get shuffle context
   const { shuffleSeed: contextShuffleSeed, triggerShuffle } = useContext(ShuffleContext);
   
-  // State hooks - all defined at the top level
+  // State hooks
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortOption>('trending');
   const [showSortMenu, setShowSortMenu] = useState(false);
@@ -41,7 +41,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   const [loadedImages, setLoadedImages] = useState<Video[]>([]);
   const [adPositions, setAdPositions] = useState<number[]>([]);
 
-  // Ref hooks - all defined at the top level
+  // Ref hooks
   const previousDataRef = useRef<ContentFeedResponse | undefined>(undefined);
   const sortMenuRef = useRef<HTMLDivElement>(null);
   const sortButtonRef = useRef<HTMLButtonElement>(null);
@@ -117,15 +117,20 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     return items?.slice(0, totalItems) || [];
   }, [columnCount]);
 
-  const insertAdvertisement = useCallback((items: Video[] = [], adPosition: number = 0) => {
-    // Deep copy the array to avoid modifying the original
-    const result = [...(items || [])];
-    // Adjust position if it exceeds array length
-    const position = Math.min(adPosition, result.length - 1);
-    // Replace the item at the position with null (to be rendered as an ad)
-    if (result.length > 0) {
-      result[position] = null as unknown as Video;
-    }
+  // Function to randomly place an ad in content
+  const insertAdvertisementInContent = useCallback((contentItems: Video[], adType: 'video' | 'image'): (Video | null)[] => {
+    if (!contentItems || contentItems.length === 0) return [];
+    
+    // Create a copy of the content array
+    const result = [...contentItems];
+    
+    // Randomly select a position for the ad (avoiding the first 2 items)
+    const minPosition = Math.min(2, result.length - 1);
+    const adPosition = Math.floor(Math.random() * (result.length - minPosition)) + minPosition;
+    
+    // Replace the item at that position with null (to be rendered as an ad)
+    result[adPosition] = null as unknown as Video;
+    
     return result;
   }, []);
 
@@ -367,23 +372,6 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   if (!data) {
     return null;
   }
-
-  // Function to randomly place an ad in content
-  const insertAdvertisementInContent = useCallback((contentItems: Video[], adType: 'video' | 'image'): (Video | null)[] => {
-    if (!contentItems || contentItems.length === 0) return [];
-    
-    // Create a copy of the content array
-    const result = [...contentItems];
-    
-    // Randomly select a position for the ad (avoiding the first 2 items)
-    const minPosition = Math.min(2, result.length - 1);
-    const adPosition = Math.floor(Math.random() * (result.length - minPosition)) + minPosition;
-    
-    // Replace the item at that position with null (to be rendered as an ad)
-    result[adPosition] = null as unknown as Video;
-    
-    return result;
-  }, []);
 
   // Render the content feed
   return (
