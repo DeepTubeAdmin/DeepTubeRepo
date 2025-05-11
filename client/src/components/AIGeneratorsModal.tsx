@@ -53,6 +53,16 @@ const generators: Generator[] = [
     name: "Hedra",
     description: "Fast, character-driven videos with lip-sync and integrated AI tools.",
     url: "https://hedra.com"
+  },
+  {
+    name: "Midjourney",
+    description: "Outstanding photorealistic images with exceptional artistic quality and detail.",
+    url: "https://www.midjourney.com"
+  },
+  {
+    name: "Higgsfield",
+    description: "Real-time interactive AI video generation with dynamic storytelling capabilities.",
+    url: "https://higgsfield.ai"
   }
 ];
 
