@@ -11,6 +11,7 @@ import Layout from "@/components/Layout";
 import MiniFooter from "@/components/MiniFooter";
 import SEO from "@/components/SEO";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { useShuffle } from "@/App";
 
 export default function Home() {
@@ -63,7 +64,15 @@ export default function Home() {
 
   const handleCategoryChange = (slug: string) => {
     setActiveCategory(slug);
-    // Category change notification removed as requested
+    
+    // When category changes, invalidate content feed queries to refresh with new category
+    // We don't reset the sort option here, so sorting will be preserved
+    queryClient.invalidateQueries({ 
+      predicate: (query: any) => {
+        // Only invalidate content feed queries
+        return Array.isArray(query.queryKey) && query.queryKey[0] === '/api/content/feed';
+      }
+    });
   };
   
   // Handle player functionality

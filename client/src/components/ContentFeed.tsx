@@ -149,9 +149,19 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     setAdPositions([]);
     
     // Force data refresh with new sort option
-    console.log(`Changing sort option to: ${option}`);
-    queryClient.invalidateQueries({ queryKey: ['/api/content/feed'] });
-  }, []);
+    console.log(`Changing sort option to: ${option}, preserving category: ${categorySlug || 'all'}`);
+    
+    // Only invalidate the specific query with the current category to preserve filtering
+    queryClient.invalidateQueries({ 
+      predicate: (query: any) => {
+        // Check if this is a content feed query
+        if (!Array.isArray(query.queryKey) || query.queryKey[0] !== '/api/content/feed') {
+          return false;
+        }
+        return true;
+      }
+    });
+  }, [categorySlug]);
 
   // Process data for rendering - dynamic column/row adjustments
   const renderContent = useMemo(() => {
