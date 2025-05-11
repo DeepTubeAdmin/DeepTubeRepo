@@ -583,7 +583,9 @@ export default function MediaDetail() {
                   <button 
                     onClick={() => {
                       // Open the image in a new tab for fullscreen viewing
-                      window.open(media.imageUrl, '_blank');
+                      if (media.imageUrl) {
+                        window.open(media.imageUrl.toString(), '_blank');
+                      }
                     }}
                     className="absolute bottom-4 right-4 bg-black bg-opacity-70 p-2 rounded-full text-white 
                               hover:bg-orange-600 transition-colors duration-200 opacity-0 group-hover:opacity-100"
@@ -627,7 +629,15 @@ export default function MediaDetail() {
                         className="absolute top-0 left-0 w-full h-full"
                         dangerouslySetInnerHTML={{ __html: media.embedCode
                           .replace(/width="\d+"/, 'width="100%"')
-                          .replace(/height="\d+"/, 'height="100%"') 
+                          .replace(/height="\d+"/, 'height="100%"')
+                          // Add autoplay parameter to any embed codes (Vimeo, etc.)
+                          .replace(/src="([^"]+)"/, (match, url) => {
+                            if (url.includes('?')) {
+                              return `src="${url}&autoplay=1"`;
+                            } else {
+                              return `src="${url}?autoplay=1"`;
+                            }
+                          })
                         }}
                       />
                     </div>

@@ -233,7 +233,9 @@ const GenericVideoEmbed = ({
           <video 
             src={directVideoUrl}
             controls
-            autoPlay={autoplay}
+            autoPlay={true}
+            muted={autoplay} // Muted for autoplay to work in more browsers
+            playsInline // For iOS Safari
             loop={loop}
             poster={undefined}
             className={responsive ? 'absolute top-0 left-0 w-full h-full' : ''}
