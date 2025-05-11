@@ -258,12 +258,11 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
         // Update local shuffle seed to match URL parameter
         setLocalShuffleSeed(finalShuffleValue);
         
-        // Reset UI state
+        // Reset UI state but preserve sort selection
         setPage(1);
         setLoadedVideos([]);
         setLoadedImages([]);
         setAdPositions([]);
-        setSortBy('trending');
         
         // Force data refresh
         queryClient.invalidateQueries({ queryKey: ['/api/content/feed'] });
@@ -275,12 +274,11 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
         // If no URL parameter, we've already created a new random seed in the useState initializer
         console.log('ContentFeed: Using initial page load shuffle with seed:', localShuffleSeed);
         
-        // Reset UI state
+        // Reset UI state but preserve sort selection
         setPage(1);
         setLoadedVideos([]);
         setLoadedImages([]);
         setAdPositions([]);
-        setSortBy('trending');
         
         // Force data refresh on initial mount
         queryClient.invalidateQueries({ queryKey: ['/api/content/feed'] });

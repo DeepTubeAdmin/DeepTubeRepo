@@ -135,57 +135,86 @@ export async function handleContentFeed(req: Request, res: Response) {
       uniqueContentIds.add(response.featured.video.id);
     }
     
-    // First page loads - get a mix of trending, new, and popular
+    // First page loads - use the user's sortBy parameter or mix content if trending
     if (page === 1) {
-      // Get trending videos
       const categoryId = categorySlug ? await getCategoryId(categorySlug) : undefined;
-      console.log(`Using randomized shuffle ordering for trending with seed: ${shuffleSeed}, categoryId: ${categoryId || 'none'}`);
-      const trendingVideos = await dbStorage.getTrendingVideos(
-        videoLimit, 
-        'video',
-        shuffle ? shuffleSeed : undefined,
-        categoryId
-      );
-      console.log(`Retrieved ${trendingVideos.length} trending videos. First few IDs: [ ${trendingVideos.slice(0, 3).map((v: Video) => v.id).join(', ')} ]`);
+      console.log(`First page load with sortBy: ${sortBy}, shuffle seed: ${shuffleSeed}, categoryId: ${categoryId || 'none'}`);
       
-      // Get new videos
-      const newVideos = await dbStorage.getVideos(
-        videoLimit,
-        'video',
-        categorySlug ? await getCategoryId(categorySlug) : undefined,
-        'newest',
-        shuffleSeed
-      );
-      
-      // Get popular videos (most viewed)
-      const popularVideos = await dbStorage.getVideos(
-        videoLimit,
-        'video',
-        categorySlug ? await getCategoryId(categorySlug) : undefined,
-        'most-viewed',
-        shuffleSeed
-      );
-      
-      // Get trending images
-      const trendingImages = await dbStorage.getTrendingVideos(
-        imageLimit, 
-        'image',
-        shuffle ? shuffleSeed : undefined,
-        categoryId
-      );
-      
-      // Get new images
-      const newImages = await dbStorage.getVideos(
-        imageLimit,
-        'image',
-        categorySlug ? await getCategoryId(categorySlug) : undefined,
-        'newest',
-        shuffleSeed
-      );
-      
-      // Combine everything with de-duplication
-      videos = mergeAndDeduplicate([...trendingVideos, ...newVideos, ...popularVideos], uniqueContentIds);
-      images = mergeAndDeduplicate([...trendingImages, ...newImages], uniqueContentIds);
+      // Load videos and images based on sort preference
+      if (sortBy === 'trending') {
+        // For trending, we'll still mix content types for a better experience
+        // Get trending videos
+        const trendingVideos = await dbStorage.getTrendingVideos(
+          videoLimit, 
+          'video',
+          shuffle ? shuffleSeed : undefined,
+          categoryId
+        );
+        console.log(`Retrieved ${trendingVideos.length} trending videos. First few IDs: [ ${trendingVideos.slice(0, 3).map((v: Video) => v.id).join(', ')} ]`);
+        
+        // Get new videos
+        const newVideos = await dbStorage.getVideos(
+          videoLimit,
+          'video',
+          categoryId,
+          'newest',
+          shuffleSeed
+        );
+        
+        // Get popular videos (most viewed)
+        const popularVideos = await dbStorage.getVideos(
+          videoLimit,
+          'video',
+          categoryId,
+          'most-viewed',
+          shuffleSeed
+        );
+        
+        // Get trending images
+        const trendingImages = await dbStorage.getTrendingVideos(
+          imageLimit, 
+          'image',
+          shuffle ? shuffleSeed : undefined,
+          categoryId
+        );
+        
+        // Get new images
+        const newImages = await dbStorage.getVideos(
+          imageLimit,
+          'image',
+          categoryId,
+          'newest',
+          shuffleSeed
+        );
+        
+        // Combine everything with de-duplication
+        videos = mergeAndDeduplicate([...trendingVideos, ...newVideos, ...popularVideos], uniqueContentIds);
+        images = mergeAndDeduplicate([...trendingImages, ...newImages], uniqueContentIds);
+      } else {
+        // For other sort options (newest, oldest, most-viewed, popular), respect the user's choice
+        console.log(`Using sortBy=${sortBy} for video content`);
+        
+        // Get videos with the selected sort option
+        const sortedVideos = await dbStorage.getVideos(
+          videoLimit,
+          'video',
+          categoryId,
+          sortBy,
+          shuffleSeed
+        );
+        
+        // Get images with the selected sort option
+        const sortedImages = await dbStorage.getVideos(
+          imageLimit,
+          'image',
+          categoryId,
+          sortBy, 
+          shuffleSeed
+        );
+        
+        videos = mergeAndDeduplicate(sortedVideos, uniqueContentIds);
+        images = mergeAndDeduplicate(sortedImages, uniqueContentIds);
+      }
     } 
     // Subsequent pages - focus more on popular/trending content
     else {
