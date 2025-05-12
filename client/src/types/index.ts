@@ -5,7 +5,7 @@ export interface Video {
   credits: number;
   resolution: "HD" | "4K";
   duration: number; // in seconds
-  categoryId: number;
+  categoryId: number | null;
   category?: {
     id: number;
     name: string;
@@ -13,22 +13,30 @@ export interface Video {
     icon?: string;
     image?: string | null;
   };
-  description?: string;
-  aiGenerator?: string;
-  prompt?: string;
-  contentType?: "video" | "image" | "embed"; // Added to support videos, images, and embeds
-  videoUrl?: string;  // URL to the video file (S3 or direct URL)
-  imageUrl?: string;  // URL to the image file for image content type
-  embedCode?: string; // Embed code for embedded content
-  userId?: number;    // User ID who uploaded the video
-  createdAt?: string; // Creation timestamp
+  description: string | null;
+  aiGenerator: string | null;
+  prompt: string | null;
+  contentType: "video" | "image" | "embed"; // Added to support videos, images, and embeds
+  videoUrl: string | null;  // URL to the video file (S3 or direct URL)
+  imageUrl: string | null;  // URL to the image file for image content type
+  embedCode: string | null; // Embed code for embedded content
+  userId: number | null;    // User ID who uploaded the video
+  createdAt: string; // Creation timestamp
   
   // Additional fields needed for search results
-  featured?: boolean;     // Whether the video is featured
-  views?: number;         // View count
-  preview?: boolean;      // Whether preview is enabled
-  likes?: number;         // Like count
-  reviewStatus?: 'pending' | 'approved' | 'rejected'; // Current review status
+  featured: boolean;     // Whether the video is featured
+  views: number;         // View count
+  preview: boolean;      // Whether preview is enabled
+  likes: number;         // Like count
+  reviewStatus: 'pending' | 'approved' | 'rejected'; // Current review status
+  
+  // Fields for detailed content management
+  vimeoId: string | null;           // ID for Vimeo videos (legacy)
+  reviewedAt: string | null;        // When the video was reviewed
+  reviewedBy: number | null;        // Who reviewed the video
+  rejectionReason: string | null;   // Reason for rejection if rejected
+  uploaderName: string;             // Name of the uploader
+  uploaderId: number | null;        // ID of the uploader
 }
 
 export interface Category {

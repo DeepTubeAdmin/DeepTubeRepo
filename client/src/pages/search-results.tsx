@@ -402,7 +402,7 @@ export default function SearchResults() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {searchResults.map(video => {
-                  // Handle nullable fields for client-side Video type
+                  // Create a fully-typed Video object from the search result
                   const clientVideo: Video = {
                     id: video.id,
                     title: video.title,
@@ -410,22 +410,29 @@ export default function SearchResults() {
                     credits: typeof video.credits === 'number' ? video.credits : 0,
                     resolution: (video.resolution === "HD" || video.resolution === "4K") ? video.resolution : "HD",
                     duration: video.duration || 0,
-                    categoryId: video.categoryId || 0,
-                    description: video.description || undefined,
-                    aiGenerator: video.aiGenerator || undefined,
-                    prompt: video.prompt || undefined,
+                    categoryId: video.categoryId || null,
+                    description: video.description || null,
+                    aiGenerator: video.aiGenerator || null,
+                    prompt: video.prompt || null,
                     contentType: video.contentType as "video" | "image" | "embed" || "video",
-                    videoUrl: video.videoUrl || undefined,
-                    imageUrl: video.imageUrl || undefined,
-                    embedCode: video.embedCode || undefined,
-                    userId: video.userId || undefined,
-                    createdAt: video.createdAt?.toString() || undefined,
-                    // Add missing properties with defaults
+                    videoUrl: video.videoUrl || null,
+                    imageUrl: video.imageUrl || null,
+                    embedCode: video.embedCode || null,
+                    userId: video.userId || null,
+                    createdAt: video.createdAt?.toString() || new Date().toISOString(),
+                    // Add properties with defaults
                     featured: video.featured || false,
                     views: video.views || 0,
                     preview: video.preview || false,
                     likes: video.likes || 0,
                     reviewStatus: video.reviewStatus || 'pending',
+                    // Required properties from updated Video type
+                    vimeoId: video.vimeoId || null,
+                    reviewedAt: video.reviewedAt?.toString() || null,
+                    reviewedBy: video.reviewedBy || null,
+                    rejectionReason: video.rejectionReason || null,
+                    uploaderName: video.uploaderName || 'Anonymous',
+                    uploaderId: video.uploaderId || null,
                   };
                   return (
                     <VideoCard
