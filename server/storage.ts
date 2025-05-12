@@ -448,9 +448,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Content review operations
-  async getPendingReviewContent(limit: number = 50): Promise<Video[]> {
-    return db.select()
+  async getPendingReviewContent(limit: number = 50): Promise<(Video & { uploaderName?: string })[]> {
+    // Join with users table to get the uploader's username
+    return db.select({
+      id: videos.id,
+      createdAt: videos.createdAt,
+      userId: videos.userId,
+      title: videos.title,
+      description: videos.description,
+      aiGenerator: videos.aiGenerator,
+      prompt: videos.prompt,
+      thumbnail: videos.thumbnail,
+      videoUrl: videos.videoUrl,
+      imageUrl: videos.imageUrl,
+      embedCode: videos.embedCode,
+      contentType: videos.contentType,
+      categoryId: videos.categoryId,
+      views: videos.views,
+      featured: videos.featured,
+      reviewStatus: videos.reviewStatus,
+      preview: videos.preview,
+      videoLength: videos.videoLength,
+      youtubeId: videos.youtubeId,
+      vimeoId: videos.vimeoId,
+      reviewedAt: videos.reviewedAt,
+      reviewedBy: videos.reviewedBy,
+      rejectionReason: videos.rejectionReason,
+      uploaderName: users.username
+    })
       .from(videos)
+      .leftJoin(users, eq(videos.userId, users.id))
       .where(eq(videos.reviewStatus, 'pending'))
       .orderBy(desc(videos.createdAt))
       .limit(limit);

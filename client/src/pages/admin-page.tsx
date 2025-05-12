@@ -337,12 +337,12 @@ export default function AdminPage() {
                             </TableCell>
                             <TableCell className="text-white font-medium">{content.title}</TableCell>
                             <TableCell className="text-gray-300">
-                              {content.userId ? (
+                              {content.userId && content.uploaderName ? (
                                 <Link 
                                   href={`/user/${content.userId}`} 
                                   className="text-primary hover:text-primary/80 underline"
                                 >
-                                  User ID: {content.userId}
+                                  {content.uploaderName}
                                 </Link>
                               ) : 'Anonymous'}
                             </TableCell>
