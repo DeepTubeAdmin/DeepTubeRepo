@@ -1,6 +1,7 @@
 import { Video } from "@shared/schema";
 import express, { Request, Response } from "express";
 import { storage as dbStorage } from './storage';
+import { createSeededRandom, generateShuffleSeed } from '../shared/shuffleUtils';
 
 /**
  * Helper function to get category ID from slug
@@ -47,9 +48,8 @@ export async function handleContentFeed(req: Request, res: Response) {
     } else if (hasShuffleParam) {
       shuffleSeed = req.query.shuffle as string;
     } else if (shuffle) {
-      // Generate a random shuffle seed
-      const timestamp = Date.now();
-      shuffleSeed = `server-${timestamp.toString(36)}`;
+      // Generate a random shuffle seed using our shared utility
+      shuffleSeed = generateShuffleSeed();
     }
     
     if (shuffleSeed) {
@@ -312,23 +312,4 @@ function resetContentCache(key?: string, resetCategories: boolean = false) {
   }
 }
 
-/**
- * Create a seeded random function
- */
-function createSeededRandom(seed: string): () => number {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = ((hash << 5) - hash) + seed.charCodeAt(i);
-    hash |= 0; // Convert to 32bit integer
-  }
-  
-  let state = hash || 1;
-  
-  // Simple xorshift algorithm for pseudo-random number generation
-  return function() {
-    state ^= state << 13;
-    state ^= state >> 17;
-    state ^= state << 5;
-    return (state >>> 0) / 4294967296; // Convert to [0, 1) range
-  };
-}
+// Function removed; using imported createSeededRandom from shared/shuffleUtils.ts instead
