@@ -159,6 +159,11 @@ export default function Header({ simple = false }: HeaderProps) {
                   onClick={toggleUserDropdown}
                 >
                   <span>{user ? user.username.charAt(0).toUpperCase() : "A"}</span>
+                  {user && unreadMessageData?.count > 0 && (
+                    <div className="absolute -top-1 -right-1 h-4 w-4 bg-orange-500 rounded-full flex items-center justify-center text-[10px] font-bold border border-black">
+                      {unreadMessageData.count > 9 ? '9+' : unreadMessageData.count}
+                    </div>
+                  )}
                 </div>
                 
                 {showUserDropdown && (
@@ -206,9 +211,14 @@ export default function Header({ simple = false }: HeaderProps) {
                             setLocation("/my-messages");
                             setShowUserDropdown(false);
                           }} 
-                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"
+                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer relative"
                         >
                           My Messages
+                          {unreadMessageData?.count > 0 && (
+                            <span className="ml-2 inline-flex items-center justify-center h-5 w-5 text-xs bg-orange-600 text-white rounded-full">
+                              {unreadMessageData.count > 9 ? '9+' : unreadMessageData.count}
+                            </span>
+                          )}
                         </a>
                         {user && (user.id === 1 || user.id === 2) && (
                           <a 
@@ -323,6 +333,11 @@ export default function Header({ simple = false }: HeaderProps) {
                 onClick={toggleUserDropdown}
               >
                 <span>{user ? user.username.charAt(0).toUpperCase() : "A"}</span>
+                {user && unreadMessageData?.count > 0 && (
+                  <div className="absolute -top-1 -right-1 h-4 w-4 bg-orange-500 rounded-full flex items-center justify-center text-[10px] font-bold border border-black">
+                    {unreadMessageData.count > 9 ? '9+' : unreadMessageData.count}
+                  </div>
+                )}
               </div>
               
               {showUserDropdown && (
@@ -370,9 +385,14 @@ export default function Header({ simple = false }: HeaderProps) {
                           setLocation("/my-messages");
                           setShowUserDropdown(false);
                         }} 
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"
+                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer relative"
                       >
                         My Messages
+                        {unreadMessageData?.count > 0 && (
+                          <span className="ml-2 inline-flex items-center justify-center h-5 w-5 text-xs bg-orange-600 text-white rounded-full">
+                            {unreadMessageData.count > 9 ? '9+' : unreadMessageData.count}
+                          </span>
+                        )}
                       </a>
                       {/* Show Admin Dashboard link only for admin users */}
                       {user && (user.id === 1 || user.id === 2) && (
