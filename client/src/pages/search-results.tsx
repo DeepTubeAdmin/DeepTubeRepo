@@ -123,15 +123,19 @@ export default function SearchResults() {
       return '';  // Return empty string when no query is present
     }
     
+    // Extract only the search term if URL contains unexpected parts
+    // This fixes the issue with malformed URLs containing "?0=/" and other artifacts
+    const sanitizedQuery = currentQuery.split('?')[0];
+    
     // Minimal preprocessing to handle whitespace and make search more effective
     // The server handles the advanced search logic
-    const processedQuery = currentQuery
+    const processedQuery = sanitizedQuery
       .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
       .trim();
       
     // Only proceed if we have a valid query after processing
     if (!processedQuery) {
-      console.log('Query was empty after processing:', currentQuery);
+      console.log('Query was empty after processing:', sanitizedQuery);
       return '';
     }
     
