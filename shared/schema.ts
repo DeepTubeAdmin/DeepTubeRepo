@@ -294,7 +294,7 @@ export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Category = typeof categories.$inferSelect;
 
 export type InsertVideo = z.infer<typeof insertVideoSchema>;
-export type Video = typeof videos.$inferSelect;
+export type Video = typeof videos.$inferSelect & { uploaderName?: string };
 
 export type InsertWishlistItem = z.infer<typeof insertWishlistItemSchema>;
 export type WishlistItem = typeof wishlistItems.$inferSelect;
