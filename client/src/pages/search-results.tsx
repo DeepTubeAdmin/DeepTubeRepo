@@ -57,32 +57,65 @@ export default function SearchResults() {
   const handleCategoryChange = (slug: string) => {
     setCategorySlug(slug);
     
-    // Update URL query parameters
+    // Update URL query parameters while preserving other parameters
     const params = new URLSearchParams(search);
+    
+    // Set or remove category parameter
     if (slug) {
       params.set('category', slug);
     } else {
       params.delete('category');
     }
     
+    // Ensure we keep the search query
+    if (currentQuery) {
+      params.set('q', currentQuery);
+    }
+    
+    // Preserve content type filter
+    if (contentType !== 'all') {
+      params.set('type', contentType);
+    }
+    
     // Update the URL without reloading the page
     setLocation(`/search?${params.toString()}`, { replace: true });
+    
+    console.log('Category changed to:', slug, 
+      'with query:', currentQuery,
+      'and content type:', contentType);
   };
   
   // Handle search form submission
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Update URL query parameters
+    // Validate input - don't perform empty searches
+    if (!searchQuery || searchQuery.trim() === '') {
+      return;
+    }
+    
+    // Update URL query parameters while preserving other parameters
     const params = new URLSearchParams(search);
-    if (searchQuery) {
-      params.set('q', searchQuery);
-    } else {
-      params.delete('q');
+    
+    // Set the search query
+    params.set('q', searchQuery.trim());
+    
+    // Preserve existing parameters (type and category)
+    if (contentType !== 'all') {
+      params.set('type', contentType);
+    }
+    
+    if (categorySlug) {
+      params.set('category', categorySlug);
     }
     
     // Update the URL without reloading the page
     setLocation(`/search?${params.toString()}`, { replace: true });
+    
+    // Log the search for debugging
+    console.log('Performing search with query:', searchQuery.trim(), 
+      'content type:', contentType,
+      'category:', categorySlug);
   };
   
   // Handle content type change
@@ -90,16 +123,31 @@ export default function SearchResults() {
     const type = value as 'all' | 'video' | 'image' | 'embed';
     setContentType(type);
     
-    // Update URL query parameters
+    // Update URL query parameters while preserving other parameters
     const params = new URLSearchParams(search);
+    
+    // Set content type if it's not 'all'
     if (type !== 'all') {
       params.set('type', type);
     } else {
       params.delete('type');
     }
     
+    // Ensure we keep the search query and category
+    if (currentQuery) {
+      params.set('q', currentQuery);
+    }
+    
+    if (categorySlug) {
+      params.set('category', categorySlug);
+    }
+    
     // Update the URL without reloading the page
     setLocation(`/search?${params.toString()}`, { replace: true });
+    
+    console.log('Content type changed to:', type, 
+      'with query:', currentQuery,
+      'and category:', categorySlug);
   };
   
   // Get the query directly from the URL every time to ensure it's accurate
