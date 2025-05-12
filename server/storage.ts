@@ -878,7 +878,7 @@ export class DatabaseStorage implements IStorage {
             query = query.orderBy(desc(videos.id));
             break;
           case 'oldest':
-            query = query.orderBy(asc(videos.createdAt));
+            query = query.orderBy(asc(videos.id));
             break;
           case 'most-viewed':
             query = query.orderBy(desc(videos.views));
