@@ -54,7 +54,9 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
     "Kling", 
     "Vidu", 
     "Luma", 
-    "Open AI Sora", 
+    "Open AI Sora",
+    "Higgsfield",
+    "Midjourney",
     "Other"
   ];
   const [prompt, setPrompt] = useState("");
