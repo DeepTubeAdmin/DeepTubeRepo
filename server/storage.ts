@@ -236,138 +236,14 @@ export class DatabaseStorage implements IStorage {
     contentType?: string, 
     categoryId?: number, 
     sortBy: 'newest' | 'oldest' | 'viewed' | 'most-viewed' | 'trending' | 'popular' = 'newest',
-    shuffleSeed?: string
+    shuffleSeed?: string,
+    offset: number = 0
   ): Promise<Video[]> {
     console.log(`getVideos called with contentType=${contentType || 'undefined'}, limit=${limit}, sortBy=${sortBy}`);
     
-    // Handle special sort cases that require different query structures
-    if (sortBy === 'popular') {
-      return this.getPopularVideos(limit, contentType, undefined, categoryId);
-    }
-    
-    if (sortBy === 'trending') {
-      return this.getTrendingVideos(limit, contentType, undefined, categoryId);
-    }
-    
-    if (sortBy === 'most-viewed') {
-      return this.getMostViewedVideos(limit, contentType, categoryId);
-    }
-    // Start with base query
-    let queryBuilder = db.select().from(videos);
-    
-    // Start with all video filters to ensure proper AND relationships
-    let conditions = [];
-    
-    // Add content type filter
-    if (contentType) {
-      console.log(`Filtering by contentType: "${contentType}"`);
-      conditions.push(eq(videos.contentType, contentType));
-      console.log(`SQL with contentType filter (approximate): SELECT * FROM videos WHERE content_type = '${contentType}'`);
-    }
-    
-    // Add category filter if specified
-    if (categoryId) {
-      conditions.push(eq(videos.categoryId, categoryId));
-    }
-    
-    // Add visibility filter - only show approved content or YouTube embeds
-    conditions.push(
-      or(
-        eq(videos.reviewStatus, 'approved'),
-        and(
-          eq(videos.contentType, 'embed'),
-          like(videos.embedCode || '', '%youtube%')
-        )
-      )
-    );
-    
-    // Apply all conditions with AND
-    if (conditions.length > 0) {
-      queryBuilder = queryBuilder.where(and(...conditions));
-    }
-    
-    // Add ordering with YouTube-like algorithm
-    if (shuffleSeed) {
-      // When a shuffleSeed is provided, use a seeded random order to ensure consistent shuffle results
-      console.log(`Using randomized shuffle ordering with seed: ${shuffleSeed}`);      
-      // Generate a stable integer hash from the shuffle seed
-      const seedHash = shuffleSeed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      // Use modulo to get a sort pattern between 0-4
-      const sortPattern = seedHash % 5;
-      // Use modulo to get a small integer between 1-99 that's safe to use in SQL
-      const seedValue = 1 + (seedHash % 99); 
-      
-      switch (sortPattern) {
-        case 0: // Random only with fixed offset
-          queryBuilder = queryBuilder.orderBy(
-            sql`${videos.id} % ${seedValue}`
-          );
-          break;
-        case 1: // Newest with deterministic offset
-          queryBuilder = queryBuilder.orderBy(
-            sql`${videos.id} % ${seedValue} DESC`
-          );
-          break;
-        case 2: // Title-influenced shuffle
-          queryBuilder = queryBuilder.orderBy(
-            sql`LENGTH(${videos.title}) % ${seedValue}`
-          );
-          break;
-        case 3: // Created date with fixed modulo
-          queryBuilder = queryBuilder.orderBy(
-            sql`EXTRACT(EPOCH FROM ${videos.createdAt})::INTEGER % ${seedValue}`
-          );
-          break;
-        case 4: // Category with fixed modulo
-          queryBuilder = queryBuilder.orderBy(
-            sql`(${videos.categoryId} * ${seedValue}) % 100`
-          );
-          break;
-        default:
-          // Fallback to ID-based ordering
-          queryBuilder = queryBuilder.orderBy(desc(videos.id));
-      }
-    }
-    else if (sortBy === 'newest') {
-      // Order by ID desc ensures newest uploads appear first
-      queryBuilder = queryBuilder.orderBy(desc(videos.id));
-    } else if (sortBy === 'oldest') {
-      queryBuilder = queryBuilder.orderBy(asc(videos.createdAt));
-    } else if (sortBy === 'viewed') {
-      // YouTube-like algorithm that combines recency and engagement
-      // This simulates YouTube's algorithm by combining:
-      // 1. Recency - newer content gets higher priority
-      // 2. Engagement - videos with engagement get better ranking (simulated here)
-      // 3. Some randomness to ensure variety
-      queryBuilder = queryBuilder.orderBy(
-        sql`(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) - EXTRACT(EPOCH FROM ${videos.createdAt})) / 86400 * 0.7 + RANDOM() * 0.3`
-      );
-    } else {
-      // Default sorting (YouTube-like "For You" feed)
-      // Combination of recent uploads with some randomness for discovery
-      queryBuilder = queryBuilder.orderBy(
-        sql`CASE 
-          WHEN (EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) - EXTRACT(EPOCH FROM ${videos.createdAt})) < 604800 THEN 
-            (RANDOM() * 0.3) + 0.7 
-          ELSE 
-            (RANDOM() * 0.7) + 0.3 
-          END DESC, ${videos.id} DESC`
-      );
-    }
-    
-    // Log query info for debugging
-    console.log(`Getting videos with sortBy: ${sortBy}, contentType: ${contentType || 'all'}`);
-    
-    // Add limit and execute
-    const results = await queryBuilder.limit(limit);
-    
-    // Log result IDs for debugging
-    if (results.length > 0) {
-      console.log(`Retrieved ${results.length} videos. First few IDs:`, 
-        results.slice(0, 3).map(v => v.id));
-    }
-    
-    return results;
+    // Use the simplified and consistent getContentByType method for all queries
+    // This provides a more efficient and consistent shuffle functionality
+    return this.getContentByType(categoryId, contentType, limit, sortBy, shuffleSeed, offset);
   }
   
   async getVideoById(id: number, skipVisibilityCheck: boolean = false): Promise<Video | undefined> {
@@ -934,27 +810,40 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async getTrendingVideos(limit: number = 20, contentType?: string, shuffleSeed?: string, categoryId?: number): Promise<Video[]> {
+  /**
+   * Get content by type with simplified shuffling 
+   * This method replaces the complex shuffling with a single, consistent approach
+   * @param categoryId Optional category ID filter
+   * @param contentType Content type filter (video, image, embed)
+   * @param limit Max number of items to return
+   * @param sortBy Sort method
+   * @param shuffleSeed Optional seed for deterministic shuffling
+   * @param offset Optional offset for pagination
+   * @returns Array of content items
+   */
+  async getContentByType(
+    categoryId?: number,
+    contentType?: string,
+    limit: number = 20,
+    sortBy: string = 'trending',
+    shuffleSeed?: string | null,
+    offset: number = 0
+  ): Promise<Video[]> {
     try {
-      // Start with base query
-      let queryBuilder = db.select().from(videos);
+      // Start with all video filters
+      let conditions = [];
       
-      // Create an array of filter conditions to apply with AND
-      const conditions = [];
-      
-      // Add content type filter if specified
+      // Add content type filter
       if (contentType) {
         conditions.push(eq(videos.contentType, contentType));
-        console.log(`Filtering trending by contentType: "${contentType}"`);
       }
       
       // Add category filter if specified
       if (categoryId) {
         conditions.push(eq(videos.categoryId, categoryId));
-        console.log(`Filtering trending by categoryId: ${categoryId}`);
       }
       
-      // Add visibility filter - only show approved content or YouTube embeds
+      // Only show approved content or YouTube embeds
       conditions.push(
         or(
           eq(videos.reviewStatus, 'approved'),
@@ -965,40 +854,63 @@ export class DatabaseStorage implements IStorage {
         )
       );
       
-      // Apply all conditions with AND
-      if (conditions.length > 0) {
-        queryBuilder = queryBuilder.where(and(...conditions));
-      }
+      // Create base query with conditions
+      let query = db.select().from(videos).where(and(...conditions));
       
-      // When shuffleSeed is provided, use the same randomization algorithm as the main getVideos method
+      // Apply ordering based on sortBy parameter
       if (shuffleSeed) {
-        console.log(`Using randomized shuffle ordering for trending with seed: ${shuffleSeed}`);
-        // Convert the seed string to a numeric value between 0 and 1 to avoid integer overflow
-        const seedHash = shuffleSeed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 100;
-        const seedValue = seedHash / 100;
-        
-        // Use seed with trending ranking for more deterministic but varied ordering
-        queryBuilder = queryBuilder.orderBy(
-          sql`(${videos.views} * 0.6) + ((EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) - EXTRACT(EPOCH FROM ${videos.createdAt})) / 86400) * 0.4 + (RANDOM() * ${seedValue} * 0.2) DESC`
+        // When using shuffle, use a simple, consistent approach for all content types
+        // This creates a deterministic random order based on the seed
+        // We convert the seed to a numeric value for SQL operations
+        const seedValue = shuffleSeed
+          .split('')
+          .reduce((acc, char) => acc + char.charCodeAt(0), 0) % 999;
+
+        // Featured content should always appear first regardless of shuffle
+        query = query.orderBy(
+          sql`CASE WHEN ${videos.featured} THEN 0 ELSE 1 END ASC, 
+              (${videos.id} * ${seedValue}) % 997`
         );
       } else {
-        // Default trending algorithm without shuffle
-        // This algorithm prioritizes videos that are newer and have more views
-        queryBuilder = queryBuilder.orderBy(
-          sql`(${videos.views} * 0.6) + ((EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) - EXTRACT(EPOCH FROM ${videos.createdAt})) / 86400) * 0.4 DESC`
-        );
+        // Normal sorting without shuffle
+        switch(sortBy) {
+          case 'newest':
+            query = query.orderBy(desc(videos.id));
+            break;
+          case 'oldest':
+            query = query.orderBy(asc(videos.createdAt));
+            break;
+          case 'most-viewed':
+            query = query.orderBy(desc(videos.viewCount));
+            break;
+          case 'trending':
+          default:
+            query = query.orderBy(
+              sql`CASE WHEN ${videos.featured} THEN 0 ELSE 1 END ASC,
+                  CASE
+                    WHEN EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) - EXTRACT(EPOCH FROM ${videos.createdAt}) < 2592000 THEN 
+                      (${videos.viewCount} * 0.6) + (${videos.likeCount} * 0.4) + 1000
+                    ELSE
+                      (${videos.viewCount} * 0.6) + (${videos.likeCount} * 0.4)
+                  END DESC`
+            );
+        }
       }
       
-      // Add limit
-      const results = await queryBuilder.limit(limit);
-      console.log(`Retrieved ${results.length} trending videos. First few IDs:`, 
-        results.length > 0 ? results.slice(0, 3).map(v => v.id) : 'none');
-        
+      // Apply pagination
+      query = query.limit(limit).offset(offset);
+      
+      const results = await query;
       return results;
     } catch (error) {
-      console.error('Error getting trending videos:', error);
+      console.error('Error getting content by type:', error);
       return [];
     }
+  }
+
+  async getTrendingVideos(limit: number = 20, contentType?: string, shuffleSeed?: string, categoryId?: number): Promise<Video[]> {
+    // For backward compatibility, redirect to the new simplified method
+    return this.getContentByType(categoryId, contentType, limit, 'trending', shuffleSeed);
   }
   
   async getPopularVideos(limit: number = 20, contentType?: string, shuffleSeed?: string, categoryId?: number): Promise<Video[]> {
