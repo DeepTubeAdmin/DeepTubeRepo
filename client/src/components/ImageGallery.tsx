@@ -166,8 +166,6 @@ function ImageCard({ image, onPreview, onWishlist }: ImageCardProps) {
         <div className="flex justify-between items-center mt-1">
           <div className="flex items-center space-x-2 text-xs text-gray-400">
             <span>{(image as any).aiGenerator || "AI Generated"}</span>
-            <span>•</span>
-            <span>{Math.floor(Math.random() * 500) + 100} views</span>
           </div>
           
           <button 

@@ -126,7 +126,7 @@ export default function ImageCard({ image, size = 'default' }: ImageCardProps) {
               <h3 className="font-semibold text-sm line-clamp-2 mb-1">{image.title}</h3>
               <div className="flex items-center justify-between text-xs text-slate-300">
                 <div className="flex items-center space-x-2">
-                  <span>{formatViewCount(image.views || 0)} views</span>
+                  <span>{image.aiGenerator || "AI Generated"}</span>
                 </div>
               </div>
             </div>
