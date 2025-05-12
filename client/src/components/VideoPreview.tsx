@@ -47,6 +47,28 @@ export default function VideoPreview({
   const [isPlaying, setIsPlaying] = useState(false);
   const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
   const [isLoadingUrl, setIsLoadingUrl] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(userHasInteracted);
+
+  // Listen for the first user interaction with the page
+  useEffect(() => {
+    if (hasUserInteracted) return; // Already detected
+
+    const checkInteraction = () => {
+      setHasUserInteracted(true);
+      userHasInteracted = true; // Update the global variable
+    };
+    
+    // Add event listeners for user interactions
+    window.addEventListener('click', checkInteraction);
+    window.addEventListener('touchstart', checkInteraction);
+    window.addEventListener('keydown', checkInteraction);
+    
+    return () => {
+      window.removeEventListener('click', checkInteraction);
+      window.removeEventListener('touchstart', checkInteraction);
+      window.removeEventListener('keydown', checkInteraction);
+    };
+  }, [hasUserInteracted]);
 
   // Resolve S3 URL or thumbnail URL if needed
   useEffect(() => {
@@ -236,10 +258,18 @@ export default function VideoPreview({
       // Reset to beginning for consistent preview experience
       video.currentTime = 0;
       
+      // Always ensure video is properly muted to allow autoplay
+      video.muted = true;
+      video.volume = 0;
+      
+      // Force muted and playsinline attributes for maximum browser compatibility
+      video.setAttribute('muted', '');
+      video.setAttribute('playsinline', '');
+      
       // Check if user has already interacted with the page
-      if (!userHasInteracted) {
+      if (!hasUserInteracted) {
         console.log(`VideoPreview: User hasn't interacted yet - autoplay may be blocked for ${src.substring(0, 30)}...`);
-        setAutoplayBlocked(true);
+        // Don't set autoplayBlocked yet - we'll try to play it muted first
       }
 
       console.log(`VideoPreview: attempting to play video for ${src.substring(0, 30)}...`);
@@ -256,8 +286,28 @@ export default function VideoPreview({
           })
           .catch(error => {
             console.error('VideoPreview: autoplay prevented:', error);
+            
+            // If we couldn't play it even when muted, then set the blocked state
             setIsPlaying(false);
-            setAutoplayBlocked(true); // Set blocked state on error
+            setAutoplayBlocked(true);
+            
+            // Try an additional solution - toggle display:none before playing
+            if (video) {
+              const originalDisplay = video.style.display;
+              video.style.display = 'none';
+              
+              // Force a reflow
+              void video.offsetHeight;
+              
+              // Show the video again and retry playing
+              video.style.display = originalDisplay;
+              
+              // Try again
+              video.play().catch(() => {
+                // If it fails again, we definitely need user interaction
+                setAutoplayBlocked(true);
+              });
+            }
           });
       } else {
         // For older browsers that don't return a promise
@@ -366,39 +416,56 @@ export default function VideoPreview({
         muted
         playsInline
         preload="auto"
-        loop={false}
+        loop={true}
+        autoPlay={isHovered}
+        disablePictureInPicture
+        disableRemotePlayback
+        x5-video-player-type="h5"
+        x5-playsinline="true"
+        webkit-playsinline="true"
       />
 
       {/* Autoplay blocked message with manual play option */}
       {isHovered && autoplayBlocked && (
         <div 
-          className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 text-white cursor-pointer"
+          className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 text-white cursor-pointer z-20"
           onClick={(e) => {
             e.stopPropagation(); // Prevent parent click handlers
             markUserInteraction(); // Mark that user has interacted
             userHasInteracted = true; // Force the flag to be true
+            setHasUserInteracted(true); // Update state
             setAutoplayBlocked(false); // Clear the blocked state
             
-            // Try to play the video again after a short delay
-            setTimeout(() => {
-              if (videoRef.current) {
-                videoRef.current.play()
-                  .then(() => {
-                    setIsPlaying(true);
-                    console.log(`VideoPreview: manual play successful for ${src.substring(0, 30)}...`);
-                  })
-                  .catch(err => {
-                    console.error('VideoPreview: manual play failed:', err);
-                  });
+            // Try to play all videos on the page now that user has interacted
+            document.querySelectorAll('video').forEach(video => {
+              if (video.paused) {
+                video.muted = true;
+                video.play().catch(() => {/* Ignore errors */});
               }
-            }, 50);
+            });
+            
+            // Try to play this specific video
+            if (videoRef.current) {
+              videoRef.current.muted = true;
+              videoRef.current.play()
+                .then(() => {
+                  setIsPlaying(true);
+                  console.log(`VideoPreview: manual play successful for ${src.substring(0, 30)}...`);
+                })
+                .catch(err => {
+                  console.error('VideoPreview: manual play failed:', err);
+                });
+            }
           }}
         >
-          <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <p className="text-xs px-4 text-center">Click to enable video previews</p>
+          <div className="bg-orange-500 rounded-full p-3 animate-pulse">
+            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium mt-3 px-4 text-center">Click to enable video previews</p>
+          <p className="text-xs px-4 text-center mt-1 text-gray-300">Browser requires interaction to autoplay videos</p>
         </div>
       )}
 
