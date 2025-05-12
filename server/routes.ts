@@ -3413,6 +3413,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
       
+      // Check if the user has blocked this person
+      const isBlocked = await dbStorage.isUserBlocked(req.user.id, otherUserId);
+      if (isBlocked) {
+        return res.status(403).json({ error: "You have blocked this user" });
+      }
+      
+      // Check if the other user has blocked this user
+      const isBlockedByOther = await dbStorage.isUserBlocked(otherUserId, req.user.id);
+      if (isBlockedByOther) {
+        return res.status(403).json({ error: "You have been blocked by this user" });
+      }
+      
       // Fetch messages between the two users
       const messages = await dbStorage.getConversation(req.user.id, otherUserId);
       
@@ -3458,6 +3470,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error marking messages as read:", error);
       res.status(500).json({ error: "Failed to mark messages as read" });
+    }
+  });
+  
+  // Delete entire conversation with another user
+  app.delete("/api/messages/conversation/:userId", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      
+      const otherUserId = parseInt(req.params.userId);
+      if (isNaN(otherUserId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      // Delete the entire conversation
+      await dbStorage.deleteConversation(req.user.id, otherUserId);
+      
+      res.json({ success: true, message: "Conversation deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      res.status(500).json({ error: "Failed to delete conversation" });
+    }
+  });
+  
+  // Block a user
+  app.post("/api/users/block/:userId", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      
+      const userIdToBlock = parseInt(req.params.userId);
+      if (isNaN(userIdToBlock)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      // Prevent blocking yourself
+      if (userIdToBlock === req.user.id) {
+        return res.status(400).json({ error: "You cannot block yourself" });
+      }
+      
+      // Make sure the user exists
+      const userToBlock = await dbStorage.getUser(userIdToBlock);
+      if (!userToBlock) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Check if already blocked
+      const isAlreadyBlocked = await dbStorage.isUserBlocked(req.user.id, userIdToBlock);
+      if (isAlreadyBlocked) {
+        return res.status(400).json({ error: "User is already blocked" });
+      }
+      
+      // Block the user
+      await dbStorage.blockUser(req.user.id, userIdToBlock);
+      
+      res.json({ success: true, message: "User blocked successfully" });
+    } catch (error) {
+      console.error("Error blocking user:", error);
+      res.status(500).json({ error: "Failed to block user" });
+    }
+  });
+  
+  // Unblock a user
+  app.delete("/api/users/block/:userId", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      
+      const userIdToUnblock = parseInt(req.params.userId);
+      if (isNaN(userIdToUnblock)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      // Check if actually blocked
+      const isBlocked = await dbStorage.isUserBlocked(req.user.id, userIdToUnblock);
+      if (!isBlocked) {
+        return res.status(400).json({ error: "User is not blocked" });
+      }
+      
+      // Unblock the user
+      await dbStorage.unblockUser(req.user.id, userIdToUnblock);
+      
+      res.json({ success: true, message: "User unblocked successfully" });
+    } catch (error) {
+      console.error("Error unblocking user:", error);
+      res.status(500).json({ error: "Failed to unblock user" });
     }
   });
 
