@@ -7,6 +7,8 @@ import { Search, User, Package, History, LogOut, Upload, WandSparkles, Video, Me
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useShuffle } from "@/App";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import UploadMediaModal from "./UploadMediaModal";
 import LoginRequiredModal from "./LoginRequiredModal";
 import AIGeneratorsModal from "./AIGeneratorsModal";
@@ -25,6 +27,22 @@ export default function Header({ simple = false }: HeaderProps) {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const userBtnRef = useRef<HTMLDivElement>(null);
+  
+  // Fetch unread message count
+  const { data: unreadMessageData } = useQuery({
+    queryKey: ["/api/messages/unread/count"],
+    queryFn: async () => {
+      if (!user) return { count: 0 };
+      const response = await apiRequest("GET", "/api/messages/unread/count");
+      if (!response.ok) {
+        console.error("Failed to fetch unread message count");
+        return { count: 0 };
+      }
+      return response.json();
+    },
+    enabled: !!user,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
