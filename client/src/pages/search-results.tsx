@@ -423,7 +423,7 @@ export default function SearchResults() {
                     // Add properties with defaults
                     featured: video.featured || false,
                     views: video.views || 0,
-                    preview: video.preview || false,
+                    preview: typeof video.preview === 'string' ? video.preview === 'true' : !!video.preview,
                     likes: video.likes || 0,
                     reviewStatus: video.reviewStatus || 'pending',
                     // Required properties from updated Video type

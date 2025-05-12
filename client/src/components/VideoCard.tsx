@@ -1,5 +1,5 @@
 import { Heart, Play, ThumbsUp, Flag } from "lucide-react";
-import { Video } from "@shared/schema";
+import { Video } from "@/types";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { formatNumber, extractYoutubeIdFromEmbed } from "@/lib/utils";
