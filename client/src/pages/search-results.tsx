@@ -157,6 +157,7 @@ export default function SearchResults() {
     return url;
   };
   
+  // Construct the search API URL
   const searchApiUrl = constructSearchUrl();
   
   console.log('Executing search query:', searchApiUrl, 'with current URL query:', currentQuery);
@@ -180,12 +181,26 @@ export default function SearchResults() {
     
   }, [location]);
   
+  // Use a custom fetcher for search to avoid URL encoding issues
+  const customSearchFetcher = async () => {
+    if (!searchApiUrl) return [];
+    
+    try {
+      const response = await fetch(searchApiUrl);
+      if (!response.ok) {
+        throw new Error(`Search request failed with status ${response.status}`);
+      }
+      return response.json();
+    } catch (error) {
+      console.error("Search fetch error:", error);
+      throw error;
+    }
+  };
+  
   const { data: searchResults, isLoading: searchLoading, error: searchError } = useQuery<Video[]>({
-    queryKey: [searchApiUrl, location], // Include location in the query key to refetch when it changes
-    queryFn: getQueryFn({
-      on401: "returnNull"
-    }),
-    enabled: !!currentQuery, // Use currentQuery instead of initialQuery
+    queryKey: ['/api/search', currentQuery, contentType, categorySlug], // Simpler query key
+    queryFn: customSearchFetcher,
+    enabled: !!currentQuery && !!searchApiUrl,
   });
   
   // Log any search errors
