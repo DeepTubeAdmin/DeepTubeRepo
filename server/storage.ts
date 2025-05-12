@@ -553,10 +553,7 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
     
-    // Prepare the search query for PostgreSQL's ILIKE operator
-    // Instead of removing special characters completely, we'll escape them properly
-    
-    // First, let's do some basic cleaning to help with search quality
+    // Improved query preprocessing for better search results
     const preprocessedQuery = query.trim()
       // Replace multiple spaces with a single space
       .replace(/\s+/g, ' ')
@@ -566,7 +563,7 @@ export class DatabaseStorage implements IStorage {
     console.log(`Original search query: "${query}"`);
     console.log(`Preprocessed search query: "${preprocessedQuery}"`);
     
-    // Split the query into individual terms (preserving special characters)
+    // Split the query into individual terms for better word-by-word searching
     const searchTerms = preprocessedQuery.split(' ').filter(Boolean);
     
     // Escape the % and _ characters which have special meaning in LIKE/ILIKE patterns
@@ -584,35 +581,56 @@ export class DatabaseStorage implements IStorage {
     // Start with base query
     let queryBuilder = db.select().from(videos);
     
-    // For each search term, create a condition that checks if it exists in any searchable field
-    const conditions = escapedTerms.map(term => {
-      // Create ILIKE conditions that will properly handle special characters
-      return or(
-        ilike(videos.title, `%${term}%`),
-        ilike(videos.description || '', `%${term}%`), 
-        ilike(videos.prompt || '', `%${term}%`),
-        ilike(videos.aiGenerator || '', `%${term}%`) // Use correct JavaScript property name
-      );
-    });
+    // Build the search conditions
+    const searchConditions = [];
     
-    // Additionally, add a condition for the full preprocessed query to catch exact phrases
-    if (escapedTerms.length > 1) {
-      const fullQueryEscaped = preprocessedQuery.replace(/%/g, '\\%').replace(/_/g, '\\_');
-      conditions.push(
+    // For each individual search term, create a more comprehensive OR condition
+    // that checks if the term exists in any searchable field
+    for (const term of escapedTerms) {
+      // Create more comprehensive search conditions for each term
+      searchConditions.push(
         or(
-          ilike(videos.title, `%${fullQueryEscaped}%`),
-          ilike(videos.description || '', `%${fullQueryEscaped}%`),
-          ilike(videos.prompt || '', `%${fullQueryEscaped}%`),
-          ilike(videos.aiGenerator || '', `%${fullQueryEscaped}%`) // Use correct JavaScript property name
+          // Match word at the beginning
+          ilike(videos.title, `${term}%`),
+          // Match word in the middle (with spaces)
+          ilike(videos.title, `% ${term}%`),
+          // Match as part of a word
+          ilike(videos.title, `%${term}%`),
+          
+          // Same pattern for description
+          ilike(videos.description || '', `${term}%`),
+          ilike(videos.description || '', `% ${term}%`),
+          ilike(videos.description || '', `%${term}%`),
+          
+          // Same pattern for prompt
+          ilike(videos.prompt || '', `${term}%`),
+          ilike(videos.prompt || '', `% ${term}%`),
+          ilike(videos.prompt || '', `%${term}%`),
+          
+          // Same pattern for aiGenerator
+          ilike(videos.aiGenerator || '', `${term}%`),
+          ilike(videos.aiGenerator || '', `% ${term}%`),
+          ilike(videos.aiGenerator || '', `%${term}%`)
         )
       );
     }
     
+    // Additionally, search for the exact full query to catch exact phrases
+    const fullQueryEscaped = preprocessedQuery.replace(/%/g, '\\%').replace(/_/g, '\\_');
+    searchConditions.push(
+      or(
+        ilike(videos.title, `%${fullQueryEscaped}%`),
+        ilike(videos.description || '', `%${fullQueryEscaped}%`),
+        ilike(videos.prompt || '', `%${fullQueryEscaped}%`),
+        ilike(videos.aiGenerator || '', `%${fullQueryEscaped}%`)
+      )
+    );
+    
     // Start building ALL the filters we want to apply with AND
     const allFilters = [];
     
-    // Add the combined search term conditions with OR
-    allFilters.push(or(...conditions));
+    // Add the combined search term conditions with OR - at least one must match
+    allFilters.push(or(...searchConditions));
     
     // Add content type filter if specified
     if (contentType && contentType !== 'all') {
@@ -637,22 +655,31 @@ export class DatabaseStorage implements IStorage {
       )
     );
     
-    // Apply all filters together with AND
-    queryBuilder = queryBuilder.where(and(...allFilters));
+    // Apply the filters in a type-safe way
+    const filteredQuery = queryBuilder.where(and(...allFilters));
     
-    // Add ordering (newest first)
-    queryBuilder = queryBuilder.orderBy(desc(videos.id));
+    // Order by relevance using a conditional sort expression
+    const relevanceSortSql = sql`CASE WHEN ${videos.title} ILIKE ${`%${fullQueryEscaped}%`} THEN 1 ELSE 0 END DESC`;
     
-    // Add pagination
-    queryBuilder = queryBuilder.limit(limit).offset(offset);
+    // Use a type-safe approach to build the query
+    const orderedQuery = filteredQuery.orderBy(relevanceSortSql, desc(videos.id));
     
-    // Execute the query
-    const results = await queryBuilder;
+    // Apply pagination in a type-safe way
+    const paginatedQuery = orderedQuery.limit(limit).offset(offset);
     
-    // Log search results
-    console.log(`Search for "${query}" found ${results.length} results after preprocessing`);
-    
-    return results;
+    try {
+      // Execute the query with proper variable names
+      const results = await paginatedQuery;
+      
+      // Log search results
+      console.log(`Search for "${query}" found ${results.length} results after preprocessing`);
+      
+      return results;
+    } catch (error) {
+      console.error('Error in search query execution:', error);
+      // Return an empty array instead of throwing
+      return [];
+    }
   }
 
   // Like operations

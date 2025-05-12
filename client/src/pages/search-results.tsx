@@ -123,8 +123,8 @@ export default function SearchResults() {
       return '';  // Return empty string when no query is present
     }
     
-    // Just do minimal processing - only normalize whitespace
-    // The server will handle special characters properly now
+    // Minimal preprocessing to handle whitespace and make search more effective
+    // The server handles the advanced search logic
     const processedQuery = currentQuery
       .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
       .trim();
@@ -135,14 +135,22 @@ export default function SearchResults() {
       return '';
     }
     
+    // Get the current values from state for the latest filters
+    // This ensures we're always using up-to-date filter values
     let url = `/api/search?q=${encodeURIComponent(processedQuery)}`;
     
-    if (initialContentType !== 'all') {
-      url += `&type=${initialContentType}`;
+    // Use the current content type from state, not just the initial value
+    if (contentType !== 'all') {
+      url += `&type=${contentType}`;
     }
     
+    // Always use the categoryId derived from the slug
     if (categoryId) {
       url += `&categoryId=${categoryId}`;
+    }
+    // Also pass category slug for better logging
+    if (categorySlug) {
+      url += `&category=${categorySlug}`;
     }
     
     console.log('Constructed search URL with processed query:', url);
