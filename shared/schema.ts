@@ -209,9 +209,9 @@ export const reportsRelations = relations(reports, ({ one }) => ({
 // Blocked users table
 export const blockedUsers = pgTable("blocked_users", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
-  blockedUserId: integer("blocked_user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  userId: integer("userId").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  blockedUserId: integer("blockedUserId").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => {
   return {
     // Constraint to ensure a user can only block another user once
