@@ -207,13 +207,20 @@ export const reportsRelations = relations(reports, ({ one }) => ({
 }));
 
 // Insert schemas
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  email: true,
-  dateOfBirth: true,
-  isAdmin: true,
-});
+export const insertUserSchema = createInsertSchema(users)
+  .pick({
+    username: true,
+    password: true,
+    email: true,
+    dateOfBirth: true,
+    isAdmin: true,
+  })
+  .extend({
+    // Add additional validation for username format
+    username: z.string()
+      .min(3, "Username must be at least 3 characters")
+      .regex(/^[a-zA-Z0-9_-]+$/, "Username can only contain letters, numbers, underscores, and hyphens"),
+  });
 
 export const insertCategorySchema = createInsertSchema(categories);
 // Properly defining the insert schema for videos

@@ -31,7 +31,9 @@ import { format } from "date-fns";
 import { FaFacebook, FaGoogle, FaApple } from "react-icons/fa";
 
 const loginSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
+  username: z.string()
+    .min(3, "Username must be at least 3 characters")
+    .regex(/^[a-zA-Z0-9_-]+$/, "Username can only contain letters, numbers, underscores, and hyphens"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
@@ -40,7 +42,9 @@ const eighteenYearsAgo = new Date();
 eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18);
 
 const registerSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
+  username: z.string()
+    .min(3, "Username must be at least 3 characters")
+    .regex(/^[a-zA-Z0-9_-]+$/, "Username can only contain letters, numbers, underscores, and hyphens"),
   email: z.string().email("Please enter a valid email"), // Email is now required
   dateOfBirth: z.date()
     .refine(date => date <= eighteenYearsAgo, {

@@ -64,6 +64,20 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
+      // Use the schema validation to ensure username format is valid
+      const { insertUserSchema } = await import("@shared/schema");
+      
+      try {
+        // This will throw if validation fails
+        insertUserSchema.parse(req.body);
+      } catch (validationError) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: (validationError as Error).message 
+        });
+      }
+      
+      // Check for existing username
       const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
         return res.status(400).json({ error: "Username already exists" });
