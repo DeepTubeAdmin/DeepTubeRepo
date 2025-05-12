@@ -677,7 +677,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Search API endpoint
   app.get('/api/search', async (req, res) => {
     try {
-      const query = req.query.q as string || '';
+      // Get the query and sanitize it
+      let query = req.query.q as string || '';
+      
+      // Remove any unexpected parts of the query (like ?0=/)
+      if (query && query.includes('?')) {
+        query = query.split('?')[0];
+      }
+      
       const categorySlug = req.query.category as string || '';
       const contentType = req.query.type as string || 'all';
       // We can receive categoryId directly from frontend or resolve from slug
@@ -685,7 +692,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         parseInt(req.query.categoryId as string) : 
         undefined;
       
-      if (!query) {
+      if (!query || query.trim() === '') {
         return res.status(400).json({ error: 'Search query is required' });
       }
 
@@ -717,7 +724,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      console.log(`Search for "${query}" returned ${results.length} results with contentType=${contentType}${categoryId ? ` and categoryId=${categoryId}` : ''}`);
+      // Improved logging for search results
+      console.log(`Search for "${query}" found ${results.length} results with contentType=${contentType}${categoryId ? ` and categoryId=${categoryId}` : ''}`);
+      
+      if (results.length > 0) {
+        console.log(`First few search results: [${results.slice(0, 3).map(v => v.title).join(', ')}]`);
+      }
       
       res.json(results);
     } catch (error: any) {
