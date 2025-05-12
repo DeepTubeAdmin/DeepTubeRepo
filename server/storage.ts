@@ -468,12 +468,13 @@ export class DatabaseStorage implements IStorage {
       featured: videos.featured,
       reviewStatus: videos.reviewStatus,
       preview: videos.preview,
-      videoLength: videos.videoLength,
-      youtubeId: videos.youtubeId,
       vimeoId: videos.vimeoId,
       reviewedAt: videos.reviewedAt,
       reviewedBy: videos.reviewedBy,
       rejectionReason: videos.rejectionReason,
+      resolution: videos.resolution,
+      duration: videos.duration,
+      credits: videos.credits,
       uploaderName: users.username
     })
       .from(videos)
