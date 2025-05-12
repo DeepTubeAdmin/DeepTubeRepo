@@ -1,16 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
 import MiniFooter from "@/components/MiniFooter";
 import SEO from "@/components/SEO";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Loader2, MessageSquare, User as UserIcon, Send } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Loader2, MessageSquare, User as UserIcon, Send, MoreVertical, Trash2, ShieldBan } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type Message = {
   id: number;
@@ -35,9 +36,14 @@ export default function MyMessages() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeConversation, setActiveConversation] = useState<number | null>(null);
   const [replyContent, setReplyContent] = useState("");
   const [isSendingReply, setIsSendingReply] = useState(false);
+  const [confirmDeleteDialogOpen, setConfirmDeleteDialogOpen] = useState(false);
+  const [confirmBlockDialogOpen, setConfirmBlockDialogOpen] = useState(false);
+  const [selectedUserForAction, setSelectedUserForAction] = useState<number | null>(null);
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
   
   // Redirect if not logged in
   useEffect(() => {
@@ -122,6 +128,114 @@ export default function MyMessages() {
       }
     });
 
+  // Mutation for deleting a conversation
+  const deleteConversationMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const response = await apiRequest("DELETE", `/api/messages/conversation/${userId}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to delete conversation: ${errorText}`);
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      // Reset active conversation if it was the one deleted
+      if (activeConversation === selectedUserForAction) {
+        setActiveConversation(null);
+      }
+      
+      // Invalidate and refetch conversations
+      queryClient.invalidateQueries({ queryKey: ["/api/messages/conversations"] });
+      
+      toast({
+        title: "Conversation deleted",
+        description: "The conversation has been deleted successfully.",
+      });
+    },
+    onError: (error) => {
+      console.error("Error deleting conversation:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete conversation",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Mutation for blocking a user
+  const blockUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const response = await apiRequest("POST", `/api/users/block/${userId}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to block user: ${errorText}`);
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      // Reset active conversation if it was the one with the blocked user
+      if (activeConversation === selectedUserForAction) {
+        setActiveConversation(null);
+      }
+      
+      // Invalidate and refetch conversations
+      queryClient.invalidateQueries({ queryKey: ["/api/messages/conversations"] });
+      
+      toast({
+        title: "User blocked",
+        description: "The user has been blocked successfully. You will no longer receive messages from them.",
+      });
+    },
+    onError: (error) => {
+      console.error("Error blocking user:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to block user",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Handle delete conversation action
+  const handleDeleteConversation = (userId: number) => {
+    setSelectedUserForAction(userId);
+    setConfirmDeleteDialogOpen(true);
+  };
+  
+  // Handle confirm delete conversation
+  const confirmDeleteConversation = () => {
+    if (selectedUserForAction) {
+      setIsProcessingAction(true);
+      deleteConversationMutation.mutate(selectedUserForAction, {
+        onSettled: () => {
+          setIsProcessingAction(false);
+          setConfirmDeleteDialogOpen(false);
+          setSelectedUserForAction(null);
+        }
+      });
+    }
+  };
+  
+  // Handle block user action
+  const handleBlockUser = (userId: number) => {
+    setSelectedUserForAction(userId);
+    setConfirmBlockDialogOpen(true);
+  };
+  
+  // Handle confirm block user
+  const confirmBlockUser = () => {
+    if (selectedUserForAction) {
+      setIsProcessingAction(true);
+      blockUserMutation.mutate(selectedUserForAction, {
+        onSettled: () => {
+          setIsProcessingAction(false);
+          setConfirmBlockDialogOpen(false);
+          setSelectedUserForAction(null);
+        }
+      });
+    }
+  };
+  
   // Mark messages as read when viewing a conversation
   useEffect(() => {
     const markMessagesAsRead = async () => {
@@ -199,6 +313,71 @@ export default function MyMessages() {
       <div className="container max-w-6xl py-8">
         <h1 className="text-3xl font-bold mb-6">My Messages</h1>
         
+        {/* Delete conversation confirmation dialog */}
+        <Dialog open={confirmDeleteDialogOpen} onOpenChange={setConfirmDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Conversation</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this conversation? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setConfirmDeleteDialogOpen(false)}
+                disabled={isProcessingAction}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={confirmDeleteConversation}
+                disabled={isProcessingAction}
+              >
+                {isProcessingAction ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+                ) : (
+                  <>Delete</>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Block user confirmation dialog */}
+        <Dialog open={confirmBlockDialogOpen} onOpenChange={setConfirmBlockDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Block User</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to block this user? They will no longer be able to send you messages,
+                and you will not see any of their content. You can unblock them later in your account settings.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setConfirmBlockDialogOpen(false)}
+                disabled={isProcessingAction}
+              >
+                Cancel
+              </Button>
+              <Button 
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+                onClick={confirmBlockUser}
+                disabled={isProcessingAction}
+              >
+                {isProcessingAction ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Blocking...</>
+                ) : (
+                  <>Block User</>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
         <div className="bg-[#121212] rounded-lg overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-3 h-[70vh]">
             {/* Conversation list */}
@@ -222,16 +401,21 @@ export default function MyMessages() {
                     {conversations.map((conversation) => (
                       <div 
                         key={conversation.userId}
-                        onClick={() => setActiveConversation(conversation.userId)}
-                        className={`p-4 border-b border-gray-800 hover:bg-gray-800/50 cursor-pointer transition-colors ${
+                        className={`p-4 border-b border-gray-800 hover:bg-gray-800/50 transition-colors ${
                           activeConversation === conversation.userId ? 'bg-gray-800/70' : ''
                         }`}
                       >
                         <div className="flex items-start gap-3">
-                          <div className="bg-gray-700 rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0">
+                          <div 
+                            className="bg-gray-700 rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 cursor-pointer"
+                            onClick={() => setActiveConversation(conversation.userId)}
+                          >
                             <UserIcon className="h-5 w-5 text-gray-300" />
                           </div>
-                          <div className="flex-1 min-w-0">
+                          <div 
+                            className="flex-1 min-w-0 cursor-pointer" 
+                            onClick={() => setActiveConversation(conversation.userId)}
+                          >
                             <div className="flex justify-between items-baseline">
                               <h3 className="font-medium truncate">{conversation.username}</h3>
                               <span className="text-xs text-gray-500">
@@ -244,6 +428,31 @@ export default function MyMessages() {
                                 {conversation.unreadCount}
                               </span>
                             )}
+                          </div>
+                          <div className="ml-1 mt-1">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeleteConversation(conversation.userId)}
+                                  className="text-red-500 focus:text-red-500"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete conversation
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleBlockUser(conversation.userId)}
+                                  className="text-orange-500 focus:text-orange-500"
+                                >
+                                  <ShieldBan className="h-4 w-4 mr-2" />
+                                  Block user
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </div>
                       </div>

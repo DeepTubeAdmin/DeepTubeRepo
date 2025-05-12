@@ -3219,6 +3219,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.log("Receiver found:", receiver.username);
       
+      // Check if the sender has blocked the receiver
+      const senderBlockedReceiver = await dbStorage.isUserBlocked(req.user.id, receiverId);
+      if (senderBlockedReceiver) {
+        console.log("Sender has blocked the receiver, cannot send message");
+        return res.status(403).json({ error: "Cannot send message to a blocked user" });
+      }
+      
+      // Check if the receiver has blocked the sender
+      const receiverBlockedSender = await dbStorage.isUserBlocked(receiverId, req.user.id);
+      if (receiverBlockedSender) {
+        console.log("Receiver has blocked the sender, cannot send message");
+        return res.status(403).json({ error: "This user has blocked you" });
+      }
+      
       // Create message
       console.log("Creating message in database");
       const messageData: InsertMessage = {
