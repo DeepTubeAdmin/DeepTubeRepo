@@ -1,5 +1,5 @@
 import { 
-  users, categories, videos, wishlistItems, comments, likes, messages, reports,
+  users, categories, videos, wishlistItems, comments, likes, messages, reports, blockedUsers,
   type User, type InsertUser, 
   type Category, type InsertCategory,
   type Video, type InsertVideo,
@@ -7,7 +7,8 @@ import {
   type Comment, type InsertComment,
   type Like, type InsertLike,
   type Message, type InsertMessage,
-  type Report, type InsertReport
+  type Report, type InsertReport,
+  type BlockedUser, type InsertBlockedUser
 } from "@shared/schema";
 import { count } from "drizzle-orm";
 import { db } from "./db";
@@ -30,6 +31,12 @@ export interface IStorage {
   setPasswordResetToken(email: string, token: string, expiry: Date): Promise<User | undefined>;
   getUserByResetToken(token: string): Promise<User | undefined>;
   resetPassword(userId: number, newPassword: string): Promise<User | undefined>;
+  
+  // User blocking operations
+  blockUser(userId: number, blockedUserId: number): Promise<BlockedUser>;
+  unblockUser(userId: number, blockedUserId: number): Promise<void>;
+  getBlockedUsers(userId: number): Promise<BlockedUser[]>;
+  isUserBlocked(userId: number, blockedUserId: number): Promise<boolean>;
   
   // Category operations
   getCategories(): Promise<Category[]>;
@@ -91,6 +98,7 @@ export interface IStorage {
   getUnreadMessageCount(userId: number): Promise<number>;
   getAllUserMessages(userId: number): Promise<Message[]>;
   markAllMessagesAsRead(receiverId: number, senderId: number): Promise<void>;
+  deleteConversation(userId: number, otherUserId: number): Promise<void>;
   
   // Report operations
   createReport(report: InsertReport): Promise<Report>;
@@ -949,6 +957,47 @@ export class DatabaseStorage implements IStorage {
     return this.getContentByType(categoryId, contentType, limit, 'most-viewed', shuffleSeed);
   }
   
+  // User blocking operations
+  async blockUser(userId: number, blockedUserId: number): Promise<BlockedUser> {
+    try {
+      const [result] = await db.insert(blockedUsers)
+        .values({ userId, blockedUserId })
+        .returning();
+      return result;
+    } catch (error) {
+      console.error(`Error blocking user ${blockedUserId} by user ${userId}:`, error);
+      throw error;
+    }
+  }
+  
+  async unblockUser(userId: number, blockedUserId: number): Promise<void> {
+    await db.delete(blockedUsers)
+      .where(
+        and(
+          eq(blockedUsers.userId, userId),
+          eq(blockedUsers.blockedUserId, blockedUserId)
+        )
+      );
+  }
+  
+  async getBlockedUsers(userId: number): Promise<BlockedUser[]> {
+    return db.select()
+      .from(blockedUsers)
+      .where(eq(blockedUsers.userId, userId));
+  }
+  
+  async isUserBlocked(userId: number, blockedUserId: number): Promise<boolean> {
+    const [result] = await db.select({ count: count() })
+      .from(blockedUsers)
+      .where(
+        and(
+          eq(blockedUsers.userId, userId),
+          eq(blockedUsers.blockedUserId, blockedUserId)
+        )
+      );
+    return result.count > 0;
+  }
+  
   // Messaging operations
   async createMessage(message: InsertMessage): Promise<Message> {
     const [result] = await db.insert(messages).values(message).returning();
@@ -972,6 +1021,30 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(asc(messages.createdAt));
+  }
+  
+  async deleteConversation(userId: number, otherUserId: number): Promise<void> {
+    try {
+      // Delete all messages between these two users
+      await db.delete(messages)
+        .where(
+          or(
+            and(
+              eq(messages.senderId, userId),
+              eq(messages.receiverId, otherUserId)
+            ),
+            and(
+              eq(messages.senderId, otherUserId),
+              eq(messages.receiverId, userId)
+            )
+          )
+        );
+        
+      console.log(`Deleted conversation between user ${userId} and user ${otherUserId}`);
+    } catch (error) {
+      console.error(`Error deleting conversation between user ${userId} and user ${otherUserId}:`, error);
+      throw error;
+    }
   }
   
   async markMessageAsRead(messageId: number): Promise<Message> {
