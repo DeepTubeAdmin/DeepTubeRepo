@@ -206,6 +206,30 @@ export const reportsRelations = relations(reports, ({ one }) => ({
   }),
 }));
 
+// Blocked users table
+export const blockedUsers = pgTable("blocked_users", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  blockedUserId: integer("blocked_user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    // Constraint to ensure a user can only block another user once
+    unique_block: primaryKey({ columns: [table.userId, table.blockedUserId] })
+  };
+});
+
+export const blockedUsersRelations = relations(blockedUsers, ({ one }) => ({
+  user: one(users, {
+    fields: [blockedUsers.userId],
+    references: [users.id],
+  }),
+  blockedUser: one(users, {
+    fields: [blockedUsers.blockedUserId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users)
   .pick({
@@ -257,6 +281,10 @@ export const insertReportSchema = createInsertSchema(reports).pick({
   userId: true,
   reason: true
 });
+export const insertBlockedUserSchema = createInsertSchema(blockedUsers).pick({
+  userId: true,
+  blockedUserId: true
+});
 
 // Type definitions
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -282,3 +310,6 @@ export type Message = typeof messages.$inferSelect;
 
 export type InsertReport = z.infer<typeof insertReportSchema>;
 export type Report = typeof reports.$inferSelect;
+
+export type InsertBlockedUser = z.infer<typeof insertBlockedUserSchema>;
+export type BlockedUser = typeof blockedUsers.$inferSelect;
