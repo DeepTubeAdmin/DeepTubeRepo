@@ -509,7 +509,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
       
       toast({
         title: "Upload successful",
-        description: `Your ${contentType} has been uploaded and is being processed`,
+        description: `Your ${contentType} has been uploaded and is under review`,
       });
       
       // Reset form
