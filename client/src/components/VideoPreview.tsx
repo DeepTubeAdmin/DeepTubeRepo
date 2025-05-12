@@ -248,31 +248,29 @@ export default function VideoPreview({
   // State to track if autoplay was blocked due to lack of user interaction
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   
-  // Function to handle video playback with all necessary error handling
+  // Function to handle video playback optimized for muted autoplay
   const playVideo = () => {
     if (!videoRef.current) return;
 
     const video = videoRef.current;
 
     try {
-      // Reset to beginning for consistent preview experience
-      video.currentTime = 0;
-      
-      // Always ensure video is properly muted to allow autoplay
+      // Explicitly ensure the video is muted for autoplay
       video.muted = true;
       video.volume = 0;
       
-      // Force muted and playsinline attributes for maximum browser compatibility
+      // Apply muted and other attributes directly
       video.setAttribute('muted', '');
       video.setAttribute('playsinline', '');
+      video.setAttribute('webkit-playsinline', '');
       
-      // Check if user has already interacted with the page
-      if (!hasUserInteracted) {
-        console.log(`VideoPreview: User hasn't interacted yet - autoplay may be blocked for ${src.substring(0, 30)}...`);
-        // Don't set autoplayBlocked yet - we'll try to play it muted first
-      }
-
-      console.log(`VideoPreview: attempting to play video for ${src.substring(0, 30)}...`);
+      // Ensure loop is enabled
+      video.loop = true;
+      
+      // No need to reset to beginning for full video playback
+      // video.currentTime = 0;
+      
+      console.log(`VideoPreview: attempting to play muted video for ${src.substring(0, 30)}...`);
 
       // Play with promise handling for browsers that return a promise
       const playPromise = video.play();
@@ -287,27 +285,19 @@ export default function VideoPreview({
           .catch(error => {
             console.error('VideoPreview: autoplay prevented:', error);
             
-            // If we couldn't play it even when muted, then set the blocked state
-            setIsPlaying(false);
-            setAutoplayBlocked(true);
+            // If we couldn't play even when muted, try one more approach:
+            // Add the 'autoplay' attribute explicitly
+            video.setAttribute('autoplay', '');
             
-            // Try an additional solution - toggle display:none before playing
-            if (video) {
-              const originalDisplay = video.style.display;
-              video.style.display = 'none';
-              
-              // Force a reflow
-              void video.offsetHeight;
-              
-              // Show the video again and retry playing
-              video.style.display = originalDisplay;
-              
-              // Try again
-              video.play().catch(() => {
-                // If it fails again, we definitely need user interaction
-                setAutoplayBlocked(true);
-              });
-            }
+            // Force browser to reconsider autoplay with full attribute set
+            video.load();
+            
+            // Try playing again
+            video.play().catch(secondError => {
+              console.error('VideoPreview: second autoplay attempt failed:', secondError);
+              setIsPlaying(false);
+              setAutoplayBlocked(true);
+            });
           });
       } else {
         // For older browsers that don't return a promise
@@ -329,17 +319,9 @@ export default function VideoPreview({
     if (isHovered && isVideoLoaded) { // Use isVideoLoaded
       // Play video when hovered and loaded
       playVideo();
-
-      // Set a timeout to pause the video after previewDuration seconds
-      const timeoutId = setTimeout(() => {
-        if (videoRef.current && !videoRef.current.paused) {
-          console.log(`VideoPreview: pausing after ${previewDuration}s for ${src.substring(0, 30)}...`);
-          videoRef.current.pause();
-          setIsPlaying(false);
-        }
-      }, previewDuration * 1000);
-
-      return () => clearTimeout(timeoutId);
+      
+      // We no longer set a timeout to pause the video - let it play completely
+      
     } else if (!isHovered && isPlaying) {
       // Pause video when mouse leaves
       console.log(`VideoPreview: pausing on mouse leave for ${src.substring(0, 30)}...`);
@@ -347,29 +329,9 @@ export default function VideoPreview({
       video.currentTime = 0; // Reset to beginning
       setIsPlaying(false);
     }
-  }, [isHovered, isVideoLoaded, previewDuration, src, isPlaying]);
+  }, [isHovered, isVideoLoaded, src, isPlaying]);
 
-  // Set duration limit on the video
-  useEffect(() => {
-    if (!videoRef.current || !isVideoLoaded) return; // Use isVideoLoaded
-
-    const video = videoRef.current;
-
-    const handleTimeUpdate = () => {
-      // If the video has played for previewDuration seconds, pause it
-      if (video.currentTime >= previewDuration && !video.paused) {
-        console.log(`VideoPreview: reached duration limit of ${previewDuration}s for ${src.substring(0, 30)}...`);
-        video.pause();
-        setIsPlaying(false);
-      }
-    };
-
-    video.addEventListener('timeupdate', handleTimeUpdate);
-
-    return () => {
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-    };
-  }, [isVideoLoaded, previewDuration, src]);
+  // We've removed the duration limit so videos play completely on hover
 
   // Show loading state during URL resolution
   if (isLoadingUrl) {
@@ -415,14 +377,15 @@ export default function VideoPreview({
         src={resolvedUrl}
         muted
         playsInline
-        preload="auto"
-        loop={true}
         autoPlay={isHovered}
+        loop
+        preload="auto"
         disablePictureInPicture
         disableRemotePlayback
         x5-video-player-type="h5"
         x5-playsinline="true"
         webkit-playsinline="true"
+        data-testid="video-preview"
       />
 
       {/* Autoplay blocked message with manual play option */}
