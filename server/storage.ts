@@ -688,7 +688,7 @@ export class DatabaseStorage implements IStorage {
       // First check if this video is already liked by this user/IP/session
       const isAlreadyLiked = await this.isLiked(
         like.videoId, 
-        like.userId, 
+        like.userId as number | undefined | null, 
         like.ipAddress || undefined, 
         like.sessionId || undefined
       );
@@ -727,12 +727,13 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async isLiked(videoId: number, userId?: number, ipAddress?: string, sessionId?: string): Promise<boolean> {
+  async isLiked(videoId: number, userId?: number | null, ipAddress?: string, sessionId?: string): Promise<boolean> {
     try {
       // Build query conditions based on available identifiers
       const conditions = [eq(likes.videoId, videoId)];
       
-      if (userId) {
+      // Handle both undefined and null for userId
+      if (userId !== undefined && userId !== null) {
         conditions.push(eq(likes.userId, userId));
       } else if (ipAddress && sessionId) {
         conditions.push(eq(likes.ipAddress, ipAddress));

@@ -340,19 +340,25 @@ export default function SearchResults() {
                     id: video.id,
                     title: video.title,
                     thumbnail: video.thumbnail,
-                    credits: video.credits,
-                    resolution: video.resolution as "HD" | "4K",
-                    duration: video.duration || 0,  // Prevent null duration
+                    credits: typeof video.credits === 'number' ? video.credits : 0,
+                    resolution: (video.resolution === "HD" || video.resolution === "4K") ? video.resolution : "HD",
+                    duration: video.duration || 0,
                     categoryId: video.categoryId || 0,
                     description: video.description || undefined,
                     aiGenerator: video.aiGenerator || undefined,
                     prompt: video.prompt || undefined,
-                    contentType: video.contentType as "video" | "image" | "embed" || undefined,
+                    contentType: video.contentType as "video" | "image" | "embed" || "video",
                     videoUrl: video.videoUrl || undefined,
                     imageUrl: video.imageUrl || undefined,
                     embedCode: video.embedCode || undefined,
                     userId: video.userId || undefined,
                     createdAt: video.createdAt?.toString() || undefined,
+                    // Add missing properties with defaults
+                    featured: video.featured || false,
+                    views: video.views || 0,
+                    preview: video.preview || false,
+                    likes: video.likes || 0,
+                    reviewStatus: video.reviewStatus || 'pending',
                   };
                   return (
                     <VideoCard

@@ -22,6 +22,13 @@ export interface Video {
   embedCode?: string; // Embed code for embedded content
   userId?: number;    // User ID who uploaded the video
   createdAt?: string; // Creation timestamp
+  
+  // Additional fields needed for search results
+  featured?: boolean;     // Whether the video is featured
+  views?: number;         // View count
+  preview?: boolean;      // Whether preview is enabled
+  likes?: number;         // Like count
+  reviewStatus?: 'pending' | 'approved' | 'rejected'; // Current review status
 }
 
 export interface Category {
