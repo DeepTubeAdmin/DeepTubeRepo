@@ -3464,6 +3464,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).end();
   });
 
+  // File upload endpoint
+  app.post("/api/upload/file", isAuthenticated, upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file provided" });
+      }
+      
+      console.log("File uploaded successfully:", req.file.path);
+      
+      // Get the file path from multer
+      const filePath = req.file.path;
+      
+      // Create S3 key based on file path
+      const filename = req.file.filename;
+      const s3Key = `uploads/${filename}`;
+      
+      console.log(`Uploading file to S3 with key: ${s3Key}`);
+      
+      // Upload the file to S3
+      const s3Url = await uploadFileToS3(filePath, s3Key);
+      console.log(`File uploaded to S3: ${s3Url}`);
+      
+      // Return the URL for the client to use
+      const url = `/api/s3/${s3Key}`;
+      
+      // Return success response
+      res.json({
+        success: true,
+        url,
+        s3Key,
+        message: "File uploaded successfully",
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size
+      });
+    } catch (error: any) {
+      console.error("Error in file upload:", error);
+      res.status(500).json({ error: error.message || "Failed to upload file" });
+    }
+  });
+
   // S3 file serving endpoint
   app.get("/api/s3/:key(*)", async (req, res) => {
     try {
