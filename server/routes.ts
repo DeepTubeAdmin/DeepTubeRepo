@@ -3634,6 +3634,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Ensure duration is a valid number 
+      duration = Number.isNaN(Number(duration)) ? 0 : Number(duration);
+      console.log(`Final duration to be returned: ${duration} (type: ${typeof duration})`);
+      
+      
       // Create S3 key based on file path
       const filename = req.file.filename;
       const s3Key = `uploads/${filename}`;

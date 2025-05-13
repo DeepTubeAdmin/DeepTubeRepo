@@ -374,7 +374,20 @@ export class DatabaseStorage implements IStorage {
   
   async createVideo(video: InsertVideo): Promise<Video> {
     console.log(`Creating video with data:`, JSON.stringify(video, null, 2));
-    console.log(`Video duration from request:`, video.duration);
+    
+    // Ensure duration is a proper number
+    if (video.duration !== undefined) {
+      const numDuration = Number(video.duration);
+      if (!Number.isNaN(numDuration)) {
+        video.duration = numDuration;
+      } else {
+        video.duration = 0;
+      }
+    } else {
+      video.duration = 0;
+    }
+    
+    console.log(`Video duration after normalization:`, video.duration, typeof video.duration);
     
     const [result] = await db.insert(videos).values(video).returning();
     

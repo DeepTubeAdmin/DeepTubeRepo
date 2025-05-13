@@ -419,13 +419,8 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
               console.log("File upload successful:", fileData);
               
               // Store duration if available from the server response for this upload path as well
-              if (fileData.duration) {
-                setVideoDuration(fileData.duration);
-                console.log("Extracted video duration from upload response:", fileData.duration);
-              } else {
-                console.log("No duration found in upload response, using default 0");
-                setVideoDuration(0);
-              }
+              // This first duration check is redundant, we'll rely on the second one below
+              // Removing this to avoid confusion
             } catch (error) {
               const parseError = error as Error;
               console.error("Failed to parse response as JSON:", parseError);
@@ -439,8 +434,9 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
             
             // Store duration if available from the server response
             if (fileData.duration) {
-              setVideoDuration(fileData.duration);
-              console.log("Extracted video duration from upload response:", fileData.duration);
+              const numericDuration = Number(fileData.duration);
+              setVideoDuration(numericDuration);
+              console.log("Extracted video duration from upload response:", numericDuration, typeof numericDuration);
             } else {
               console.log("No duration found in upload response, using default 0");
               setVideoDuration(0);
