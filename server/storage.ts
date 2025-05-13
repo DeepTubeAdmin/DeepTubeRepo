@@ -12,7 +12,7 @@ import {
 } from "@shared/schema";
 import { count } from "drizzle-orm";
 import { db } from "./db";
-import { eq, and, desc, asc, sql, or, ilike, gt, like } from "drizzle-orm";
+import { eq, and, desc, asc, sql, or, ilike, gt, like, inArray } from "drizzle-orm";
 import session from "express-session";
 import type { Store as SessionStore } from "express-session";
 import connectPg from "connect-pg-simple";
@@ -466,7 +466,7 @@ export class DatabaseStorage implements IStorage {
 
   // Content review operations
   async getPendingReviewContent(limit: number = 50): Promise<Video[]> {
-    // Get all pending content with proper query
+    // Step 1: Get all pending content with proper query
     const pendingContent = await db.query.videos.findMany({
       where: eq(videos.reviewStatus, 'pending'),
       orderBy: [desc(videos.createdAt)],
@@ -478,7 +478,38 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`Retrieved ${pendingContent.length} pending content items for review`);
     
-    // Map content to include uploader name
+    // Step 2: If we have content items, try to find usernames for any missing users
+    const contentIdsWithMissingUsers = pendingContent
+      .filter(item => item.userId && !item.user)
+      .map(item => item.userId);
+    
+    let additionalUserInfo: Record<number, string> = {};
+    
+    if (contentIdsWithMissingUsers.length > 0) {
+      console.log(`Found ${contentIdsWithMissingUsers.length} content items with missing user info, fetching directly`);
+      
+      try {
+        // Directly query users table for these IDs
+        const userRecords = await db
+          .select({
+            id: users.id,
+            username: users.username
+          })
+          .from(users)
+          .where(inArray(users.id, contentIdsWithMissingUsers as number[]));
+          
+        console.log(`Retrieved ${userRecords.length} additional user records`);
+        
+        // Create a lookup map
+        additionalUserInfo = Object.fromEntries(
+          userRecords.map(user => [user.id, user.username])
+        );
+      } catch (err) {
+        console.error('Error fetching additional user data:', err);
+      }
+    }
+    
+    // Step 3: Map content to include uploader name
     const result = pendingContent.map((content) => {
       // Ensure duration is a proper number
       // Important: force the duration to be a positive number
@@ -486,27 +517,30 @@ export class DatabaseStorage implements IStorage {
       if (Number.isNaN(durationSecs) || durationSecs < 0) {
         durationSecs = 0;
       }
+      
       console.log(`Raw content ID ${content.id} duration: ${content.duration} (${typeof content.duration}), converting to ${durationSecs} (${typeof durationSecs})`);
       
-      // Add uploader name from joined user
-      // Take userId even if the user object is null/undefined
-      const userId = content.userId;
-      let uploaderName = content.user?.username || null;
+      // Set uploader name with multiple fallback options
+      let uploaderName: string | null = null;
       
-      // Log info for debugging
-      if (content.userId && !content.user) {
-        console.log(`Content ${content.id} has userId ${content.userId} but user object is missing`);
+      // Option 1: Use username from joined user record
+      if (content.user?.username) {
+        uploaderName = content.user.username;
+      } 
+      // Option 2: Use username from our additional user lookup
+      else if (content.userId && additionalUserInfo[content.userId]) {
+        uploaderName = additionalUserInfo[content.userId];
+        console.log(`Using additional user lookup for content ${content.id}: ${uploaderName}`);
       }
-      
-      // Default to Anonymous if no user
-      if (!uploaderName) {
-        if (userId) {
-          // Use the userId in a username pattern if available
-          uploaderName = `User #${userId}`;
-          console.log(`Using fallback username "User #${userId}" for content ${content.id}`);
-        } else {
-          uploaderName = "Anonymous";
-        }
+      // Option 3: Use userId as placeholder
+      else if (content.userId) {
+        uploaderName = `User #${content.userId}`;
+        console.log(`Using fallback "User #${content.userId}" for content ${content.id}`);
+      }
+      // Option 4: Default to Anonymous
+      else {
+        uploaderName = "Anonymous";
+        console.log(`No user association found for content ${content.id}, using "Anonymous"`);
       }
       
       const processedItem = {

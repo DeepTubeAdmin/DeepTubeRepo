@@ -24,7 +24,7 @@ import { promisify } from "util";
 // Create a promise-based version of exec for running ffprobe
 const execPromisified = promisify(exec);
 import { asc, desc, eq, like, and, sql, or, SQL, inArray } from 'drizzle-orm';
-import { videos, messages } from '@shared/schema';
+import { videos, messages, users } from '@shared/schema';
 import { db } from './db';
 // Thumbnail routes now integrated directly
 import mongoDb from "./mongodb";
@@ -2973,6 +2973,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const pendingContent = await dbStorage.getPendingReviewContent();
+      
+      // Directly get missing user information for any content with userId but no username
+      const contentWithMissingUser = pendingContent
+        .filter(item => item.userId && !item.uploaderName?.includes('User #'))
+        .map(item => item.userId);
+      
+      console.log(`Found ${contentWithMissingUser.length} content items with missing user info`);
+      
+      // Get additional user information if needed
+      if (contentWithMissingUser.length > 0) {
+        try {
+          const userRecords = await db
+            .select({
+              id: users.id,
+              username: users.username
+            })
+            .from(users)
+            .where(inArray(users.id, contentWithMissingUser as number[]));
+            
+          console.log(`Retrieved ${userRecords.length} additional user records`);
+          
+          // Create a lookup map
+          const userIdToNameMap = Object.fromEntries(
+            userRecords.map(user => [user.id, user.username])
+          );
+          
+          // Update content items with missing uploader names
+          for (const content of pendingContent) {
+            if (content.userId && (!content.uploaderName || content.uploaderName === 'Anonymous')) {
+              const username = userIdToNameMap[content.userId];
+              if (username) {
+                console.log(`Setting username ${username} for content ${content.id}`);
+                content.uploaderName = username;
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Error fetching additional user data:', err);
+        }
+      }
       
       // Validate all durations before sending to client
       // Process each item and normalize duration values
