@@ -58,6 +58,15 @@ export default function AdminPage() {
   const [pendingContent, setPendingContent] = useState<PendingContent[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [activeTab, setActiveTab] = useState('pending');
+  
+  // Fetch featured content using React Query
+  const featuredContent = useQuery<FeaturedContent[]>({
+    queryKey: ['/api/featured/content'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/featured/content');
+      return res.json();
+    }
+  });
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
 
