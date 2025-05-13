@@ -318,6 +318,7 @@ export default function AdminPage() {
                           <TableHead className="text-gray-300">Title</TableHead>
                           <TableHead className="text-gray-300">Uploader</TableHead>
                           <TableHead className="text-gray-300">Content Type</TableHead>
+                          <TableHead className="text-gray-300">Duration</TableHead>
                           <TableHead className="text-gray-300">Upload Date</TableHead>
                           <TableHead className="text-gray-300">Actions</TableHead>
                         </TableRow>
@@ -347,6 +348,13 @@ export default function AdminPage() {
                               ) : 'Anonymous'}
                             </TableCell>
                             <TableCell className="text-gray-300 capitalize">{content.contentType}</TableCell>
+                            <TableCell className="text-gray-300">
+                              {content.contentType === 'video' ? 
+                                (content.duration ? 
+                                  `${Math.floor(content.duration / 60)}:${(content.duration % 60).toString().padStart(2, '0')}` 
+                                  : 'N/A') 
+                                : 'N/A'}
+                            </TableCell>
                             <TableCell className="text-gray-300">
                               {new Date(content.createdAt).toLocaleDateString()}
                             </TableCell>
