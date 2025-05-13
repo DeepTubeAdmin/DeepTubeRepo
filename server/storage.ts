@@ -481,7 +481,11 @@ export class DatabaseStorage implements IStorage {
     // Map content to include uploader name
     const result = pendingContent.map((content) => {
       // Ensure duration is a proper number
-      const durationSecs = Number(content.duration || 0);
+      // Important: force the duration to be a positive number
+      let durationSecs = Number(content.duration || 0);
+      if (Number.isNaN(durationSecs) || durationSecs < 0) {
+        durationSecs = 0;
+      }
       console.log(`Raw content ID ${content.id} duration: ${content.duration} (${typeof content.duration}), converting to ${durationSecs} (${typeof durationSecs})`);
       
       // Add uploader name from joined user

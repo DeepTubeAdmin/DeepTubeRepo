@@ -2951,9 +2951,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/content/pending", isAuthenticated, isAdmin, async (req, res) => {
     try {
       console.log("Admin requested pending content for review");
+      
+      // Check uploads/durations.json if it exists to log what durations we have stored
+      const globalDurationFile = path.join('uploads', 'durations.json');
+      if (fsSync.existsSync(globalDurationFile)) {
+        try {
+          const content = await fs.readFile(globalDurationFile, 'utf8');
+          const durations = JSON.parse(content) as Record<string, number>;
+          console.log("Global duration data available:", Object.keys(durations).length, "entries");
+          
+          // Log a few entries for debugging
+          const entries = Object.entries(durations).slice(0, 5);
+          if (entries.length > 0) {
+            console.log("Sample duration entries:", entries);
+          }
+        } catch (err) {
+          console.error('Error reading global durations file for debug:', err);
+        }
+      } else {
+        console.log("No global duration file found at", globalDurationFile);
+      }
+      
       const pendingContent = await dbStorage.getPendingReviewContent();
       
       // Validate all durations before sending to client
+      // Process each item and normalize duration values
       const sanitizedContent = pendingContent.map(item => {
         if (item.contentType === 'video') {
           // Ensure duration is a proper number
@@ -2962,6 +2984,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Log each video's duration for debugging
           console.log(`Sending video ${item.id} with duration: ${numericDuration} seconds (original: ${item.duration}, type: ${typeof item.duration})`);
           
+          // Since we can't use async in map, we'll update database in a batch later if needed
           return {
             ...item,
             duration: numericDuration
@@ -2969,6 +2992,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         return item;
       });
+      
+      // For videos with zero duration, try to update them in the background
+      for (const item of pendingContent) {
+        if (item.contentType === 'video' && 
+            (!item.duration || Number(item.duration) === 0) && 
+            item.videoUrl) {
+          
+          // Do this after sending response so it doesn't delay page load
+          setTimeout(async () => {
+            try {
+              // Extract filename from URL
+              const urlParts = item.videoUrl.split('/');
+              const filename = urlParts[urlParts.length - 1];
+              
+              // First check individual duration file
+              const durationMetadataPath = path.join('uploads', `${filename}.duration`);
+              if (fsSync.existsSync(durationMetadataPath)) {
+                const durationStr = await fs.readFile(durationMetadataPath, 'utf8');
+                const durationValue = Number(durationStr.trim());
+                
+                if (!Number.isNaN(durationValue) && durationValue > 0) {
+                  console.log(`Found real duration ${durationValue} from file metadata for video ${item.id}, updating in database`);
+                  
+                  // Update the database with this duration
+                  await dbStorage.updateVideo(item.id, { duration: durationValue });
+                  console.log(`Updated video ${item.id} with duration ${durationValue} in database`);
+                }
+              }
+            } catch (error) {
+              console.error(`Error trying to update duration for video ${item.id}:`, error);
+            }
+          }, 100); // Add a small delay to not block response
+        }
+      }
       
       res.json(sanitizedContent);
     } catch (error) {

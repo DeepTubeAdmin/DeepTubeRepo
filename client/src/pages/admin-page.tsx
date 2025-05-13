@@ -359,13 +359,11 @@ export default function AdminPage() {
                                     ? rawDuration 
                                     : Number(rawDuration);
                                   
-                                  if (duration > 0) {
-                                    const minutes = Math.floor(duration / 60);
-                                    const seconds = Math.floor(duration % 60);
-                                    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                                  } else {
-                                    return 'Unknown';
-                                  }
+                                  // Always show a duration value, even for zero
+                                  const minutes = Math.floor(duration / 60);
+                                  const seconds = Math.floor(duration % 60);
+                                  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                                  // Note: this will show "0:00" for videos with no duration
                                 })() 
                                 : 'N/A'}
                             </TableCell>
