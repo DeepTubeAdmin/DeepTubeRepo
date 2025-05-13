@@ -3602,6 +3602,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the file path from multer
       const filePath = req.file.path;
       
+      // Extract duration using FFmpeg if it's a video file
+      let duration = 0;
+      if (req.file.mimetype.startsWith('video/')) {
+        try {
+          const { stdout } = await execPromisified(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`);
+          duration = Math.round(parseFloat(stdout.trim()));
+          console.log(`Extracted video duration: ${duration} seconds`);
+        } catch (error) {
+          console.error('Error extracting video duration:', error);
+          // Continue even if duration extraction failed
+        }
+      }
+      
       // Create S3 key based on file path
       const filename = req.file.filename;
       const s3Key = `uploads/${filename}`;
@@ -3615,7 +3628,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return the URL for the client to use
       const url = `/api/s3/${s3Key}`;
       
-      // Return success response
+      // Return success response with duration if it's a video
       res.json({
         success: true,
         url,
@@ -3623,7 +3636,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "File uploaded successfully",
         originalname: req.file.originalname,
         mimetype: req.file.mimetype,
-        size: req.file.size
+        size: req.file.size,
+        duration: duration > 0 ? duration : undefined
       });
     } catch (error: any) {
       console.error("Error in file upload:", error);
