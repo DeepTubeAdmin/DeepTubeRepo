@@ -1217,15 +1217,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Default to 0 if missing or null/undefined
         req.body.duration = 0;
         
-        // If this is a video file, try to read duration from metadata file
+        // If this is a video file, try to read duration from metadata sources
         if (req.body.contentType === 'video' && req.body.videoUrl) {
           try {
             // Extract the filename from the video URL
             const urlParts = req.body.videoUrl.split('/');
             const filename = urlParts[urlParts.length - 1];
             
-            // Check if we have a duration metadata file
+            // First check for an individual duration metadata file
             const durationMetadataPath = path.join('uploads', `${filename}.duration`);
+            let durationFound = false;
             
             if (fsSync.existsSync(durationMetadataPath)) {
               const durationStr = await fs.readFile(durationMetadataPath, 'utf8');
@@ -1234,6 +1235,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (!Number.isNaN(durationValue)) {
                 console.log(`Found duration ${durationValue} from metadata file for video ${filename}`);
                 req.body.duration = durationValue;
+                durationFound = true;
+              }
+            }
+            
+            // If not found, check the global durations file
+            if (!durationFound) {
+              const globalDurationFile = path.join('uploads', 'durations.json');
+              if (fsSync.existsSync(globalDurationFile)) {
+                const content = await fs.readFile(globalDurationFile, 'utf8');
+                const durations = JSON.parse(content) as Record<string, number>;
+                
+                if (durations[filename]) {
+                  console.log(`Found duration ${durations[filename]} in global metadata for video ${filename}`);
+                  req.body.duration = durations[filename];
+                  durationFound = true;
+                }
               }
             }
           } catch (error) {
@@ -3810,8 +3827,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filename = req.file.filename;
       const s3Key = `uploads/${filename}`;
       
-      // If we have a valid duration, set it on the database directly 
-      // This ensures all videos in the database have proper durations
+      // If we have a valid duration, store it for later use
       if (duration > 0) {
         // Make sure we track this important metadata value
         console.log(`Duration ${duration} seconds calculated for newly uploaded file: ${s3Key}. Storing for future reference.`);
@@ -3821,6 +3837,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           await fs.writeFile(durationMetadataPath, duration.toString(), 'utf8');
           console.log(`Duration metadata saved to ${durationMetadataPath}`);
+          
+          // Also store the duration in a global metadata file for easy lookup
+          // This helps when we need to match filenames to duration values
+          const globalDurationFile = path.join('uploads', 'durations.json');
+          let durations: Record<string, number> = {};
+          
+          // Read existing durations if the file exists
+          if (fsSync.existsSync(globalDurationFile)) {
+            try {
+              const content = await fs.readFile(globalDurationFile, 'utf8');
+              durations = JSON.parse(content) as Record<string, number>;
+            } catch (err) {
+              console.error('Error reading global durations file:', err);
+            }
+          }
+          
+          // Update with new duration
+          durations[filename] = duration;
+          
+          // Write back to file
+          await fs.writeFile(globalDurationFile, JSON.stringify(durations, null, 2), 'utf8');
+          console.log(`Updated global duration metadata file`);
         } catch (error) {
           console.error(`Failed to save duration metadata: ${error}`);
         }
