@@ -489,11 +489,24 @@ export class DatabaseStorage implements IStorage {
       console.log(`Raw content ID ${content.id} duration: ${content.duration} (${typeof content.duration}), converting to ${durationSecs} (${typeof durationSecs})`);
       
       // Add uploader name from joined user
+      // Take userId even if the user object is null/undefined
+      const userId = content.userId;
       let uploaderName = content.user?.username || null;
+      
+      // Log info for debugging
+      if (content.userId && !content.user) {
+        console.log(`Content ${content.id} has userId ${content.userId} but user object is missing`);
+      }
       
       // Default to Anonymous if no user
       if (!uploaderName) {
-        uploaderName = "Anonymous";
+        if (userId) {
+          // Use the userId in a username pattern if available
+          uploaderName = `User #${userId}`;
+          console.log(`Using fallback username "User #${userId}" for content ${content.id}`);
+        } else {
+          uploaderName = "Anonymous";
+        }
       }
       
       const processedItem = {
