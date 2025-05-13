@@ -494,6 +494,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
       
       // Upload the form data to the server
       console.log('Submitting video metadata to /api/videos');
+      console.log('Current video duration value before submission:', videoDuration);
       const response = await fetch('/api/videos', {
         method: 'POST',
         headers: {
