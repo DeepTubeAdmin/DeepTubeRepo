@@ -8,7 +8,7 @@ import ThumbnailImage from '@/components/ThumbnailImage';
 import { Link } from "wouter";
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import { Loader2, X } from 'lucide-react';
+import { Loader2, X, Info } from 'lucide-react';
 
 // Type augmentation for admin purposes
 type AdminUser = User & { banned: boolean };
@@ -61,9 +61,9 @@ export default function AdminPage() {
   
   // Fetch featured content using React Query
   const featuredContent = useQuery<FeaturedContent[]>({
-    queryKey: ['/api/featured/content'],
+    queryKey: ['/api/admin/content/featured'],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/featured/content');
+      const res = await apiRequest('GET', '/api/admin/content/featured');
       return res.json();
     }
   });
@@ -144,7 +144,7 @@ export default function AdminPage() {
       await apiRequest('POST', `/api/admin/content/${contentId}/feature`);
       
       // Refresh the featured content list
-      queryClient.invalidateQueries({ queryKey: ['/api/featured/content'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/content/featured'] });
       
       toast({
         title: 'Success',
