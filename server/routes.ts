@@ -3780,16 +3780,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       duration = Number.isNaN(Number(duration)) ? 0 : Number(duration);
       console.log(`Final duration to be returned: ${duration} (type: ${typeof duration})`);
       
+      // Create S3 key based on file path
+      const filename = req.file.filename;
+      const s3Key = `uploads/${filename}`;
+      
       // If we have a valid duration, set it on the database directly 
       // This ensures all videos in the database have proper durations
       if (duration > 0) {
         // Make sure we track this important metadata value
-        console.log(`Duration ${duration} seconds calculated for newly uploaded file. Storing for future reference.`);
+        console.log(`Duration ${duration} seconds calculated for newly uploaded file: ${s3Key}. Storing for future reference.`);
       }
-      
-      // Create S3 key based on file path
-      const filename = req.file.filename;
-      const s3Key = `uploads/${filename}`;
       
       console.log(`Uploading file to S3 with key: ${s3Key}`);
       
