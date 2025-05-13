@@ -475,6 +475,19 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
       
       // Upload the form data to the server
       console.log('Submitting video metadata to /api/videos');
+      
+      // Fetch the current user to get the userId
+      const userResponse = await fetch('/api/user', {
+        credentials: 'include'
+      });
+      
+      if (!userResponse.ok) {
+        throw new Error('You must be logged in to upload content');
+      }
+      
+      const userData = await userResponse.json();
+      console.log('Current user data:', userData);
+      
       const response = await fetch('/api/videos', {
         method: 'POST',
         headers: {
@@ -483,7 +496,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
         // Add a longer timeout for large data payloads (especially base64 images)
         signal: AbortSignal.timeout(60000), // 1 minute timeout
         body: JSON.stringify({
-
+          userId: userData.id, // Explicitly include the user ID
           title,
           description,
           aiGenerator: aiGenerator === "Other" ? customAiGenerator : aiGenerator,
