@@ -152,10 +152,10 @@ export default function ImageCard({ image, size = 'default' }: ImageCardProps) {
               <div className="flex items-center justify-between text-xs text-slate-300">
                 <div className="flex items-center space-x-2">
                   <span>{image.aiGenerator || "AI Generated"}</span>
-                  {username && image.userId && (
+                  {username && (
                     <>
                       <span>•</span>
-                      <Link to={`/user/${image.userId}`} onClick={(e) => e.stopPropagation()}>
+                      <Link to={`/user/${username}`} onClick={(e) => e.stopPropagation()}>
                         <span className="text-orange-400 hover:underline">{username}</span>
                       </Link>
                     </>

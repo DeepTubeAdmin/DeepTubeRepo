@@ -328,7 +328,7 @@ export default function VideoCard({ video, onPreview, onWishlist, size = 'defaul
 
         <div className="flex justify-between items-center mt-2 text-sm">
           <div className="text-gray-400">
-            {video.aiGenerator || "AI Artist"} {username && video.userId && <>• <Link to={`/user/${video.userId}`} onClick={(e) => e.stopPropagation()} className="text-orange-500 hover:text-orange-400 hover:underline">{username}</Link></>}
+            {video.aiGenerator || "AI Artist"} {username && <>• <Link to={`/user/${username}`} onClick={(e) => e.stopPropagation()} className="text-orange-500 hover:text-orange-400 hover:underline">{username}</Link></>}
           </div>
 
           <div className="flex space-x-1">
