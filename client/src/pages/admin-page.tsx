@@ -8,7 +8,7 @@ import ThumbnailImage from '@/components/ThumbnailImage';
 import { Link } from "wouter";
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 
 // Type augmentation for admin purposes
 type AdminUser = User & { banned: boolean };
@@ -610,7 +610,9 @@ export default function AdminPage() {
                             <TableCell>
                               <div className="relative w-20 h-12 overflow-hidden rounded">
                                 <ThumbnailImage 
-                                  content={item} 
+                                  contentId={item.id}
+                                  contentType={item.contentType || 'video'}
+                                  title={item.title}
                                   className="absolute inset-0 w-full h-full object-cover"
                                 />
                               </div>
@@ -632,9 +634,10 @@ export default function AdminPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleToggleFeature(item.id)}
-                                className="bg-orange-600 hover:bg-orange-700 border-orange-500"
+                                className="bg-orange-600 hover:bg-orange-700 border-orange-500 text-white"
                               >
-                                Unfeature
+                                <X className="h-4 w-4 mr-1" /> 
+                                Remove from featured
                               </Button>
                             </TableCell>
                           </TableRow>
