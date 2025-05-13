@@ -373,8 +373,12 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createVideo(video: InsertVideo): Promise<Video> {
+    console.log(`Creating video with data:`, JSON.stringify(video, null, 2));
+    console.log(`Video duration from request:`, video.duration);
+    
     const [result] = await db.insert(videos).values(video).returning();
-    console.log(`Created new video with ID: ${result.id}`, result.title);
+    
+    console.log(`Created new video with ID: ${result.id}, title: "${result.title}", duration: ${result.duration}`);
     return result;
   }
   
