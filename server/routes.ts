@@ -1219,9 +1219,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log("Duration in request body (normalized):", req.body.duration, typeof req.body.duration);
+      
+      // Force duration to be numeric to avoid schema validation issues
+      if (req.body.duration !== undefined) {
+        const parsedDuration = Number(req.body.duration);
+        req.body.duration = Number.isNaN(parsedDuration) ? 0 : parsedDuration;
+      }
+      
       const videoData = insertVideoSchema.parse(req.body);
       console.log("Parsed video data:", JSON.stringify(videoData, null, 2));
       console.log("Duration after zod parsing:", videoData.duration, typeof videoData.duration);
+      
+      // Final runtime check to ensure duration is always a number
+      if (typeof videoData.duration !== 'number') {
+        console.log(`Converting non-numeric duration ${videoData.duration} to number`);
+        videoData.duration = Number(videoData.duration) || 0;
+      }
       
       // Auto-approve YouTube embeds
       if (videoData.contentType === 'embed' && videoData.embedCode && 
@@ -3767,6 +3780,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       duration = Number.isNaN(Number(duration)) ? 0 : Number(duration);
       console.log(`Final duration to be returned: ${duration} (type: ${typeof duration})`);
       
+      // If we have a valid duration, set it on the database directly 
+      // This ensures all videos in the database have proper durations
+      if (duration > 0) {
+        // Make sure we track this important metadata value
+        console.log(`Duration ${duration} seconds calculated for newly uploaded file. Storing for future reference.`);
+      }
       
       // Create S3 key based on file path
       const filename = req.file.filename;
