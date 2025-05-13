@@ -480,25 +480,25 @@ export class DatabaseStorage implements IStorage {
     
     // Map content to include uploader name
     const result = pendingContent.map((content) => {
-      // Get duration info for display formatting
-      const durationSecs = content.duration || 0;
-      console.log(`Raw content ID ${content.id} duration: ${content.duration}, type: ${typeof content.duration}`);
+      // Ensure duration is a proper number
+      const durationSecs = Number(content.duration || 0);
+      console.log(`Raw content ID ${content.id} duration: ${content.duration} (${typeof content.duration}), converting to ${durationSecs} (${typeof durationSecs})`);
       
       // Add uploader name from joined user
       let uploaderName = content.user?.username || null;
       
       // Default to Admin if no user
       if (!uploaderName) {
-        uploaderName = "Admin";
+        uploaderName = "Anonymous";
       }
       
       const processedItem = {
         ...content,
         uploaderName,
-        duration: durationSecs
+        duration: durationSecs  // Explicitly use the numeric version
       };
       
-      console.log(`Processed content ID ${content.id} duration: ${processedItem.duration}, type: ${typeof processedItem.duration}`);
+      console.log(`Processed content ID ${content.id} final duration: ${processedItem.duration} (${typeof processedItem.duration})`);
       return processedItem;
     });
     

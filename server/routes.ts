@@ -2809,8 +2809,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin content review endpoints
   app.get("/api/admin/content/pending", isAuthenticated, isAdmin, async (req, res) => {
     try {
+      console.log("Admin requested pending content for review");
       const pendingContent = await dbStorage.getPendingReviewContent();
-      res.json(pendingContent);
+      
+      // Validate all durations before sending to client
+      const sanitizedContent = pendingContent.map(item => {
+        if (item.contentType === 'video') {
+          // Log each video's duration for debugging
+          console.log(`Sending video ${item.id} with duration: ${item.duration} (type: ${typeof item.duration})`);
+          
+          // Ensure duration is a proper number
+          return {
+            ...item,
+            duration: Number(item.duration) || 0
+          };
+        }
+        return item;
+      });
+      
+      res.json(sanitizedContent);
     } catch (error) {
       console.error("Error fetching pending content:", error);
       res.status(500).json({ error: "Failed to fetch pending content" });
