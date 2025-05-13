@@ -3639,19 +3639,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let duration = 0;
       if (req.file.mimetype.startsWith('video/')) {
         try {
-          // Using ffprobe to extract the duration from the video
-          const { stdout } = await execPromisified(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`);
+          console.log(`Attempting to extract duration for video: ${filePath}`);
+          
+          // Get full path to ffprobe binary for debugging
+          const { stdout: ffprobePathOutput } = await execPromisified(`which ffprobe`);
+          console.log(`ffprobe path: ${ffprobePathOutput.trim()}`);
+          
+          // Using ffprobe to extract the duration from the video with more verbose output
+          const ffprobeCmd = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`;
+          console.log(`Running command: ${ffprobeCmd}`);
+          
+          const { stdout, stderr } = await execPromisified(ffprobeCmd);
+          
+          if (stderr) {
+            console.log(`ffprobe stderr: ${stderr}`);
+          }
+          
+          console.log(`ffprobe stdout: ${stdout}`);
+          
           // Convert to number and round to nearest integer
           const parsedDuration = parseFloat(stdout.trim());
-          duration = Number.isNaN(parsedDuration) ? 0 : Math.round(parsedDuration);
-          console.log(`Extracted video duration: ${duration} seconds (parsed from ${stdout.trim()})`);
+          
+          if (Number.isNaN(parsedDuration)) {
+            console.error(`Failed to parse duration value: "${stdout.trim()}"`);
+            duration = 0;
+          } else {
+            duration = Math.round(parsedDuration);
+            console.log(`Successfully extracted video duration: ${duration} seconds (parsed from ${stdout.trim()})`);
+          }
         } catch (error) {
           console.error('Error extracting video duration:', error);
           // Continue even if duration extraction failed
         }
       }
       
-      // Ensure duration is a valid number 
+      // Ensure duration is a valid number and force type to number
       duration = Number.isNaN(Number(duration)) ? 0 : Number(duration);
       console.log(`Final duration to be returned: ${duration} (type: ${typeof duration})`);
       

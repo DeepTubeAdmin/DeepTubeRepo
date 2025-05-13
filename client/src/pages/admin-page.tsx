@@ -358,9 +358,15 @@ export default function AdminPage() {
                                   // Ensure duration is treated as a number
                                   const duration = Number(content.duration);
                                   
-                                  return (duration > 0 ? 
-                                    `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}` 
-                                    : 'N/A');
+                                  // Create an element with explicit duration info for debugging
+                                  return (
+                                    <>
+                                      {duration > 0 ? 
+                                        `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}` 
+                                        : 'N/A'} 
+                                      <span className="text-xs opacity-50">(raw: {content.duration})</span>
+                                    </>
+                                  );
                                 })() 
                                 : 'N/A'}
                             </TableCell>
