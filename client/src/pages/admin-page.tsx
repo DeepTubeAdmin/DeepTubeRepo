@@ -6,6 +6,9 @@ import { useLocation } from 'wouter';
 import { Video, User } from '@shared/schema';
 import ThumbnailImage from '@/components/ThumbnailImage';
 import { Link } from "wouter";
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
+import { Loader2 } from 'lucide-react';
 
 // Type augmentation for admin purposes
 type AdminUser = User & { banned: boolean };
@@ -18,6 +21,11 @@ type ReportedContent = Video & {
   reportReason: string;
   reportedAt: string;
   reportedBy: string;
+};
+
+// Featured content type
+type FeaturedContent = Video & {
+  uploaderName?: string | null;
 };
 import { apiRequest } from '@/lib/queryClient';
 import { 
@@ -532,18 +540,77 @@ export default function AdminPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="system" className="py-4">
+          <TabsContent value="featured" className="py-4">
             <Card className="bg-gray-900 border-gray-800">
               <CardHeader>
-                <CardTitle>System Tools</CardTitle>
+                <CardTitle>Featured Videos Management</CardTitle>
                 <CardDescription className="text-gray-400">
-                  System administration and maintenance tools
+                  Manage videos that appear in the featured section of the home page
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="p-10 text-center text-gray-400">
-                  <p>System tools have been removed as requested.</p>
-                </div>
+                {featuredContent.isLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+                  </div>
+                ) : featuredContent.error ? (
+                  <div className="p-10 text-center text-red-500">
+                    <p>Error loading featured content: {featuredContent.error.message}</p>
+                  </div>
+                ) : (
+                  <ScrollArea className="h-[500px]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[80px]">ID</TableHead>
+                          <TableHead className="w-[120px]">Thumbnail</TableHead>
+                          <TableHead className="min-w-[200px]">Title</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Uploader</TableHead>
+                          <TableHead>Views</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {featuredContent.data?.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell>{item.id}</TableCell>
+                            <TableCell>
+                              <div className="relative w-20 h-12 overflow-hidden rounded">
+                                <ThumbnailImage 
+                                  content={item} 
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                />
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-medium">{item.title}</TableCell>
+                            <TableCell>{item.contentType}</TableCell>
+                            <TableCell>
+                              {item.uploaderName ? (
+                                <Link to={`/user/${item.userId}`} className="text-blue-400 hover:underline">
+                                  {item.uploaderName}
+                                </Link>
+                              ) : (
+                                <span className="text-gray-500">Unknown</span>
+                              )}
+                            </TableCell>
+                            <TableCell>{item.views || 0}</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleFeature(item.id)}
+                                className="bg-orange-600 hover:bg-orange-700 border-orange-500"
+                              >
+                                Unfeature
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
