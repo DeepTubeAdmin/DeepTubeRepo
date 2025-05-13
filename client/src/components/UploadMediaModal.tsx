@@ -501,7 +501,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           imageUrl: imageUrl, // This will still be a data URL for images
           embedCode: contentType === "embed" ? embedCode : null,
           resolution: contentType === "video" ? "HD" : undefined,
-          duration: contentType === "video" && fileData?.duration ? fileData.duration : 0,
+          duration: contentType === "video" ? videoDuration : 0,
           credits: 0, // Default to 0 credits for free content
         }),
         credentials: 'include',
