@@ -152,6 +152,80 @@ const upload = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Register embed routes
   registerEmbedRoutes(app);
+  
+  // Test endpoint for ffprobe duration extraction
+  app.get('/api/test/ffprobe', async (req, res) => {
+    try {
+      console.log("Testing ffprobe duration extraction...");
+      
+      // Try to find an existing video file to test
+      let testFiles = [];
+      try {
+        const uploadsDir = path.join(process.cwd(), 'uploads');
+        const files = await fs.readdir(uploadsDir);
+        testFiles = files.filter(file => file.endsWith('.mp4') || file.endsWith('.mov') || file.endsWith('.webm'));
+        console.log(`Found ${testFiles.length} video files to test`);
+      } catch (err) {
+        console.error("Error scanning uploads directory:", err);
+      }
+      
+      if (testFiles.length === 0) {
+        return res.json({
+          success: false,
+          message: "No test videos found in uploads directory"
+        });
+      }
+      
+      // Test the first few files
+      const results = [];
+      for (let i = 0; i < Math.min(3, testFiles.length); i++) {
+        const filePath = path.join(process.cwd(), 'uploads', testFiles[i]);
+        
+        try {
+          console.log(`Testing ffprobe on file: ${filePath}`);
+          const ffprobeCmd = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`;
+          console.log(`Running command: ${ffprobeCmd}`);
+          
+          const { stdout, stderr } = await execPromisified(ffprobeCmd);
+          
+          if (stderr) {
+            console.log(`ffprobe stderr: ${stderr}`);
+          }
+          
+          console.log(`ffprobe stdout: ${stdout}`);
+          
+          const parsedDuration = parseFloat(stdout.trim());
+          const duration = Number.isNaN(parsedDuration) ? 0 : Math.round(parsedDuration);
+          
+          results.push({
+            file: testFiles[i],
+            success: true,
+            duration: duration,
+            rawOutput: stdout.trim()
+          });
+        } catch (error) {
+          console.error(`Error testing ffprobe on ${testFiles[i]}:`, error);
+          results.push({
+            file: testFiles[i],
+            success: false,
+            error: error.message
+          });
+        }
+      }
+      
+      return res.json({
+        success: true,
+        results: results
+      });
+    } catch (error) {
+      console.error("Error in ffprobe test:", error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+  
   // Thumbnail routes are now integrated directly
   
   // Main thumbnail endpoint that generates thumbnails on-demand using Cloudinary
