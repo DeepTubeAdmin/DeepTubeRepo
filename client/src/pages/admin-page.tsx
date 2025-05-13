@@ -656,6 +656,7 @@ export default function AdminPage() {
                         ))}
                       </TableBody>
                     </Table>
+                    )}
                   </ScrollArea>
                 )}
               </CardContent>
