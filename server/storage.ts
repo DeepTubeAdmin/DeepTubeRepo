@@ -491,7 +491,7 @@ export class DatabaseStorage implements IStorage {
       // Add uploader name from joined user
       let uploaderName = content.user?.username || null;
       
-      // Default to Admin if no user
+      // Default to Anonymous if no user
       if (!uploaderName) {
         uploaderName = "Anonymous";
       }
