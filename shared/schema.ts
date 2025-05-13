@@ -48,7 +48,7 @@ export const videos = pgTable("videos", {
   preview: text("preview"),
   contentType: text("content_type").notNull().default("video"), // "video", "image", or "embed"
   resolution: varchar("resolution", { enum: ["HD", "4K"] }).notNull().default("HD"),
-  duration: integer("duration").notNull().default(0), // in seconds, not null to avoid display issues
+  duration: integer("duration").default(0), // in seconds, with default to avoid null issues
   categoryId: integer("category_id").references(() => categories.id),
   vimeoId: text("vimeo_id"), // Store Vimeo video ID
   userId: integer("user_id").references(() => users.id), // Added userId for tracking ownership
@@ -248,8 +248,7 @@ export const insertUserSchema = createInsertSchema(users)
 
 export const insertCategorySchema = createInsertSchema(categories);
 // Properly defining the insert schema for videos
-export const insertVideoSchema = createInsertSchema(videos)
-.pick({
+export const insertVideoSchema = createInsertSchema(videos).pick({
   userId: true, // Explicitly include userId
   title: true,
   description: true,
@@ -272,14 +271,7 @@ export const insertVideoSchema = createInsertSchema(videos)
   reviewedAt: true,
   reviewedBy: true,
   rejectionReason: true
-})
-.transform((data) => ({
-  ...data,
-  // Ensure duration is always a number for proper database storage
-  duration: data.duration !== undefined && data.duration !== null 
-    ? Number(data.duration) 
-    : 0
-}));
+});
 export const insertWishlistItemSchema = createInsertSchema(wishlistItems);
 export const insertCommentSchema = createInsertSchema(comments);
 export const insertLikeSchema = createInsertSchema(likes);

@@ -18,13 +18,8 @@ import { fileURLToPath } from 'url';
 import thumbnailService from "./services/ThumbnailService";
 // Import specific utilities from their respective modules
 import { youtube as youtubeUtils, storage as s3Service, ffmpeg as ffmpegUtils } from "./services/ThumbnailService";
-import { exec } from "child_process";
-import { promisify } from "util";
-
-// Create a promise-based version of exec for running ffprobe
-const execPromisified = promisify(exec);
 import { asc, desc, eq, like, and, sql, or, SQL, inArray } from 'drizzle-orm';
-import { videos, messages, users } from '@shared/schema';
+import { videos, messages } from '@shared/schema';
 import { db } from './db';
 // Thumbnail routes now integrated directly
 import mongoDb from "./mongodb";
@@ -152,93 +147,6 @@ const upload = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Register embed routes
   registerEmbedRoutes(app);
-  
-  // Test endpoint for ffprobe duration extraction
-  app.get('/api/test/ffprobe', async (req, res) => {
-    try {
-      console.log("Testing ffprobe duration extraction...");
-      
-      // Try to find an existing video file to test
-      let testFiles = [];
-      try {
-        // First try in uploads/videos where we found actual files
-        const uploadsDir = path.join(process.cwd(), 'uploads', 'videos');
-        console.log(`Checking for videos in: ${uploadsDir}`);
-        const files = await fs.readdir(uploadsDir);
-        testFiles = files.filter(file => file.endsWith('.mp4') || file.endsWith('.mov') || file.endsWith('.webm'));
-        console.log(`Found ${testFiles.length} video files to test in uploads/videos`);
-      } catch (err) {
-        console.error("Error scanning uploads/videos directory:", err);
-        try {
-          // Fallback to just uploads directory
-          const uploadsDir = path.join(process.cwd(), 'uploads');
-          console.log(`Checking for videos in fallback dir: ${uploadsDir}`);
-          const files = await fs.readdir(uploadsDir);
-          testFiles = files.filter(file => file.endsWith('.mp4') || file.endsWith('.mov') || file.endsWith('.webm'));
-          console.log(`Found ${testFiles.length} video files to test in uploads`);
-        } catch (err) {
-          console.error("Error scanning uploads directory:", err);
-        }
-      }
-      
-      if (testFiles.length === 0) {
-        return res.json({
-          success: false,
-          message: "No test videos found in uploads directory"
-        });
-      }
-      
-      // Test the first few files
-      const results = [];
-      for (let i = 0; i < Math.min(3, testFiles.length); i++) {
-        // Use uploads/videos for the file path since that's where we found them
-        const filePath = path.join(process.cwd(), 'uploads', 'videos', testFiles[i]);
-        
-        try {
-          console.log(`Testing ffprobe on file: ${filePath}`);
-          const ffprobeCmd = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`;
-          console.log(`Running command: ${ffprobeCmd}`);
-          
-          const { stdout, stderr } = await execPromisified(ffprobeCmd);
-          
-          if (stderr) {
-            console.log(`ffprobe stderr: ${stderr}`);
-          }
-          
-          console.log(`ffprobe stdout: ${stdout}`);
-          
-          const parsedDuration = parseFloat(stdout.trim());
-          const duration = Number.isNaN(parsedDuration) ? 0 : Math.round(parsedDuration);
-          
-          results.push({
-            file: testFiles[i],
-            success: true,
-            duration: duration,
-            rawOutput: stdout.trim()
-          });
-        } catch (error) {
-          console.error(`Error testing ffprobe on ${testFiles[i]}:`, error);
-          results.push({
-            file: testFiles[i],
-            success: false,
-            error: error.message
-          });
-        }
-      }
-      
-      return res.json({
-        success: true,
-        results: results
-      });
-    } catch (error) {
-      console.error("Error in ffprobe test:", error);
-      return res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  });
-  
   // Thumbnail routes are now integrated directly
   
   // Main thumbnail endpoint that generates thumbnails on-demand using Cloudinary
@@ -1205,77 +1113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/videos", isAuthenticated, async (req, res) => {
     try {
-      console.log("Received video creation request with body:", JSON.stringify(req.body, null, 2));
-      
-      // Ensure duration is a number before validation
-      if (req.body.duration !== undefined && req.body.duration !== null) {
-        // Convert to number if it's a string
-        if (typeof req.body.duration === 'string') {
-          req.body.duration = Number(req.body.duration);
-        }
-      } else {
-        // Default to 0 if missing or null/undefined
-        req.body.duration = 0;
-        
-        // If this is a video file, try to read duration from metadata sources
-        if (req.body.contentType === 'video' && req.body.videoUrl) {
-          try {
-            // Extract the filename from the video URL
-            const urlParts = req.body.videoUrl.split('/');
-            const filename = urlParts[urlParts.length - 1];
-            
-            // First check for an individual duration metadata file
-            const durationMetadataPath = path.join('uploads', `${filename}.duration`);
-            let durationFound = false;
-            
-            if (fsSync.existsSync(durationMetadataPath)) {
-              const durationStr = await fs.readFile(durationMetadataPath, 'utf8');
-              const durationValue = Number(durationStr.trim());
-              
-              if (!Number.isNaN(durationValue)) {
-                console.log(`Found duration ${durationValue} from metadata file for video ${filename}`);
-                req.body.duration = durationValue;
-                durationFound = true;
-              }
-            }
-            
-            // If not found, check the global durations file
-            if (!durationFound) {
-              const globalDurationFile = path.join('uploads', 'durations.json');
-              if (fsSync.existsSync(globalDurationFile)) {
-                const content = await fs.readFile(globalDurationFile, 'utf8');
-                const durations = JSON.parse(content) as Record<string, number>;
-                
-                if (durations[filename]) {
-                  console.log(`Found duration ${durations[filename]} in global metadata for video ${filename}`);
-                  req.body.duration = durations[filename];
-                  durationFound = true;
-                }
-              }
-            }
-          } catch (error) {
-            console.error(`Error reading duration metadata: ${error}`);
-          }
-        }
-      }
-      
-      console.log("Duration in request body (normalized):", req.body.duration, typeof req.body.duration);
-      
-      // Force duration to be numeric to avoid schema validation issues
-      if (req.body.duration !== undefined) {
-        const parsedDuration = Number(req.body.duration);
-        req.body.duration = Number.isNaN(parsedDuration) ? 0 : parsedDuration;
-      }
-      
       const videoData = insertVideoSchema.parse(req.body);
-      console.log("Parsed video data:", JSON.stringify(videoData, null, 2));
-      console.log("Duration after zod parsing:", videoData.duration, typeof videoData.duration);
-      
-      // Final runtime check to ensure duration is always a number
-      if (typeof videoData.duration !== 'number') {
-        console.log(`Converting non-numeric duration ${videoData.duration} to number`);
-        videoData.duration = Number(videoData.duration) || 0;
-      }
       
       // Auto-approve YouTube embeds
       if (videoData.contentType === 'embed' && videoData.embedCode && 
@@ -2950,124 +2788,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin content review endpoints
   app.get("/api/admin/content/pending", isAuthenticated, isAdmin, async (req, res) => {
     try {
-      console.log("Admin requested pending content for review");
-      
-      // Check uploads/durations.json if it exists to log what durations we have stored
-      const globalDurationFile = path.join('uploads', 'durations.json');
-      if (fsSync.existsSync(globalDurationFile)) {
-        try {
-          const content = await fs.readFile(globalDurationFile, 'utf8');
-          const durations = JSON.parse(content) as Record<string, number>;
-          console.log("Global duration data available:", Object.keys(durations).length, "entries");
-          
-          // Log a few entries for debugging
-          const entries = Object.entries(durations).slice(0, 5);
-          if (entries.length > 0) {
-            console.log("Sample duration entries:", entries);
-          }
-        } catch (err) {
-          console.error('Error reading global durations file for debug:', err);
-        }
-      } else {
-        console.log("No global duration file found at", globalDurationFile);
-      }
-      
       const pendingContent = await dbStorage.getPendingReviewContent();
-      
-      // Directly get missing user information for any content with userId but no username
-      const contentWithMissingUser = pendingContent
-        .filter(item => item.userId && !item.uploaderName?.includes('User #'))
-        .map(item => item.userId);
-      
-      console.log(`Found ${contentWithMissingUser.length} content items with missing user info`);
-      
-      // Get additional user information if needed
-      if (contentWithMissingUser.length > 0) {
-        try {
-          const userRecords = await db
-            .select({
-              id: users.id,
-              username: users.username
-            })
-            .from(users)
-            .where(inArray(users.id, contentWithMissingUser as number[]));
-            
-          console.log(`Retrieved ${userRecords.length} additional user records`);
-          
-          // Create a lookup map
-          const userIdToNameMap = Object.fromEntries(
-            userRecords.map(user => [user.id, user.username])
-          );
-          
-          // Update content items with missing uploader names
-          for (const content of pendingContent) {
-            if (content.userId && (!content.uploaderName || content.uploaderName === 'Anonymous')) {
-              const username = userIdToNameMap[content.userId];
-              if (username) {
-                console.log(`Setting username ${username} for content ${content.id}`);
-                content.uploaderName = username;
-              }
-            }
-          }
-        } catch (err) {
-          console.error('Error fetching additional user data:', err);
-        }
-      }
-      
-      // Validate all durations before sending to client
-      // Process each item and normalize duration values
-      const sanitizedContent = pendingContent.map(item => {
-        if (item.contentType === 'video') {
-          // Ensure duration is a proper number
-          const numericDuration = Number(item.duration) || 0;
-          
-          // Log each video's duration for debugging
-          console.log(`Sending video ${item.id} with duration: ${numericDuration} seconds (original: ${item.duration}, type: ${typeof item.duration})`);
-          
-          // Since we can't use async in map, we'll update database in a batch later if needed
-          return {
-            ...item,
-            duration: numericDuration
-          };
-        }
-        return item;
-      });
-      
-      // For videos with zero duration, try to update them in the background
-      for (const item of pendingContent) {
-        if (item.contentType === 'video' && 
-            (!item.duration || Number(item.duration) === 0) && 
-            item.videoUrl) {
-          
-          // Do this after sending response so it doesn't delay page load
-          setTimeout(async () => {
-            try {
-              // Extract filename from URL
-              const urlParts = item.videoUrl.split('/');
-              const filename = urlParts[urlParts.length - 1];
-              
-              // First check individual duration file
-              const durationMetadataPath = path.join('uploads', `${filename}.duration`);
-              if (fsSync.existsSync(durationMetadataPath)) {
-                const durationStr = await fs.readFile(durationMetadataPath, 'utf8');
-                const durationValue = Number(durationStr.trim());
-                
-                if (!Number.isNaN(durationValue) && durationValue > 0) {
-                  console.log(`Found real duration ${durationValue} from file metadata for video ${item.id}, updating in database`);
-                  
-                  // Update the database with this duration
-                  await dbStorage.updateVideo(item.id, { duration: durationValue });
-                  console.log(`Updated video ${item.id} with duration ${durationValue} in database`);
-                }
-              }
-            } catch (error) {
-              console.error(`Error trying to update duration for video ${item.id}:`, error);
-            }
-          }, 100); // Add a small delay to not block response
-        }
-      }
-      
-      res.json(sanitizedContent);
+      res.json(pendingContent);
     } catch (error) {
       console.error("Error fetching pending content:", error);
       res.status(500).json({ error: "Failed to fetch pending content" });
@@ -3875,91 +3597,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the file path from multer
       const filePath = req.file.path;
       
-      // Extract duration using FFmpeg if it's a video file
-      let duration = 0;
-      if (req.file.mimetype.startsWith('video/')) {
-        try {
-          console.log(`Attempting to extract duration for video: ${filePath}`);
-          
-          // Get full path to ffprobe binary for debugging
-          const { stdout: ffprobePathOutput } = await execPromisified(`which ffprobe`);
-          console.log(`ffprobe path: ${ffprobePathOutput.trim()}`);
-          
-          // Using ffprobe to extract the duration from the video with more verbose output
-          // Make sure to use the full, absolute path to the file
-          const absoluteFilePath = path.resolve(filePath);
-          console.log(`Full absolute path for ffprobe: ${absoluteFilePath}`);
-          const ffprobeCmd = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${absoluteFilePath}"`;
-          console.log(`Running command: ${ffprobeCmd}`);
-          
-          const { stdout, stderr } = await execPromisified(ffprobeCmd);
-          
-          if (stderr) {
-            console.log(`ffprobe stderr: ${stderr}`);
-          }
-          
-          console.log(`ffprobe stdout: ${stdout}`);
-          
-          // Convert to number and round to nearest integer
-          const parsedDuration = parseFloat(stdout.trim());
-          
-          if (Number.isNaN(parsedDuration)) {
-            console.error(`Failed to parse duration value: "${stdout.trim()}"`);
-            duration = 0;
-          } else {
-            duration = Math.round(parsedDuration);
-            console.log(`Successfully extracted video duration: ${duration} seconds (parsed from ${stdout.trim()})`);
-          }
-        } catch (error) {
-          console.error('Error extracting video duration:', error);
-          // Continue even if duration extraction failed
-        }
-      }
-      
-      // Ensure duration is a valid number and force type to number
-      duration = Number.isNaN(Number(duration)) ? 0 : Number(duration);
-      console.log(`Final duration to be returned: ${duration} (type: ${typeof duration})`);
-      
       // Create S3 key based on file path
       const filename = req.file.filename;
       const s3Key = `uploads/${filename}`;
-      
-      // If we have a valid duration, store it for later use
-      if (duration > 0) {
-        // Make sure we track this important metadata value
-        console.log(`Duration ${duration} seconds calculated for newly uploaded file: ${s3Key}. Storing for future reference.`);
-        
-        // Store the duration in a file metadata so it can be retrieved later
-        const durationMetadataPath = path.join(path.dirname(filePath), `${filename}.duration`);
-        try {
-          await fs.writeFile(durationMetadataPath, duration.toString(), 'utf8');
-          console.log(`Duration metadata saved to ${durationMetadataPath}`);
-          
-          // Also store the duration in a global metadata file for easy lookup
-          // This helps when we need to match filenames to duration values
-          const globalDurationFile = path.join('uploads', 'durations.json');
-          let durations: Record<string, number> = {};
-          
-          // Read existing durations if the file exists
-          if (fsSync.existsSync(globalDurationFile)) {
-            try {
-              const content = await fs.readFile(globalDurationFile, 'utf8');
-              durations = JSON.parse(content) as Record<string, number>;
-            } catch (err) {
-              console.error('Error reading global durations file:', err);
-            }
-          }
-          
-          // Update with new duration
-          durations[filename] = duration;
-          
-          // Write back to file
-          await fs.writeFile(globalDurationFile, JSON.stringify(durations, null, 2), 'utf8');
-          console.log(`Updated global duration metadata file`);
-        } catch (error) {
-          console.error(`Failed to save duration metadata: ${error}`);
-        }
-      }
       
       console.log(`Uploading file to S3 with key: ${s3Key}`);
       
@@ -3970,8 +3610,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return the URL for the client to use
       const url = `/api/s3/${s3Key}`;
       
-      // Return success response with duration if it's a video
-      console.log(`Returning file upload response with duration: ${duration} seconds`);
+      // Return success response
       res.json({
         success: true,
         url,
@@ -3979,8 +3618,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "File uploaded successfully",
         originalname: req.file.originalname,
         mimetype: req.file.mimetype,
-        size: req.file.size,
-        duration: duration
+        size: req.file.size
       });
     } catch (error: any) {
       console.error("Error in file upload:", error);

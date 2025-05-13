@@ -165,7 +165,6 @@ export default function AdminPage() {
           const pendingRes = await apiRequest('GET', '/api/admin/content/pending');
           if (pendingRes.ok) {
             const pendingData = await pendingRes.json();
-            console.log('Pending content data:', pendingData);
             setPendingContent(pendingData);
           }
         } catch (pendingError) {
@@ -319,7 +318,6 @@ export default function AdminPage() {
                           <TableHead className="text-gray-300">Title</TableHead>
                           <TableHead className="text-gray-300">Uploader</TableHead>
                           <TableHead className="text-gray-300">Content Type</TableHead>
-                          <TableHead className="text-gray-300">Duration</TableHead>
                           <TableHead className="text-gray-300">Upload Date</TableHead>
                           <TableHead className="text-gray-300">Actions</TableHead>
                         </TableRow>
@@ -339,9 +337,9 @@ export default function AdminPage() {
                             </TableCell>
                             <TableCell className="text-white font-medium">{content.title}</TableCell>
                             <TableCell className="text-gray-300">
-                              {content.uploaderName ? (
+                              {content.userId && content.uploaderName ? (
                                 <Link 
-                                  href={content.userId ? `/user/${content.userId}` : '#'} 
+                                  href={`/user/${content.userId}`} 
                                   className="text-primary hover:text-primary/80 underline"
                                 >
                                   {content.uploaderName}
@@ -349,24 +347,6 @@ export default function AdminPage() {
                               ) : 'Anonymous'}
                             </TableCell>
                             <TableCell className="text-gray-300 capitalize">{content.contentType}</TableCell>
-                            <TableCell className="text-gray-300">
-                              {content.contentType === 'video' ? 
-                                (() => {
-                                  // Format the duration as mm:ss
-                                  // First ensure duration is a valid number
-                                  const rawDuration = content.duration;
-                                  const duration = typeof rawDuration === 'number' 
-                                    ? rawDuration 
-                                    : Number(rawDuration);
-                                  
-                                  // Always show a duration value, even for zero
-                                  const minutes = Math.floor(duration / 60);
-                                  const seconds = Math.floor(duration % 60);
-                                  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                                  // Note: this will show "0:00" for videos with no duration
-                                })() 
-                                : 'N/A'}
-                            </TableCell>
                             <TableCell className="text-gray-300">
                               {new Date(content.createdAt).toLocaleDateString()}
                             </TableCell>

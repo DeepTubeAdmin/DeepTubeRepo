@@ -65,7 +65,6 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
   const [contentType, setContentType] = useState<"video" | "image" | "embed">("embed");
   const [embedCode, setEmbedCode] = useState<string>("");
   const [thumbnailUrl, setThumbnailUrl] = useState<string>("");
-  const [videoDuration, setVideoDuration] = useState<number>(0);
   
   // Store original URLs to allow toggling between URL and embed code
   const [originalYoutubeUrl, setOriginalYoutubeUrl] = useState<string>("");
@@ -417,10 +416,6 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
               console.log("Raw response text:", responseText);
               fileData = JSON.parse(responseText);
               console.log("File upload successful:", fileData);
-              
-              // Store duration if available from the server response for this upload path as well
-              // This first duration check is redundant, we'll rely on the second one below
-              // Removing this to avoid confusion
             } catch (error) {
               const parseError = error as Error;
               console.error("Failed to parse response as JSON:", parseError);
@@ -431,16 +426,6 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
             console.log("Video was uploaded to S3:", fileData);
             // Store the URL for the video
             videoUrl = fileData.url;
-            
-            // Store duration if available from the server response
-            if (fileData.duration) {
-              const numericDuration = Number(fileData.duration);
-              setVideoDuration(numericDuration);
-              console.log("Extracted video duration from upload response:", numericDuration, typeof numericDuration);
-            } else {
-              console.log("No duration found in upload response, using default 0");
-              setVideoDuration(0);
-            }
           } catch (error) {
             console.error("Error uploading video file:", error);
             toast({
@@ -490,7 +475,6 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
       
       // Upload the form data to the server
       console.log('Submitting video metadata to /api/videos');
-      console.log('Current video duration value before submission:', videoDuration);
       const response = await fetch('/api/videos', {
         method: 'POST',
         headers: {
@@ -512,7 +496,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           imageUrl: imageUrl, // This will still be a data URL for images
           embedCode: contentType === "embed" ? embedCode : null,
           resolution: contentType === "video" ? "HD" : undefined,
-          duration: contentType === "video" ? Number(videoDuration) : undefined, // Convert to number and don't send 0 explicitly for non-videos
+          duration: 0, // This would come from analyzing the video file
           credits: 0, // Default to 0 credits for free content
         }),
         credentials: 'include',
