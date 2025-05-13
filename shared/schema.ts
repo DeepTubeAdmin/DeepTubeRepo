@@ -248,7 +248,8 @@ export const insertUserSchema = createInsertSchema(users)
 
 export const insertCategorySchema = createInsertSchema(categories);
 // Properly defining the insert schema for videos
-export const insertVideoSchema = createInsertSchema(videos).pick({
+export const insertVideoSchema = createInsertSchema(videos)
+.pick({
   userId: true, // Explicitly include userId
   title: true,
   description: true,
@@ -271,7 +272,14 @@ export const insertVideoSchema = createInsertSchema(videos).pick({
   reviewedAt: true,
   reviewedBy: true,
   rejectionReason: true
-});
+})
+.transform((data) => ({
+  ...data,
+  // Ensure duration is always a number for proper database storage
+  duration: data.duration !== undefined && data.duration !== null 
+    ? Number(data.duration) 
+    : 0
+}));
 export const insertWishlistItemSchema = createInsertSchema(wishlistItems);
 export const insertCommentSchema = createInsertSchema(comments);
 export const insertLikeSchema = createInsertSchema(likes);

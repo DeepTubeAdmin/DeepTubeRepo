@@ -356,10 +356,7 @@ export default function AdminPage() {
                                   : 'N/A') 
                                 : 'N/A'}
                               {/* Hidden span to avoid React warnings with console logs */}
-                              <span style={{display: 'none'}}>{
-                                // Log duration information for debugging
-                                typeof window !== 'undefined' && console.log(`Duration for content ${content.id}: ${content.duration}, type: ${typeof content.duration}`)
-                              }</span>
+                              {/* Hidden logging removed to prevent React warnings */}
                             </TableCell>
                             <TableCell className="text-gray-300">
                               {new Date(content.createdAt).toLocaleDateString()}

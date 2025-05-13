@@ -1119,7 +1119,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/videos", isAuthenticated, async (req, res) => {
     try {
       console.log("Received video creation request with body:", JSON.stringify(req.body, null, 2));
-      console.log("Duration in request body:", req.body.duration, typeof req.body.duration);
+      
+      // Ensure duration is a number before validation
+      if (req.body.duration !== undefined && req.body.duration !== null) {
+        // Convert to number if it's a string
+        if (typeof req.body.duration === 'string') {
+          req.body.duration = Number(req.body.duration);
+        }
+      } else {
+        // Default to 0 if missing or null/undefined
+        req.body.duration = 0;
+      }
+      
+      console.log("Duration in request body (normalized):", req.body.duration, typeof req.body.duration);
       const videoData = insertVideoSchema.parse(req.body);
       console.log("Parsed video data:", JSON.stringify(videoData, null, 2));
       console.log("Duration after zod parsing:", videoData.duration, typeof videoData.duration);
