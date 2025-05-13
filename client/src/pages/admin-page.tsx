@@ -633,7 +633,7 @@ export default function AdminPage() {
                             <TableCell>{item.contentType}</TableCell>
                             <TableCell>
                               {item.uploaderName ? (
-                                <Link to={`/user/${item.userId}`} className="text-blue-400 hover:underline">
+                                <Link to={`/user/${item.uploaderName}`} className="text-blue-400 hover:underline">
                                   {item.uploaderName}
                                 </Link>
                               ) : (
