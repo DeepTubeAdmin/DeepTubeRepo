@@ -7,7 +7,7 @@ import { Video, User } from '@shared/schema';
 import ThumbnailImage from '@/components/ThumbnailImage';
 import { Link } from "wouter";
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient } from '@/lib/queryClient';
+import { queryClient, apiRequest } from '@/lib/queryClient';
 import { Loader2 } from 'lucide-react';
 
 // Type augmentation for admin purposes
@@ -27,7 +27,7 @@ type ReportedContent = Video & {
 type FeaturedContent = Video & {
   uploaderName?: string | null;
 };
-import { apiRequest } from '@/lib/queryClient';
+// apiRequest imported above
 import { 
   Card, 
   CardContent, 
@@ -126,6 +126,29 @@ export default function AdminPage() {
       toast({
         title: 'Success',
         description: `Content ${updatedVideo.featured ? 'featured' : 'unfeatured'} successfully`,
+        variant: 'default'
+      });
+    } catch (error) {
+      console.error('Error toggling feature status:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update feature status',
+        variant: 'destructive'
+      });
+    }
+  };
+  
+  // Handle unfeaturing content from the featured tab
+  const handleToggleFeature = async (contentId: number) => {
+    try {
+      await apiRequest('POST', `/api/admin/content/${contentId}/feature`);
+      
+      // Refresh the featured content list
+      queryClient.invalidateQueries({ queryKey: ['/api/featured/content'] });
+      
+      toast({
+        title: 'Success',
+        description: 'Content removed from featured section',
         variant: 'default'
       });
     } catch (error) {
