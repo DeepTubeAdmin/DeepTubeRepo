@@ -352,13 +352,13 @@ export default function AdminPage() {
                             <TableCell className="text-gray-300">
                               {content.contentType === 'video' ? 
                                 (() => {
-                                  // Add explicit logging for debugging purposes
-                                  console.log(`Video ${content.id} duration:`, content.duration, typeof content.duration);
-                                  
-                                  // Ensure duration is treated as a number
-                                  const duration = Number(content.duration);
-                                  
                                   // Format the duration as mm:ss
+                                  // First ensure duration is a valid number
+                                  const rawDuration = content.duration;
+                                  const duration = typeof rawDuration === 'number' 
+                                    ? rawDuration 
+                                    : Number(rawDuration);
+                                  
                                   if (duration > 0) {
                                     const minutes = Math.floor(duration / 60);
                                     const seconds = Math.floor(duration % 60);

@@ -1216,6 +1216,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Default to 0 if missing or null/undefined
         req.body.duration = 0;
+        
+        // If this is a video file, try to read duration from metadata file
+        if (req.body.contentType === 'video' && req.body.videoUrl) {
+          try {
+            // Extract the filename from the video URL
+            const urlParts = req.body.videoUrl.split('/');
+            const filename = urlParts[urlParts.length - 1];
+            
+            // Check if we have a duration metadata file
+            const durationMetadataPath = path.join('uploads', `${filename}.duration`);
+            
+            if (fsSync.existsSync(durationMetadataPath)) {
+              const durationStr = await fs.readFile(durationMetadataPath, 'utf8');
+              const durationValue = Number(durationStr.trim());
+              
+              if (!Number.isNaN(durationValue)) {
+                console.log(`Found duration ${durationValue} from metadata file for video ${filename}`);
+                req.body.duration = durationValue;
+              }
+            }
+          } catch (error) {
+            console.error(`Error reading duration metadata: ${error}`);
+          }
+        }
       }
       
       console.log("Duration in request body (normalized):", req.body.duration, typeof req.body.duration);
@@ -2915,13 +2939,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate all durations before sending to client
       const sanitizedContent = pendingContent.map(item => {
         if (item.contentType === 'video') {
-          // Log each video's duration for debugging
-          console.log(`Sending video ${item.id} with duration: ${item.duration} (type: ${typeof item.duration})`);
-          
           // Ensure duration is a proper number
+          const numericDuration = Number(item.duration) || 0;
+          
+          // Log each video's duration for debugging
+          console.log(`Sending video ${item.id} with duration: ${numericDuration} seconds (original: ${item.duration}, type: ${typeof item.duration})`);
+          
           return {
             ...item,
-            duration: Number(item.duration) || 0
+            duration: numericDuration
           };
         }
         return item;
@@ -3789,6 +3815,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (duration > 0) {
         // Make sure we track this important metadata value
         console.log(`Duration ${duration} seconds calculated for newly uploaded file: ${s3Key}. Storing for future reference.`);
+        
+        // Store the duration in a file metadata so it can be retrieved later
+        const durationMetadataPath = path.join(path.dirname(filePath), `${filename}.duration`);
+        try {
+          await fs.writeFile(durationMetadataPath, duration.toString(), 'utf8');
+          console.log(`Duration metadata saved to ${durationMetadataPath}`);
+        } catch (error) {
+          console.error(`Failed to save duration metadata: ${error}`);
+        }
       }
       
       console.log(`Uploading file to S3 with key: ${s3Key}`);
@@ -3801,6 +3836,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const url = `/api/s3/${s3Key}`;
       
       // Return success response with duration if it's a video
+      console.log(`Returning file upload response with duration: ${duration} seconds`);
       res.json({
         success: true,
         url,
