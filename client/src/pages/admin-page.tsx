@@ -591,20 +591,32 @@ export default function AdminPage() {
                   </div>
                 ) : (
                   <ScrollArea className="h-[500px]">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[80px]">ID</TableHead>
-                          <TableHead className="w-[120px]">Thumbnail</TableHead>
-                          <TableHead className="min-w-[200px]">Title</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Uploader</TableHead>
-                          <TableHead>Views</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {featuredContent.data?.map((item) => (
+                    {featuredContent.data?.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-10 text-center">
+                        <div className="mb-4 bg-orange-800/20 p-4 rounded-full">
+                          <Info className="h-8 w-8 text-orange-500" />
+                        </div>
+                        <h3 className="text-lg font-medium mb-1">No Featured Content</h3>
+                        <p className="text-gray-400 max-w-md">
+                          There are currently no featured videos. To feature content, go to the "Pending Approval" 
+                          tab and click the "Feature" button on any approved content.
+                        </p>
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[80px]">ID</TableHead>
+                            <TableHead className="w-[120px]">Thumbnail</TableHead>
+                            <TableHead className="min-w-[200px]">Title</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Uploader</TableHead>
+                            <TableHead>Views</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {featuredContent.data?.map((item) => (
                           <TableRow key={item.id}>
                             <TableCell>{item.id}</TableCell>
                             <TableCell>
