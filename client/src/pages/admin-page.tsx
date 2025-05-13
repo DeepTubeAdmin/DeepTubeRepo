@@ -165,6 +165,7 @@ export default function AdminPage() {
           const pendingRes = await apiRequest('GET', '/api/admin/content/pending');
           if (pendingRes.ok) {
             const pendingData = await pendingRes.json();
+            console.log('Pending content data:', pendingData);
             setPendingContent(pendingData);
           }
         } catch (pendingError) {
