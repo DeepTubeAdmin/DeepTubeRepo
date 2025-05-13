@@ -65,6 +65,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
   const [contentType, setContentType] = useState<"video" | "image" | "embed">("embed");
   const [embedCode, setEmbedCode] = useState<string>("");
   const [thumbnailUrl, setThumbnailUrl] = useState<string>("");
+  const [videoDuration, setVideoDuration] = useState<number>(0);
   
   // Store original URLs to allow toggling between URL and embed code
   const [originalYoutubeUrl, setOriginalYoutubeUrl] = useState<string>("");
@@ -242,7 +243,6 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
       let finalThumbnailUrl = thumbnailUrl || "https://placehold.co/400x225?text=" + encodeURIComponent(title);
       let videoUrl = null;
       let imageUrl = null;
-      let videoDuration = 0;
       
       // Handle different file upload approaches based on content type
       if (contentType !== "embed" && selectedFile) {
@@ -417,6 +417,15 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
               console.log("Raw response text:", responseText);
               fileData = JSON.parse(responseText);
               console.log("File upload successful:", fileData);
+              
+              // Store duration if available from the server response for this upload path as well
+              if (fileData.duration) {
+                setVideoDuration(fileData.duration);
+                console.log("Extracted video duration from upload response:", fileData.duration);
+              } else {
+                console.log("No duration found in upload response, using default 0");
+                setVideoDuration(0);
+              }
             } catch (error) {
               const parseError = error as Error;
               console.error("Failed to parse response as JSON:", parseError);
@@ -429,8 +438,13 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
             videoUrl = fileData.url;
             
             // Store duration if available from the server response
-            videoDuration = fileData.duration || 0;
-            console.log("Extracted video duration from upload response:", videoDuration);
+            if (fileData.duration) {
+              setVideoDuration(fileData.duration);
+              console.log("Extracted video duration from upload response:", fileData.duration);
+            } else {
+              console.log("No duration found in upload response, using default 0");
+              setVideoDuration(0);
+            }
           } catch (error) {
             console.error("Error uploading video file:", error);
             toast({
@@ -501,7 +515,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           imageUrl: imageUrl, // This will still be a data URL for images
           embedCode: contentType === "embed" ? embedCode : null,
           resolution: contentType === "video" ? "HD" : undefined,
-          duration: contentType === "video" ? videoDuration : 0,
+          duration: contentType === "video" ? videoDuration : 0, // Use the state variable
           credits: 0, // Default to 0 credits for free content
         }),
         credentials: 'include',
