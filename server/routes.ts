@@ -3641,7 +3641,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         originalname: req.file.originalname,
         mimetype: req.file.mimetype,
         size: req.file.size,
-        duration: duration > 0 ? duration : undefined
+        duration: duration
       });
     } catch (error: any) {
       console.error("Error in file upload:", error);
