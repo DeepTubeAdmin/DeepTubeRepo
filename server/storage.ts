@@ -463,10 +463,13 @@ export class DatabaseStorage implements IStorage {
       }
     });
     
+    console.log(`Retrieved ${pendingContent.length} pending content items for review`);
+    
     // Map content to include uploader name
     const result = pendingContent.map((content) => {
       // Get duration info for display formatting
       const durationSecs = content.duration || 0;
+      console.log(`Raw content ID ${content.id} duration: ${content.duration}, type: ${typeof content.duration}`);
       
       // Add uploader name from joined user
       let uploaderName = content.user?.username || null;
@@ -476,11 +479,14 @@ export class DatabaseStorage implements IStorage {
         uploaderName = "Admin";
       }
       
-      return {
+      const processedItem = {
         ...content,
         uploaderName,
         duration: durationSecs
       };
+      
+      console.log(`Processed content ID ${content.id} duration: ${processedItem.duration}, type: ${typeof processedItem.duration}`);
+      return processedItem;
     });
     
     return result;
