@@ -242,6 +242,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
       let finalThumbnailUrl = thumbnailUrl || "https://placehold.co/400x225?text=" + encodeURIComponent(title);
       let videoUrl = null;
       let imageUrl = null;
+      let videoDuration = 0;
       
       // Handle different file upload approaches based on content type
       if (contentType !== "embed" && selectedFile) {
@@ -426,6 +427,10 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
             console.log("Video was uploaded to S3:", fileData);
             // Store the URL for the video
             videoUrl = fileData.url;
+            
+            // Store duration if available from the server response
+            videoDuration = fileData.duration || 0;
+            console.log("Extracted video duration from upload response:", videoDuration);
           } catch (error) {
             console.error("Error uploading video file:", error);
             toast({
@@ -496,7 +501,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           imageUrl: imageUrl, // This will still be a data URL for images
           embedCode: contentType === "embed" ? embedCode : null,
           resolution: contentType === "video" ? "HD" : undefined,
-          duration: 0, // This would come from analyzing the video file
+          duration: contentType === "video" && fileData?.duration ? fileData.duration : 0,
           credits: 0, // Default to 0 credits for free content
         }),
         credentials: 'include',
