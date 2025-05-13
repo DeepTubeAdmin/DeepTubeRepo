@@ -2832,6 +2832,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch reported content" });
     }
   });
+  
+  // Admin API for featured content management
+  app.get("/api/admin/content/featured", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      ensureUser(req);
+      console.log(`Fetching all featured content for admin user ID: ${req.user.id}`);
+      const featuredContent = await dbStorage.getAllFeaturedContent();
+      res.json(featuredContent);
+    } catch (error) {
+      console.error("Error fetching featured content:", error);
+      res.status(500).json({ error: "Failed to fetch featured content" });
+    }
+  });
 
   app.post("/api/admin/content/:contentId/approve", isAuthenticated, isAdmin, async (req, res) => {
     try {

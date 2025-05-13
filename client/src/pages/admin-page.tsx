@@ -295,7 +295,7 @@ export default function AdminPage() {
             <TabsTrigger value="pending" className="flex-1">Pending Review</TabsTrigger>
             <TabsTrigger value="content" className="flex-1">Reported Content</TabsTrigger>
             <TabsTrigger value="users" className="flex-1">User Management</TabsTrigger>
-            <TabsTrigger value="system" className="flex-1">System Tools</TabsTrigger>
+            <TabsTrigger value="featured" className="flex-1">Featured Videos</TabsTrigger>
           </TabsList>
           
           <TabsContent value="pending" className="py-4">
