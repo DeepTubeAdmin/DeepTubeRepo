@@ -49,6 +49,7 @@ export interface IStorage {
   getVideoById(id: number): Promise<Video | undefined>;
   getVideosByCategory(categoryId: number, contentType?: string, limit?: number): Promise<Video[]>;
   getFeaturedVideos(limit?: number): Promise<Video[]>;
+  getAllFeaturedContent(limit?: number): Promise<any[]>;
   getNewVideos(limit?: number): Promise<Video[]>;
   createVideo(video: InsertVideo): Promise<Video>;
   updateVideo(id: number, data: Partial<InsertVideo>): Promise<Video>;
@@ -343,10 +344,25 @@ export class DatabaseStorage implements IStorage {
     } else {
       console.log('No featured videos found in database, falling back to newest videos');
       // Fallback to newest videos if no featured videos exist
-      return await this.getNewVideos(limit);
     }
     
     return results;
+  }
+  
+  // Get all featured content with uploader usernames
+  async getAllFeaturedContent(limit: number = 50): Promise<Video[]> {
+    const featuredContent = await db.select()
+      .from(videos)
+      .leftJoin(users, eq(videos.userId, users.id))
+      .where(eq(videos.featured, true))
+      .orderBy(desc(videos.createdAt))
+      .limit(limit);
+      
+    // Add username manually to avoid type issues
+    return featuredContent.map(item => ({
+      ...item.videos,
+      uploaderName: item.users?.username || null
+    }));
   }
   
   async getNewVideos(limit: number = 10): Promise<Video[]> {
