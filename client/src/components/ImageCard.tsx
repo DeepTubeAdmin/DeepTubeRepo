@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import { Heart, ExternalLink, AlertTriangle } from 'lucide-react';
 import { Video } from '@shared/schema';
@@ -15,8 +15,33 @@ interface ImageCardProps {
 export default function ImageCard({ image, size = 'default' }: ImageCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const [username, setUsername] = useState<string>("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  useEffect(() => {
+    const fetchUsername = async () => {
+      // Check if we already have the uploaderName from the API
+      if (image.uploaderName) {
+        setUsername(image.uploaderName);
+        return;
+      }
+      
+      // Otherwise fetch the username if we have userId
+      if (image.userId) {
+        try {
+          const response = await apiRequest('GET', `/api/users/${image.userId}/profile`);
+          const data = await response.json();
+          if (data && data.username) {
+            setUsername(data.username);
+          }
+        } catch (error) {
+          console.error('Error fetching username:', error);
+        }
+      }
+    };
+    fetchUsername();
+  }, [image.userId, image.uploaderName]);
 
   const likeMutation = useMutation({
     mutationFn: async (data: { videoId: number }) => {
@@ -127,6 +152,14 @@ export default function ImageCard({ image, size = 'default' }: ImageCardProps) {
               <div className="flex items-center justify-between text-xs text-slate-300">
                 <div className="flex items-center space-x-2">
                   <span>{image.aiGenerator || "AI Generated"}</span>
+                  {username && image.userId && (
+                    <>
+                      <span>•</span>
+                      <Link to={`/user/${image.userId}`} onClick={(e) => e.stopPropagation()}>
+                        <span className="text-orange-400 hover:underline">{username}</span>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
