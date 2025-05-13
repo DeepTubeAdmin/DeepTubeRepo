@@ -1118,7 +1118,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/videos", isAuthenticated, async (req, res) => {
     try {
+      console.log("Received video creation request with body:", JSON.stringify(req.body, null, 2));
       const videoData = insertVideoSchema.parse(req.body);
+      console.log("Parsed video data:", JSON.stringify(videoData, null, 2));
       
       // Auto-approve YouTube embeds
       if (videoData.contentType === 'embed' && videoData.embedCode && 
