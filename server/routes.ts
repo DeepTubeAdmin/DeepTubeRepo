@@ -3610,9 +3610,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let duration = 0;
       if (req.file.mimetype.startsWith('video/')) {
         try {
+          // Using ffprobe to extract the duration from the video
           const { stdout } = await execPromisified(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`);
-          duration = Math.round(parseFloat(stdout.trim()));
-          console.log(`Extracted video duration: ${duration} seconds`);
+          // Convert to number and round to nearest integer
+          const parsedDuration = parseFloat(stdout.trim());
+          duration = Number.isNaN(parsedDuration) ? 0 : Math.round(parsedDuration);
+          console.log(`Extracted video duration: ${duration} seconds (parsed from ${stdout.trim()})`);
         } catch (error) {
           console.error('Error extracting video duration:', error);
           // Continue even if duration extraction failed

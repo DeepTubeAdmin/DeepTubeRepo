@@ -351,12 +351,15 @@ export default function AdminPage() {
                             <TableCell className="text-gray-300 capitalize">{content.contentType}</TableCell>
                             <TableCell className="text-gray-300">
                               {content.contentType === 'video' ? 
-                                (content.duration && content.duration > 0 ? 
+                                (content.duration > 0 ? 
                                   `${Math.floor(content.duration / 60)}:${(content.duration % 60).toString().padStart(2, '0')}` 
                                   : 'N/A') 
                                 : 'N/A'}
-                              {/* Logging duration values to console */}
-                              <span className="hidden">{console.log(`Duration for content ${content.id}: ${content.duration}, type: ${typeof content.duration}`)}</span>
+                              {/* Hidden span to avoid React warnings with console logs */}
+                              <span style={{display: 'none'}}>{
+                                // Log duration information for debugging
+                                typeof window !== 'undefined' && console.log(`Duration for content ${content.id}: ${content.duration}, type: ${typeof content.duration}`)
+                              }</span>
                             </TableCell>
                             <TableCell className="text-gray-300">
                               {new Date(content.createdAt).toLocaleDateString()}
