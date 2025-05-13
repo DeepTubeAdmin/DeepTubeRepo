@@ -18,6 +18,11 @@ import { fileURLToPath } from 'url';
 import thumbnailService from "./services/ThumbnailService";
 // Import specific utilities from their respective modules
 import { youtube as youtubeUtils, storage as s3Service, ffmpeg as ffmpegUtils } from "./services/ThumbnailService";
+import { exec } from "child_process";
+import { promisify } from "util";
+
+// Create a promise-based version of exec for running ffprobe
+const execPromisified = promisify(exec);
 import { asc, desc, eq, like, and, sql, or, SQL, inArray } from 'drizzle-orm';
 import { videos, messages } from '@shared/schema';
 import { db } from './db';
