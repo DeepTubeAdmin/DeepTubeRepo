@@ -448,40 +448,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Content review operations
-  async getPendingReviewContent(limit: number = 50): Promise<(Video & { uploaderName?: string })[]> {
-    // Join with users table to get the uploader's username
-    return db.select({
-      id: videos.id,
-      createdAt: videos.createdAt,
-      userId: videos.userId,
-      title: videos.title,
-      description: videos.description,
-      aiGenerator: videos.aiGenerator,
-      prompt: videos.prompt,
-      thumbnail: videos.thumbnail,
-      videoUrl: videos.videoUrl,
-      imageUrl: videos.imageUrl,
-      embedCode: videos.embedCode,
-      contentType: videos.contentType,
-      categoryId: videos.categoryId,
-      views: videos.views,
-      featured: videos.featured,
-      reviewStatus: videos.reviewStatus,
-      preview: videos.preview,
-      vimeoId: videos.vimeoId,
-      reviewedAt: videos.reviewedAt,
-      reviewedBy: videos.reviewedBy,
-      rejectionReason: videos.rejectionReason,
-      resolution: videos.resolution,
-      duration: videos.duration,
-      credits: videos.credits,
-      uploaderName: users.username
-    })
-      .from(videos)
-      .leftJoin(users, eq(videos.userId, users.id))
-      .where(eq(videos.reviewStatus, 'pending'))
-      .orderBy(desc(videos.createdAt))
-      .limit(limit);
+  async getPendingReviewContent(limit: number = 50): Promise<Video[]> {
+    // Get all pending content with proper query
+    const pendingContent = await db.query.videos.findMany({
+      where: eq(videos.reviewStatus, 'pending'),
+      orderBy: [desc(videos.createdAt)],
+      limit: limit,
+      with: {
+        user: true
+      }
+    });
+    
+    // Map content to include uploader name
+    const result = pendingContent.map((content) => {
+      // Get duration info for display formatting
+      const durationSecs = content.duration || 0;
+      
+      // Add uploader name from joined user
+      let uploaderName = content.user?.username || null;
+      
+      // Default to Admin if no user
+      if (!uploaderName) {
+        uploaderName = "Admin";
+      }
+      
+      return {
+        ...content,
+        uploaderName,
+        duration: durationSecs
+      };
+    });
+    
+    return result;
   }
 
   async updateContentReviewStatus(

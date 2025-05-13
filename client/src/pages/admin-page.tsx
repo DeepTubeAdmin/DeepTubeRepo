@@ -339,9 +339,9 @@ export default function AdminPage() {
                             </TableCell>
                             <TableCell className="text-white font-medium">{content.title}</TableCell>
                             <TableCell className="text-gray-300">
-                              {content.userId && content.uploaderName ? (
+                              {content.uploaderName ? (
                                 <Link 
-                                  href={`/user/${content.userId}`} 
+                                  href={content.userId ? `/user/${content.userId}` : '#'} 
                                   className="text-primary hover:text-primary/80 underline"
                                 >
                                   {content.uploaderName}
