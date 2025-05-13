@@ -161,12 +161,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Try to find an existing video file to test
       let testFiles = [];
       try {
-        const uploadsDir = path.join(process.cwd(), 'uploads');
+        // First try in uploads/videos where we found actual files
+        const uploadsDir = path.join(process.cwd(), 'uploads', 'videos');
+        console.log(`Checking for videos in: ${uploadsDir}`);
         const files = await fs.readdir(uploadsDir);
         testFiles = files.filter(file => file.endsWith('.mp4') || file.endsWith('.mov') || file.endsWith('.webm'));
-        console.log(`Found ${testFiles.length} video files to test`);
+        console.log(`Found ${testFiles.length} video files to test in uploads/videos`);
       } catch (err) {
-        console.error("Error scanning uploads directory:", err);
+        console.error("Error scanning uploads/videos directory:", err);
+        try {
+          // Fallback to just uploads directory
+          const uploadsDir = path.join(process.cwd(), 'uploads');
+          console.log(`Checking for videos in fallback dir: ${uploadsDir}`);
+          const files = await fs.readdir(uploadsDir);
+          testFiles = files.filter(file => file.endsWith('.mp4') || file.endsWith('.mov') || file.endsWith('.webm'));
+          console.log(`Found ${testFiles.length} video files to test in uploads`);
+        } catch (err) {
+          console.error("Error scanning uploads directory:", err);
+        }
       }
       
       if (testFiles.length === 0) {
@@ -179,7 +191,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Test the first few files
       const results = [];
       for (let i = 0; i < Math.min(3, testFiles.length); i++) {
-        const filePath = path.join(process.cwd(), 'uploads', testFiles[i]);
+        // Use uploads/videos for the file path since that's where we found them
+        const filePath = path.join(process.cwd(), 'uploads', 'videos', testFiles[i]);
         
         try {
           console.log(`Testing ffprobe on file: ${filePath}`);
@@ -3720,7 +3733,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`ffprobe path: ${ffprobePathOutput.trim()}`);
           
           // Using ffprobe to extract the duration from the video with more verbose output
-          const ffprobeCmd = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`;
+          // Make sure to use the full, absolute path to the file
+          const absoluteFilePath = path.resolve(filePath);
+          console.log(`Full absolute path for ffprobe: ${absoluteFilePath}`);
+          const ffprobeCmd = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${absoluteFilePath}"`;
           console.log(`Running command: ${ffprobeCmd}`);
           
           const { stdout, stderr } = await execPromisified(ffprobeCmd);
