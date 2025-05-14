@@ -7,6 +7,7 @@ import { checkThumbnail } from "@/lib/checkThumbnail";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import VideoPreview from "./VideoPreview";
+import { createSeoFriendlySlug } from "@/lib/seoUrl";
 
 interface ThumbnailImageProps {
   videoId: number;
@@ -206,7 +207,9 @@ export default function VideoCard({ video, onPreview, onWishlist, size = 'defaul
 
   // Handle preview click
   const handlePreview = () => {
-    window.location.href = `/media/${video.id}`;
+    // Use SEO-friendly URL with slug
+    const slug = createSeoFriendlySlug(video);
+    window.location.href = `/media/${slug}`;
   };
 
   useEffect(() => {
