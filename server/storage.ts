@@ -48,6 +48,8 @@ export interface IStorage {
   getVideos(limit?: number, contentType?: string, offset?: number, sortBy?: string): Promise<Video[]>;
   getVideoById(id: number): Promise<Video | undefined>;
   getVideosByCategory(categoryId: number, contentType?: string, limit?: number): Promise<Video[]>;
+  getApprovedVideos(limit?: number): Promise<Video[]>;
+  getApprovedImages(limit?: number): Promise<Video[]>;
   getFeaturedVideos(limit?: number): Promise<Video[]>;
   getAllFeaturedContent(limit?: number): Promise<any[]>;
   getNewVideos(limit?: number): Promise<Video[]>;

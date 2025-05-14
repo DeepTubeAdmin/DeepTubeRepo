@@ -1,0 +1,73 @@
+1. Keyword Research and Optimization
+Why: Keywords drive discoverability. Video-related searches (e.g., “tutorial,” “vlog”) are high-intent, and Google’s algorithms favor content matching user queries.
+Best Practices:
+Research Keywords: Use tools like Google Keyword Planner, Ahrefs, or SEMrush to identify high-traffic, low-competition keywords relevant to your niche (e.g., “1080p video platform,” “creator videos,” “free video sharing”). Focus on long-tail keywords (e.g., “best platform for uploading 1080p vlogs”).
+Optimize Video Metadata:
+Titles: Include primary keywords (e.g., “How to Code in Python [Tutorial Video]”), keep under 60 characters for search snippets.
+Descriptions: Write 150-200 word descriptions with keywords, summarizing the video and including CTAs (e.g., “Watch on [YourPlatform] for high-quality 1080p”). Add timestamps for long videos to improve indexing.
+Tags: Use 5-10 relevant tags (e.g., “python tutorial,” “coding video,” “1080p vlog”) to enhance categorization.
+Optimize Page Content:
+Add keyword-rich text around videos (e.g., blog-style summaries, creator bios) to provide context for Google’s crawlers.
+Use headers (H1 for title, H2/H3 for sections) with keywords.
+Implementation:
+Store metadata in your DynamoDB/PostgreSQL database (from your duration capture setup) alongside duration and pHash for easy retrieval.
+Example: For a video video123.mp4, store title, description, tags in DynamoDB:
+json
+
+Copy
+{
+  "video_id": "video123",
+  "title": "Python Tutorial for Beginners",
+  "description": "Learn Python in this 1080p video tutorial on [YourPlatform]. Covers basics, loops, and functions.",
+  "tags": ["python", "coding", "tutorial", "1080p"],
+  "duration": 600.123456,
+  "s3_path": "s3://input-videos/video123.mp4"
+}
+Generate SEO-friendly URLs: yourplatform.com/videos/python-tutorial-for-beginners-video123.
+2. Video Sitemaps and Schema Markup
+Why: Video sitemaps and schema markup help Google index your S3-hosted videos and display rich snippets (e.g., video thumbnails in search results), increasing click-through rates by 43%.
+Best Practices:
+Create a Video Sitemap:
+Generate an XML sitemap listing all videos with metadata (title, description, thumbnail URL, video URL, duration).
+Example sitemap for video123.mp4:
+xml
+
+Copy
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+  <url>
+    <loc>https://yourplatform.com/videos/video123</loc>
+    <video:video>
+      <video:thumbnail_loc>https://d1234567890.cloudfront.net/thumbnails/video123.jpg</video:thumbnail_loc>
+      <video:title>Python Tutorial for Beginners</video:title>
+      <video:description>Learn Python in this 1080p video tutorial.</video:description>
+      <video:content_loc>https://d1234567890.cloudfront.net/videos/video123.mp4</video:content_loc>
+      <video:duration>600</video:duration>
+      <video:publication_date>2025-05-14T13:15:00+00:00</video:publication_date>
+    </video:video>
+  </url>
+</urlset>
+Submit to Google Search Console (Sitemaps section).
+Implement Video Schema Markup:
+Add JSON-LD schema to video pages to describe content, enhancing rich snippet eligibility.
+Example:
+html
+
+Copy
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  "name": "Python Tutorial for Beginners",
+  "description": "Learn Python in this 1080p video tutorial on [YourPlatform].",
+  "thumbnailUrl": "https://d1234567890.cloudfront.net/thumbnails/video123.jpg",
+  "uploadDate": "2025-05-14T13:15:00+00:00",
+  "duration": "PT10M0S",
+  "contentUrl": "https://d1234567890.cloudfront.net/videos/video123.mp4",
+  "embedUrl": "https://yourplatform.com/videos/video123"
+}
+</script>
+Implementation:
+Use AWS Lambda to generate sitemap entries when videos are uploaded to S3, leveraging duration data from ffprobe (previous response).
+Store sitemap in S3 (s3://metadata-bucket/sitemap.xml) and serve via CloudFront.
+Test schema with Google’s Rich Results Test tool.
