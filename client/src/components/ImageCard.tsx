@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import ReportDialog from './ReportDialog';
+import { createSeoFriendlySlug } from '@/lib/seoUrl';
 
 interface ImageCardProps {
   image: Video;
@@ -120,7 +121,7 @@ export default function ImageCard({ image, size = 'default' }: ImageCardProps) {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <Link href={`/media/${image.id}`}>
+        <Link href={`/media/${createSeoFriendlySlug(image)}`}>
           <div className={`${aspectRatioClass} bg-slate-800 relative overflow-hidden`}>
             {/* Thumbnail */}
             <img 
