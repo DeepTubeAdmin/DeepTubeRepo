@@ -28,6 +28,15 @@ interface ContentFeedResponse {
   };
 }
 
+// Chunk interface for rendering
+interface ContentChunk {
+  videos: Video[];
+  images: Video[];
+  hasAdInVideo: boolean;
+  hasAdInImage: boolean;
+  adPosition: number;
+}
+
 export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   // Get shuffle context
   const { shuffleSeed: contextShuffleSeed, triggerShuffle } = useContext(ShuffleContext);
@@ -164,8 +173,8 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   }, [categorySlug]);
 
   // Process data for rendering - dynamic column/row adjustments
-  const renderContent = useMemo(() => {
-    if (!loadedVideos.length && !loadedImages.length) return null;
+  const renderContent = useMemo<ContentChunk[]>(() => {
+    if (!loadedVideos.length && !loadedImages.length) return [];
     
     // Create chunks of content that alternate between 4 video rows and 2 image rows
     const videoChunkSize = 4 * columnCount; // 4 rows of videos
@@ -185,7 +194,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     }
     
     // Combine into merged chunks where each chunk has 4 rows of videos and 2 rows of images
-    const contentChunks = [];
+    const contentChunks: ContentChunk[] = [];
     const maxChunks = Math.max(videoChunks.length, imageChunks.length);
     
     for (let i = 0; i < maxChunks; i++) {
@@ -419,83 +428,81 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   // Render the content feed
   return (
     <div className="container mx-auto px-4 py-8 space-y-12">
-      {/* Featured Video with title */}
-      {data?.featured?.video && (
-        <section className="mb-12">
-          <div className="flex justify-between items-center mb-6">
-            {/* Section title added back as requested */}
-            <h2 className="text-xl font-bold text-white">Featured Video</h2>
-            
-            {/* Controls: Sort Button */}
-            <div className="flex items-center">
-              {/* Sort Button and Dropdown */}
-              <div className="relative">
-                <Button
-                  ref={sortButtonRef}
-                  onClick={toggleSortMenu}
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm border-gray-700 bg-black/50 hover:bg-black/80"
-                >
-                  <Filter className="h-3.5 w-3.5" />
-                  <span>Sort</span>
-                </Button>
-              
-                {showSortMenu && (
-                  <div 
-                    ref={sortMenuRef}
-                    className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-black border border-gray-700 ring-1 ring-black ring-opacity-5 z-50"
+      {/* Header with Sort Controls - Always visible */}
+      <div className="flex justify-between items-center mb-6">
+        {/* Section title */}
+        <h2 className="text-xl font-bold text-white">
+          {data?.featured?.video ? "Featured Video" : "Content Feed"}
+        </h2>
+        
+        {/* Controls: Sort Button */}
+        <div className="flex items-center">
+          {/* Sort Button and Dropdown */}
+          <div className="relative">
+            <Button
+              ref={sortButtonRef}
+              onClick={toggleSortMenu}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1 px-3 py-1.5 text-sm border-gray-700 bg-black/50 hover:bg-black/80"
+            >
+              <Filter className="h-3.5 w-3.5" />
+              <span>Sort</span>
+            </Button>
+          
+            {showSortMenu && (
+              <div 
+                ref={sortMenuRef}
+                className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-black border border-gray-700 ring-1 ring-black ring-opacity-5 z-50"
+              >
+                <div className="py-1" role="menu" aria-orientation="vertical">
+                  <button
+                    className={`${sortBy === 'newest' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                    onClick={() => handleSortChange('newest')}
+                    role="menuitem"
                   >
-                    <div className="py-1" role="menu" aria-orientation="vertical">
-                      <button
-                        className={`${sortBy === 'newest' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
-                        onClick={() => handleSortChange('newest')}
-                        role="menuitem"
-                      >
-                        Newest First
-                      </button>
-                      <button
-                        className={`${sortBy === 'oldest' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
-                        onClick={() => handleSortChange('oldest')}
-                        role="menuitem"
-                      >
-                        Oldest First
-                      </button>
-                      <button
-                        className={`${sortBy === 'most-viewed' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
-                        onClick={() => handleSortChange('most-viewed')}
-                        role="menuitem"
-                      >
-                        Most Viewed
-                      </button>
-                      <button
-                        className={`${sortBy === 'trending' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
-                        onClick={() => handleSortChange('trending')}
-                        role="menuitem"
-                      >
-                        Trending
-                      </button>
-                      <button
-                        className={`${sortBy === 'popular' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
-                        onClick={() => handleSortChange('popular')}
-                        role="menuitem"
-                      >
-                        Popular
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="max-w-4xl mx-auto">
-            {data.featured.video && <VideoCard video={data.featured.video} size="large" />}
-            {!data.featured.video && (
-              <div className="p-8 bg-gray-800 rounded-lg text-center">
-                <p className="text-white mb-2">Featured content is currently unavailable</p>
-                <p className="text-orange-500 text-sm">Check back later for featured videos</p>
+                    Newest First
+                  </button>
+                  <button
+                    className={`${sortBy === 'oldest' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                    onClick={() => handleSortChange('oldest')}
+                    role="menuitem"
+                  >
+                    Oldest First
+                  </button>
+                  <button
+                    className={`${sortBy === 'most-viewed' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                    onClick={() => handleSortChange('most-viewed')}
+                    role="menuitem"
+                  >
+                    Most Viewed
+                  </button>
+                  <button
+                    className={`${sortBy === 'trending' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                    onClick={() => handleSortChange('trending')}
+                    role="menuitem"
+                  >
+                    Trending
+                  </button>
+                  <button
+                    className={`${sortBy === 'popular' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                    onClick={() => handleSortChange('popular')}
+                    role="menuitem"
+                  >
+                    Popular
+                  </button>
+                </div>
               </div>
             )}
+          </div>
+        </div>
+      </div>
+        
+      {/* Featured Video Section */}
+      {data.featured.video && (
+        <section className="mb-12">
+          <div className="max-w-4xl mx-auto">
+            <VideoCard video={data.featured.video} size="large" />
           </div>
         </section>
       )}
@@ -503,7 +510,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
       {/* Endless Content Section - No section title as requested */}
       <section>
         {/* Render content chunks (4 rows video + 2 rows images, repeating) */}
-        {renderContent && renderContent.map((chunk, chunkIndex) => {
+        {renderContent.map((chunk, chunkIndex) => {
           // Ad display is now controlled by hasAdInVideo and hasAdInImage properties
           
           // For every chunk, render videos first then images
