@@ -45,7 +45,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
-      <Route path="/media/:id" component={MediaDetail} />
+      <Route path="/media/:slug+" component={MediaDetail} />
       <Route path="/search" component={SearchResults} />
       <Route path="/forum" component={ForumPage} />
       <Route path="/terms-of-service" component={TermsOfService} />

@@ -1238,6 +1238,50 @@ export class DatabaseStorage implements IStorage {
     
     return result;
   }
+
+  /**
+   * Get approved videos for sitemap generation
+   * @param limit Maximum number of videos to return
+   * @returns Array of approved videos
+   */
+  async getApprovedVideos(limit: number = 500): Promise<Video[]> {
+    try {
+      return await db.select()
+        .from(videos)
+        .where(
+          and(
+            eq(videos.contentType, 'video'),
+            eq(videos.reviewStatus, 'approved')
+          )
+        )
+        .limit(limit);
+    } catch (error) {
+      console.error('Error getting approved videos:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get approved images for sitemap generation
+   * @param limit Maximum number of images to return
+   * @returns Array of approved images
+   */
+  async getApprovedImages(limit: number = 500): Promise<Video[]> {
+    try {
+      return await db.select()
+        .from(videos)
+        .where(
+          and(
+            eq(videos.contentType, 'image'),
+            eq(videos.reviewStatus, 'approved')
+          )
+        )
+        .limit(limit);
+    } catch (error) {
+      console.error('Error getting approved images:', error);
+      return [];
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

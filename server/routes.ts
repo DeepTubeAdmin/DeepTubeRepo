@@ -255,6 +255,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn('MongoDB initialization skipped, will continue with PostgreSQL:', mongoError);
   }
   
+  // Import sitemap generator
+  const { 
+    handleSitemapRequest, 
+    handleVideoSitemapRequest, 
+    handleImageSitemapRequest,
+    handleSitemapIndexRequest 
+  } = await import('./sitemap');
+  
+  // Sitemap routes for SEO
+  app.get('/sitemap.xml', handleSitemapRequest);
+  app.get('/sitemap-video.xml', handleVideoSitemapRequest);
+  app.get('/sitemap-image.xml', handleImageSitemapRequest);
+  app.get('/sitemap-index.xml', handleSitemapIndexRequest);
+  
   // Test endpoint for S3 access
   // Endpoint to fix thumbnails content-type by content type
   // Route to fix all image thumbnails
