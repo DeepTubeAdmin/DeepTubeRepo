@@ -1089,8 +1089,18 @@ export class DatabaseStorage implements IStorage {
   
   // Messaging operations
   async createMessage(message: InsertMessage): Promise<Message> {
-    const [result] = await db.insert(messages).values(message).returning();
-    return result;
+    console.log("DatabaseStorage: Creating message with data:", {
+      ...message,
+      content: message.content.length > 30 ? `${message.content.substring(0, 30)}...` : message.content
+    });
+    try {
+      const [result] = await db.insert(messages).values(message).returning();
+      console.log("DatabaseStorage: Message created successfully with ID:", result.id);
+      return result;
+    } catch (error) {
+      console.error("DatabaseStorage: Error creating message:", error);
+      throw error;
+    }
   }
   
   async getConversation(userId1: number, userId2: number): Promise<Message[]> {

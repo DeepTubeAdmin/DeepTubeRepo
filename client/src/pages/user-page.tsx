@@ -120,14 +120,20 @@ export default function UserPage() {
     setIsSendingMessage(true);
     
     try {
-      const response = await apiRequest("POST", "/api/messages", {
+      const response = await apiRequest("POST", "/api/messages/send", {
         receiverId: userProfile.id,
         content: messageContent,
       });
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to send message");
+        const errorText = await response.text();
+        console.error(`Failed to send message: ${response.status} - ${errorText}`);
+        try {
+          const errorData = JSON.parse(errorText);
+          throw new Error(errorData.error || "Failed to send message");
+        } catch (e) {
+          throw new Error(`Failed to send message: ${response.status}`);
+        }
       }
       
       setMessageContent("");
