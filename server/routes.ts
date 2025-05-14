@@ -2659,27 +2659,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Video not found" });
       }
       
-      const { username, content } = req.body;
+      const { content } = req.body;
+      let { username } = req.body;
       
-      // Validate required fields
-      if (!username) {
-        return res.status(400).json({ error: "Username is required" });
-      }
-      
+      // Validate content
       if (!content) {
         return res.status(400).json({ error: "Comment content is required" });
       }
       
-      // Create comment with or without user ID
+      // Create comment data
       const commentData: any = {
         videoId,
-        username,
         content
       };
       
-      // If user is authenticated, associate comment with user
+      // If user is authenticated, use their info
       if (req.isAuthenticated() && req.user) {
         commentData.userId = req.user.id;
+        // Always use the authenticated user's username from the session, not from the request
+        commentData.username = req.user.username;
+        console.log(`Using authenticated username: ${commentData.username} for comment`);
+      } else {
+        // For non-authenticated users, use the provided username or "Anonymous"
+        commentData.username = username || "Anonymous";
+        console.log(`Using non-authenticated username: ${commentData.username} for comment`);
       }
       
       const comment = await dbStorage.addComment(commentData);

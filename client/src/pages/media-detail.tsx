@@ -250,8 +250,8 @@ export default function MediaDetail() {
     addCommentMutation.mutate({
       videoId: parseInt(id),
       text: commentText,
-      // If user is authenticated, include user ID
-      ...(user ? { userId: user.id } : { username: "Anonymous" }),
+      // If user is authenticated, include user ID and username
+      ...(user ? { userId: user.id, username: user.username } : { username: "Anonymous" }),
     });
   };
   
