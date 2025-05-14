@@ -64,13 +64,50 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
+      console.log("Registration request received:", JSON.stringify({
+        ...req.body,
+        password: "***REDACTED***"  // Don't log the actual password
+      }));
+      
+      // Process the request body to handle date conversion issues
+      let processedData = { ...req.body };
+      
+      // Ensure dateOfBirth is properly formatted as a Date object
+      if (processedData.dateOfBirth) {
+        if (typeof processedData.dateOfBirth === 'string') {
+          processedData.dateOfBirth = new Date(processedData.dateOfBirth);
+        } else if (typeof processedData.dateOfBirth === 'object' && processedData.dateOfBirth !== null) {
+          // Already a Date object or has date-like properties
+          if ('toISOString' in processedData.dateOfBirth) {
+            // It's already a proper Date object, keep it as is
+          } else {
+            // Convert from possible object notation: { year, month, day }
+            try {
+              const dateObj = processedData.dateOfBirth;
+              if (dateObj.year && dateObj.month !== undefined && dateObj.day !== undefined) {
+                processedData.dateOfBirth = new Date(dateObj.year, dateObj.month - 1, dateObj.day);
+              } else {
+                processedData.dateOfBirth = new Date(processedData.dateOfBirth);
+              }
+            } catch (err) {
+              console.error("Error converting date:", err);
+              return res.status(400).json({ 
+                error: "Invalid date format", 
+                details: "Please provide a valid date of birth" 
+              });
+            }
+          }
+        }
+      }
+
       // Use the schema validation to ensure username format is valid
       const { insertUserSchema } = await import("@shared/schema");
       
       try {
         // This will throw if validation fails
-        insertUserSchema.parse(req.body);
+        insertUserSchema.parse(processedData);
       } catch (validationError) {
+        console.error("Validation error:", validationError);
         return res.status(400).json({ 
           error: "Validation failed", 
           details: (validationError as Error).message 
@@ -78,17 +115,13 @@ export function setupAuth(app: Express) {
       }
       
       // Check for existing username
-      const existingUser = await storage.getUserByUsername(req.body.username);
+      const existingUser = await storage.getUserByUsername(processedData.username);
       if (existingUser) {
         return res.status(400).json({ error: "Username already exists" });
       }
 
-      // Format date string to proper Date object if needed
-      let userData = { ...req.body };
-      
-      if (userData.dateOfBirth && typeof userData.dateOfBirth === 'string') {
-        userData.dateOfBirth = new Date(userData.dateOfBirth);
-      }
+      // Format date for database storage
+      let userData = { ...processedData };
 
       const user = await storage.createUser({
         ...userData,

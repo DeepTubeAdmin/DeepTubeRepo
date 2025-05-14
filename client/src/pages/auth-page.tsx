@@ -47,7 +47,14 @@ const registerSchema = z.object({
     .regex(/^[a-zA-Z0-9_-]+$/, "Username can only contain letters, numbers, underscores, and hyphens"),
   email: z.string().email("Please enter a valid email"), // Email is now required
   dateOfBirth: z.date()
-    .refine(date => date <= eighteenYearsAgo, {
+    .refine(date => {
+      // Validate that the date is valid (not NaN)
+      if (isNaN(date.getTime())) {
+        return false;
+      }
+      // Check if user is at least 18 years old
+      return date <= eighteenYearsAgo;
+    }, {
       message: "You must be at least 18 years old to register"
     }),
   password: z.string().min(6, "Password must be at least 6 characters"),
