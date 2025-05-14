@@ -988,6 +988,8 @@ export class DatabaseStorage implements IStorage {
           .split('')
           .reduce((acc, char) => acc + char.charCodeAt(0), 0) % 999;
 
+        console.log(`Using shuffle order with seed value: ${seedValue}`);
+
         // Featured content should always appear first regardless of shuffle
         query = query.orderBy(
           sql`CASE WHEN ${videos.featured} THEN 0 ELSE 1 END ASC, 
@@ -995,6 +997,7 @@ export class DatabaseStorage implements IStorage {
         );
       } else {
         // Normal sorting without shuffle
+        console.log(`Using standard ordering by: ${sortBy}`);
         switch(sortBy) {
           case 'newest':
             query = query.orderBy(desc(videos.createdAt));

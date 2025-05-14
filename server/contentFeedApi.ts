@@ -38,8 +38,10 @@ export async function handleContentFeed(req: Request, res: Response) {
     // For debugging
     console.log(`Content feed request: page=${page}, category=${categorySlug || 'all'}, sortBy=${sortBy}, hasShuffleInURL=${hasShuffleParam}, hasShuffleSeedParam=${hasShuffleSeedParam}`);
     
-    // Force shuffle to true when we have any shuffle parameter in URL
-    const shuffle = hasShuffleParam || hasShuffleSeedParam;
+    // Only enable shuffle when we have a shuffle parameter in URL
+    // AND we're NOT using a chronological sort option (newest/oldest)
+    const isChronologicalSort = sortBy === 'newest' || sortBy === 'oldest';
+    const shuffle = (hasShuffleParam || hasShuffleSeedParam) && !isChronologicalSort;
     
     // Generate the seed for shuffling, with priority
     let shuffleSeed = '';
@@ -52,7 +54,13 @@ export async function handleContentFeed(req: Request, res: Response) {
       shuffleSeed = generateShuffleSeed();
     }
     
-    if (shuffleSeed) {
+    // Clear the shuffle seed for chronological sorts to ensure proper ordering
+    if (isChronologicalSort) {
+      if (shuffleSeed) {
+        console.log(`Forcing chronological ordering for ${sortBy} sort, disabling shuffle mode`);
+      }
+      shuffleSeed = '';
+    } else if (shuffleSeed) {
       console.log(`Shuffle mode is ACTIVE, using seed: ${shuffleSeed}`);
     }
     
