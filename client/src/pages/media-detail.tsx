@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Video, Comment } from "@shared/schema";
+import { getIdFromSlug } from "@/lib/seoUrl";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -54,8 +55,12 @@ function RelatedVideos({ videoId }: { videoId: string }) {
 }
 
 export default function MediaDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const [location, setLocation] = useLocation();
+  
+  // Extract the numeric ID from the slug
+  const rawId = getIdFromSlug(slug);
+  const id = rawId ? String(rawId) : slug;
   const [commentText, setCommentText] = useState("");
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
