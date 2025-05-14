@@ -140,7 +140,7 @@ export async function generateVideoSitemap(): Promise<string> {
     
     // Add the video entry
     xml += `  <url>
-    <loc>${BASE_URL}/media/${video.id}</loc>
+    <loc>${seoFriendlyUrl}</loc>
     <video:video>
       <video:thumbnail_loc>${thumbnailUrl}</video:thumbnail_loc>
       <video:title>${escapeXml(video.title)}</video:title>
@@ -200,7 +200,7 @@ export async function generateImageSitemap(): Promise<string> {
     
     // Add the image entry
     xml += `  <url>
-    <loc>${BASE_URL}/media/${image.id}</loc>
+    <loc>${createSeoFriendlyUrl(image)}</loc>
     <image:image>
       <image:loc>${imageUrl}</image:loc>
       <image:title>${escapeXml(image.title)}</image:title>
@@ -318,6 +318,7 @@ export async function handleSitemapIndexRequest(req: Request, res: Response) {
  * @returns SEO-friendly URL
  */
 export function createSeoFriendlyUrl(video: Video): string {
+  // Import the seoUrl utility for consistency with client
   // Create a URL-friendly slug from the title
   const slug = video.title
     .toLowerCase()

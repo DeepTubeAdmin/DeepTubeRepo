@@ -5,5 +5,8 @@ Allow: /
 Disallow: /admin
 Disallow: /access-denied
 
-# Sitemap location
+# Sitemap locations
+Sitemap: https://deeptube.co/sitemap-index.xml
 Sitemap: https://deeptube.co/sitemap.xml
+Sitemap: https://deeptube.co/sitemap-video.xml
+Sitemap: https://deeptube.co/sitemap-image.xml
