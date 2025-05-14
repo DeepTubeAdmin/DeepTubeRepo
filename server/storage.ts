@@ -378,7 +378,7 @@ export class DatabaseStorage implements IStorage {
     const results = await db.select()
       .from(videos)
       .where(eq(videos.featured, true))
-      .orderBy(desc(videos.id))
+      .orderBy(desc(videos.createdAt))
       .limit(limit);
     
     if (results.length > 0) {
@@ -420,7 +420,7 @@ export class DatabaseStorage implements IStorage {
           )
         )
       )
-      .orderBy(desc(videos.id))
+      .orderBy(desc(videos.createdAt))
       .limit(limit);
       
     if (results.length > 0) {
@@ -452,7 +452,7 @@ export class DatabaseStorage implements IStorage {
           )
         )
       )
-      .orderBy(desc(videos.id));
+      .orderBy(desc(videos.createdAt));
       
     if (results.length > 0) {
       console.log(`User videos: first few IDs:`, results.slice(0, 3).map(v => v.id));
@@ -997,10 +997,10 @@ export class DatabaseStorage implements IStorage {
         // Normal sorting without shuffle
         switch(sortBy) {
           case 'newest':
-            query = query.orderBy(desc(videos.id));
+            query = query.orderBy(desc(videos.createdAt));
             break;
           case 'oldest':
-            query = query.orderBy(asc(videos.id));
+            query = query.orderBy(asc(videos.createdAt));
             break;
           case 'most-viewed':
             query = query.orderBy(desc(videos.views));
