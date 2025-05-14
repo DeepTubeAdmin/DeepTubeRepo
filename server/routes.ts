@@ -3096,15 +3096,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       ensureUser(req);
       
-      // Delete the user's content (videos, comments, etc.)
-      // This would be more complex in a real system to handle all user data
-      const userVideos = await dbStorage.getUserVideos(req.user.id);
-      for (const video of userVideos) {
-        await dbStorage.deleteVideo(video.id);
-      }
+      // We no longer need to handle the videos here as it's done in dbStorage.deleteUser
+      // Just capture the user ID before deletion for logging purposes
+      const userId = req.user.id;
       
-      // Delete the user
-      await dbStorage.deleteUser(req.user.id);
+      // Delete the user using our improved method that handles all relations
+      await dbStorage.deleteUser(userId);
+      
+      console.log(`User account ${userId} deleted successfully`);
       
       // Log the user out
       req.logout((err) => {
@@ -3117,7 +3116,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error deleting user account:", error);
-      res.status(500).json({ error: "Failed to delete account" });
+      // Provide a more descriptive error message in development environment
+      const errorMessage = process.env.NODE_ENV === 'development' 
+        ? `Failed to delete account: ${error instanceof Error ? error.message : 'Unknown error'}` 
+        : "Failed to delete account";
+      
+      res.status(500).json({ error: errorMessage });
     }
   });
   

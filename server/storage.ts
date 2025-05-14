@@ -1,5 +1,5 @@
 import { 
-  users, categories, videos, wishlistItems, comments, likes, messages, reports, blockedUsers,
+  users, categories, videos, wishlistItems, comments, likes, likesConstraint, messages, reports, blockedUsers,
   type User, type InsertUser, 
   type Category, type InsertCategory,
   type Video, type InsertVideo,
@@ -193,14 +193,56 @@ export class DatabaseStorage implements IStorage {
   }
   
   async deleteUser(id: number): Promise<void> {
-    // First delete related data
-    // Delete wishlist items
+    // Delete in order to handle dependencies properly
+
+    // 1. Delete wishlist items
     await db.delete(wishlistItems).where(eq(wishlistItems.userId, id));
     
-    // Delete comments by this user (if they have a userId field)
+    // 2. Delete likes by this user
+    await db.delete(likes).where(eq(likes.userId, id));
+    // Note: We're not handling likesConstraint as it appears to be a separate constraint table
+    // that's not fully integrated with the codebase
+    
+    // 3. Delete comments by this user
     await db.delete(comments).where(eq(comments.userId, id));
     
-    // Finally delete the user
+    // 4. Delete messages (both sent and received)
+    await db.delete(messages).where(eq(messages.senderId, id));
+    await db.delete(messages).where(eq(messages.receiverId, id));
+    
+    // 5. Handle content reports
+    // Update reports filed by this user to null userId (keep the reports)
+    await db.update(reports)
+      .set({ userId: null })
+      .where(eq(reports.userId, id));
+    
+    // Update reports resolved by this user to null resolvedBy
+    await db.update(reports)
+      .set({ resolvedBy: null })
+      .where(eq(reports.resolvedBy, id));
+    
+    // 6. Handle blocked users
+    // Delete records where user is blocking someone
+    await db.delete(blockedUsers).where(eq(blockedUsers.userId, id));
+    // Delete records where user is blocked by someone
+    await db.delete(blockedUsers).where(eq(blockedUsers.blockedUserId, id));
+    
+    // 7. Handle videos where user is marked as reviewer
+    await db.update(videos)
+      .set({ reviewedBy: null })
+      .where(eq(videos.reviewedBy, id));
+    
+    // 8. Delete all videos created by this user 
+    const userVideos = await db.select().from(videos).where(eq(videos.userId, id));
+    for (const video of userVideos) {
+      await db.delete(comments).where(eq(comments.videoId, video.id));
+      await db.delete(likes).where(eq(likes.videoId, video.id));
+      await db.delete(reports).where(eq(reports.videoId, video.id));
+      await db.delete(wishlistItems).where(eq(wishlistItems.videoId, video.id));
+      await db.delete(videos).where(eq(videos.id, video.id));
+    }
+    
+    // 9. Finally delete the user
     await db.delete(users).where(eq(users.id, id));
   }
 
