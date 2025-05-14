@@ -310,8 +310,8 @@ export default function MyMessages() {
         title="My Messages" 
         description="View and manage your conversations with other users on DeepTube"
       />
-      <div className="container max-w-6xl py-8">
-        <h1 className="text-3xl font-bold mb-6">My Messages</h1>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6 text-center md:text-left">My Messages</h1>
         
         {/* Delete conversation confirmation dialog */}
         <Dialog open={confirmDeleteDialogOpen} onOpenChange={setConfirmDeleteDialogOpen}>
@@ -378,7 +378,7 @@ export default function MyMessages() {
           </DialogContent>
         </Dialog>
         
-        <div className="bg-[#121212] rounded-lg overflow-hidden">
+        <div className="bg-[#121212] rounded-lg overflow-hidden max-w-5xl mx-auto shadow-lg">
           <div className="grid grid-cols-1 md:grid-cols-3 h-[70vh]">
             {/* Conversation list */}
             <div className="border-r border-gray-800">
