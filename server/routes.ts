@@ -1669,10 +1669,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let sourceUrl = null;
         let youtubeId = null;
         
+        // Check if this is a pending content but being accessed by an admin
+        // This allows admins to see real thumbnails for pending content
+        const isPendingButAdminAccess = isAdminRequest && content.reviewStatus === 'pending';
+        
         if (content.contentType === 'video' || content.contentType === 'videos') {
           sourceUrl = content.videoUrl;
+          if (sourceUrl && isPendingButAdminAccess) {
+            console.log(`Admin access to pending video thumbnail ${contentId}, using real source URL`);
+          }
         } else if (content.contentType === 'image' || content.contentType === 'images') {
           sourceUrl = content.imageUrl;
+          if (sourceUrl && isPendingButAdminAccess) {
+            console.log(`Admin access to pending image thumbnail ${contentId}, using real source URL`);
+          }
         } else if (content.contentType === 'embed') {
           // Use unified ThumbnailService for YouTube ID extraction
           const thumbnailService = await import('./services/ThumbnailService');
@@ -2906,7 +2916,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Add other needed fields
       })
       .from(videos)
-      .innerJoin(reports, eq(reports.contentId, videos.id))
+      .innerJoin(reports, eq(reports.videoId, videos.id))
       .limit(20);
       
       // Get latest registered users
