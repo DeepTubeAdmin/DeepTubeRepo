@@ -1,7 +1,6 @@
 import { Video } from "@shared/schema";
 import express, { Request, Response } from "express";
 import { storage as dbStorage } from './storage';
-import { createSeededRandom, generateShuffleSeed } from '../shared/shuffleUtils';
 
 /**
  * Helper function to get category ID from slug
@@ -12,60 +11,22 @@ async function getCategoryId(slug: string): Promise<number | undefined> {
   return category?.id;
 }
 
-// Variable to store cache of content response
-let contentCache: { [key: string]: any } = {};
-// Variable to store cached categories
+// Store cached categories to avoid multiple DB calls
 let cachedCategories: any[] = [];
 
 /**
- * New Content Feed API Handler
- * Implements the unified endless content feed with 4 rows videos, 2 rows images
- * and random advertisement placement
+ * Simplified Content Feed API Handler
+ * Displays content from the selected category with simple sorting algorithms
  */
 export async function handleContentFeed(req: Request, res: Response) {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const categorySlug = req.query.category as string || '';
-    // Add sortBy parameter handling
-    const sortBy = (req.query.sortBy as 'newest' | 'oldest' | 'most-viewed' | 'trending' | 'popular') || 'trending';
-    
-    // IMPROVED SHUFFLE APPROACH - PRIORITIZE SHUFFLESEED PARAMETER
-    // Check for shuffle parameter in URL
-    const hasShuffleParam = req.query.shuffle !== undefined;
-    // Check for the new shuffleSeed parameter (used by newer client code)
-    const hasShuffleSeedParam = req.query.shuffleSeed !== undefined;
+    // Default sort is popular
+    const sortBy = (req.query.sortBy as 'newest' | 'oldest' | 'most-viewed' | 'trending' | 'popular') || 'popular';
     
     // For debugging
-    console.log(`Content feed request: page=${page}, category=${categorySlug || 'all'}, sortBy=${sortBy}, hasShuffleInURL=${hasShuffleParam}, hasShuffleSeedParam=${hasShuffleSeedParam}`);
-    
-    // Only enable shuffle when we have a shuffle parameter in URL
-    // AND we're NOT using a chronological sort option (newest/oldest)
-    const isChronologicalSort = sortBy === 'newest' || sortBy === 'oldest';
-    const shuffle = (hasShuffleParam || hasShuffleSeedParam) && !isChronologicalSort;
-    
-    // Generate the seed for shuffling, with priority
-    let shuffleSeed = '';
-    if (hasShuffleSeedParam) {
-      shuffleSeed = req.query.shuffleSeed as string;
-    } else if (hasShuffleParam) {
-      shuffleSeed = req.query.shuffle as string;
-    } else if (shuffle) {
-      // Generate a random shuffle seed using our shared utility
-      shuffleSeed = generateShuffleSeed();
-    }
-    
-    // Clear the shuffle seed for chronological sorts to ensure proper ordering
-    if (isChronologicalSort) {
-      if (shuffleSeed) {
-        console.log(`Forcing chronological ordering for ${sortBy} sort, disabling shuffle mode`);
-      }
-      shuffleSeed = '';
-    } else if (shuffleSeed) {
-      console.log(`Shuffle mode is ACTIVE, using seed: ${shuffleSeed}`);
-    }
-    
-    // Create cache key based on parameters
-    const cacheKey = getCacheKey(categorySlug, sortBy, shuffleSeed);
+    console.log(`Content feed request: page=${page}, category=${categorySlug || 'all'}, sortBy=${sortBy}`);
     
     // Cache categories to avoid multiple DB calls
     if (cachedCategories.length === 0) {
@@ -73,7 +34,7 @@ export async function handleContentFeed(req: Request, res: Response) {
       console.log(`Cached ${cachedCategories.length} categories for content selection`);
     }
 
-    // New response structure for the unified content feed
+    // Response structure for the content feed
     const response: {
       featured: {
         video: Video | null
@@ -96,46 +57,26 @@ export async function handleContentFeed(req: Request, res: Response) {
       }
     };
 
-    // On first page or if we're refreshing content
-    if (page === 1 || (shuffle && shuffleSeed)) {
-      // Reset cache if forced shuffle
-      if (shuffle && shuffleSeed) {
-        const cacheTimestamp = Date.now();
-        resetContentCache(`${categorySlug}_feed_${cacheTimestamp}`, false);
-      }
-      
-      // 1. Get Featured Video - Pick a random approved video
-      const featuredVideos = await dbStorage.getFeaturedVideos(6);
-      console.log(`Featured videos found: ${featuredVideos.length}, first few IDs: [ ${featuredVideos.slice(0, 3).map((v: Video) => v.id).join(', ')} ]`);
+    // Get the category ID if a category is selected
+    const categoryId = categorySlug ? await getCategoryId(categorySlug) : undefined;
+    
+    // 1. Get Featured Video - Pick a top approved video
+    if (page === 1) {
+      const featuredVideos = await dbStorage.getFeaturedVideos(3, categoryId);
+      console.log(`Featured videos found: ${featuredVideos.length}${featuredVideos.length > 0 ? ', first few IDs: [ ' + featuredVideos.slice(0, 3).map((v: Video) => v.id).join(', ') + ' ]' : ''}`);
       
       if (featuredVideos.length > 0) {
-        // Randomize the featured video based on the shuffle seed, or pick the newest one if no shuffle
-        if (shuffleSeed) {
-          const seededRandom = createSeededRandom(shuffleSeed + '-featured');
-          const randomIndex = Math.floor(seededRandom() * featuredVideos.length);
-          response.featured.video = featuredVideos[randomIndex];
-        } else {
-          // Default to the newest featured video
-          response.featured.video = featuredVideos[0];
-        }
+        // Choose the first featured video
+        response.featured.video = featuredVideos[0];
+        console.log(`Featured video details: ID=${response.featured.video?.id}, type=${response.featured.video?.contentType}`);
       }
-      
-      // Log featured video selection
-      console.log(`First featured video details: ID=${response.featured.video?.id}, type=${response.featured.video?.contentType}`);
     }
     
-    // Unified all content for the endless feed
-    // Set limits: Get more videos than images
-    const videoLimit = page === 1 ? 50 : 30; // More videos on first page
-    const imageLimit = page === 1 ? 20 : 10; // Fewer images on first page
+    // Set content limits - more videos than images
+    const videoLimit = 50;
+    const imageLimit = 20;
     
-    // Combined approach:
-    // 1. On page 1, fetch videos from different sources (trending, new, popular)
-    // 2. On subsequent pages, just fetch more by popularity/views
-    let videos: Video[] = [];
-    let images: Video[] = [];
-    
-    // Track unique content IDs
+    // Track unique content IDs to avoid duplicates
     const uniqueContentIds = new Set<number>();
     
     // Add featured video to the unique set if it exists
@@ -143,139 +84,65 @@ export async function handleContentFeed(req: Request, res: Response) {
       uniqueContentIds.add(response.featured.video.id);
     }
     
-    // First page loads - use the user's sortBy parameter or mix content if trending
-    if (page === 1) {
-      const categoryId = categorySlug ? await getCategoryId(categorySlug) : undefined;
-      console.log(`First page load with sortBy: ${sortBy}, shuffle seed: ${shuffleSeed}, categoryId: ${categoryId || 'none'}`);
-      
-      // Load videos and images based on sort preference
-      if (sortBy === 'trending') {
-        // For trending, we'll still mix content types for a better experience
-        // Get trending videos - always pass categoryId regardless of shuffle
-        const trendingVideos = await dbStorage.getTrendingVideos(
-          videoLimit, 
-          'video',
-          shuffle ? shuffleSeed : undefined,
-          categoryId
-        );
-        console.log(`Retrieved ${trendingVideos.length} trending videos with category ${categoryId || 'none'}. First few IDs: [ ${trendingVideos.slice(0, 3).map((v: Video) => v.id).join(', ')} ]`);
-        
-        // Get new videos
-        const newVideos = await dbStorage.getVideos(
-          videoLimit,
-          'video',
-          categoryId,
-          'newest',
-          shuffleSeed
-        );
-        
-        // Get popular videos (most viewed)
-        const popularVideos = await dbStorage.getVideos(
-          videoLimit,
-          'video',
-          categoryId,
-          'most-viewed',
-          shuffleSeed
-        );
-        
-        // Get trending images - always pass categoryId regardless of shuffle
-        const trendingImages = await dbStorage.getTrendingVideos(
-          imageLimit, 
-          'image',
-          shuffle ? shuffleSeed : undefined,
-          categoryId
-        );
-        console.log(`Retrieved ${trendingImages.length} trending images with category ${categoryId || 'none'}. First few IDs: [ ${trendingImages.slice(0, 3).map((v: Video) => v.id).join(', ')} ]`);
-        
-        // Get new images
-        const newImages = await dbStorage.getVideos(
-          imageLimit,
-          'image',
-          categoryId,
-          'newest',
-          shuffleSeed
-        );
-        
-        // Combine everything with de-duplication
-        videos = mergeAndDeduplicate([...trendingVideos, ...newVideos, ...popularVideos], uniqueContentIds);
-        images = mergeAndDeduplicate([...trendingImages, ...newImages], uniqueContentIds);
-      } else {
-        // For other sort options (newest, oldest, most-viewed, popular), respect the user's choice
-        console.log(`Using sortBy=${sortBy} for video content`);
-        
-        // Get videos with the selected sort option
-        const sortedVideos = await dbStorage.getVideos(
-          videoLimit,
-          'video',
-          categoryId,
-          sortBy,
-          shuffleSeed
-        );
-        
-        // Get images with the selected sort option
-        const sortedImages = await dbStorage.getVideos(
-          imageLimit,
-          'image',
-          categoryId,
-          sortBy, 
-          shuffleSeed
-        );
-        
-        videos = mergeAndDeduplicate(sortedVideos, uniqueContentIds);
-        images = mergeAndDeduplicate(sortedImages, uniqueContentIds);
-      }
-    } 
-    // Subsequent pages - focus more on popular/trending content
-    else {
-      // Get more videos of user's selected sort preference
-      const moreVideos = await dbStorage.getVideos(
-        videoLimit,
-        'video',
-        categorySlug ? await getCategoryId(categorySlug) : undefined,
-        sortBy,
-        shuffle ? `${shuffleSeed}-page${page}` : undefined
-      );
-      
-      // Get more images of user's selected sort preference
-      const moreImages = await dbStorage.getVideos(
-        imageLimit,
-        'image',
-        categorySlug ? await getCategoryId(categorySlug) : undefined,
-        sortBy,
-        shuffle ? `${shuffleSeed}-page${page}` : undefined
-      );
-      
-      videos = mergeAndDeduplicate(moreVideos, uniqueContentIds);
-      images = mergeAndDeduplicate(moreImages, uniqueContentIds);
-    }
-    
-    // Generate random ad positions for every 6 content chunks (4 rows videos + 2 rows images)
-    const numChunks = Math.max(
-      Math.ceil(videos.length / (4 * 3)), // 4 rows of videos with 3 columns
-      Math.ceil(images.length / (2 * 3))  // 2 rows of images with 3 columns
+    // Get videos based on the selected sort
+    let videos = await dbStorage.getVideos(
+      videoLimit,
+      'video',
+      categoryId,
+      sortBy,
+      undefined, // No shuffle seed
+      page
     );
     
-    // Place ads exactly once every 6 rows (content chunks)
-    const adPositions = [];
-    for (let i = 0; i < numChunks; i++) {
-      // Ensure each chunk has an ad (every chunk contains 6 rows: 4 video + 2 image)
-      adPositions.push(i);
+    // Get images with same sort
+    let images = await dbStorage.getVideos(
+      imageLimit,
+      'image',
+      categoryId,
+      sortBy,
+      undefined, // No shuffle seed
+      page
+    );
+    
+    // Apply deduplication to avoid showing featured item again
+    videos = mergeAndDeduplicate(videos, uniqueContentIds);
+    images = mergeAndDeduplicate(images, uniqueContentIds);
+    
+    console.log(`Retrieved ${videos.length} ${sortBy} videos with category ${categoryId || 'none'}`);
+    console.log(`Retrieved ${images.length} ${sortBy} images with category ${categoryId || 'none'}`);
+    
+    // Generate ad positions - one ad per 6 content items
+    const totalItems = videos.length + images.length;
+    const numAds = Math.floor(totalItems / 6);
+    
+    // Generate ad positions - first ad after position 3, then every 6 items
+    const adPositions: number[] = [];
+    if (numAds > 0) {
+      let position = 3; // Start after the first 3 items
+      adPositions.push(position);
+      
+      for (let i = 1; i < numAds; i++) {
+        position += 6; // One ad every 6 items
+        
+        if (position < totalItems) {
+          adPositions.push(position);
+        }
+      }
     }
     
-    // Add content to response
+    // Update the response
     response.content.videos = videos;
     response.content.images = images;
     response.content.adPositions = adPositions;
-    response.content.hasMore = videos.length >= videoLimit || images.length >= imageLimit;
+    response.content.hasMore = videos.length > 0 || images.length > 0;
     
-    // Log content totals
-    console.log(`Response prepared with ${uniqueContentIds.size} unique content items`);
+    console.log(`Response prepared with ${videos.length + images.length} unique content items`);
     
-    // Send response
+    // Return the response
     return res.json(response);
   } catch (error) {
-    console.error('Error in content feed API:', error);
-    return res.status(500).json({ error: 'Failed to load content feed' });
+    console.error("Error in content feed:", error);
+    return res.status(500).json({ error: "Failed to fetch content feed" });
   }
 }
 
@@ -287,37 +154,10 @@ function mergeAndDeduplicate(items: Video[], uniqueIds: Set<number>): Video[] {
   
   for (const item of items) {
     if (!uniqueIds.has(item.id)) {
-      uniqueIds.add(item.id);
       result.push(item);
+      uniqueIds.add(item.id);
     }
   }
   
   return result;
 }
-
-/**
- * Generate a cache key for content
- */
-function getCacheKey(categorySlug: string, sortBy: string, shuffleSeed: string = ''): string {
-  return `${categorySlug || 'all'}_${sortBy}_${shuffleSeed}`;
-}
-
-/**
- * Reset the content cache
- */
-function resetContentCache(key?: string, resetCategories: boolean = false) {
-  if (key) {
-    console.log(`Reset content cache for ${key}, fresh shuffle`);
-    contentCache[key] = null;
-  } else {
-    console.log('Reset ALL content cache');
-    contentCache = {};
-  }
-  
-  if (resetCategories) {
-    console.log('Reset categories cache');
-    cachedCategories = [];
-  }
-}
-
-// Function removed; using imported createSeededRandom from shared/shuffleUtils.ts instead

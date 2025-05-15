@@ -372,21 +372,34 @@ export class DatabaseStorage implements IStorage {
     return results;
   }
   
-  async getFeaturedVideos(limit: number = 10): Promise<Video[]> {
+  async getFeaturedVideos(limit: number = 10, categoryId?: number): Promise<Video[]> {
     // Get videos where featured is true, ordered by newest first
     // Note: We deliberately don't filter by review status for featured videos
     // since these are explicitly chosen by admins and should be displayed
     // regardless of their review status
-    const results = await db.select()
+    
+    let query = db.select()
       .from(videos)
-      .where(eq(videos.featured, true))
+      .where(eq(videos.featured, true));
+    
+    // Add category filter if provided
+    if (categoryId) {
+      query = query.where(eq(videos.categoryId, categoryId));
+    }
+    
+    // Add sorting and limit
+    const results = await query
       .orderBy(desc(videos.createdAt))
       .limit(limit);
     
     if (results.length > 0) {
       console.log(`Featured videos found: ${results.length}, first few IDs:`, results.slice(0, 3).map(v => v.id));
     } else {
-      console.log('No featured videos found in database, falling back to newest videos');
+      if (categoryId) {
+        console.log(`No featured videos found in category ${categoryId}, falling back to newest videos`);
+      } else {
+        console.log('No featured videos found in database, falling back to newest videos');
+      }
       // Fallback to newest videos if no featured videos exist
     }
     
