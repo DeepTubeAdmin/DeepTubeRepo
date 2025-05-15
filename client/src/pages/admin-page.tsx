@@ -336,6 +336,7 @@ export default function AdminPage() {
             <TabsTrigger value="content" className="flex-1">Reported Content</TabsTrigger>
             <TabsTrigger value="users" className="flex-1">User Management</TabsTrigger>
             <TabsTrigger value="featured" className="flex-1">Featured Videos</TabsTrigger>
+            <TabsTrigger value="duplicate" className="flex-1">Duplicate Detection</TabsTrigger>
           </TabsList>
 
           <TabsContent value="pending" className="py-4">

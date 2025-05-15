@@ -88,20 +88,25 @@ async function extractFramesFromVideo(videoPath: string, timestamps: number[]): 
  */
 async function computeImageHash(imagePath: string, timestamp?: number): Promise<PerceptualHash | null> {
   try {
-    // Load the image using Jimp
-    const image = await Jimp.read(imagePath);
+    // Load and process the image using Sharp
+    const image = sharp(imagePath);
     
-    // Resize the image to 16x16 pixels for consistent comparison
-    image.resize(16, 16).greyscale();
+    // Resize the image to 16x16 pixels for consistent comparison and convert to grayscale
+    const resizedImage = await image
+      .resize(16, 16)
+      .grayscale()
+      .raw()
+      .toBuffer();
     
-    // Get the pixel data
-    const pixelData: number[] = [];
-    image.scan(0, 0, image.bitmap.width, image.bitmap.height, (x: number, y: number, idx: number) => {
-      pixelData.push(image.bitmap.data[idx]);
-    });
+    // Get the pixel data as array
+    const pixelData = Array.from(new Uint8Array(resizedImage));
     
     // Convert to Base64 for storage
-    const base64 = await image.getBase64Async('image/jpeg');
+    const base64 = await image
+      .resize(100, 100) // Use a reasonable size for the base64 preview
+      .jpeg()
+      .toBuffer()
+      .then(buffer => `data:image/jpeg;base64,${buffer.toString('base64')}`);
     
     return {
       base64,

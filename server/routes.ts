@@ -2854,6 +2854,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // We're using the other deletion endpoint at "/api/admin/content/:contentId" defined below
   
+  // New endpoint to generate perceptual hashes for all content
+  app.post("/api/admin/generate-hashes", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      // Find all content without perceptual hashes
+      const contentWithoutHashes = await db.select()
+        .from(videos)
+        .where(and(
+          or(
+            isNull(videos.perceptualHashes),
+            sql`${videos.perceptualHashes} = 'null'::jsonb`
+          ),
+          not(eq(videos.contentType, 'embed')), // Skip embeds
+          not(isNull(videos.reviewStatus)), // Only process content that has been reviewed
+          eq(videos.reviewStatus, 'approved') // Only process approved content
+        ))
+        .limit(20); // Process in batches to avoid overloading the server
+      
+      if (contentWithoutHashes.length === 0) {
+        return res.json({ 
+          success: true, 
+          message: "No content found without perceptual hashes" 
+        });
+      }
+      
+      // Schedule hash computation for each content item
+      const processingPromises = contentWithoutHashes.map(async (content) => {
+        return PerceptualHashService.computeAndStoreHashesForExistingContent(content.id)
+          .then(() => ({ id: content.id, success: true }))
+          .catch(error => ({ id: content.id, success: false, error: error.message }));
+      });
+      
+      // Process in parallel but with a limit
+      const results = await Promise.all(processingPromises);
+      
+      // Return results
+      res.json({
+        success: true,
+        processed: results.length,
+        results
+      });
+    } catch (error) {
+      console.error("Error generating perceptual hashes:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Error generating perceptual hashes",
+        message: error.message
+      });
+    }
+  });
+  
   // Ban/unban user endpoint
   app.put("/api/admin/users/:userId", isAuthenticated, isAdmin, async (req, res) => {
     try {
