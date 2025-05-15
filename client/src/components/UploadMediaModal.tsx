@@ -568,7 +568,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           </p>
           <p className="text-xs text-gray-400 mt-1">
             <strong>Rules:</strong><br />
-            1080p, Min 10sec, Max 15min & 1GB<br />
+            No nudity<br />
             PG-13 only<br />
             No deepfakes unless:<br />
             • Written permission<br />
