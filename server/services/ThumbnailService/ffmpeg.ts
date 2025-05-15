@@ -161,9 +161,11 @@ export function cleanWorkspacePath(filePath: string): string {
         
         // Join with proper subfolder
         result = path.join(process.cwd(), 'uploads', subfolder, filename);
+        console.log(`Adjusted path to include subfolder ${subfolder}: ${result}`);
       } else {
         // Already has a subfolder structure
         result = path.join(process.cwd(), normalizedPath.substring(1));
+        console.log(`Using existing subfolder structure: ${result}`);
       }
     } else {
       result = normalizedPath;

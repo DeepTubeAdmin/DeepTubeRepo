@@ -14,7 +14,19 @@ export async function uploadFileToS3(filePath: string, s3Key: string): Promise<s
   try {
     // Read the file from disk
     const fs = await import('fs/promises');
+    console.log(`Uploading file from local path: ${filePath} to S3 key: ${s3Key}`);
+    
+    // Verify file exists
+    try {
+      await fs.access(filePath);
+      console.log(`Verified file exists at: ${filePath}`);
+    } catch (accessError: any) {
+      console.error(`File access error: ${accessError}`);
+      throw new Error(`Cannot access file at ${filePath}: ${accessError.message || String(accessError)}`);
+    }
+    
     const fileBuffer = await fs.readFile(filePath);
+    console.log(`Read ${fileBuffer.length} bytes from file`);
     
     // Determine content type based on file extension
     const path = await import('path');
@@ -39,8 +51,12 @@ export async function uploadFileToS3(filePath: string, s3Key: string): Promise<s
       contentType = mimeTypes[ext];
     }
     
+    console.log(`Determined content type: ${contentType} for file extension: ${ext}`);
+    
     // Upload to S3
-    return s3Service.uploadToS3(fileBuffer, s3Key, { contentType });
+    const result = await s3Service.uploadToS3(fileBuffer, s3Key, { contentType });
+    console.log(`S3 upload successful for key: ${s3Key}`);
+    return result;
   } catch (error) {
     console.error(`Error in uploadFileToS3: ${error}`);
     throw error;
