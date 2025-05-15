@@ -1698,8 +1698,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (isPendingButAdminAccess && !sourceUrl && content.contentType === 'video' && content.videoUrl) {
           // Get a signed S3 URL for the video file if possible
           try {
-            const s3Key = urlPathToS3Key(content.videoUrl);
-            sourceUrl = await getSignedS3Url(s3Key);
+            if (content.videoUrl.startsWith('/api/s3/')) {
+              // Extract the path after /api/s3/
+              const s3Path = content.videoUrl.replace('/api/s3/', '');
+              const s3Key = s3Path;
+              sourceUrl = await getSignedS3Url(s3Key);
+            } else {
+              // Fallback to using the full path as key
+              const s3Key = content.videoUrl;
+              sourceUrl = await getSignedS3Url(s3Key);
+            }
             console.log(`Admin thumbnail access: Using direct S3 URL for pending video ${contentId}`);
           } catch (s3Error) {
             console.error('Admin S3 access error:', s3Error);

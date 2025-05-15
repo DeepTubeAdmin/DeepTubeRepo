@@ -88,6 +88,10 @@ export default function MediaDetail() {
     }
   }, []);
   
+  // Check if user is an admin
+  const isAdmin = user && (user.id === 1 || user.id === 2);
+  console.log("MediaDetail: User is admin:", isAdmin);
+  
   // Fetch media details
   const { data: media, isLoading: mediaLoading, error: mediaError } = useQuery<Video>({
     queryKey: [`/api/videos/${id}`],
@@ -458,10 +462,25 @@ export default function MediaDetail() {
         <div className="container mx-auto py-8">
           <div className="text-center">
             <h1 className="text-3xl font-bold mb-4">Content Not Found</h1>
-            <p className="text-gray-400 mb-6">The content you're looking for doesn't exist or has been removed.</p>
-            <Button onClick={() => setLocation('/')}>
-              Return to Homepage
-            </Button>
+            <p className="text-gray-400 mb-6">
+              {isAdmin 
+                ? "This content might be pending review. Please use the admin dashboard to view and approve it."
+                : "The content you're looking for doesn't exist or has been removed."}
+            </p>
+            {isAdmin ? (
+              <div className="flex flex-col items-center gap-4">
+                <Button onClick={() => setLocation('/admin')}>
+                  Go to Admin Dashboard
+                </Button>
+                <Button variant="outline" onClick={() => setLocation('/')}>
+                  Return to Homepage
+                </Button>
+              </div>
+            ) : (
+              <Button onClick={() => setLocation('/')}>
+                Return to Homepage
+              </Button>
+            )}
           </div>
         </div>
       </Layout>
