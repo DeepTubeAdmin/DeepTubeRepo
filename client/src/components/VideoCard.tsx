@@ -317,9 +317,9 @@ export default function VideoCard({ video, onPreview, onWishlist, size = 'defaul
         />
 
         {/* Duration Badge */}
-        {video.contentType !== 'image' && (
+        {video.contentType !== 'image' && video.duration && video.duration > 0 && (
           <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded z-10">
-            {formatDuration(video.duration ?? 0)}
+            {Math.floor(video.duration / 60)}:{String(Math.floor(video.duration % 60)).padStart(2, '0')}
           </div>
         )}
       </div>
