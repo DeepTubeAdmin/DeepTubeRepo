@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, real, timestamp, boolean, primaryKey, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, real, timestamp, boolean, primaryKey, varchar, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -60,6 +60,7 @@ export const videos = pgTable("videos", {
   reviewedAt: timestamp("reviewed_at"),
   reviewedBy: integer("reviewed_by").references(() => users.id),
   rejectionReason: text("rejection_reason"),
+  perceptualHashes: jsonb("perceptual_hashes"), // Store perceptual hashes for duplicate detection
 });
 
 export const videosRelations = relations(videos, ({ one, many }) => ({
@@ -270,7 +271,8 @@ export const insertVideoSchema = createInsertSchema(videos).pick({
   reviewStatus: true,
   reviewedAt: true,
   reviewedBy: true,
-  rejectionReason: true
+  rejectionReason: true,
+  perceptualHashes: true
 });
 export const insertWishlistItemSchema = createInsertSchema(wishlistItems);
 export const insertCommentSchema = createInsertSchema(comments);

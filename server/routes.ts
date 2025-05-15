@@ -18,6 +18,7 @@ import { fileURLToPath } from 'url';
 import thumbnailService from "./services/ThumbnailService";
 // Import specific utilities from their respective modules
 import { youtube as youtubeUtils, storage as s3Service, ffmpeg as ffmpegUtils } from "./services/ThumbnailService";
+import PerceptualHashService from "./services/PerceptualHashService";
 import { asc, desc, eq, like, and, sql, or, SQL, inArray } from 'drizzle-orm';
 import { videos, messages } from '@shared/schema';
 import { db } from './db';
