@@ -517,7 +517,19 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to upload ${contentType}`);
+        
+        // Check specifically for duplicate content error
+        if (response.status === 409 && errorData.error === "Duplicate content detected") {
+          toast({
+            title: "Duplicate Content",
+            description: "This content appears to be a duplicate of existing content. Please upload original content only.",
+            variant: "destructive",
+          });
+          setIsUploading(false);
+          return; // Stop execution but don't close modal
+        }
+        
+        throw new Error(errorData.error || errorData.message || `Failed to upload ${contentType}`);
       }
       
       toast({

@@ -18,7 +18,7 @@ import { fileURLToPath } from 'url';
 import thumbnailService from "./services/ThumbnailService";
 // Import specific utilities from their respective modules
 import { youtube as youtubeUtils, storage as s3Service, ffmpeg as ffmpegUtils } from "./services/ThumbnailService";
-import PerceptualHashService from "./services/PerceptualHashService";
+import * as PerceptualHashService from "./services/PerceptualHashService";
 import { asc, desc, eq, like, and, sql, or, SQL, inArray } from 'drizzle-orm';
 import { videos, messages } from '@shared/schema';
 import { db } from './db';
@@ -1197,6 +1197,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create the video entry
       const video = await dbStorage.createVideo(videoData);
+      
+      // Compute and store perceptual hashes for non-embed content after successful upload
+      if (video.contentType !== 'embed') {
+        try {
+          // Schedule the hash computation to run asynchronously
+          (async () => {
+            try {
+              await PerceptualHashService.computeAndStoreHashesForExistingContent(video.id);
+              console.log(`Successfully generated perceptual hashes for content ID ${video.id}`);
+            } catch (hashError) {
+              console.error(`Failed to generate perceptual hashes for content ID ${video.id}:`, hashError);
+            }
+          })();
+        } catch (hashError) {
+          console.error(`Error scheduling perceptual hash computation for content ID ${video.id}:`, hashError);
+          // Continue with the upload process even if hash computation fails
+        }
+      }
       
       // For newly uploaded content, make sure we set the correct thumbnail path
       // and generate a thumbnail if needed (especially for S3-uploaded content)
