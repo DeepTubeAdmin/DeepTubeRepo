@@ -30,7 +30,6 @@ import {
   uploadFileToS3,
   uploadStringToS3,
   localPathToS3Key,
-  urlPathToS3Key,
   generateAndStoreS3Thumbnail,
   generateSvgPlaceholder
 } from "./combined-services";
@@ -1698,16 +1697,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (isPendingButAdminAccess && !sourceUrl && content.contentType === 'video' && content.videoUrl) {
           // Get a signed S3 URL for the video file if possible
           try {
-            if (content.videoUrl.startsWith('/api/s3/')) {
-              // Extract the path after /api/s3/
-              const s3Path = content.videoUrl.replace('/api/s3/', '');
-              const s3Key = s3Path;
-              sourceUrl = await getSignedS3Url(s3Key);
-            } else {
-              // Fallback to using the full path as key
-              const s3Key = content.videoUrl;
-              sourceUrl = await getSignedS3Url(s3Key);
-            }
+            const s3Key = urlPathToS3Key(content.videoUrl);
+            sourceUrl = await getSignedS3Url(s3Key);
             console.log(`Admin thumbnail access: Using direct S3 URL for pending video ${contentId}`);
           } catch (s3Error) {
             console.error('Admin S3 access error:', s3Error);
@@ -2527,25 +2518,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid video ID format" });
       }
       
-      // Check if user is admin or if admin parameter is present in the URL
+      // Check if user is admin to determine if we should skip visibility check
       const isAdmin = req.isAuthenticated() && (req.user.id === 1 || req.user.id === 2);
-      const hasAdminParameter = req.query.admin === '1';
-      
-      // Allow admin access either by being logged in admin or having admin URL parameter
-      const hasAdminAccess = isAdmin || hasAdminParameter;
-      
-      console.log(`API: Request for video ${videoId} - User admin: ${isAdmin}, URL admin param: ${hasAdminParameter}`);
       
       // Get video details - skip visibility check for admins
-      const video = await dbStorage.getVideoById(videoId, hasAdminAccess);
+      const video = await dbStorage.getVideoById(videoId, isAdmin);
       
       if (!video) {
         console.error("Video not found with ID:", videoId);
         return res.status(404).json({ error: "Video/Image not found" });
       }
       
-      // If the content is pending review, add a notice for admin access
-      if (hasAdminAccess && video.reviewStatus === 'pending') {
+      // If the content is pending review, add a notice for the admin
+      if (isAdmin && video.reviewStatus === 'pending') {
         video.adminNotice = "This content is pending review and not visible to regular users";
       }
       

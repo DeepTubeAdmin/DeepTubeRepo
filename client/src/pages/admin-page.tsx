@@ -58,11 +58,6 @@ export default function AdminPage() {
   const [pendingContent, setPendingContent] = useState<PendingContent[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [activeTab, setActiveTab] = useState('pending');
-  
-  // Helper function to view content with admin parameter
-  const viewContentAsAdmin = (contentId: number) => {
-    window.open(`/media/${contentId}?admin=1`, '_blank');
-  };
 
   // Fetch featured content using React Query
   const featuredContent = useQuery<FeaturedContent[]>({
@@ -440,25 +435,20 @@ export default function AdminPage() {
                                 />
                               </div>
                             </TableCell>
-                            <TableCell className="font-medium text-gray-200 max-w-[200px] truncate">
-                              {content.title}
-                            </TableCell>
+                            <TableCell className="text-white font-medium">{content.title}</TableCell>
                             <TableCell className="text-gray-300">
-                              <Link href={`/user/${content.uploaderId}`} className="hover:underline hover:text-primary">
-                                {content.uploaderName || `User ${content.uploaderId}`}
-                              </Link>
+                              {content.uploaderName ? (
+                                <Link 
+                                  href={`/user/${content.uploaderName}`} 
+                                  className="text-primary hover:text-primary/80 underline"
+                                >
+                                  {content.uploaderName}
+                                </Link>
+                              ) : 'Anonymous'}
                             </TableCell>
-                            <TableCell className="text-gray-300">
-                              <span className={`px-2 py-1 rounded text-xs ${
-                                content.contentType === 'video' ? 'bg-blue-900 text-blue-300' :
-                                content.contentType === 'image' ? 'bg-green-900 text-green-300' :
-                                'bg-purple-900 text-purple-300'
-                              }`}>
-                                {content.contentType?.charAt(0).toUpperCase() + content.contentType?.slice(1)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-gray-300">
-                              {content.duration ? `${Math.floor(content.duration / 60)}:${(content.duration % 60).toString().padStart(2, '0')}` : 'N/A'}
+                            <TableCell className="text-gray-300 capitalize">{content.contentType}</TableCell>
+                            <TableCell>
+                              {content.duration ? `${Math.floor(content.duration / 60)}:${String(Math.floor(content.duration % 60)).padStart(2, '0')}` : '-'}
                             </TableCell>
                             <TableCell className="text-gray-300">
                               {new Date(content.createdAt).toLocaleDateString()}
@@ -468,15 +458,22 @@ export default function AdminPage() {
                                 <Button 
                                   variant="outline" 
                                   size="sm"
-                                  onClick={() => viewContentAsAdmin(content.id)}
+                                  onClick={() => window.open(`/media/${content.id}`, '_blank')}
                                 >
                                   View
+                                </Button>
+                                <Button 
+                                  variant="secondary" 
+                                  size="sm"
+                                  onClick={() => handleFeatureContent(content.id)}
+                                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                                >
+                                  {content.featured ? 'Unfeature' : 'Feature'}
                                 </Button>
                                 <Button 
                                   variant="default" 
                                   size="sm"
                                   onClick={() => handleApproveContent(content.id)}
-                                  className="bg-green-600 hover:bg-green-700"
                                 >
                                   Approve
                                 </Button>
@@ -504,21 +501,20 @@ export default function AdminPage() {
               <CardHeader>
                 <CardTitle>Reported Content</CardTitle>
                 <CardDescription className="text-gray-400">
-                  Review and moderate reported content
+                  Review and moderate content that has been reported by users
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[500px]">
                   {reportedContent.length === 0 ? (
-                    <p className="text-center text-gray-400 py-8">No reported content</p>
+                    <p className="text-center text-gray-400 py-8">No reported content to review</p>
                   ) : (
                     <Table>
                       <TableHeader>
                         <TableRow className="border-gray-800 hover:bg-gray-800">
-                          <TableHead className="text-gray-300">Thumbnail</TableHead>
                           <TableHead className="text-gray-300">Title</TableHead>
                           <TableHead className="text-gray-300">Report Reason</TableHead>
-                          <TableHead className="text-gray-300">Reported By</TableHead>
+                          <TableHead className="text-gray-300">Content Type</TableHead>
                           <TableHead className="text-gray-300">Report Date</TableHead>
                           <TableHead className="text-gray-300">Actions</TableHead>
                         </TableRow>
@@ -526,25 +522,9 @@ export default function AdminPage() {
                       <TableBody>
                         {reportedContent.map((content) => (
                           <TableRow key={content.id} className="border-gray-800 hover:bg-gray-800">
-                            <TableCell className="w-24">
-                              <div className="h-16 w-24 overflow-hidden rounded border border-gray-700">
-                                <ThumbnailImage 
-                                  contentId={content.id} 
-                                  contentType={content.contentType}
-                                  title={content.title}
-                                  className="h-full w-full object-cover"
-                                />
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-medium text-gray-200 max-w-[200px] truncate">
-                              {content.title}
-                            </TableCell>
-                            <TableCell className="text-gray-300 max-w-[200px]">
-                              {content.reportReason}
-                            </TableCell>
-                            <TableCell className="text-gray-300">
-                              {content.reportedBy || 'Anonymous'}
-                            </TableCell>
+                            <TableCell className="text-white font-medium">{content.title}</TableCell>
+                            <TableCell className="text-gray-300">{content.reportReason}</TableCell>
+                            <TableCell className="text-gray-300 capitalize">{content.contentType}</TableCell>
                             <TableCell className="text-gray-300">
                               {new Date(content.reportedAt).toLocaleDateString()}
                             </TableCell>
@@ -553,7 +533,7 @@ export default function AdminPage() {
                                 <Button 
                                   variant="outline" 
                                   size="sm"
-                                  onClick={() => viewContentAsAdmin(content.id)}
+                                  onClick={() => window.open(`/media/${content.id}`, '_blank')}
                                 >
                                   View
                                 </Button>
@@ -581,18 +561,27 @@ export default function AdminPage() {
               <CardHeader>
                 <CardTitle>User Management</CardTitle>
                 <CardDescription className="text-gray-400">
-                  View and manage user accounts
+                  Manage user accounts, including banning problematic users
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {/* User search input */}
                 <div className="mb-4">
-                  <input
-                    type="text"
-                    placeholder="Search users by username or email"
-                    className="w-full bg-gray-800 border-gray-700 rounded p-2 text-white"
-                    value={userSearchQuery}
-                    onChange={(e) => setUserSearchQuery(e.target.value)}
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="Search users by username or email..."
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                    />
+                    <div className="absolute right-3 top-2.5 text-gray-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                      </svg>
+                    </div>
+                  </div>
                 </div>
                 <ScrollArea className="h-[500px]">
                   {filteredUsers.length === 0 ? (
@@ -601,44 +590,39 @@ export default function AdminPage() {
                     <Table>
                       <TableHeader>
                         <TableRow className="border-gray-800 hover:bg-gray-800">
-                          <TableHead className="text-gray-300">ID</TableHead>
                           <TableHead className="text-gray-300">Username</TableHead>
                           <TableHead className="text-gray-300">Email</TableHead>
-                          <TableHead className="text-gray-300">Status</TableHead>
                           <TableHead className="text-gray-300">Join Date</TableHead>
+                          <TableHead className="text-gray-300">Status</TableHead>
                           <TableHead className="text-gray-300">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredUsers.map((user) => (
                           <TableRow key={user.id} className="border-gray-800 hover:bg-gray-800">
-                            <TableCell className="font-medium text-gray-300">
-                              {user.id}
-                            </TableCell>
-                            <TableCell className="text-gray-200">
-                              <Link href={`/user/${user.id}`} className="hover:underline hover:text-primary">
-                                {user.username}
-                              </Link>
-                            </TableCell>
-                            <TableCell className="text-gray-300">
-                              {user.email}
-                            </TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 rounded text-xs ${(user as AdminUser).banned ? 'bg-red-900 text-red-300' : 'bg-green-900 text-green-300'}`}>
-                                {(user as AdminUser).banned ? 'Banned' : 'Active'}
-                              </span>
-                            </TableCell>
+                            <TableCell className="text-white font-medium">{user.username}</TableCell>
+                            <TableCell className="text-gray-300">{user.email || 'N/A'}</TableCell>
                             <TableCell className="text-gray-300">
                               {new Date(user.createdAt).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <span 
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  (user as AdminUser).banned ? 
+                                  'bg-red-900 text-red-300' : 
+                                  'bg-green-900 text-green-300'
+                                }`}
+                              >
+                                {(user as AdminUser).banned ? 'Banned' : 'Active'}
+                              </span>
                             </TableCell>
                             <TableCell>
                               <Button 
                                 variant={(user as AdminUser).banned ? "default" : "destructive"} 
                                 size="sm"
                                 onClick={() => handleBanUser(user.id, (user as AdminUser).banned)}
-                                className={(user as AdminUser).banned ? "bg-green-600 hover:bg-green-700" : ""}
                               >
-                                {(user as AdminUser).banned ? 'Unban' : 'Ban'}
+                                {(user as AdminUser).banned ? 'Unban User' : 'Ban User'}
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -654,142 +638,94 @@ export default function AdminPage() {
           <TabsContent value="featured" className="py-4">
             <Card className="bg-gray-900 border-gray-800">
               <CardHeader>
-                <CardTitle>Featured Content</CardTitle>
+                <CardTitle>Featured Videos Management</CardTitle>
                 <CardDescription className="text-gray-400">
-                  Manage what appears in the featured section on the home page
+                  Manage videos that appear in the featured section of the home page
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[500px]">
-                  {featuredContent.isLoading ? (
-                    <div className="flex justify-center items-center h-32">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                  ) : featuredContent.data?.length === 0 ? (
-                    <p className="text-center text-gray-400 py-8">No featured content</p>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-gray-800 hover:bg-gray-800">
-                          <TableHead className="text-gray-300">Thumbnail</TableHead>
-                          <TableHead className="text-gray-300">Title</TableHead>
-                          <TableHead className="text-gray-300">Uploader</TableHead>
-                          <TableHead className="text-gray-300">Type</TableHead>
-                          <TableHead className="text-gray-300">Views</TableHead>
-                          <TableHead className="text-gray-300">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {featuredContent.data?.map((content) => (
-                          <TableRow key={content.id} className="border-gray-800 hover:bg-gray-800">
-                            <TableCell className="w-24">
-                              <div className="h-16 w-24 overflow-hidden rounded border border-gray-700">
+                {featuredContent.isLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+                  </div>
+                ) : featuredContent.error ? (
+                  <div className="p-10 text-center text-red-500">
+                    <p>Error loading featured content: {featuredContent.error.message}</p>
+                  </div>
+                ) : (
+                  <ScrollArea className="h-[500px]">
+                    {featuredContent.data?.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-10 text-center">
+                        <div className="mb-4 bg-orange-800/20 p-4 rounded-full">
+                          <Info className="h-8 w-8 text-orange-500" />
+                        </div>
+                        <h3 className="text-lg font-medium mb-1">No Featured Content</h3>
+                        <p className="text-gray-400 max-w-md">
+                          There are currently no featured videos. To feature content, go to the "Pending Approval" 
+                          tab and click the "Feature" button on any approved content.
+                        </p>
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[80px]">ID</TableHead>
+                            <TableHead className="w-[120px]">Thumbnail</TableHead>
+                            <TableHead className="min-w-[200px]">Title</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Uploader</TableHead>
+                            <TableHead>Views</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {featuredContent.data?.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell>{item.id}</TableCell>
+                            <TableCell>
+                              <div className="relative w-20 h-12 overflow-hidden rounded">
                                 <ThumbnailImage 
-                                  contentId={content.id} 
-                                  contentType={content.contentType}
-                                  title={content.title}
-                                  className="h-full w-full object-cover"
+                                  contentId={item.id}
+                                  contentType={item.contentType || 'video'}
+                                  title={item.title}
+                                  className="absolute inset-0 w-full h-full object-cover"
                                 />
                               </div>
                             </TableCell>
-                            <TableCell className="font-medium text-gray-200 max-w-[200px] truncate">
-                              {content.title}
-                            </TableCell>
-                            <TableCell className="text-gray-300">
-                              <Link href={`/user/${content.uploaderId}`} className="hover:underline hover:text-primary">
-                                {content.uploaderName || `User ${content.uploaderId}`}
-                              </Link>
-                            </TableCell>
-                            <TableCell className="text-gray-300">
-                              <span className={`px-2 py-1 rounded text-xs ${
-                                content.contentType === 'video' ? 'bg-blue-900 text-blue-300' :
-                                content.contentType === 'image' ? 'bg-green-900 text-green-300' :
-                                'bg-purple-900 text-purple-300'
-                              }`}>
-                                {content.contentType?.charAt(0).toUpperCase() + content.contentType?.slice(1)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-gray-300">
-                              {content.views || 0}
-                            </TableCell>
+                            <TableCell className="font-medium">{item.title}</TableCell>
+                            <TableCell>{item.contentType}</TableCell>
                             <TableCell>
-                              <div className="flex space-x-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => viewContentAsAdmin(content.id)}
-                                >
-                                  View
-                                </Button>
-                                <Button 
-                                  variant="destructive" 
-                                  size="sm"
-                                  onClick={() => handleToggleFeature(content.id)}
-                                >
-                                  Remove
-                                </Button>
-                              </div>
+                              {item.uploaderName ? (
+                                <Link to={`/user/${item.uploaderName}`} className="text-blue-400 hover:underline">
+                                  {item.uploaderName}
+                                </Link>
+                              ) : (
+                                <span className="text-gray-500">Unknown</span>
+                              )}
+                            </TableCell>
+                            <TableCell>{item.views || 0}</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleFeature(item.id)}
+                                className="bg-orange-600 hover:bg-orange-700 border-orange-500 text-white"
+                              >
+                                <X className="h-4 w-4 mr-1" /> 
+                                Remove from featured
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
-                  )}
-                </ScrollArea>
+                    )}
+                  </ScrollArea>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
-        
-        {/* Perceptual Hash Generation Feature */}
-        <Card className="bg-gray-900 border-gray-800 mt-6">
-          <CardHeader>
-            <CardTitle>Duplicate Detection Tools</CardTitle>
-            <CardDescription className="text-gray-400">
-              Generate perceptual hashes for videos and images to detect duplicates
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="bg-gray-800 p-4 rounded-md mb-4 flex items-center">
-              <Info className="h-5 w-5 text-blue-400 mr-3 flex-shrink-0" />
-              <p className="text-gray-300 text-sm">
-                This tool will process existing content without perceptual hashes, generating hash values for duplicate detection. Content without hashes: {contentWithoutHashes}
-              </p>
-            </div>
-            
-            {hashResults && (
-              <div className={`p-4 rounded-md mb-4 ${hashResults.success ? 'bg-green-900/30' : 'bg-red-900/30'}`}>
-                <h3 className="text-lg font-medium mb-2">{hashResults.success ? 'Success' : 'Error'}</h3>
-                <p className="text-gray-300 text-sm">{hashResults.message}</p>
-                {hashResults.success && (
-                  <div className="mt-2">
-                    <p className="text-gray-300 text-sm">Processed: {hashResults.processed} items</p>
-                    {hashResults.duplicates > 0 && (
-                      <p className="text-amber-300 text-sm mt-1">Potential duplicates found: {hashResults.duplicates}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-            
-            <Button 
-              onClick={handleGenerateHashes} 
-              disabled={isGeneratingHashes || contentWithoutHashes === 0}
-              className="w-full"
-            >
-              {isGeneratingHashes ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : contentWithoutHashes === 0 ? (
-                'All Content Has Hashes'
-              ) : (
-                `Generate Hashes (${contentWithoutHashes} Items Pending)`
-              )}
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     </Layout>
   );
