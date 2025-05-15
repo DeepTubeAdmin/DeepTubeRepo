@@ -3623,19 +3623,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/upload/file", isAuthenticated, upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
+        console.error("No file in request");
         return res.status(400).json({ error: "No file provided" });
       }
 
+      console.log("File upload request received:", {
+        filename: req.file.filename,
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        path: req.file.path
+      });
+
       let duration = 0;
       if (req.file.mimetype.startsWith('video/')) {
-        duration = await ffmpeg.getVideoDuration(req.file.path);
-        console.log(`Extracted video duration: ${duration} seconds`);
+        try {
+          duration = await ffmpegUtils.getVideoDuration(req.file.path);
+          console.log(`Extracted video duration: ${duration} seconds`);
+        } catch (durationError) {
+          console.warn(`Could not extract video duration: ${durationError}. Continuing with upload.`);
+        }
       }
-      
-      console.log("File uploaded successfully:", req.file.path);
       
       // Get the file path from multer
       const filePath = req.file.path;
+      
+      // Verify file exists
+      try {
+        const fs = await import('fs/promises');
+        await fs.access(filePath);
+        console.log(`Verified file exists at path: ${filePath}`);
+      } catch (accessError: any) {
+        console.error(`File does not exist at path ${filePath}: ${accessError.message}`);
+        return res.status(500).json({ error: `File upload failed: File not found at ${filePath}` });
+      }
       
       // Create S3 key based on file path
       const filename = req.file.filename;
@@ -3643,26 +3664,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Uploading file to S3 with key: ${s3Key}`);
       
-      // Upload the file to S3
-      const s3Url = await uploadFileToS3(filePath, s3Key);
-      console.log(`File uploaded to S3: ${s3Url}`);
-      
-      // Return the URL for the client to use
-      const url = `/api/s3/${s3Key}`;
-      
-      // Return success response
-      res.json({
-        success: true,
-        url,
-        s3Key,
-        message: "File uploaded successfully",
-        originalname: req.file.originalname,
-        mimetype: req.file.mimetype,
-        size: req.file.size
-      });
+      try {
+        // Upload the file to S3
+        const s3Url = await uploadFileToS3(filePath, s3Key);
+        console.log(`File successfully uploaded to S3: ${s3Url}`);
+        
+        // Return the URL for the client to use
+        const url = `/api/s3/${s3Key}`;
+        
+        // Return success response
+        return res.json({
+          success: true,
+          url,
+          s3Key,
+          message: "File uploaded successfully",
+          originalname: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size
+        });
+      } catch (s3Error: any) {
+        console.error("Error uploading to S3:", s3Error);
+        return res.status(500).json({ 
+          error: `Error uploading to S3: ${s3Error.message || String(s3Error)}`,
+          details: "The file was received but could not be stored properly"
+        });
+      }
     } catch (error: any) {
       console.error("Error in file upload:", error);
-      res.status(500).json({ error: error.message || "Failed to upload file" });
+      return res.status(500).json({ 
+        error: error.message || "Failed to upload file",
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
     }
   });
 

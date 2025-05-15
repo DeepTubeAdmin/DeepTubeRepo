@@ -7,7 +7,6 @@ import { uploadToS3, getThumbnailS3Key, getSignedS3Url } from './storage';
 import fs from 'fs/promises';
 import { 
   extractYouTubeVideoId, 
-  getYouTubeThumbnailUrl,
   downloadYouTubeThumbnail
 } from './youtube';
 import { 
@@ -137,16 +136,37 @@ export async function generateVideoThumbnail(options: ThumbnailOptions): Promise
       
       // Read the generated thumbnail
       if (thumbnailPath && typeof thumbnailPath === 'string') {
-        const thumbnailBuffer = await fs.readFile(thumbnailPath);
-        // Initialize thumbnailS3Key here for proper scope
-        thumbnailS3Key = getThumbnailS3Key(contentId, 'video');
-        
-        // Upload to S3
-        await uploadToS3(thumbnailBuffer, thumbnailS3Key, { contentType: 'image/jpeg' });
-        console.log(`Saved FFmpeg video thumbnail to S3: ${thumbnailS3Key}`);
-        
-        // Clean up temporary files
-        await cleanupTempFiles([thumbnailPath]);
+        let thumbnailBuffer;
+        try {
+          // Make sure we're using the full path if needed
+          if (!path.isAbsolute(thumbnailPath) && !thumbnailPath.startsWith('/')) {
+            const fullPath = path.join(process.cwd(), thumbnailPath);
+            console.log(`Using full path for thumbnail: ${fullPath}`);
+            
+            if (await fileExists(fullPath)) {
+              thumbnailBuffer = await fs.readFile(fullPath);
+              console.log(`Successfully read thumbnail from full path with size: ${thumbnailBuffer.length} bytes`);
+            } else {
+              console.log(`File doesn't exist at full path, trying original path`);
+              thumbnailBuffer = await fs.readFile(thumbnailPath);
+            }
+          } else {
+            thumbnailBuffer = await fs.readFile(thumbnailPath);
+          }
+          
+          // Initialize thumbnailS3Key here for proper scope
+          thumbnailS3Key = getThumbnailS3Key(contentId, 'video');
+          
+          // Upload to S3
+          await uploadToS3(thumbnailBuffer, thumbnailS3Key, { contentType: 'image/jpeg' });
+          console.log(`Saved FFmpeg video thumbnail to S3: ${thumbnailS3Key}`);
+          
+          // Clean up temporary files
+          await cleanupTempFiles([thumbnailPath]);
+        } catch (readError) {
+          console.error(`Error reading thumbnail file: ${readError}`);
+          throw new Error(`Failed to read generated thumbnail: ${readError.message}`);
+        }
       } else {
         throw new Error('Failed to generate thumbnail with FFmpeg');
       }
