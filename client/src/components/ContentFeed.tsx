@@ -41,7 +41,6 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortOption>('popular'); // Default to popular
   const [showSortMenu, setShowSortMenu] = useState(false);
-  const [columnCount, setColumnCount] = useState(3); // Default to 3 columns for large screens
   const [loadedVideos, setLoadedVideos] = useState<Video[]>([]);
   const [loadedImages, setLoadedImages] = useState<Video[]>([]);
   const [adPositions, setAdPositions] = useState<number[]>([]);
@@ -137,25 +136,6 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     };
   }, []);
 
-  // Update column count based on window width
-  useEffect(() => {
-    function handleResize() {
-      if (window.innerWidth < 640) {
-        setColumnCount(1); // Mobile: 1 column
-      } else if (window.innerWidth < 1024) {
-        setColumnCount(2); // Tablet: 2 columns
-      } else {
-        setColumnCount(3); // Desktop: 3 columns
-      }
-    }
-
-    // Set initial value
-    handleResize();
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   // Event handler callbacks
   const toggleSortMenu = useCallback(() => {
     setShowSortMenu(prev => !prev);
@@ -215,20 +195,22 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     // Group videos and images into chunks for display
     // We want to display videos first (4 rows), then images (2 rows), and repeat
     const chunks: ContentChunk[] = [];
-    const videoRowSize = 4 * columnCount; // 4 rows of videos
-    const imageRowSize = 2 * columnCount; // 2 rows of images
+    
+    // We're using a grid layout that's adaptive, so we don't need to calculate specific row sizes
+    const videoChunkSize = 6; // Aiming for 2 rows of 3 videos (for large screens)
+    const imageChunkSize = 3; // Aiming for 1 row of 3 images (for large screens)
     
     // Calculate how many complete chunks we can create
     const maxCompleteChunks = Math.min(
-      Math.floor(loadedVideos.length / videoRowSize),
-      Math.floor(loadedImages.length / imageRowSize)
+      Math.floor(loadedVideos.length / videoChunkSize),
+      Math.floor(loadedImages.length / imageChunkSize)
     );
     
     // Create complete chunks with both videos and images
     for (let i = 0; i < maxCompleteChunks; i++) {
       chunks.push({
-        videos: loadedVideos.slice(i * videoRowSize, (i + 1) * videoRowSize),
-        images: loadedImages.slice(i * imageRowSize, (i + 1) * imageRowSize),
+        videos: loadedVideos.slice(i * videoChunkSize, (i + 1) * videoChunkSize),
+        images: loadedImages.slice(i * imageChunkSize, (i + 1) * imageChunkSize),
         hasAdInVideo: adPositions.includes(i * 2),     // Even chunk positions
         hasAdInImage: adPositions.includes(i * 2 + 1), // Odd chunk positions
         adPosition: i % 6 // Position to place the ad (for randomization)
@@ -236,9 +218,9 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     }
 
     // Add any remaining videos
-    if (loadedVideos.length > maxCompleteChunks * videoRowSize) {
+    if (loadedVideos.length > maxCompleteChunks * videoChunkSize) {
       chunks.push({
-        videos: loadedVideos.slice(maxCompleteChunks * videoRowSize),
+        videos: loadedVideos.slice(maxCompleteChunks * videoChunkSize),
         images: [],
         hasAdInVideo: adPositions.includes(maxCompleteChunks * 2),
         hasAdInImage: false,
@@ -247,10 +229,10 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     }
 
     // Add any remaining images
-    if (loadedImages.length > maxCompleteChunks * imageRowSize) {
+    if (loadedImages.length > maxCompleteChunks * imageChunkSize) {
       chunks.push({
         videos: [],
-        images: loadedImages.slice(maxCompleteChunks * imageRowSize),
+        images: loadedImages.slice(maxCompleteChunks * imageChunkSize),
         hasAdInVideo: false,
         hasAdInImage: adPositions.includes(maxCompleteChunks * 2 + 1),
         adPosition: (maxCompleteChunks + 1) % 6
@@ -258,7 +240,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     }
 
     return chunks;
-  }, [loadedVideos, loadedImages, adPositions, columnCount]);
+  }, [loadedVideos, loadedImages, adPositions]);
 
   // Loading state
   if (isLoading && page === 1) {
@@ -369,7 +351,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
         <section className="mb-12">
           <div className="max-w-4xl mx-auto">
             <VideoCard 
-              video={data.featured.video as Video}
+              video={data.featured.video}
               size="large"
             />
           </div>
@@ -380,15 +362,15 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
       <div className="space-y-12">
         {renderContent.map((chunk, chunkIndex) => (
           <section key={`chunk-${chunkIndex}`} className="space-y-8">
-            {/* Video Section - 4 rows (12 videos for 3 columns) */}
+            {/* Video Section */}
             {chunk.videos.length > 0 && (
               <div className="mb-8">
                 {/* Video grid with ad insertion */}
-                <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                   {chunk.videos.map((video, i) => (
                     <VideoCard 
                       key={`video-${video.id}-${i}`} 
-                      video={video as Video}
+                      video={video}
                     />
                   ))}
                 </div>
@@ -398,22 +380,22 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
                   <div className="my-6">
                     <AdvertisementCard 
                       position={`video-section-${chunkIndex}`}
-                      type="banner" 
+                      type="video"
                     />
                   </div>
                 )}
               </div>
             )}
             
-            {/* Image Section - 2 rows (6 images for 3 columns) */}
+            {/* Image Section */}
             {chunk.images.length > 0 && (
               <div className="mb-8">
                 {/* Image grid */}
-                <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                   {chunk.images.map((image, i) => (
                     <ImageCard 
                       key={`image-${image.id}-${i}`}
-                      image={image as Video}
+                      image={image}
                     />
                   ))}
                 </div>
@@ -423,7 +405,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
                   <div className="my-6">
                     <AdvertisementCard 
                       position={`image-section-${chunkIndex}`}
-                      type="banner"
+                      type="image"
                     />
                   </div>
                 )}
