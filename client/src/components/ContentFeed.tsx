@@ -366,14 +366,15 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
           
       {/* Featured Video - only shown on first page */}
       {data?.featured?.video && page === 1 && (
-        <div className="mb-12">
-          <div className="grid grid-cols-1 gap-6">
+        <section className="mb-12">
+          <div className="max-w-4xl mx-auto">
             <VideoCard 
-              video={data.featured.video}
+              video={data.featured.video} 
+              size="large"
               isFeatured={true}
             />
           </div>
-        </div>
+        </section>
       )}
 
       {/* Main Content Grid */}
@@ -382,9 +383,9 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
           <section key={`chunk-${chunkIndex}`} className="space-y-8">
             {/* Video Section - 4 rows (12 videos for 3 columns) */}
             {chunk.videos.length > 0 && (
-              <div className="space-y-6">
+              <div className="mb-8">
                 {/* Video grid with ad insertion */}
-                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${columnCount} gap-4`}>
+                <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mb-4">
                   {chunk.videos.map((video, i) => (
                     <VideoCard 
                       key={`video-${video.id}-${i}`} 
@@ -407,9 +408,9 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
             
             {/* Image Section - 2 rows (6 images for 3 columns) */}
             {chunk.images.length > 0 && (
-              <div className="space-y-6">
+              <div className="mb-8">
                 {/* Image grid */}
-                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${columnCount} gap-4`}>
+                <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mb-4">
                   {chunk.images.map((image, i) => (
                     <ImageCard 
                       key={`image-${image.id}-${i}`}
