@@ -296,7 +296,10 @@ export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Category = typeof categories.$inferSelect;
 
 export type InsertVideo = z.infer<typeof insertVideoSchema>;
-export type Video = typeof videos.$inferSelect & { uploaderName?: string };
+export type Video = typeof videos.$inferSelect & { 
+  uploaderName?: string;
+  adminNotice?: string; // For admin-only notifications about content status
+};
 
 export type InsertWishlistItem = z.infer<typeof insertWishlistItemSchema>;
 export type WishlistItem = typeof wishlistItems.$inferSelect;

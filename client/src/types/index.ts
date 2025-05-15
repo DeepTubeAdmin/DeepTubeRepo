@@ -37,6 +37,7 @@ export interface Video {
   rejectionReason: string | null;   // Reason for rejection if rejected
   uploaderName: string;             // Name of the uploader
   uploaderId: number | null;        // ID of the uploader
+  adminNotice?: string;             // Admin-only notice about content status
 }
 
 export interface Category {
