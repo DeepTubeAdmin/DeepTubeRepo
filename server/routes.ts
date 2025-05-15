@@ -20,7 +20,7 @@ import thumbnailService from "./services/ThumbnailService";
 import { youtube as youtubeUtils, storage as s3Service, ffmpeg as ffmpegUtils } from "./services/ThumbnailService";
 import * as PerceptualHashService from "./services/PerceptualHashService";
 import { asc, desc, eq, like, and, sql, or, SQL, inArray, isNull, not } from 'drizzle-orm';
-import { videos, messages } from '@shared/schema';
+import { videos, messages, users, reports, comments } from '@shared/schema';
 import { db } from './db';
 // Thumbnail routes now integrated directly
 import mongoDb from "./mongodb";
