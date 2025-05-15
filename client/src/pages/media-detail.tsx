@@ -89,9 +89,10 @@ export default function MediaDetail() {
   }, []);
   
   // Fetch media details
-  const { data: media, isLoading: mediaLoading } = useQuery<Video>({
+  const { data: media, isLoading: mediaLoading, error: mediaError } = useQuery<Video>({
     queryKey: [`/api/videos/${id}`],
     enabled: !!id,
+    retry: 1, // Only retry once to avoid excessive requests for truly missing content
   });
   
   // Fetch comments for this media

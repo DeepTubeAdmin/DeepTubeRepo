@@ -30,6 +30,7 @@ import {
   uploadFileToS3,
   uploadStringToS3,
   localPathToS3Key,
+  urlPathToS3Key,
   generateAndStoreS3Thumbnail,
   generateSvgPlaceholder
 } from "./combined-services";
