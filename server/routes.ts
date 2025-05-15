@@ -19,7 +19,7 @@ import thumbnailService from "./services/ThumbnailService";
 // Import specific utilities from their respective modules
 import { youtube as youtubeUtils, storage as s3Service, ffmpeg as ffmpegUtils } from "./services/ThumbnailService";
 import * as PerceptualHashService from "./services/PerceptualHashService";
-import { asc, desc, eq, like, and, sql, or, SQL, inArray } from 'drizzle-orm';
+import { asc, desc, eq, like, and, sql, or, SQL, inArray, isNull, not } from 'drizzle-orm';
 import { videos, messages } from '@shared/schema';
 import { db } from './db';
 // Thumbnail routes now integrated directly
@@ -2894,12 +2894,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         processed: results.length,
         results
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating perceptual hashes:", error);
       res.status(500).json({ 
         success: false, 
         error: "Error generating perceptual hashes",
-        message: error.message
+        message: error.message || String(error)
       });
     }
   });

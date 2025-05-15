@@ -69,6 +69,11 @@ export default function AdminPage() {
   });
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  
+  // For duplicate detection feature
+  const [isGeneratingHashes, setIsGeneratingHashes] = useState(false);
+  const [hashResults, setHashResults] = useState<any>(null);
+  const [contentWithoutHashes, setContentWithoutHashes] = useState(0);
 
   // Handle approving content
   const handleApproveContent = async (videoId: number) => {
