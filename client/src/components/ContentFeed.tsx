@@ -157,6 +157,10 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     setLoadedImages([]);
     setAdPositions([]);
     
+    // Preserve the featured video if it exists
+    // Store the current featured video before invalidating the query
+    const currentFeaturedVideo = previousDataRef.current?.featured?.video;
+    
     // Force data refresh with new sort option
     console.log(`Changing sort option to: ${option}, preserving category: ${categorySlug || 'all'}`);
     
@@ -170,7 +174,28 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
         return true;
       }
     });
-  }, [categorySlug]);
+    
+    // If we have a featured video in the current data, make sure it persists
+    // by manually updating the cache after invalidation
+    if (currentFeaturedVideo && previousDataRef.current) {
+      // Create a new partial response with the existing featured video
+      const partialResponse: Partial<ContentFeedResponse> = {
+        featured: { video: currentFeaturedVideo }
+      };
+      
+      // Update the query data to maintain the featured video
+      queryClient.setQueryData(
+        ['/api/content/feed', { page: 1, category: categorySlug || '', sortBy: option }],
+        (oldData: any) => {
+          if (!oldData) return partialResponse;
+          return {
+            ...oldData,
+            featured: partialResponse.featured
+          };
+        }
+      );
+    }
+  }, [categorySlug, previousDataRef]);
 
   // Process data for rendering - dynamic column/row adjustments
   const renderContent = useMemo<ContentChunk[]>(() => {
