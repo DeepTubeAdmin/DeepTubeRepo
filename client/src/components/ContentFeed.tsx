@@ -6,7 +6,7 @@ import ImageCard from './ImageCard';
 import AdvertisementCard from './AdvertisementCard';
 import { Loader2, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Video } from '@shared/schema';
+import { Video } from '@/types';
 
 interface ContentFeedProps {
   categorySlug?: string;
@@ -369,9 +369,8 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
         <section className="mb-12">
           <div className="max-w-4xl mx-auto">
             <VideoCard 
-              video={data.featured.video} 
+              video={data.featured.video as Video}
               size="large"
-              isFeatured={true}
             />
           </div>
         </section>
@@ -389,7 +388,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
                   {chunk.videos.map((video, i) => (
                     <VideoCard 
                       key={`video-${video.id}-${i}`} 
-                      video={video}
+                      video={video as Video}
                     />
                   ))}
                 </div>
@@ -414,7 +413,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
                   {chunk.images.map((image, i) => (
                     <ImageCard 
                       key={`image-${image.id}-${i}`}
-                      image={image}
+                      image={image as Video}
                     />
                   ))}
                 </div>
