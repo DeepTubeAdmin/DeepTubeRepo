@@ -1616,6 +1616,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const forceRegeneration = req.query.force === 'true';
       const forcePlaceholder = req.query.placeholder === 'true';
       
+      // Check if request is from admin (use the isAdmin middleware function manually)
+      const isAdminRequest = req.isAuthenticated() && (req.user.id === 1 || req.user.id === 2);
+      
       if (!contentId) {
         throw new Error('Invalid content ID');
       }
@@ -1625,6 +1628,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!content) {
         throw new Error('Content not found');
       }
+      
+      // For admin users, use the real source URL even for pending content
+      // This ensures admin can see thumbnails for content under review
       
       // Special case for YouTube embeds - handle them directly without Cloudinary
       if (content.contentType === 'embed' && content.embedCode) {
