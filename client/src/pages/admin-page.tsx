@@ -58,7 +58,7 @@ export default function AdminPage() {
   const [pendingContent, setPendingContent] = useState<PendingContent[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [activeTab, setActiveTab] = useState('pending');
-  
+
   // Fetch featured content using React Query
   const featuredContent = useQuery<FeaturedContent[]>({
     queryKey: ['/api/admin/content/featured'],
@@ -117,12 +117,12 @@ export default function AdminPage() {
     try {
       const response = await apiRequest('POST', `/api/admin/content/${videoId}/feature`);
       const updatedVideo = await response.json();
-      
+
       // Update the pending content list with the updated featured status
       setPendingContent(prev => prev.map(item => 
         item.id === videoId ? { ...item, featured: updatedVideo.featured } : item
       ));
-      
+
       toast({
         title: 'Success',
         description: `Content ${updatedVideo.featured ? 'featured' : 'unfeatured'} successfully`,
@@ -137,15 +137,15 @@ export default function AdminPage() {
       });
     }
   };
-  
+
   // Handle unfeaturing content from the featured tab
   const handleToggleFeature = async (contentId: number) => {
     try {
       await apiRequest('POST', `/api/admin/content/${contentId}/feature`);
-      
+
       // Refresh the featured content list
       queryClient.invalidateQueries({ queryKey: ['/api/admin/content/featured'] });
-      
+
       toast({
         title: 'Success',
         description: 'Content removed from featured section',
@@ -178,19 +178,19 @@ export default function AdminPage() {
   useEffect(() => {
     // Only admin can access this page (user with ID 1 or 2 as defined in server/routes.ts)
     console.log("AdminPage: Current user:", user);
-    
+
     if (!user) {
       console.log("AdminPage: No user logged in, redirecting to home");
       setLocation('/');
       return;
     }
-    
+
     if (user.id !== 1 && user.id !== 2) {
       console.log("AdminPage: User is not an admin (ID not 1 or 2), redirecting to home");
       setLocation('/');
       return;
     }
-    
+
     console.log("AdminPage: User is an admin, allowing access");
 
     const fetchData = async () => {
@@ -199,7 +199,7 @@ export default function AdminPage() {
         const usersRes = await apiRequest('GET', '/api/admin/users');
         const usersData = await usersRes.json();
         setUsers(usersData);
-        
+
         // Fetch pending content for review
         try {
           const pendingRes = await apiRequest('GET', '/api/admin/content/pending');
@@ -211,7 +211,7 @@ export default function AdminPage() {
           console.error('Could not load pending content:', pendingError);
           setPendingContent([]);
         }
-        
+
         // Fetch actual reported content
         try {
           const reportedRes = await apiRequest('GET', '/api/admin/content/reported');
@@ -228,7 +228,7 @@ export default function AdminPage() {
           // Continue with empty reported content
           setReportedContent([]);
         }
-        
+
         setLoading(false);
       } catch (error) {
         console.error('Error fetching admin data:', error);
@@ -248,14 +248,14 @@ export default function AdminPage() {
     try {
       console.log(`Attempting to delete content with ID: ${videoId}`);
       const response = await apiRequest('DELETE', `/api/admin/content/${videoId}`);
-      
+
       // Check if the request was successful
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         console.error('Error response from server:', errorData);
         throw new Error(errorData.error || `Server returned ${response.status}`);
       }
-      
+
       console.log(`Successfully deleted content with ID: ${videoId}`);
       setReportedContent(prev => prev.filter(item => item.id !== videoId));
       toast({
@@ -278,14 +278,14 @@ export default function AdminPage() {
       await apiRequest('PUT', `/api/admin/users/${userId}`, {
         banned: !currentBanStatus
       });
-      
+
       // Update the local state to reflect the change
       setUsers(prev =>
         prev.map(user =>
           user.id === userId ? { ...user, banned: !currentBanStatus } : user
         )
       );
-      
+
       toast({
         title: 'Success',
         description: `User ${currentBanStatus ? 'unbanned' : 'banned'} successfully`,
@@ -329,7 +329,7 @@ export default function AdminPage() {
       />
       <div className="container mx-auto py-8">
         <h1 className="text-3xl font-bold mb-6 text-white">Admin Dashboard</h1>
-        
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
           <TabsList className="w-full bg-gray-800">
             <TabsTrigger value="pending" className="flex-1">Pending Review</TabsTrigger>
@@ -337,7 +337,7 @@ export default function AdminPage() {
             <TabsTrigger value="users" className="flex-1">User Management</TabsTrigger>
             <TabsTrigger value="featured" className="flex-1">Featured Videos</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="pending" className="py-4">
             <Card className="bg-gray-900 border-gray-800">
               <CardHeader>
@@ -358,6 +358,9 @@ export default function AdminPage() {
                           <TableHead className="text-gray-300">Title</TableHead>
                           <TableHead className="text-gray-300">Uploader</TableHead>
                           <TableHead className="text-gray-300">Content Type</TableHead>
+                          <TableHead className="text-gray-300">
+                              Duration
+                          </TableHead>
                           <TableHead className="text-gray-300">Upload Date</TableHead>
                           <TableHead className="text-gray-300">Actions</TableHead>
                         </TableRow>
@@ -387,6 +390,9 @@ export default function AdminPage() {
                               ) : 'Anonymous'}
                             </TableCell>
                             <TableCell className="text-gray-300 capitalize">{content.contentType}</TableCell>
+                            <TableCell>
+                              {content.duration ? `${Math.floor(content.duration / 60)}:${String(Math.floor(content.duration % 60)).padStart(2, '0')}` : '-'}
+                            </TableCell>
                             <TableCell className="text-gray-300">
                               {new Date(content.createdAt).toLocaleDateString()}
                             </TableCell>
@@ -432,7 +438,7 @@ export default function AdminPage() {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="content" className="py-4">
             <Card className="bg-gray-900 border-gray-800">
               <CardHeader>
@@ -492,7 +498,7 @@ export default function AdminPage() {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="users" className="py-4">
             <Card className="bg-gray-900 border-gray-800">
               <CardHeader>
