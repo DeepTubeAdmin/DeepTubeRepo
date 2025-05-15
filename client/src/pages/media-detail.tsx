@@ -106,9 +106,17 @@ export default function MediaDetail() {
   // Combine authentication methods - user is admin or has admin parameter
   const hasAdminAccess = isAdmin || adminViewParam;
   
-  // Fetch media details
+  // Fetch media details with admin parameter if needed
+  const mediaQueryKey = hasAdminAccess ? ['/api/videos', id, { admin: '1' }] : ['/api/videos', id];
+  
   const { data: media, isLoading: mediaLoading, error: mediaError } = useQuery<Video>({
-    queryKey: [`/api/videos/${id}${hasAdminAccess ? '?admin=1' : ''}`],
+    queryKey: mediaQueryKey,
+    queryFn: async () => {
+      const url = `/api/videos/${id}${hasAdminAccess ? '?admin=1' : ''}`;
+      console.log('MediaDetail: Fetching data with URL:', url);
+      const res = await apiRequest('GET', url);
+      return res.json();
+    },
     enabled: !!id,
     retry: 1, // Only retry once to avoid excessive requests for truly missing content
   });
