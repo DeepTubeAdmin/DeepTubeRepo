@@ -92,9 +92,23 @@ export default function MediaDetail() {
   const isAdmin = user && (user.id === 1 || user.id === 2);
   console.log("MediaDetail: User is admin:", isAdmin);
   
+  // Check if admin=1 parameter is in the URL
+  const [adminViewParam, setAdminViewParam] = useState<boolean>(false);
+  
+  useEffect(() => {
+    // Parse URL parameters to check for admin view mode
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasAdminParam = urlParams.get('admin') === '1';
+    setAdminViewParam(hasAdminParam);
+    console.log("MediaDetail: Admin view parameter detected:", hasAdminParam);
+  }, []);
+  
+  // Combine authentication methods - user is admin or has admin parameter
+  const hasAdminAccess = isAdmin || adminViewParam;
+  
   // Fetch media details
   const { data: media, isLoading: mediaLoading, error: mediaError } = useQuery<Video>({
-    queryKey: [`/api/videos/${id}`],
+    queryKey: [`/api/videos/${id}${hasAdminAccess ? '?admin=1' : ''}`],
     enabled: !!id,
     retry: 1, // Only retry once to avoid excessive requests for truly missing content
   });
@@ -463,11 +477,11 @@ export default function MediaDetail() {
           <div className="text-center">
             <h1 className="text-3xl font-bold mb-4">Content Not Found</h1>
             <p className="text-gray-400 mb-6">
-              {isAdmin 
+              {hasAdminAccess 
                 ? "This content might be pending review. Please use the admin dashboard to view and approve it."
                 : "The content you're looking for doesn't exist or has been removed."}
             </p>
-            {isAdmin ? (
+            {hasAdminAccess ? (
               <div className="flex flex-col items-center gap-4">
                 <Button onClick={() => setLocation('/admin')}>
                   Go to Admin Dashboard
