@@ -3625,6 +3625,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.file) {
         return res.status(400).json({ error: "No file provided" });
       }
+
+      let duration = 0;
+      if (req.file.mimetype.startsWith('video/')) {
+        duration = await ffmpeg.getVideoDuration(req.file.path);
+        console.log(`Extracted video duration: ${duration} seconds`);
+      }
       
       console.log("File uploaded successfully:", req.file.path);
       
