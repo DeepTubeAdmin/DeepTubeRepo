@@ -3,7 +3,9 @@
  * Used for detecting duplicate media content
  */
 
-import Jimp from 'jimp';
+// @ts-ignore
+import * as Jimp from 'jimp';
+const MIME_JPEG = 'image/jpeg';
 import { ssim } from 'ssim.js';
 import { promises as fs } from 'fs';
 import { db } from '../db';
@@ -96,12 +98,12 @@ async function computeImageHash(imagePath: string, timestamp?: number): Promise<
     
     // Get the pixel data
     const pixelData: number[] = [];
-    image.scan(0, 0, image.bitmap.width, image.bitmap.height, (x, y, idx) => {
+    image.scan(0, 0, image.bitmap.width, image.bitmap.height, (x: number, y: number, idx: number) => {
       pixelData.push(image.bitmap.data[idx]);
     });
     
     // Convert to Base64 for storage
-    const base64 = await image.getBase64Async(Jimp.MIME_JPEG);
+    const base64 = await image.getBase64Async(MIME_JPEG);
     
     return {
       base64,

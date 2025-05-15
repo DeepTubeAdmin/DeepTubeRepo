@@ -1130,6 +1130,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const videoData = insertVideoSchema.parse(req.body);
       
+      // Check for duplicates if this is a video or image
+      if (videoData.contentType !== 'embed') {
+        let isDuplicate = false;
+        let mediaPath = '';
+        
+        if (videoData.contentType === 'video' && videoData.videoUrl) {
+          mediaPath = videoData.videoUrl;
+          
+          // If it's an S3 URL, get a clean path for checking
+          if (mediaPath.includes('/api/s3/')) {
+            const s3Key = mediaPath.split('/api/s3/')[1];
+            try {
+              const signedUrl = await s3Service.getSignedS3Url(s3Key);
+              const tempFile = await ffmpegUtils.downloadFileToTemp(signedUrl);
+              if (tempFile) {
+                isDuplicate = await PerceptualHashService.isVideoDuplicate(tempFile);
+                // Clean up temp file
+                try {
+                  await fs.unlink(tempFile);
+                } catch (e) {
+                  console.error('Error deleting temp file:', e);
+                }
+              }
+            } catch (error) {
+              console.error('Error checking video for duplicates:', error);
+            }
+          }
+        } else if (videoData.contentType === 'image' && videoData.imageUrl) {
+          mediaPath = videoData.imageUrl;
+          
+          // If it's an S3 URL, get a clean path for checking
+          if (mediaPath.includes('/api/s3/')) {
+            const s3Key = mediaPath.split('/api/s3/')[1];
+            try {
+              const signedUrl = await s3Service.getSignedS3Url(s3Key);
+              const tempFile = await ffmpegUtils.downloadFileToTemp(signedUrl);
+              if (tempFile) {
+                isDuplicate = await PerceptualHashService.isImageDuplicate(tempFile);
+                // Clean up temp file
+                try {
+                  await fs.unlink(tempFile);
+                } catch (e) {
+                  console.error('Error deleting temp file:', e);
+                }
+              }
+            } catch (error) {
+              console.error('Error checking image for duplicates:', error);
+            }
+          }
+        }
+        
+        if (isDuplicate) {
+          return res.status(409).json({
+            error: "Duplicate content detected",
+            message: "This content appears to be a duplicate of existing content and cannot be uploaded."
+          });
+        }
+      }
+      
       // Auto-approve YouTube embeds
       if (videoData.contentType === 'embed' && videoData.embedCode && 
           videoData.embedCode.includes('youtube.com/embed')) {
