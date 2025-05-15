@@ -1693,8 +1693,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
+        // For admin access to pending content, ensure we have direct access to the media file
+        if (isPendingButAdminAccess && !sourceUrl && content.contentType === 'video' && content.videoUrl) {
+          // Get a signed S3 URL for the video file if possible
+          try {
+            const s3Key = urlPathToS3Key(content.videoUrl);
+            sourceUrl = await getSignedS3Url(s3Key);
+            console.log(`Admin thumbnail access: Using direct S3 URL for pending video ${contentId}`);
+          } catch (s3Error) {
+            console.error('Admin S3 access error:', s3Error);
+          }
+        }
+        
         console.log(`Generating thumbnail for content ID ${content.id}, type: ${content.contentType}`);
-        console.log(`Source URL: ${sourceUrl || 'none'}, YouTube ID: ${youtubeId || 'none'}`);
+        console.log(`Source URL: ${sourceUrl ? (sourceUrl.substring(0, 50) + '...') : 'none'}, YouTube ID: ${youtubeId || 'none'}`);
         
         // Generate thumbnail using our new unified ThumbnailService
         // The service will handle all the different cases internally
