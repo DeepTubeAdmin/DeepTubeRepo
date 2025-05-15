@@ -2852,6 +2852,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get admin dashboard stats
+  app.get("/api/admin/dashboard", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      // Get pending content for admin review
+      const pendingContent = await db.select()
+        .from(videos)
+        .where(eq(videos.reviewStatus, 'pending'))
+        .limit(20);
+      
+      // Get reported content for admin moderation
+      const reportedContent = await db.select({
+          id: videos.id,
+          title: videos.title,
+          contentType: videos.contentType,
+          createdAt: videos.createdAt,
+          // Add other needed fields
+      })
+      .from(videos)
+      .innerJoin(reports, eq(reports.contentId, videos.id))
+      .limit(20);
+      
+      // Get latest registered users
+      const latestUsers = await db.select()
+        .from(users)
+        .orderBy(desc(users.createdAt))
+        .limit(10);
+      
+      // Get system stats
+      const [userCount] = await db.select({ count: sql<number>`count(*)` }).from(users);
+      const [videoCount] = await db.select({ count: sql<number>`count(*)` }).from(videos);
+      const [commentCount] = await db.select({ count: sql<number>`count(*)` }).from(comments);
+      const [reportCount] = await db.select({ count: sql<number>`count(*)` }).from(reports);
+      
+      const totalUsers = userCount?.count || 0;
+      const totalVideos = videoCount?.count || 0;
+      const totalComments = commentCount?.count || 0;
+      const totalReports = reportCount?.count || 0;
+      
+      // Get count of content without perceptual hashes
+      const [result] = await db.select({ count: sql<number>`count(*)` })
+        .from(videos)
+        .where(and(
+          or(
+            isNull(videos.perceptualHashes),
+            sql`${videos.perceptualHashes} = 'null'::jsonb`
+          ),
+          not(eq(videos.contentType, 'embed')) // Skip embeds
+        ));
+      const contentWithoutHashes = result?.count || 0;
+      
+      res.json({
+        pendingContent,
+        reportedContent,
+        latestUsers,
+        stats: {
+          totalUsers,
+          totalVideos,
+          totalComments,
+          totalReports,
+          pendingCount: pendingContent.length,
+          reportedCount: reportedContent.length,
+          contentWithoutHashes
+        }
+      });
+    } catch (error) {
+      console.error("Error getting admin dashboard data:", error);
+      res.status(500).json({ error: "Error getting admin dashboard data" });
+    }
+  });
+  
   // We're using the other deletion endpoint at "/api/admin/content/:contentId" defined below
   
   // New endpoint to generate perceptual hashes for all content

@@ -180,6 +180,45 @@ export default function AdminPage() {
     }
   }, [userSearchQuery, users]);
 
+  // Process content to generate perceptual hashes
+  const handleGenerateHashes = async () => {
+    setIsGeneratingHashes(true);
+    setHashResults(null);
+    
+    try {
+      const response = await apiRequest('POST', '/api/admin/generate-hashes');
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || errorData.message || `Server returned ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setHashResults(data);
+      
+      // Update stat counts if successfully processed
+      if (data.success) {
+        setContentWithoutHashes(prev => Math.max(0, prev - data.processed));
+      }
+      
+      toast({
+        title: data.success ? 'Success' : 'Error',
+        description: data.message || 
+          (data.success ? `Processed ${data.processed} content items` : 'Error generating hashes'),
+        variant: data.success ? 'default' : 'destructive'
+      });
+    } catch (error) {
+      console.error('Error generating perceptual hashes:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to generate hashes',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsGeneratingHashes(false);
+    }
+  };
+
   useEffect(() => {
     // Only admin can access this page (user with ID 1 or 2 as defined in server/routes.ts)
     console.log("AdminPage: Current user:", user);
@@ -232,6 +271,19 @@ export default function AdminPage() {
           console.error('Could not load reported content:', contentError);
           // Continue with empty reported content
           setReportedContent([]);
+        }
+        
+        // Fetch dashboard stats to get content without hashes count
+        try {
+          const dashboardRes = await apiRequest('GET', '/api/admin/dashboard');
+          if (dashboardRes.ok) {
+            const dashboardData = await dashboardRes.json();
+            if (dashboardData.stats && typeof dashboardData.stats.contentWithoutHashes === 'number') {
+              setContentWithoutHashes(dashboardData.stats.contentWithoutHashes);
+            }
+          }
+        } catch (statsError) {
+          console.error('Could not load dashboard stats:', statsError);
         }
 
         setLoading(false);
@@ -671,6 +723,118 @@ export default function AdminPage() {
                     )}
                   </ScrollArea>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="duplicate" className="py-4">
+            <Card className="bg-gray-900 border-gray-800">
+              <CardHeader>
+                <CardTitle>Duplicate Detection</CardTitle>
+                <CardDescription>
+                  Manage perceptual hash generation for detecting duplicate content
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="p-4 border rounded border-gray-700 bg-gray-800">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                      <div>
+                        <h3 className="text-lg font-semibold mb-2">Perceptual Hash Generation</h3>
+                        <p className="text-gray-400 text-sm mb-2">
+                          Generate perceptual hashes for approved content to enable duplicate detection.
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-orange-400 font-medium">Status:</span>
+                          <span className="bg-gray-700 px-2 py-1 rounded text-sm">
+                            {contentWithoutHashes} content items without hashes
+                          </span>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={handleGenerateHashes}
+                        disabled={isGeneratingHashes || contentWithoutHashes === 0}
+                        className="bg-orange-600 hover:bg-orange-700 border-orange-500 text-white"
+                      >
+                        {isGeneratingHashes ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          'Generate Hashes'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {hashResults && (
+                    <div className="mt-6 p-4 border rounded border-gray-700 bg-gray-800">
+                      <h3 className="text-lg font-semibold mb-4">Processing Results</h3>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-orange-400 font-medium">Status:</span>
+                          <span className={`px-2 py-1 rounded text-sm ${hashResults.success ? 'bg-green-900 text-green-200' : 'bg-red-900 text-red-200'}`}>
+                            {hashResults.success ? 'Success' : 'Error'}
+                          </span>
+                        </div>
+                        {hashResults.processed !== undefined && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-orange-400 font-medium">Processed:</span>
+                            <span className="text-white">{hashResults.processed} items</span>
+                          </div>
+                        )}
+                        {hashResults.message && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-orange-400 font-medium">Message:</span>
+                            <span className="text-white">{hashResults.message}</span>
+                          </div>
+                        )}
+                        
+                        {hashResults.results && hashResults.results.length > 0 && (
+                          <div className="mt-4">
+                            <h4 className="text-md font-semibold mb-2">Details:</h4>
+                            <div className="overflow-x-auto">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Content ID</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Error</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {hashResults.results.map((result: any, index: number) => (
+                                    <TableRow key={index}>
+                                      <TableCell>{result.id}</TableCell>
+                                      <TableCell>
+                                        <span className={`px-2 py-1 rounded text-xs ${result.success ? 'bg-green-900 text-green-200' : 'bg-red-900 text-red-200'}`}>
+                                          {result.success ? 'Success' : 'Failed'}
+                                        </span>
+                                      </TableCell>
+                                      <TableCell className="text-red-400">
+                                        {result.error || '-'}
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="p-4 border rounded border-gray-700 bg-gray-800">
+                    <h3 className="text-lg font-semibold mb-2">How Duplicate Detection Works</h3>
+                    <p className="text-gray-400 text-sm">
+                      Perceptual hashing creates a "fingerprint" of each video by analyzing frames at 3, 5, and 10 seconds. 
+                      This system compares new uploads against existing content to detect duplicates, even if the video has 
+                      been slightly modified. This helps prevent duplicate uploads and protects creators' content.
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
