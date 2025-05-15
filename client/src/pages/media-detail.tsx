@@ -656,6 +656,16 @@ export default function MediaDetail() {
             <div className="mb-6">
               <h1 className="text-2xl font-bold mb-2">{media.title}</h1>
               
+              {/* Admin notice for pending content */}
+              {media.adminNotice && (
+                <div className="bg-amber-900/50 border border-amber-600 text-amber-200 px-4 py-2 rounded-md mb-4">
+                  <div className="flex items-center">
+                    <div className="mr-2">⚠️</div>
+                    <div>{media.adminNotice}</div>
+                  </div>
+                </div>
+              )}
+              
               <div className="flex justify-between items-center mb-4">
                 <div className="text-sm text-gray-400">
                   <div className="flex items-center space-x-2">

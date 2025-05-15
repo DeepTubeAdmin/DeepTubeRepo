@@ -2490,12 +2490,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid video ID format" });
       }
       
-      // Get video details
-      const video = await dbStorage.getVideoById(videoId);
+      // Check if user is admin to determine if we should skip visibility check
+      const isAdmin = req.isAuthenticated() && (req.user.id === 1 || req.user.id === 2);
+      
+      // Get video details - skip visibility check for admins
+      const video = await dbStorage.getVideoById(videoId, isAdmin);
       
       if (!video) {
         console.error("Video not found with ID:", videoId);
         return res.status(404).json({ error: "Video/Image not found" });
+      }
+      
+      // If the content is pending review, add a notice for the admin
+      if (isAdmin && video.reviewStatus === 'pending') {
+        video.adminNotice = "This content is pending review and not visible to regular users";
       }
       
       // Increment view count
