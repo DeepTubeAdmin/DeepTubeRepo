@@ -62,7 +62,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
   const [prompt, setPrompt] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState<string>("");
-  const [contentType, setContentType] = useState<"video" | "image" | "embed">("embed");
+  const [contentType, setContentType] = useState<"video" | "image" | "embed">("video");
   const [embedCode, setEmbedCode] = useState<string>("");
   const [thumbnailUrl, setThumbnailUrl] = useState<string>("");
   
@@ -573,15 +573,8 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           </p>
         </div>
         
-        <Tabs defaultValue="embed" onValueChange={(value) => setContentType(value as "video" | "image" | "embed")}>
+        <Tabs defaultValue="video" onValueChange={(value) => setContentType(value as "video" | "image" | "embed")}>
           <TabsList className="grid w-full grid-cols-3 mb-4 bg-[#272727] p-1 rounded-lg">
-            <TabsTrigger 
-              value="embed" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:font-bold uppercase font-semibold rounded"
-            >
-              <i className="fas fa-link"></i>
-              Embed
-            </TabsTrigger>
             <TabsTrigger 
               value="video" 
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:font-bold uppercase font-semibold rounded"
@@ -595,6 +588,13 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
             >
               <i className="fas fa-image"></i>
               Image
+            </TabsTrigger>
+            <TabsTrigger 
+              value="embed" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:font-bold uppercase font-semibold rounded"
+            >
+              <i className="fas fa-link"></i>
+              Embed
             </TabsTrigger>
           </TabsList>
           
