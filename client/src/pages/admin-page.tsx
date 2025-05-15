@@ -58,6 +58,11 @@ export default function AdminPage() {
   const [pendingContent, setPendingContent] = useState<PendingContent[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [activeTab, setActiveTab] = useState('pending');
+  
+  // Helper function to view content with admin parameter
+  const viewContentAsAdmin = (contentId: number) => {
+    window.open(`/media/${contentId}?admin=1`, '_blank');
+  };
 
   // Fetch featured content using React Query
   const featuredContent = useQuery<FeaturedContent[]>({
