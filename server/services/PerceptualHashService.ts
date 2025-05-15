@@ -171,8 +171,12 @@ export async function computeStaticImageHash(imagePath: string): Promise<Percept
  * @returns True if the image is a duplicate, false otherwise
  */
 export async function isImageDuplicate(imagePath: string): Promise<boolean> {
+  console.log(`[PerceptualHashService] Checking if image is a duplicate: ${imagePath}`);
   const hash = await computeStaticImageHash(imagePath);
+  console.log(`[PerceptualHashService] Generated ${hash.length} hashes for image`);
+  
   if (hash.length === 0) {
+    console.log(`[PerceptualHashService] No hashes generated for image, returning false`);
     return false;
   }
   
@@ -185,8 +189,12 @@ export async function isImageDuplicate(imagePath: string): Promise<boolean> {
  * @returns True if the video is a duplicate, false otherwise
  */
 export async function isVideoDuplicate(videoPath: string): Promise<boolean> {
+  console.log(`[PerceptualHashService] Checking if video is a duplicate: ${videoPath}`);
   const hashes = await computeVideoHash(videoPath);
+  console.log(`[PerceptualHashService] Generated ${hashes.length} hashes for video`);
+  
   if (hashes.length === 0) {
+    console.log(`[PerceptualHashService] No hashes generated, returning false`);
     return false;
   }
   
@@ -200,32 +208,49 @@ export async function isVideoDuplicate(videoPath: string): Promise<boolean> {
  * @returns True if the content is a duplicate, false otherwise
  */
 async function isDuplicateHash(newHashes: PerceptualHash[], contentType: 'image' | 'video'): Promise<boolean> {
-  // Only check approved content
+  console.log(`[PerceptualHashService] Checking for duplicate ${contentType} with ${newHashes.length} hashes`);
+  
+  // Check against ANY content with perceptual hashes, not just approved content
+  // This ensures we detect duplicates regardless of review status
   const existingVideos = await db.select()
     .from(videos)
     .where(
       and(
         eq(videos.contentType, contentType),
-        eq(videos.reviewStatus, 'approved'),
         not(isNull(videos.perceptualHashes))
       )
     );
   
+  console.log(`[PerceptualHashService] Found ${existingVideos.length} approved ${contentType}s with perceptual hashes`);
+  
+  if (existingVideos.length === 0) {
+    console.log(`[PerceptualHashService] No existing content to compare with, returning false`);
+    return false;
+  }
+  
   for (const video of existingVideos) {
-    if (!video.perceptualHashes) continue;
+    if (!video.perceptualHashes) {
+      console.log(`[PerceptualHashService] Content ID ${video.id} has null perceptual hashes, skipping`);
+      continue;
+    }
     
     const hashData = video.perceptualHashes as PerceptualHashData;
     
     // Skip if the hash data is empty
     if (!hashData.hashes || hashData.hashes.length === 0) {
+      console.log(`[PerceptualHashService] Content ID ${video.id} has empty hash array, skipping`);
       continue;
     }
+    
+    console.log(`[PerceptualHashService] Comparing with content ID ${video.id} which has ${hashData.hashes.length} hashes`);
     
     // For images, we just compare the single hash
     if (contentType === 'image') {
       const similarity = calculateHashSimilarity(newHashes[0], hashData.hashes[0]);
+      console.log(`[PerceptualHashService] Image similarity with content ID ${video.id}: ${similarity}`);
+      
       if (similarity > SIMILARITY_THRESHOLD) {
-        console.log(`Found duplicate image with similarity ${similarity} for content ID ${video.id}`);
+        console.log(`[PerceptualHashService] Found duplicate image with similarity ${similarity} for content ID ${video.id}`);
         return true;
       }
     } else {
@@ -233,6 +258,7 @@ async function isDuplicateHash(newHashes: PerceptualHash[], contentType: 'image'
       // If any frame is similar enough, it's a duplicate
       let matchCount = 0;
       const requiredMatches = Math.min(2, newHashes.length, hashData.hashes.length);
+      console.log(`[PerceptualHashService] Video comparison requires ${requiredMatches} matching frames to detect duplicate`);
       
       for (const newHash of newHashes) {
         for (const existingHash of hashData.hashes) {
@@ -245,10 +271,14 @@ async function isDuplicateHash(newHashes: PerceptualHash[], contentType: 'image'
           }
           
           const similarity = calculateHashSimilarity(newHash, existingHash);
+          console.log(`[PerceptualHashService] Video frame similarity with content ID ${video.id}: ${similarity}`);
+          
           if (similarity > SIMILARITY_THRESHOLD) {
             matchCount++;
+            console.log(`[PerceptualHashService] Match ${matchCount}/${requiredMatches} with content ID ${video.id}`);
+            
             if (matchCount >= requiredMatches) {
-              console.log(`Found duplicate video with ${matchCount} matching frames for content ID ${video.id}`);
+              console.log(`[PerceptualHashService] Found duplicate video with ${matchCount} matching frames for content ID ${video.id}`);
               return true;
             }
             break; // Move to the next new hash
@@ -258,6 +288,7 @@ async function isDuplicateHash(newHashes: PerceptualHash[], contentType: 'image'
     }
   }
   
+  console.log(`[PerceptualHashService] No duplicates found for ${contentType}`);
   return false;
 }
 

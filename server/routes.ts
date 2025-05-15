@@ -1129,6 +1129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/videos", isAuthenticated, async (req, res) => {
     try {
       const videoData = insertVideoSchema.parse(req.body);
+      console.log(`Processing ${videoData.contentType} upload with title: "${videoData.title}"`);
       
       // Check for duplicates if this is a video or image
       if (videoData.contentType !== 'embed') {
@@ -1137,55 +1138,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (videoData.contentType === 'video' && videoData.videoUrl) {
           mediaPath = videoData.videoUrl;
+          console.log(`Checking for duplicate video: ${mediaPath}`);
           
           // If it's an S3 URL, get a clean path for checking
           if (mediaPath.includes('/api/s3/')) {
             const s3Key = mediaPath.split('/api/s3/')[1];
+            console.log(`Extracted S3 key for duplicate check: ${s3Key}`);
             try {
               const signedUrl = await s3Service.getSignedS3Url(s3Key);
+              console.log(`Got signed URL for duplicate check: ${signedUrl.substring(0, 50)}...`);
               const tempFile = await ffmpegUtils.downloadFileToTemp(signedUrl);
               if (tempFile) {
+                console.log(`Downloaded video to temp file for duplicate check: ${tempFile}`);
                 isDuplicate = await PerceptualHashService.isVideoDuplicate(tempFile);
+                console.log(`Duplicate check result for video: ${isDuplicate}`);
                 // Clean up temp file
                 try {
                   await fs.unlink(tempFile);
                 } catch (e) {
                   console.error('Error deleting temp file:', e);
                 }
+              } else {
+                console.error('Failed to download file to temp location for duplicate check');
               }
             } catch (error) {
               console.error('Error checking video for duplicates:', error);
             }
+          } else {
+            console.log('Video URL does not contain /api/s3/, skipping duplicate check');
           }
         } else if (videoData.contentType === 'image' && videoData.imageUrl) {
           mediaPath = videoData.imageUrl;
+          console.log(`Checking for duplicate image: ${mediaPath.substring(0, 50)}...`);
           
           // If it's an S3 URL, get a clean path for checking
           if (mediaPath.includes('/api/s3/')) {
             const s3Key = mediaPath.split('/api/s3/')[1];
+            console.log(`Extracted S3 key for duplicate check: ${s3Key}`);
             try {
               const signedUrl = await s3Service.getSignedS3Url(s3Key);
+              console.log(`Got signed URL for duplicate check: ${signedUrl.substring(0, 50)}...`);
               const tempFile = await ffmpegUtils.downloadFileToTemp(signedUrl);
               if (tempFile) {
+                console.log(`Downloaded image to temp file for duplicate check: ${tempFile}`);
                 isDuplicate = await PerceptualHashService.isImageDuplicate(tempFile);
+                console.log(`Duplicate check result for image: ${isDuplicate}`);
                 // Clean up temp file
                 try {
                   await fs.unlink(tempFile);
                 } catch (e) {
                   console.error('Error deleting temp file:', e);
                 }
+              } else {
+                console.error('Failed to download file to temp location for duplicate check');
               }
             } catch (error) {
               console.error('Error checking image for duplicates:', error);
             }
+          } else {
+            console.log('Image URL does not contain /api/s3/, skipping duplicate check');
           }
         }
         
         if (isDuplicate) {
+          console.log('DUPLICATE CONTENT DETECTED - Rejecting upload');
           return res.status(409).json({
             error: "Duplicate content detected",
             message: "This content appears to be a duplicate of existing content and cannot be uploaded."
           });
+        } else {
+          console.log('No duplicate detected, proceeding with upload');
         }
       }
       
