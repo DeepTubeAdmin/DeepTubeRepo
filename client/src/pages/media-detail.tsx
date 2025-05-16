@@ -101,15 +101,24 @@ export default function MediaDetail() {
   }, []);
   
   // Fetch media details
-  const { data: media, isLoading: mediaLoading } = useQuery<Video>({
+  const { data: media, isLoading: mediaLoading, error: mediaError } = useQuery<Video>({
     queryKey: [`/api/videos/${id}`, isAdminView],
     queryFn: async () => {
       const url = `/api/videos/${id}${isAdminView ? '?admin=true' : ''}`;
       console.log(`Fetching media with admin permissions: ${isAdminView}`, url);
-      const res = await apiRequest('GET', url);
-      return res.json();
+      try {
+        const res = await apiRequest('GET', url);
+        const data = await res.json();
+        console.log("Media detail API response:", data);
+        return data;
+      } catch (error) {
+        console.error(`Error fetching media with ID ${id}:`, error);
+        throw error;
+      }
     },
     enabled: !!id,
+    retry: 1, // Only retry once to avoid too many failed requests
+    staleTime: 30000, // Cache for 30 seconds
   });
   
   // Fetch comments for this media
