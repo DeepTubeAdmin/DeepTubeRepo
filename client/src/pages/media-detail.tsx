@@ -91,13 +91,14 @@ export default function MediaDetail() {
   // Check if this is an admin viewing (from the URL)
   const [isAdminView, setIsAdminView] = useState(false);
   
+  // Check URL for admin parameter and also check if user is an admin
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    if (searchParams.has('admin')) {
+    if (searchParams.has('admin') && user && (user.id === 1 || user.id === 2)) {
       setIsAdminView(true);
       console.log("Admin view enabled for pending content");
     }
-  }, []);
+  }, [user]);
   
   // Fetch media details
   const { data: media, isLoading: mediaLoading } = useQuery<Video>({
