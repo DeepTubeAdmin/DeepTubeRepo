@@ -70,6 +70,16 @@ export default function AdminPage() {
   const [pendingContent, setPendingContent] = useState<PendingContent[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [activeTab, setActiveTab] = useState('pending');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [approvedContent, setApprovedContent] = useState<(Video & { uploaderName?: string | null })[]>([]);
+  const [totalApprovedCount, setTotalApprovedCount] = useState(0);
+  
+  // Effect to load approved content when the approved tab is selected
+  useEffect(() => {
+    if (activeTab === 'approved') {
+      fetchApprovedContent(currentPage);
+    }
+  }, [activeTab, currentPage]);
 
   // Fetch featured content using React Query
   const featuredContent = useQuery<FeaturedContent[]>({
@@ -82,10 +92,7 @@ export default function AdminPage() {
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   
-  // For approved content pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const [approvedContent, setApprovedContent] = useState<(Video & { uploaderName?: string | null })[]>([]);
-  const [totalApprovedCount, setTotalApprovedCount] = useState(0);
+
   
   // For duplicate detection feature
   const [isGeneratingHashes, setIsGeneratingHashes] = useState(false);
@@ -435,6 +442,7 @@ export default function AdminPage() {
             <TabsTrigger value="content" className="flex-1">Reported Content</TabsTrigger>
             <TabsTrigger value="users" className="flex-1">User Management</TabsTrigger>
             <TabsTrigger value="featured" className="flex-1">Featured Videos</TabsTrigger>
+            <TabsTrigger value="approved" className="flex-1">All Approved</TabsTrigger>
           </TabsList>
 
           <TabsContent value="pending" className="py-4">
