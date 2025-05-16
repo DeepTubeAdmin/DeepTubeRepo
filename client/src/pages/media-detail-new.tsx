@@ -618,21 +618,7 @@ export default function MediaDetailNew() {
                     autoplay={true}
                     aiGenerator={media.aiGenerator}
                   />
-                  {/* Debug output for media object in development */}
-                  {process.env.NODE_ENV === "development" && (
-                    <div className="text-xs bg-black bg-opacity-50 p-2 mt-2 rounded max-h-20 overflow-auto">
-                      <details>
-                        <summary className="text-gray-400 cursor-pointer">
-                          Debug Info
-                        </summary>
-                        <pre className="text-gray-400 mt-1 whitespace-pre-wrap">
-                          <p>ID: {media.id}</p>
-                          <p>VideoURL: {media.videoUrl}</p>
-                          <p>DirectURL: {`/api/videos/${media.id}/direct`}</p>
-                        </pre>
-                      </details>
-                    </div>
-                  )}
+
                 </div>
               )}
 
