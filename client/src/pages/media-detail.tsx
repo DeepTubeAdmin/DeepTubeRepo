@@ -102,9 +102,9 @@ export default function MediaDetail() {
   
   // Fetch media details
   const { data: media, isLoading: mediaLoading } = useQuery<Video>({
-    queryKey: [`/api/videos/${id}`, isAdminView],
+    queryKey: [`/api/content/${id}`, isAdminView],
     queryFn: async () => {
-      const url = `/api/videos/${id}${isAdminView ? '?admin=true' : ''}`;
+      const url = `/api/content/${id}${isAdminView ? '?admin=true' : ''}`;
       console.log(`Fetching media with admin permissions: ${isAdminView}`, url);
       const res = await apiRequest('GET', url);
       return res.json();
