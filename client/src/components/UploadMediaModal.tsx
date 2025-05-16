@@ -65,6 +65,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
   const [contentType, setContentType] = useState<"video" | "image" | "embed">("video");
   const [embedCode, setEmbedCode] = useState<string>("");
   const [thumbnailUrl, setThumbnailUrl] = useState<string>("");
+  const [tags, setTags] = useState<string>("");
   
   // Store original URLs to allow toggling between URL and embed code
   const [originalYoutubeUrl, setOriginalYoutubeUrl] = useState<string>("");
@@ -743,6 +744,19 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                 />
               </div>
               
+              <div className="space-y-2">
+                <label htmlFor="video-tags" className="text-sm font-medium">
+                  Tags (Optional)
+                </label>
+                <Input 
+                  id="video-tags"
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  placeholder="Enter comma-separated tags (e.g. animation, landscape, sci-fi)"
+                />
+                <p className="text-xs text-gray-400">Helps others discover your content</p>
+              </div>
+              
               <div className="flex justify-end pt-2">
                 <Button
                   type="button"
@@ -902,6 +916,19 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                   placeholder="Add a description for your image"
                   className="resize-none min-h-[60px]"
                 />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="image-tags" className="text-sm font-medium">
+                  Tags (Optional)
+                </label>
+                <Input 
+                  id="image-tags"
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  placeholder="Enter comma-separated tags (e.g. portrait, landscape, abstract)"
+                />
+                <p className="text-xs text-gray-400">Helps others discover your content</p>
               </div>
               
               <div className="flex justify-end pt-2">
@@ -1108,6 +1135,19 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
                   placeholder="Add a description for your embedded media"
                   className="resize-none min-h-[60px]"
                 />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="embed-tags" className="text-sm font-medium">
+                  Tags (Optional)
+                </label>
+                <Input 
+                  id="embed-tags"
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  placeholder="Enter comma-separated tags (e.g. tutorial, gameplay, documentary)"
+                />
+                <p className="text-xs text-gray-400">Helps others discover your content</p>
               </div>
               
               <div className="flex justify-end pt-2">
