@@ -8,7 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/Home";
 import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
-import MediaDetail from "@/pages/media-detail";
+import MediaDetail from "@/pages/media-detail-new";
 import ForumPage from "@/pages/forum-page";
 import TermsOfService from "@/pages/terms-of-service";
 import PrivacyPolicy from "@/pages/privacy-policy";
