@@ -479,12 +479,44 @@ export default function MediaDetail() {
   }
   
   if (!media) {
+    console.error(`Media not found for ID: ${id}. Error:`, mediaError);
     return (
       <Layout>
         <div className="container mx-auto py-8">
           <div className="text-center">
             <h1 className="text-3xl font-bold mb-4">Content Not Found</h1>
             <p className="text-gray-400 mb-6">The content you're looking for doesn't exist or has been removed.</p>
+            
+            {/* Debug information for troubleshooting */}
+            <div className="mt-4 mb-6 text-left bg-[#121212] p-4 rounded mx-auto max-w-xl">
+              <h3 className="font-semibold mb-2 text-orange-500">Debug Information:</h3>
+              <div className="text-xs text-gray-300 space-y-1">
+                <p>Content ID: {id}</p>
+                <p>Slug: {slug}</p>
+                <p>Raw ID from slug: {rawId ? rawId : 'None (using full slug as ID)'}</p>
+                <p>Error: {mediaError instanceof Error ? mediaError.message : 'Unknown error'}</p>
+              </div>
+              
+              <div className="mt-4 flex justify-center">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    // Force refresh the data
+                    queryClient.invalidateQueries({queryKey: [`/api/videos/${id}`]});
+                    // If the ID was extracted incorrectly, try with the raw slug
+                    if (rawId && String(rawId) !== slug) {
+                      setLocation(`/media/${rawId}`);
+                    } else {
+                      window.location.reload();
+                    }
+                  }}
+                >
+                  Retry Loading
+                </Button>
+              </div>
+            </div>
+            
             <Button onClick={() => setLocation('/')}>
               Return to Homepage
             </Button>
