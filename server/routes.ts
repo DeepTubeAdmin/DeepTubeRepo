@@ -2518,11 +2518,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid video ID format" });
       }
       
-      // Check if user is admin to determine if we should skip visibility check
-      const isAdmin = req.isAuthenticated() && (req.user.id === 1 || req.user.id === 2);
+      // Always skip visibility check - allow all content to be viewed by anyone
+      // This makes all content (including pending) accessible by all users
+      const skipVisibilityCheck = true;
       
-      // Get video details - skip visibility check for admins
-      const video = await dbStorage.getVideoById(videoId, isAdmin);
+      // Get video details without visibility restrictions
+      const video = await dbStorage.getVideoById(videoId, skipVisibilityCheck);
       
       if (!video) {
         console.error("Video not found with ID:", videoId);

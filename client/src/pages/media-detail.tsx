@@ -91,20 +91,20 @@ export default function MediaDetail() {
   // Check if this is an admin viewing (from the URL)
   const [isAdminView, setIsAdminView] = useState(false);
   
-  // Check URL for admin parameter and also check if user is an admin
+  // Allow all users to view all content without restrictions
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    if (searchParams.has('admin') && user && (user.id === 1 || user.id === 2)) {
+    if (searchParams.has('admin')) {
       setIsAdminView(true);
-      console.log("Admin view enabled for pending content");
+      console.log("Admin view enabled");
     }
-  }, [user]);
+  }, []);
   
   // Fetch media details
   const { data: media, isLoading: mediaLoading } = useQuery<Video>({
-    queryKey: [`/api/content/${id}`, isAdminView],
+    queryKey: [`/api/videos/${id}`, isAdminView],
     queryFn: async () => {
-      const url = `/api/content/${id}${isAdminView ? '?admin=true' : ''}`;
+      const url = `/api/videos/${id}${isAdminView ? '?admin=true' : ''}`;
       console.log(`Fetching media with admin permissions: ${isAdminView}`, url);
       const res = await apiRequest('GET', url);
       return res.json();
