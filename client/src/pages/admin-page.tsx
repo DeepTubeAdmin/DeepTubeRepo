@@ -214,6 +214,11 @@ export default function AdminPage() {
       setLoading(false);
     }
   };
+  
+  // Handle pagination for approved content
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
 
   // Filter users based on search query
   useEffect(() => {
@@ -772,6 +777,140 @@ export default function AdminPage() {
                     )}
                   </ScrollArea>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* All Approved Content Tab */}
+          <TabsContent value="approved" className="py-4">
+            <Card className="bg-gray-900 border-gray-800">
+              <CardHeader>
+                <CardTitle>All Approved Content</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Browse and manage all approved content on the platform
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[500px]">
+                  {loading ? (
+                    <div className="flex items-center justify-center h-64">
+                      <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                    </div>
+                  ) : approvedContent.length > 0 ? (
+                    <>
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="hover:bg-gray-800">
+                            <TableHead className="w-[80px]">ID</TableHead>
+                            <TableHead className="w-[120px]">Preview</TableHead>
+                            <TableHead>Title</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Uploader</TableHead>
+                            <TableHead>Upload Date</TableHead>
+                            <TableHead>Views</TableHead>
+                            <TableHead>Likes</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {approvedContent.map((content) => (
+                            <TableRow key={content.id} className="hover:bg-gray-800">
+                              <TableCell>{content.id}</TableCell>
+                              <TableCell>
+                                <div className="relative w-20 h-12 overflow-hidden rounded">
+                                  <ThumbnailImage 
+                                    contentId={content.id}
+                                    contentType={content.contentType || 'video'}
+                                    title={content.title}
+                                    className="object-cover w-full h-full"
+                                  />
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-medium max-w-[200px] truncate" title={content.title}>
+                                {content.title}
+                              </TableCell>
+                              <TableCell>
+                                {content.videoUrl ? 'Video' : content.imageUrl ? 'Image' : 'Embed'}
+                              </TableCell>
+                              <TableCell>{content.uploaderName || 'Anonymous'}</TableCell>
+                              <TableCell>
+                                {new Date(content.createdAt).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell>{content.views}</TableCell>
+                              <TableCell>{content.likes}</TableCell>
+                              <TableCell>
+                                <div className="flex gap-2 justify-end">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => window.open(`/media/${content.id}`, '_blank')}
+                                  >
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    View
+                                  </Button>
+                                  {!content.featured && (
+                                    <Button 
+                                      variant="secondary" 
+                                      size="sm"
+                                      onClick={() => handleFeatureContent(content.id)}
+                                      className="bg-amber-600 hover:bg-amber-700 text-white"
+                                    >
+                                      Feature
+                                    </Button>
+                                  )}
+                                  <Button 
+                                    variant="destructive" 
+                                    size="sm"
+                                    onClick={() => handleDeleteContent(content.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-1" />
+                                    Delete
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      
+                      {/* Pagination controls */}
+                      <div className="flex items-center justify-between mt-6 px-2">
+                        <div className="text-sm text-gray-400">
+                          Showing {((currentPage - 1) * 20) + 1} to {Math.min(currentPage * 20, totalApprovedCount)} of {totalApprovedCount} items
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage <= 1}
+                          >
+                            <ChevronLeft className="h-4 w-4 mr-1" />
+                            Prev
+                          </Button>
+                          
+                          <div className="text-sm text-gray-400">
+                            Page {currentPage} of {Math.max(1, Math.ceil(totalApprovedCount / 20))}
+                          </div>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage >= Math.ceil(totalApprovedCount / 20)}
+                          >
+                            Next
+                            <ChevronRight className="h-4 w-4 ml-1" />
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                      <p>No approved content found</p>
+                    </div>
+                  )}
+                </ScrollArea>
               </CardContent>
             </Card>
           </TabsContent>
