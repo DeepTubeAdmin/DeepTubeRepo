@@ -46,7 +46,7 @@ export interface IStorage {
   
   // Video operations
   getVideos(limit?: number, contentType?: string, offset?: number, sortBy?: string): Promise<Video[]>;
-  getVideoById(id: number): Promise<Video | undefined>;
+  getVideoById(id: number, isAdmin?: boolean): Promise<Video | undefined>;
   getVideosByCategory(categoryId: number, contentType?: string, limit?: number): Promise<Video[]>;
   getApprovedVideos(limit?: number): Promise<Video[]>;
   getApprovedImages(limit?: number): Promise<Video[]>;
