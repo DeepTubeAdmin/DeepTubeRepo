@@ -1010,8 +1010,7 @@ export default function MediaDetailNew() {
           isOpen={fullscreenImageOpen}
           onClose={() => setFullscreenImageOpen(false)}
           imageUrl={media.imageUrl}
-          title={media.title}
-          aiGenerator={media.aiGenerator}
+          alt={media.title}
         />
       )}
     </Layout>
