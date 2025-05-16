@@ -52,6 +52,7 @@ export interface IStorage {
   getApprovedImages(limit?: number): Promise<Video[]>;
   getFeaturedVideos(limit?: number): Promise<Video[]>;
   getAllFeaturedContent(limit?: number): Promise<any[]>;
+  getApprovedContent(page?: number, limit?: number): Promise<{ content: Video[], totalCount: number }>;
   getNewVideos(limit?: number): Promise<Video[]>;
   createVideo(video: InsertVideo): Promise<Video>;
   updateVideo(id: number, data: Partial<InsertVideo>): Promise<Video>;
