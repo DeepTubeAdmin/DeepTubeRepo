@@ -765,19 +765,17 @@ export default function MediaDetailNew() {
                 </div>
               )}
 
-              {/* Prompt Box (if available) */}
-              {media.prompt && (
-                <div className="mb-4">
-                  <div className="p-3 bg-[#121212] rounded-md border border-[#333]">
-                    <h3 className="text-sm font-semibold mb-1 text-orange-500">
-                      Prompt:
-                    </h3>
-                    <p className="text-gray-300 text-sm whitespace-pre-wrap">
-                      {media.prompt}
-                    </p>
-                  </div>
+              {/* Prompt Box (always displayed, even if empty) */}
+              <div className="mb-4">
+                <div className="p-3 bg-[#121212] rounded-md border border-[#333]">
+                  <h3 className="text-sm font-semibold mb-1 text-orange-500">
+                    Prompt:
+                  </h3>
+                  <p className="text-gray-300 text-sm whitespace-pre-wrap">
+                    {media.prompt || "No prompt provided"}
+                  </p>
                 </div>
-              )}
+              </div>
 
               {/* Description Box (if available) */}
               {media.description && (
