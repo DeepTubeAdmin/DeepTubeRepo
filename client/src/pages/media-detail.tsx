@@ -533,8 +533,9 @@ export default function MediaDetail() {
             <div className="bg-[#121212] rounded-md overflow-hidden mb-4">
               {media.contentType === 'video' && (
                 <div className="aspect-video">
+                  {/* Use the video's path directly from media.id for reliable playback */}
                   <GenericVideoEmbed 
-                    videoUrl={media.videoUrl ? media.videoUrl : ''}
+                    videoUrl={media.videoUrl || `/api/videos/${media.id}/direct`}
                     title={media.title}
                     responsive={true}
                     autoplay={true}
