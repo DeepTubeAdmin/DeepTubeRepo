@@ -42,6 +42,35 @@ const GenericVideoEmbed = ({
   const [embedUrl, setEmbedUrl] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [videoId, setVideoId] = useState<string>('');
+  const [isLoadingUrl, setIsLoadingUrl] = useState<boolean>(false);
+  const [resolvedUrl, setResolvedUrl] = useState<string>('');
+
+  // Function to fetch signed S3 URL
+  const fetchSignedUrl = async (s3Url: string) => {
+    try {
+      setIsLoadingUrl(true);
+      console.log(`GenericVideoEmbed: Fetching signed URL for ${s3Url}`);
+      
+      // Add a timestamp to prevent caching
+      const timestamp = Date.now();
+      const url = `${s3Url}?getUrl=true&t=${timestamp}`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.url) {
+        console.log(`GenericVideoEmbed: Resolved URL successfully for ${s3Url}`);
+        return data.url;
+      } else {
+        throw new Error('No URL in response');
+      }
+    } catch (error) {
+      console.error(`GenericVideoEmbed: Error fetching signed URL for ${s3Url}:`, error);
+      throw error;
+    } finally {
+      setIsLoadingUrl(false);
+    }
+  };
 
   useEffect(() => {
     // Parse aspect ratio string (e.g. "16:9")
@@ -114,7 +143,6 @@ const GenericVideoEmbed = ({
       }
     } else if (videoUrl.startsWith('/api/s3/') || videoUrl.includes('amazonaws.com') || videoUrl.includes('.mp4') || videoUrl.includes('video/mp4') || videoUrl.includes('uploads/videos/')) {
       // For S3 or direct MP4 URLs, we'll use a video element instead of an iframe
-      // Setting a special marker to identify this as a direct video URL
       
       // Fix paths that may contain workspace path references
       let cleanedUrl = videoUrl;
@@ -124,6 +152,7 @@ const GenericVideoEmbed = ({
         const match = videoUrl.match(/\/home\/runner\/workspace\/(.+)/);
         if (match && match[1]) {
           cleanedUrl = `/${match[1]}`;
+          console.log(`GenericVideoEmbed: Cleaned workspace path: ${videoUrl} → ${cleanedUrl}`);
         }
       }
       
@@ -134,6 +163,7 @@ const GenericVideoEmbed = ({
           // Extract just the filename
           const fileParts = pathParts[1].split('/');
           cleanedUrl = `/uploads/videos/${fileParts[fileParts.length - 1]}`;
+          console.log(`GenericVideoEmbed: Converted absolute path: ${videoUrl} → ${cleanedUrl}`);
         }
       }
       
@@ -146,14 +176,40 @@ const GenericVideoEmbed = ({
           console.log(`Video URL adjusted: ${videoUrl} → ${cleanedUrl}`);
         }
       }
-      
-      console.log(`Video URL cleaned: ${videoUrl} → ${cleanedUrl}`);
-      setEmbedUrl(`direct:${cleanedUrl}`);
+
+      // For S3 URLs, we need to get a signed URL
+      if (cleanedUrl.startsWith('/api/s3/')) {
+        console.log(`GenericVideoEmbed: S3 URL detected: ${cleanedUrl} - will fetch signed URL`);
+        // We'll set a temporary direct URL and then fetch the signed URL in another effect
+        setEmbedUrl(`s3:${cleanedUrl}`);
+      } else {
+        console.log(`GenericVideoEmbed: Direct video URL: ${cleanedUrl}`);
+        setEmbedUrl(`direct:${cleanedUrl}`);
+      }
     } else {
       // For other URLs, just use the URL directly
       setEmbedUrl(videoUrl);
     }
   }, [videoUrl, html, aspectRatio, autoplay, loop, showTitle, showByline, showPortrait]);
+
+  // Effect to handle S3 URLs by fetching a signed URL
+  useEffect(() => {
+    if (embedUrl.startsWith('s3:')) {
+      const s3Url = embedUrl.substring(3);
+      
+      // Fetch the signed URL
+      fetchSignedUrl(s3Url)
+        .then(signedUrl => {
+          setResolvedUrl(signedUrl);
+          // Update embedUrl to use the direct format with the signed URL
+          setEmbedUrl(`direct:resolved`);
+        })
+        .catch(error => {
+          console.error('Failed to get signed URL:', error);
+          setError(`Could not load video. Error: ${error.message || 'Unknown error'}`);
+        });
+    }
+  }, [embedUrl]);
 
   // Handle error state
   if (error) {
@@ -214,53 +270,59 @@ const GenericVideoEmbed = ({
         <div className={responsive ? 'relative w-full' : 'relative'} 
           style={responsive ? { paddingBottom: `${aspectRatioValue}%` } : {}}
         >
-          <video 
-            src={directVideoUrl}
-            controls
-            autoPlay={true}
-            muted={autoplay} // Muted for autoplay to work in more browsers
-            playsInline // For iOS Safari
-            loop={loop}
-            poster={undefined}
-            className={responsive ? 'absolute top-0 left-0 w-full h-full' : ''}
-            width={responsive ? '100%' : width}
-            height={responsive ? '100%' : height}
-            onError={(e) => {
-              console.error('Video playback error:', e);
-              // Set a data attribute to indicate error to apply styles
-              e.currentTarget.setAttribute('data-error', 'true');
-              
-              // Add an overlay error message element
-              const container = e.currentTarget.parentElement;
-              if (container) {
-                const errorEl = document.createElement('div');
-                errorEl.className = 'video-error-overlay';
-                errorEl.innerHTML = `
-                  <div class="p-4 bg-black bg-opacity-75 rounded text-center text-white">
-                    <p class="mb-2">Error playing video</p>
-                    <p class="text-sm text-gray-300 mb-3">The video may not be available or accessible.</p>
-                    <button class="px-3 py-1 bg-orange-500 hover:bg-orange-600 rounded text-white text-sm">
-                      Retry
-                    </button>
-                  </div>
-                `;
-                container.appendChild(errorEl);
+          {isLoadingUrl ? (
+            <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-black">
+              <div className="text-white">Loading video...</div>
+            </div>
+          ) : (
+            <video 
+              src={embedUrl === 'direct:resolved' ? resolvedUrl : directVideoUrl}
+              controls
+              autoPlay={true}
+              muted={autoplay} // Muted for autoplay to work in more browsers
+              playsInline // For iOS Safari
+              loop={loop}
+              poster={undefined}
+              className={responsive ? 'absolute top-0 left-0 w-full h-full' : ''}
+              width={responsive ? '100%' : width}
+              height={responsive ? '100%' : height}
+              onError={(e) => {
+                console.error('Video playback error:', e);
+                // Set a data attribute to indicate error to apply styles
+                e.currentTarget.setAttribute('data-error', 'true');
                 
-                // Add click listener to retry button
-                const retryBtn = errorEl.querySelector('button');
-                if (retryBtn) {
-                  retryBtn.addEventListener('click', () => {
-                    // Remove the error overlay
-                    errorEl.remove();
-                    // Reset the error state
-                    e.currentTarget.removeAttribute('data-error');
-                    // Try to load the video again
-                    e.currentTarget.load();
-                  });
+                // Add an overlay error message element
+                const container = e.currentTarget.parentElement;
+                if (container) {
+                  const errorEl = document.createElement('div');
+                  errorEl.className = 'video-error-overlay';
+                  errorEl.innerHTML = `
+                    <div class="p-4 bg-black bg-opacity-75 rounded text-center text-white">
+                      <p class="mb-2">Error playing video</p>
+                      <p class="text-sm text-gray-300 mb-3">The video may not be available or accessible.</p>
+                      <button class="px-3 py-1 bg-orange-500 hover:bg-orange-600 rounded text-white text-sm">
+                        Retry
+                      </button>
+                    </div>
+                  `;
+                  container.appendChild(errorEl);
+                  
+                  // Add click listener to retry button
+                  const retryBtn = errorEl.querySelector('button');
+                  if (retryBtn) {
+                    retryBtn.addEventListener('click', () => {
+                      // Remove the error overlay
+                      errorEl.remove();
+                      // Reset the error state
+                      e.currentTarget.removeAttribute('data-error');
+                      // Try to load the video again
+                      e.currentTarget.load();
+                    });
+                  }
                 }
-              }
-            }}
-          />
+              }}
+            />
+          )}
           {aiGenerator && <AIWatermark aiGenerator={aiGenerator} position="bottom-right" size="medium" />}
         </div>
       ) : responsive ? (
