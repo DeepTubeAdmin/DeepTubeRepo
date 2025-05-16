@@ -88,9 +88,26 @@ export default function MediaDetail() {
     }
   }, []);
   
+  // Check if this is an admin viewing (from the URL)
+  const [isAdminView, setIsAdminView] = useState(false);
+  
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.has('admin')) {
+      setIsAdminView(true);
+      console.log("Admin view enabled for pending content");
+    }
+  }, []);
+  
   // Fetch media details
   const { data: media, isLoading: mediaLoading } = useQuery<Video>({
-    queryKey: [`/api/videos/${id}`],
+    queryKey: [`/api/videos/${id}`, isAdminView],
+    queryFn: async () => {
+      const url = `/api/videos/${id}${isAdminView ? '?admin=true' : ''}`;
+      console.log(`Fetching media with admin permissions: ${isAdminView}`, url);
+      const res = await apiRequest('GET', url);
+      return res.json();
+    },
     enabled: !!id,
   });
   
