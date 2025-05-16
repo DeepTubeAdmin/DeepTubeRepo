@@ -502,6 +502,7 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           description,
           aiGenerator: aiGenerator === "Other" ? customAiGenerator : aiGenerator,
           prompt,
+          tags,
           categoryId: categoryId ? parseInt(categoryId, 10) : undefined, // Convert to number
           contentType,
           // Use YouTube thumbnail for embeds when available

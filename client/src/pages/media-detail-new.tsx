@@ -751,6 +751,22 @@ export default function MediaDetailNew() {
                   </Link>
                 </div>
               )}
+              
+              {/* Tags if available */}
+              {media.tags && (
+                <div className="mb-4">
+                  <div className="flex flex-wrap gap-2">
+                    {media.tags.split(',').map((tag, index) => (
+                      <span 
+                        key={index} 
+                        className="inline-block bg-gray-800 text-gray-300 rounded-full px-3 py-1 text-xs"
+                      >
+                        #{tag.trim()}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* AI Generator Box */}
               {media.aiGenerator && (
