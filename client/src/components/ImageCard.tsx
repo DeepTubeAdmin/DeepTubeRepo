@@ -150,6 +150,24 @@ export default function ImageCard({ image, size = 'default' }: ImageCardProps) {
             {/* Info overlay at bottom */}
             <div className="absolute bottom-0 left-0 right-0 p-3 text-white transition-all duration-300 transform translate-y-0 group-hover:translate-y-0">
               <h3 className="font-semibold text-sm line-clamp-2 mb-1">{image.title}</h3>
+              
+              {/* Tags display */}
+              {image.tags && (
+                <div className="flex flex-wrap gap-1 mb-1">
+                  {image.tags.split(',').slice(0, 2).map((tag, index) => (
+                    <span 
+                      key={index} 
+                      className="inline-block bg-gray-800/80 text-gray-300 rounded px-1.5 py-0.5 text-[10px]"
+                    >
+                      #{tag.trim()}
+                    </span>
+                  ))}
+                  {image.tags.split(',').length > 2 && (
+                    <span className="inline-block text-gray-400 text-[10px]">+{image.tags.split(',').length - 2}</span>
+                  )}
+                </div>
+              )}
+              
               <div className="flex items-center justify-between text-xs text-slate-300">
                 <div className="flex items-center space-x-2">
                   <span>{image.aiGenerator || "AI Generated"}</span>

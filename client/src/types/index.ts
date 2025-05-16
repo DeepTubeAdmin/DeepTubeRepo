@@ -22,6 +22,7 @@ export interface Video {
   embedCode: string | null; // Embed code for embedded content
   userId: number | null;    // User ID who uploaded the video
   createdAt: string; // Creation timestamp
+  tags: string | null;   // Comma-separated tags for the content
   
   // Additional fields needed for search results
   featured: boolean;     // Whether the video is featured

@@ -331,6 +331,23 @@ export default function VideoCard({ video, onPreview, onWishlist, size = 'defaul
         <h3 className="font-medium text-base md:text-lg truncate text-white">
           {video.title}
         </h3>
+        
+        {/* Tags display */}
+        {video.tags && (
+          <div className="flex flex-wrap gap-1 mt-1">
+            {video.tags.split(',').slice(0, 3).map((tag, index) => (
+              <span 
+                key={index} 
+                className="inline-block bg-gray-800/80 text-gray-300 rounded px-1.5 py-0.5 text-[10px]"
+              >
+                #{tag.trim()}
+              </span>
+            ))}
+            {video.tags.split(',').length > 3 && (
+              <span className="inline-block text-gray-400 text-[10px]">+{video.tags.split(',').length - 3}</span>
+            )}
+          </div>
+        )}
 
         <div className="flex justify-between items-center mt-2 text-sm">
           <div className="text-gray-400">

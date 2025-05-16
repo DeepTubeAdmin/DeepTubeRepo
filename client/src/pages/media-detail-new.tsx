@@ -741,13 +741,13 @@ export default function MediaDetailNew() {
               )}
 
               {/* Category if available */}
-              {media.categoryId && media.categoryName && (
+              {media.categoryId && media.category && (
                 <div className="mb-4">
                   <Link
-                    href={`/?category=${media.categorySlug || media.categoryId}`}
+                    href={`/?category=${media.category.slug || media.categoryId}`}
                     className="inline-block bg-orange-600 bg-opacity-20 text-orange-500 rounded-full px-3 py-1 text-sm"
                   >
-                    {media.categoryName}
+                    {media.category.name}
                   </Link>
                 </div>
               )}
