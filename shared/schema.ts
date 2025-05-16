@@ -60,6 +60,7 @@ export const videos = pgTable("videos", {
   reviewedAt: timestamp("reviewed_at"),
   reviewedBy: integer("reviewed_by").references(() => users.id),
   rejectionReason: text("rejection_reason"),
+  tags: text("tags"), // Store comma-separated tags for content organization
   perceptualHashes: jsonb("perceptual_hashes"), // Store perceptual hashes for duplicate detection
 });
 
@@ -272,6 +273,7 @@ export const insertVideoSchema = createInsertSchema(videos).pick({
   reviewedAt: true,
   reviewedBy: true,
   rejectionReason: true,
+  tags: true,
   perceptualHashes: true
 });
 export const insertWishlistItemSchema = createInsertSchema(wishlistItems);
