@@ -10,6 +10,12 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { Loader2, X, Info } from 'lucide-react';
 
+// Helper function to view content with admin privileges
+const viewContentAsAdmin = (contentId: number) => {
+  console.log(`Opening content ID ${contentId} with admin privileges`);
+  window.open(`/media/${contentId}?admin=true`, '_blank');
+};
+
 // Type augmentation for admin purposes
 type AdminUser = User & { banned: boolean };
 
