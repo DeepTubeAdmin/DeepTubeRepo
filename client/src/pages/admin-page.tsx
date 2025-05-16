@@ -8,7 +8,7 @@ import ThumbnailImage from '@/components/ThumbnailImage';
 import { Link } from "wouter";
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import { Loader2, X, Info } from 'lucide-react';
+import { Loader2, X, Info, Trash2, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 
 // Helper function to view content with admin privileges
 const viewContentAsAdmin = (contentId: number) => {
@@ -32,6 +32,12 @@ type ReportedContent = Video & {
 // Featured content type
 type FeaturedContent = Video & {
   uploaderName?: string | null;
+};
+
+// Approved content response type
+type ApprovedContentResponse = {
+  content: (Video & { uploaderName?: string | null })[];
+  totalCount: number;
 };
 // apiRequest imported above
 import { 
@@ -75,6 +81,11 @@ export default function AdminPage() {
   });
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  
+  // For approved content pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [approvedContent, setApprovedContent] = useState<(Video & { uploaderName?: string | null })[]>([]);
+  const [totalApprovedCount, setTotalApprovedCount] = useState(0);
   
   // For duplicate detection feature
   const [isGeneratingHashes, setIsGeneratingHashes] = useState(false);
@@ -169,6 +180,31 @@ export default function AdminPage() {
         description: 'Failed to update feature status',
         variant: 'destructive'
       });
+    }
+  };
+  
+  // Function to handle deletion from approved content tab has been consolidated with the existing handleDeleteContent function
+  
+  // Fetch approved content
+  const fetchApprovedContent = async (page: number) => {
+    try {
+      setLoading(true);
+      const response = await apiRequest('GET', `/api/admin/content/approved?page=${page}&limit=20`);
+      const data: ApprovedContentResponse = await response.json();
+      
+      setApprovedContent(data.content);
+      setTotalApprovedCount(data.totalCount);
+    } catch (error) {
+      console.error('Error fetching approved content:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load approved content',
+        variant: 'destructive'
+      });
+      setApprovedContent([]);
+      setTotalApprovedCount(0);
+    } finally {
+      setLoading(false);
     }
   };
 

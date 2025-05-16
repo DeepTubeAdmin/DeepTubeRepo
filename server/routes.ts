@@ -3070,6 +3070,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get all approved content for admin management
+  app.get("/api/admin/content/approved", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      
+      const result = await dbStorage.getApprovedContent(page, limit);
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching approved content:", error);
+      res.status(500).json({ error: "Failed to fetch approved content" });
+    }
+  });
+  
   // Get reported content for admin dashboard
   app.get("/api/admin/content/reported", isAuthenticated, isAdmin, async (req, res) => {
     try {

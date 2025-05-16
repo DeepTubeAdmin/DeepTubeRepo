@@ -1283,6 +1283,43 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
+  
+  /**
+   * Get approved content with pagination for admin dashboard
+   * @param page Page number (starting from 1)
+   * @param limit Number of items per page
+   * @returns Object containing paginated content and total count
+   */
+  async getApprovedContent(page: number = 1, limit: number = 20): Promise<{ content: Video[], totalCount: number }> {
+    try {
+      const offset = (page - 1) * limit;
+      
+      // Get the total count first
+      const countResult = await db.select({ count: sql<number>`count(*)` })
+        .from(videos)
+        .where(eq(videos.reviewStatus, 'approved'));
+      
+      const totalCount = countResult[0]?.count || 0;
+      
+      // Get the paginated content with user info joined
+      const content = await db
+        .select({
+          ...videos,
+          uploaderName: users.username
+        })
+        .from(videos)
+        .leftJoin(users, eq(videos.userId, users.id))
+        .where(eq(videos.reviewStatus, 'approved'))
+        .orderBy(desc(videos.createdAt))
+        .limit(limit)
+        .offset(offset);
+      
+      return { content, totalCount };
+    } catch (error) {
+      console.error('Error getting approved content:', error);
+      return { content: [], totalCount: 0 };
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();
