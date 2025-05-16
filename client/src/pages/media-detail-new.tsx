@@ -73,14 +73,26 @@ function RelatedVideos({ videoId }: { videoId: string }) {
 }
 
 export default function MediaDetailNew() {
-  const { slug } = useParams<{ slug: string }>();
+  const params = useParams<{ slug: string }>();
+  const slug = params.slug;
   const [location, setLocation] = useLocation();
 
-  // Extract the numeric ID from the slug
-  const rawId = getIdFromSlug(slug);
-  const id = rawId ? String(rawId) : slug;
+  // Extract the numeric ID from the slug - with better debugging
+  console.log(`Media detail page - Raw slug from URL:`, slug);
+  
+  // If the slug contains a dash, it's likely a SEO-friendly URL
+  let rawId;
+  if (slug && slug.includes('-')) {
+    rawId = getIdFromSlug(slug);
+  } else {
+    // Fall back to direct ID if it doesn't look like a slug
+    rawId = slug ? parseInt(slug) : undefined;
+  }
+  
+  // Make sure we have a valid ID
+  const id = rawId ? String(rawId) : undefined;
 
-  console.log(`Media detail page - ID: ${id}, Slug: ${slug}, Raw ID: ${rawId}`);
+  console.log(`Media detail page - Extracted ID: ${id}, Slug: ${slug}, Raw ID: ${rawId}`);
 
   const [commentText, setCommentText] = useState("");
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
