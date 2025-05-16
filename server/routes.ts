@@ -2519,11 +2519,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user is admin to determine if we should skip visibility check
-      // Check both auth status and admin parameter in query
-      const isAdmin = (req.isAuthenticated() && (req.user.id === 1 || req.user.id === 2)) || 
-                     (req.query.admin === 'true');
-      
-      console.log(`Admin permission check for video ${videoId}: ${isAdmin ? 'Granted' : 'Denied'}`);
+      const isAdmin = req.isAuthenticated() && (req.user.id === 1 || req.user.id === 2);
       
       // Get video details - skip visibility check for admins
       const video = await dbStorage.getVideoById(videoId, isAdmin);
