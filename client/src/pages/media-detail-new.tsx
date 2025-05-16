@@ -532,46 +532,16 @@ export default function MediaDetailNew() {
               The content you're looking for doesn't exist or has been removed.
             </p>
 
-            {/* Debug information for troubleshooting */}
-            <div className="mt-4 mb-6 text-left bg-[#121212] p-4 rounded mx-auto max-w-xl">
-              <h3 className="font-semibold mb-2 text-orange-500">
-                Debug Information:
-              </h3>
-              <div className="text-xs text-gray-300 space-y-1">
-                <p>Content ID: {id}</p>
-                <p>Slug: {slug}</p>
-                <p>
-                  Raw ID from slug:{" "}
-                  {rawId ? rawId : "None (using full slug as ID)"}
-                </p>
-                <p>
-                  Error:{" "}
-                  {mediaError instanceof Error
-                    ? mediaError.message
-                    : "Unknown error"}
-                </p>
-              </div>
-
-              <div className="mt-4 flex justify-center">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    // Force refresh the data
-                    queryClient.invalidateQueries({
-                      queryKey: [`/api/videos/${id}`],
-                    });
-                    // If the ID was extracted incorrectly, try with the raw slug
-                    if (rawId && String(rawId) !== slug) {
-                      setLocation(`/media/${rawId}`);
-                    } else {
-                      window.location.reload();
-                    }
-                  }}
-                >
-                  Retry Loading
-                </Button>
-              </div>
+            {/* Simple retry button for error cases */}
+            <div className="mt-4 mb-6 flex justify-center">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  window.location.reload();
+                }}
+              >
+                Retry Loading
+              </Button>
             </div>
 
             <Button onClick={() => setLocation("/")}>Return to Homepage</Button>
@@ -713,36 +683,6 @@ export default function MediaDetailNew() {
                 <div className="flex items-center">
                   <MessageSquare className="w-4 h-4 mr-1" />
                   {comments.length} comments
-                </div>
-                <div className="flex items-center">
-                  <Heart className="w-4 h-4 mr-1" />
-                  {likeCount} likes
-                </div>
-                <div className="flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-1"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M2 12C2 12 5.5 5 12 5C18.5 5 22 12 22 12C22 12 18.5 19 12 19C5.5 19 2 12 2 12Z"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="3"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  {media.views || 0} views
                 </div>
                 <div>
                   {new Date(media.createdAt).toLocaleDateString("en-US", {
