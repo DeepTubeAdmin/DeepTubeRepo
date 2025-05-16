@@ -79,9 +79,9 @@ export default function MediaDetailNew() {
   // Extract the numeric ID from the slug
   const rawId = getIdFromSlug(slug);
   const id = rawId ? String(rawId) : slug;
-  
+
   console.log(`Media detail page - ID: ${id}, Slug: ${slug}, Raw ID: ${rawId}`);
-  
+
   const [commentText, setCommentText] = useState("");
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
@@ -118,7 +118,9 @@ export default function MediaDetailNew() {
         console.log(`Fetching media with ID: ${id}`);
         const res = await apiRequest("GET", `/api/videos/${id}`);
         if (!res.ok) {
-          throw new Error(`Failed to fetch media: ${res.status} ${res.statusText}`);
+          throw new Error(
+            `Failed to fetch media: ${res.status} ${res.statusText}`,
+          );
         }
         const data = await res.json();
         console.log("Media detail API response:", data);
@@ -134,7 +136,9 @@ export default function MediaDetailNew() {
   });
 
   // Fetch comments for this media
-  const { data: comments = [], isLoading: commentsLoading } = useQuery<Comment[]>({
+  const { data: comments = [], isLoading: commentsLoading } = useQuery<
+    Comment[]
+  >({
     queryKey: [`/api/videos/${id}/comments`],
     enabled: !!id,
   });
@@ -363,7 +367,7 @@ export default function MediaDetailNew() {
   // Generate embed code for content
   const generateEmbedCode = () => {
     if (!media) return "";
-    
+
     const mediaUrl = `${window.location.origin}/media/${id}`;
     const title = media.title || "DeepTube content";
 
@@ -461,10 +465,11 @@ export default function MediaDetailNew() {
   // Share to social media
   const handleSocialShare = (platform: string) => {
     if (!media) return;
-    
+
     const shareUrl = `${window.location.origin}/media/${id}`;
     const shareTitle = media.title || "Check out this content on DeepTube";
-    const shareText = media.description || "Interesting AI-generated content on DeepTube";
+    const shareText =
+      media.description || "Interesting AI-generated content on DeepTube";
 
     let shareLink = "";
 
@@ -490,10 +495,10 @@ export default function MediaDetailNew() {
     }
 
     // Open in new window
-    window.open(shareLink, '_blank', 'width=600,height=400');
+    window.open(shareLink, "_blank", "width=600,height=400");
     setShareDialogOpen(false);
   };
-  
+
   if (mediaLoading) {
     return (
       <Layout>
@@ -503,7 +508,7 @@ export default function MediaDetailNew() {
       </Layout>
     );
   }
-  
+
   if (!media) {
     console.error(`Media not found for ID: ${id}. Error:`, mediaError);
     return (
@@ -511,25 +516,39 @@ export default function MediaDetailNew() {
         <div className="container mx-auto py-8">
           <div className="text-center">
             <h1 className="text-3xl font-bold mb-4">Content Not Found</h1>
-            <p className="text-gray-400 mb-6">The content you're looking for doesn't exist or has been removed.</p>
-            
+            <p className="text-gray-400 mb-6">
+              The content you're looking for doesn't exist or has been removed.
+            </p>
+
             {/* Debug information for troubleshooting */}
             <div className="mt-4 mb-6 text-left bg-[#121212] p-4 rounded mx-auto max-w-xl">
-              <h3 className="font-semibold mb-2 text-orange-500">Debug Information:</h3>
+              <h3 className="font-semibold mb-2 text-orange-500">
+                Debug Information:
+              </h3>
               <div className="text-xs text-gray-300 space-y-1">
                 <p>Content ID: {id}</p>
                 <p>Slug: {slug}</p>
-                <p>Raw ID from slug: {rawId ? rawId : 'None (using full slug as ID)'}</p>
-                <p>Error: {mediaError instanceof Error ? mediaError.message : 'Unknown error'}</p>
+                <p>
+                  Raw ID from slug:{" "}
+                  {rawId ? rawId : "None (using full slug as ID)"}
+                </p>
+                <p>
+                  Error:{" "}
+                  {mediaError instanceof Error
+                    ? mediaError.message
+                    : "Unknown error"}
+                </p>
               </div>
-              
+
               <div className="mt-4 flex justify-center">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => {
                     // Force refresh the data
-                    queryClient.invalidateQueries({queryKey: [`/api/videos/${id}`]});
+                    queryClient.invalidateQueries({
+                      queryKey: [`/api/videos/${id}`],
+                    });
                     // If the ID was extracted incorrectly, try with the raw slug
                     if (rawId && String(rawId) !== slug) {
                       setLocation(`/media/${rawId}`);
@@ -542,10 +561,8 @@ export default function MediaDetailNew() {
                 </Button>
               </div>
             </div>
-            
-            <Button onClick={() => setLocation('/')}>
-              Return to Homepage
-            </Button>
+
+            <Button onClick={() => setLocation("/")}>Return to Homepage</Button>
           </div>
         </div>
       </Layout>
@@ -553,33 +570,40 @@ export default function MediaDetailNew() {
   }
 
   // Generate SEO metadata
-  const generatorInfo = media.aiGenerator ? ` created with ${media.aiGenerator}` : '';
+  const generatorInfo = media.aiGenerator
+    ? ` created with ${media.aiGenerator}`
+    : "";
   const seoTitle = `${media.title}${generatorInfo} | DeepTube: Ethical AI Media Hub`;
-  
+
   // Create description including prompt if available
-  const promptInfo = media.prompt ? ` Prompt: "${media.prompt.substring(0, 50)}${media.prompt.length > 50 ? '...' : ''}"` : '';
-  const baseDescription = media.description 
-    ? `${media.description.substring(0, 100)}${media.description.length > 100 ? '...' : ''}` 
+  const promptInfo = media.prompt
+    ? ` Prompt: "${media.prompt.substring(0, 50)}${media.prompt.length > 50 ? "..." : ""}"`
+    : "";
+  const baseDescription = media.description
+    ? `${media.description.substring(0, 100)}${media.description.length > 100 ? "..." : ""}`
     : `Experience this AI-generated ${media.contentType}${generatorInfo}.`;
-  
+
   const seoDescription = `DeepTube.co: ${baseDescription}${promptInfo}`;
-  const seoImage = media.thumbnail || media.imageUrl || '';
+  const seoImage = media.thumbnail || media.imageUrl || "";
   const seoCanonicalUrl = `https://deeptube.co/media/${id}`;
-  
+
   // Create specific keywords including media attributes
   const specificKeywords = [
     `AI ${media.contentType}`,
-    media.aiGenerator || 'AI generation',
-    media.title.split(' ').slice(0, 3).join(', '),
-    media.prompt ? media.prompt.split(' ').slice(0, 5).join(', ') : '',
-  ].filter(Boolean).join(', ');
-  
+    media.aiGenerator || "AI generation",
+    media.title.split(" ").slice(0, 3).join(", "),
+    media.prompt ? media.prompt.split(" ").slice(0, 5).join(", ") : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
+
   const seoKeywords = `${specificKeywords}, AI media hosting, Responsible AI media, DeepTube, AI-powered ${media.contentType}, Trusted content, Creator media platform`;
-  
+
   // Generate structured data for rich snippets in search results
-  const mediaStructuredData = media.contentType === 'image' 
-    ? generateImageStructuredData(media)
-    : generateVideoStructuredData(media);
+  const mediaStructuredData =
+    media.contentType === "image"
+      ? generateImageStructuredData(media)
+      : generateVideoStructuredData(media);
 
   // Debug the video URL
   const videoUrl = media.videoUrl || `/api/videos/${media.id}/direct`;
@@ -587,7 +611,7 @@ export default function MediaDetailNew() {
 
   return (
     <Layout>
-      <SEO 
+      <SEO
         title={seoTitle}
         description={seoDescription}
         ogImage={seoImage}
@@ -602,10 +626,10 @@ export default function MediaDetailNew() {
           <div className="lg:col-span-2">
             {/* Media display section */}
             <div className="bg-[#121212] rounded-md overflow-hidden mb-4">
-              {media.contentType === 'video' && (
+              {media.contentType === "video" && (
                 <div className="aspect-video">
                   {/* Use the video's path directly from media.id for reliable playback */}
-                  <GenericVideoEmbed 
+                  <GenericVideoEmbed
                     videoUrl={videoUrl}
                     title={media.title}
                     responsive={true}
@@ -613,10 +637,12 @@ export default function MediaDetailNew() {
                     aiGenerator={media.aiGenerator}
                   />
                   {/* Debug output for media object in development */}
-                  {process.env.NODE_ENV === 'development' && (
+                  {process.env.NODE_ENV === "development" && (
                     <div className="text-xs bg-black bg-opacity-50 p-2 mt-2 rounded max-h-20 overflow-auto">
                       <details>
-                        <summary className="text-gray-400 cursor-pointer">Debug Info</summary>
+                        <summary className="text-gray-400 cursor-pointer">
+                          Debug Info
+                        </summary>
                         <pre className="text-gray-400 mt-1 whitespace-pre-wrap">
                           <p>ID: {media.id}</p>
                           <p>VideoURL: {media.videoUrl}</p>
@@ -627,47 +653,50 @@ export default function MediaDetailNew() {
                   )}
                 </div>
               )}
-              
-              {media.contentType === 'image' && media.imageUrl && (
+
+              {media.contentType === "image" && media.imageUrl && (
                 <div className="flex items-center justify-center bg-black relative group">
-                  <img 
-                    src={media.imageUrl} 
-                    alt={media.title} 
+                  <img
+                    src={media.imageUrl}
+                    alt={media.title}
                     className="max-w-full max-h-[70vh]"
                     onError={(e) => {
                       console.error(`Error loading image: ${media.imageUrl}`);
                       // Fallback to thumbnail if image can't load
-                      (e.target as HTMLImageElement).src = media.thumbnail || '/placeholder/image-placeholder.svg';
+                      (e.target as HTMLImageElement).src =
+                        media.thumbnail || "/placeholder/image-placeholder.svg";
                     }}
                     onClick={() => setFullscreenImageOpen(true)}
                   />
-                  <div 
+                  <div
                     className="absolute bottom-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-70 p-2 rounded-tl-md cursor-pointer"
                     onClick={() => setFullscreenImageOpen(true)}
                   >
                     <Maximize className="w-5 h-5 text-white" />
                   </div>
-                  
+
                   {/* AI Generator Watermark */}
-                  {media.aiGenerator && <AIWatermark generator={media.aiGenerator} />}
+                  {media.aiGenerator && (
+                    <AIWatermark generator={media.aiGenerator} />
+                  )}
                 </div>
               )}
-              
-              {media.contentType === 'embed' && media.embedCode && (
+
+              {media.contentType === "embed" && media.embedCode && (
                 <div className="aspect-video relative">
                   {/* Parse embed code with dangerouslySetInnerHTML */}
-                  <div 
+                  <div
                     dangerouslySetInnerHTML={{ __html: media.embedCode }}
                     className="w-full h-full"
                   />
                 </div>
               )}
             </div>
-            
+
             {/* Title and metadata section */}
             <div className="mb-6">
               <h1 className="text-2xl font-bold mb-2">{media.title}</h1>
-              
+
               <div className="flex flex-wrap items-center gap-4 text-gray-400 text-sm mb-3">
                 <div className="flex items-center">
                   <MessageSquare className="w-4 h-4 mr-1" />
@@ -678,26 +707,45 @@ export default function MediaDetailNew() {
                   {likeCount} likes
                 </div>
                 <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2 12C2 12 5.5 5 12 5C18.5 5 22 12 22 12C22 12 18.5 19 12 19C5.5 19 2 12 2 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg
+                    className="w-4 h-4 mr-1"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M2 12C2 12 5.5 5 12 5C18.5 5 22 12 22 12C22 12 18.5 19 12 19C5.5 19 2 12 2 12Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="3"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                   {media.views || 0} views
                 </div>
                 <div>
-                  {new Date(media.createdAt).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
+                  {new Date(media.createdAt).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
                   })}
                 </div>
               </div>
-              
+
               <div className="flex flex-wrap gap-2 mb-4">
                 <Button
                   variant="outline"
                   size="sm"
-                  className={`flex items-center gap-1 ${isLiked ? 'text-orange-500 border-orange-500' : ''}`}
+                  className={`flex items-center gap-1 ${isLiked ? "text-orange-500 border-orange-500" : ""}`}
                   onClick={() => {
                     if (isLikeLoading) return;
                     if (isLiked) {
@@ -711,11 +759,13 @@ export default function MediaDetailNew() {
                   {isLikeLoading ? (
                     <div className="animate-spin w-4 h-4 border-2 border-white rounded-full border-t-transparent"></div>
                   ) : (
-                    <ThumbsUp className={`w-4 h-4 ${isLiked ? 'fill-orange-500' : ''}`} />
+                    <ThumbsUp
+                      className={`w-4 h-4 ${isLiked ? "fill-orange-500" : ""}`}
+                    />
                   )}
-                  <span>{isLiked ? 'Liked' : 'Like'}</span>
+                  <span>{isLiked ? "Liked" : "Like"}</span>
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -725,7 +775,7 @@ export default function MediaDetailNew() {
                   <FlagIcon className="w-4 h-4" />
                   <span>Report</span>
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -736,61 +786,82 @@ export default function MediaDetailNew() {
                   <span>Share</span>
                 </Button>
               </div>
-              
+
               {/* Uploader info if available */}
               {uploaderUsername && (
                 <div className="flex items-center space-x-2 mb-4">
                   <div className="text-sm">
-                    Uploaded by: <Link href={`/user/${media.userId}`} className="text-orange-500 hover:underline">{uploaderUsername}</Link>
+                    Uploaded by:{" "}
+                    <Link
+                      href={`/user/${media.userId}`}
+                      className="text-orange-500 hover:underline"
+                    >
+                      {uploaderUsername}
+                    </Link>
                   </div>
                 </div>
               )}
-              
+
               {/* Category if available */}
               {media.categoryId && media.categoryName && (
                 <div className="mb-4">
-                  <Link href={`/?category=${media.categorySlug || media.categoryId}`} className="inline-block bg-orange-600 bg-opacity-20 text-orange-500 rounded-full px-3 py-1 text-sm">
+                  <Link
+                    href={`/?category=${media.categorySlug || media.categoryId}`}
+                    className="inline-block bg-orange-600 bg-opacity-20 text-orange-500 rounded-full px-3 py-1 text-sm"
+                  >
                     {media.categoryName}
                   </Link>
                 </div>
               )}
-              
+
               {/* AI Generator Box */}
               {media.aiGenerator && (
                 <div className="mb-4 p-3 bg-black bg-opacity-50 rounded-md border border-[#333]">
                   <div className="text-sm flex items-center">
                     <Terminal className="w-4 h-4 mr-2 text-orange-500" />
-                    <span className="font-medium text-orange-500">AI Generator:</span>
+                    <span className="font-medium text-orange-500">
+                      AI Generator:
+                    </span>
                     <span className="ml-2">{media.aiGenerator}</span>
                   </div>
                 </div>
               )}
-              
+
               {/* Prompt Box (if available) */}
               {media.prompt && (
                 <div className="mb-4">
                   <div className="p-3 bg-[#121212] rounded-md border border-[#333]">
-                    <h3 className="text-sm font-semibold mb-1 text-orange-500">Prompt:</h3>
-                    <p className="text-gray-300 text-sm whitespace-pre-wrap">{media.prompt}</p>
+                    <h3 className="text-sm font-semibold mb-1 text-orange-500">
+                      Prompt:
+                    </h3>
+                    <p className="text-gray-300 text-sm whitespace-pre-wrap">
+                      {media.prompt}
+                    </p>
                   </div>
                 </div>
               )}
-              
+
               {/* Description Box (if available) */}
               {media.description && (
                 <div className="mb-4">
                   <div className="p-3 bg-[#121212] rounded-md border border-[#333]">
-                    <h3 className="text-sm font-semibold mb-1 text-orange-500">Description:</h3>
-                    <p className="text-gray-300 text-sm whitespace-pre-wrap">{media.description}</p>
+                    <h3 className="text-sm font-semibold mb-1 text-orange-500">
+                      Description:
+                    </h3>
+                    <p className="text-gray-300 text-sm whitespace-pre-wrap">
+                      {media.description}
+                    </p>
                   </div>
                 </div>
               )}
             </div>
-            
+
             {/* Comments section */}
             <div>
-              <h3 className="text-xl font-bold mb-4">Comments ({comments.length})</h3>
-              
+              <h3 className="text-xl font-bold mb-4">
+                Comments ({comments.length})
+              </h3>
+
               {/* Comment input */}
               <div className="mb-6">
                 <Textarea
@@ -809,11 +880,11 @@ export default function MediaDetailNew() {
                       Posting...
                     </span>
                   ) : (
-                    'Post Comment'
+                    "Post Comment"
                   )}
                 </Button>
               </div>
-              
+
               {/* Comments list */}
               {commentsLoading ? (
                 <div className="flex justify-center py-4">
@@ -822,13 +893,20 @@ export default function MediaDetailNew() {
               ) : comments.length > 0 ? (
                 <div className="space-y-4">
                   {comments.map((comment) => (
-                    <div key={comment.id} className="p-4 bg-[#121212] rounded-md">
+                    <div
+                      key={comment.id}
+                      className="p-4 bg-[#121212] rounded-md"
+                    >
                       <div className="flex items-center mb-2">
                         <Avatar className="w-8 h-8 mr-2">
-                          <AvatarFallback>{comment.username?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
+                          <AvatarFallback>
+                            {comment.username?.charAt(0).toUpperCase() || "A"}
+                          </AvatarFallback>
                         </Avatar>
                         <div>
-                          <div className="font-semibold">{comment.username || 'Anonymous'}</div>
+                          <div className="font-semibold">
+                            {comment.username || "Anonymous"}
+                          </div>
                           <div className="text-xs text-gray-400">
                             {new Date(comment.createdAt).toLocaleString()}
                           </div>
@@ -845,7 +923,7 @@ export default function MediaDetailNew() {
               )}
             </div>
           </div>
-          
+
           {/* Sidebar column */}
           <div>
             {/* Related videos section */}
@@ -855,13 +933,13 @@ export default function MediaDetailNew() {
                 <RelatedVideos videoId={id} />
               </div>
             </div>
-            
+
             {/* Mini Footer for SEO */}
             <MiniFooter />
           </div>
         </div>
       </div>
-      
+
       {/* Report Dialog */}
       <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
         <DialogContent>
@@ -871,19 +949,22 @@ export default function MediaDetailNew() {
               Please let us know why you're reporting this content.
             </DialogDescription>
           </DialogHeader>
-          
+
           <Textarea
             value={reportReason}
             onChange={(e) => setReportReason(e.target.value)}
             placeholder="Describe the issue with this content..."
             className="min-h-[100px]"
           />
-          
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setReportDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setReportDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleReportSubmit}
               disabled={reportMutation.isPending || !reportReason.trim()}
             >
@@ -893,13 +974,13 @@ export default function MediaDetailNew() {
                   Submitting...
                 </span>
               ) : (
-                'Submit Report'
+                "Submit Report"
               )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* Share Dialog */}
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
         <DialogContent>
@@ -909,48 +990,53 @@ export default function MediaDetailNew() {
               Share this content through various platforms.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="flex flex-wrap gap-3 justify-center mb-4">
             <Button
               variant="outline"
               size="icon"
               className="rounded-full h-10 w-10 bg-[#1DA1F2] text-white hover:bg-[#1DA1F2]/80"
-              onClick={() => handleSocialShare('twitter')}
+              onClick={() => handleSocialShare("twitter")}
             >
               <Twitter className="h-5 w-5" />
             </Button>
-            
+
             <Button
               variant="outline"
               size="icon"
               className="rounded-full h-10 w-10 bg-[#1877F2] text-white hover:bg-[#1877F2]/80"
-              onClick={() => handleSocialShare('facebook')}
+              onClick={() => handleSocialShare("facebook")}
             >
               <Facebook className="h-5 w-5" />
             </Button>
-            
+
             <Button
               variant="outline"
               size="icon"
               className="rounded-full h-10 w-10 bg-[#FF4500] text-white hover:bg-[#FF4500]/80"
-              onClick={() => handleSocialShare('reddit')}
+              onClick={() => handleSocialShare("reddit")}
             >
               <div className="h-5 w-5 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-                  <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm0-18c4.411 0 8 3.589 8 8s-3.589 8-8 8-8-3.589-8-8 3.589-8 8-8zm3.5 9c0-.828-.672-1.5-1.5-1.5s-1.5.672-1.5 1.5.672 1.5 1.5 1.5 1.5-.672 1.5-1.5zm-7 0c0-.828-.672-1.5-1.5-1.5s-1.5.672-1.5 1.5.672 1.5 1.5 1.5 1.5-.672 1.5-1.5zm3.501 4.531C9.613 17.531 7 17.082 7 17.082c-.207-.035-.399.098-.441.304-.042.205.093.403.3.441 0 0 2.108.4 5.141.4 3.039 0 5.141-.4 5.141-.4.205-.038.342-.236.3-.441-.043-.206-.235-.34-.44-.304 0 0-2.613.45-5-.001z"/>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="h-5 w-5"
+                >
+                  <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm0-18c4.411 0 8 3.589 8 8s-3.589 8-8 8-8-3.589-8-8 3.589-8 8-8zm3.5 9c0-.828-.672-1.5-1.5-1.5s-1.5.672-1.5 1.5.672 1.5 1.5 1.5 1.5-.672 1.5-1.5zm-7 0c0-.828-.672-1.5-1.5-1.5s-1.5.672-1.5 1.5.672 1.5 1.5 1.5 1.5-.672 1.5-1.5zm3.501 4.531C9.613 17.531 7 17.082 7 17.082c-.207-.035-.399.098-.441.304-.042.205.093.403.3.441 0 0 2.108.4 5.141.4 3.039 0 5.141-.4 5.141-.4.205-.038.342-.236.3-.441-.043-.206-.235-.34-.44-.304 0 0-2.613.45-5-.001z" />
                 </svg>
               </div>
             </Button>
-            
+
             <Button
               variant="outline"
               size="icon"
               className="rounded-full h-10 w-10 bg-[#0A66C2] text-white hover:bg-[#0A66C2]/80"
-              onClick={() => handleSocialShare('linkedin')}
+              onClick={() => handleSocialShare("linkedin")}
             >
               <Linkedin className="h-5 w-5" />
             </Button>
-            
+
             <Button
               variant="outline"
               size="icon"
@@ -960,7 +1046,7 @@ export default function MediaDetailNew() {
               <Copy className="h-5 w-5" />
             </Button>
           </div>
-          
+
           <div className="mb-4">
             <div className="text-sm font-medium mb-2">Direct link</div>
             <div className="flex">
@@ -971,10 +1057,7 @@ export default function MediaDetailNew() {
                 ref={shareUrlRef}
                 className="flex-1 rounded-l-md px-3 py-2 text-sm bg-[#121212] border border-[#333]"
               />
-              <Button
-                className="rounded-l-none"
-                onClick={handleCopyShareLink}
-              >
+              <Button className="rounded-l-none" onClick={handleCopyShareLink}>
                 <Copy className="h-4 w-4 mr-2" />
                 Copy
               </Button>
@@ -983,7 +1066,7 @@ export default function MediaDetailNew() {
               <div className="text-green-500 mt-1 text-sm">{copySuccess}</div>
             )}
           </div>
-          
+
           <div>
             <div className="text-sm font-medium mb-2">Embed code</div>
             <div className="bg-[#121212] rounded-md p-2 text-xs overflow-auto max-h-[80px] border border-[#333]">
@@ -991,9 +1074,9 @@ export default function MediaDetailNew() {
                 {generateEmbedCode()}
               </code>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="mt-2"
               onClick={handleCopyEmbedCode}
             >
@@ -1003,9 +1086,9 @@ export default function MediaDetailNew() {
           </div>
         </DialogContent>
       </Dialog>
-      
+
       {/* Fullscreen Image Modal */}
-      {media.contentType === 'image' && media.imageUrl && (
+      {media.contentType === "image" && media.imageUrl && (
         <FullscreenImageModal
           isOpen={fullscreenImageOpen}
           onClose={() => setFullscreenImageOpen(false)}

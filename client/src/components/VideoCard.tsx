@@ -210,6 +210,7 @@ export default function VideoCard({ video, onPreview, onWishlist, size = 'defaul
   const handlePreview = () => {
     // Use SEO-friendly URL with slug
     const slug = createSeoFriendlySlug(video);
+    console.log(`Navigating to video with slug: ${slug}`);
     window.location.href = `/media/${slug}`;
   };
 
