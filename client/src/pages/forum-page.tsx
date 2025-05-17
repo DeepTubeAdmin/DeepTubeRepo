@@ -264,7 +264,7 @@ export default function ForumPage() {
     });
   };
 
-  const handleCreateThread = () => {
+  const handleCreateThread = (isSticky: boolean = false) => {
     if (!newThreadTitle.trim() || !newThreadContent.trim()) {
       toast({
         title: "Missing information",
@@ -282,7 +282,8 @@ export default function ForumPage() {
       title: newThreadTitle,
       content: newThreadContent,
       categoryId: newThreadCategory,
-      tags: tagsArray.length > 0 ? tagsArray : null
+      tags: tagsArray.length > 0 ? tagsArray : null,
+      isSticky: isSticky
     });
   };
 
@@ -579,9 +580,23 @@ export default function ForumPage() {
                       <Button variant="outline" onClick={() => setIsNewThreadDialogOpen(false)}>
                         Cancel
                       </Button>
-                      <Button onClick={handleCreateThread} disabled={!newThreadTitle || !newThreadContent}>
-                        Create Thread
-                      </Button>
+                      <div className="flex gap-2">
+                        {user?.role === 'admin' && (
+                          <Button 
+                            onClick={() => handleCreateThread(true)} 
+                            disabled={!newThreadTitle || !newThreadContent}
+                            variant="secondary"
+                          >
+                            Create Sticky Thread
+                          </Button>
+                        )}
+                        <Button 
+                          onClick={() => handleCreateThread(false)} 
+                          disabled={!newThreadTitle || !newThreadContent}
+                        >
+                          Create Thread
+                        </Button>
+                      </div>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
