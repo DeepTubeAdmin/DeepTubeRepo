@@ -677,14 +677,6 @@ export default function ForumPage() {
                     </Dialog>
                   )}
                 </div>
-                        <label className="text-sm font-medium">Thread Title</label>
-                        <Input 
-                          value={newThreadTitle}
-                          onChange={e => setNewThreadTitle(e.target.value)}
-                          placeholder="Enter a descriptive title for your thread"
-                        />
-                      </div>
-                      
                       <div className="space-y-2">
                         <label className="text-sm font-medium">Category</label>
                         <select 
