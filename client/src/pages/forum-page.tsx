@@ -338,22 +338,40 @@ export default function ForumPage() {
   // Check if user is an admin (ID 1 or 2)
   const isAdmin = user && (user.id === 1 || user.id === 2);
 
+  // Delete comment mutation
+  const deleteCommentMutation = useMutation({
+    mutationFn: async ({ 
+      threadId, 
+      commentId 
+    }: { 
+      threadId: number; 
+      commentId: number;
+    }) => {
+      const res = await apiRequest('DELETE', `/api/forum/threads/${threadId}/comments/${commentId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      // Refetch comments and threads (to update comment count)
+      queryClient.invalidateQueries({ queryKey: ['/api/forum/threads', activeThread, 'comments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/forum/threads'] });
+      
+      toast({
+        title: "Comment deleted",
+        description: "The comment has been deleted successfully",
+        variant: "destructive"
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error deleting comment",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleDeleteComment = (commentId: number, threadId: number) => {
-    // In a real app, this would send a DELETE request to the backend
-    setComments(comments.filter(comment => comment.id !== commentId));
-    
-    // Update the comment count in the thread
-    setThreads(
-      threads.map(thread =>
-        thread.id === threadId ? { ...thread, commentCount: thread.commentCount - 1 } : thread
-      )
-    );
-    
-    toast({
-      title: "Comment deleted",
-      description: "The comment has been deleted successfully",
-      variant: "destructive"
-    });
+    deleteCommentMutation.mutate({ threadId, commentId });
   };
 
   const openCommentForm = (threadId: number) => {
