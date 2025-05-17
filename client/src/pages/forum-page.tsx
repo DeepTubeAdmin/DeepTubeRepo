@@ -94,6 +94,8 @@ export default function ForumPage() {
   const [newThreadContent, setNewThreadContent] = useState("");
   const [newThreadCategory, setNewThreadCategory] = useState<number | null>(null);
   const [newThreadTags, setNewThreadTags] = useState("");
+  const [isSticky, setIsSticky] = useState(false);
+  const [isStickyThreadDialogOpen, setIsStickyThreadDialogOpen] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [activeThread, setActiveThread] = useState<number | null>(null);
   const [isNewThreadDialogOpen, setIsNewThreadDialogOpen] = useState(false);
@@ -139,6 +141,7 @@ export default function ForumPage() {
       content: string; 
       categoryId: number | null;
       tags: string[] | null;
+      isSticky?: boolean;
     }) => {
       const res = await apiRequest('POST', '/api/forum/threads', newThread);
       return res.json();
@@ -272,8 +275,35 @@ export default function ForumPage() {
       title: newThreadTitle,
       content: newThreadContent,
       categoryId: newThreadCategory,
-      tags: tagsArray.length > 0 ? tagsArray : null
+      tags: tagsArray.length > 0 ? tagsArray : null,
+      isSticky: false
     });
+  };
+  
+  // Handle creating a sticky thread (admin only)
+  const handleCreateStickyThread = () => {
+    if (!newThreadTitle.trim() || !newThreadContent.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please provide both a title and content for your sticky thread.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const tagsArray = newThreadTags.split(',')
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0);
+
+    createThreadMutation.mutate({
+      title: newThreadTitle,
+      content: newThreadContent,
+      categoryId: newThreadCategory,
+      tags: tagsArray.length > 0 ? tagsArray : null,
+      isSticky: true
+    });
+    
+    setIsStickyThreadDialogOpen(false);
   };
 
   const handleVote = (threadId: number) => {
@@ -510,22 +540,143 @@ export default function ForumPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
                 
-                <Dialog open={isNewThreadDialogOpen} onOpenChange={setIsNewThreadDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" className="flex gap-2">
-                      <Plus size={16} />
-                      <span>New Thread</span>
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" aria-describedby="create-thread-description">
-                    <DialogHeader>
-                      <DialogTitle>Create a New Discussion Thread</DialogTitle>
-                      <p id="create-thread-description" className="text-sm text-muted-foreground">
-                        Share your ideas, questions, or insights with the community
-                      </p>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-4">
-                      <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Dialog open={isNewThreadDialogOpen} onOpenChange={setIsNewThreadDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="flex gap-2">
+                        <Plus size={16} />
+                        <span>New Thread</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" aria-describedby="create-thread-description">
+                      <DialogHeader>
+                        <DialogTitle>Create a New Discussion Thread</DialogTitle>
+                        <p id="create-thread-description" className="text-sm text-muted-foreground">
+                          Share your ideas, questions, or insights with the community
+                        </p>
+                      </DialogHeader>
+                      <div className="space-y-4 mt-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Thread Title</label>
+                          <Input 
+                            value={newThreadTitle}
+                            onChange={e => setNewThreadTitle(e.target.value)}
+                            placeholder="Enter a descriptive title for your thread"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Thread Content</label>
+                          <Textarea 
+                            value={newThreadContent}
+                            onChange={e => setNewThreadContent(e.target.value)}
+                            placeholder="Enter the content of your thread"
+                            className="min-h-[200px]"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Category</label>
+                          <select 
+                            className="w-full px-3 py-2 border border-border rounded-md bg-background"
+                            value={newThreadCategory || ""}
+                            onChange={e => setNewThreadCategory(e.target.value ? Number(e.target.value) : null)}
+                          >
+                            <option value="">Select a category</option>
+                            {categories.map(category => (
+                              <option key={category.id} value={category.id}>
+                                {category.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Tags (comma separated)</label>
+                          <Input 
+                            value={newThreadTags}
+                            onChange={e => setNewThreadTags(e.target.value)}
+                            placeholder="e.g. question, help, feedback"
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter className="mt-6">
+                        <Button variant="outline" onClick={() => setIsNewThreadDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleCreateThread} disabled={!newThreadTitle || !newThreadContent}>
+                          Create Thread
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  
+                  {isAdmin && (
+                    <Dialog open={isStickyThreadDialogOpen} onOpenChange={setIsStickyThreadDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm" className="flex gap-2" variant="outline">
+                          <Plus size={16} />
+                          <span>Sticky Thread</span>
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" aria-describedby="create-sticky-thread-description">
+                        <DialogHeader>
+                          <DialogTitle>Create a Sticky Thread</DialogTitle>
+                          <p id="create-sticky-thread-description" className="text-sm text-muted-foreground">
+                            Create an important announcement or discussion that will stay at the top of the forum
+                          </p>
+                        </DialogHeader>
+                        <div className="space-y-4 mt-4">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Thread Title</label>
+                            <Input 
+                              value={newThreadTitle}
+                              onChange={e => setNewThreadTitle(e.target.value)}
+                              placeholder="Enter a descriptive title for your sticky thread"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Thread Content</label>
+                            <Textarea 
+                              value={newThreadContent}
+                              onChange={e => setNewThreadContent(e.target.value)}
+                              placeholder="Enter the content of your sticky thread"
+                              className="min-h-[200px]"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Category</label>
+                            <select 
+                              className="w-full px-3 py-2 border border-border rounded-md bg-background"
+                              value={newThreadCategory || ""}
+                              onChange={e => setNewThreadCategory(e.target.value ? Number(e.target.value) : null)}
+                            >
+                              <option value="">Select a category</option>
+                              {categories.map(category => (
+                                <option key={category.id} value={category.id}>
+                                  {category.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Tags (comma separated)</label>
+                            <Input 
+                              value={newThreadTags}
+                              onChange={e => setNewThreadTags(e.target.value)}
+                              placeholder="e.g. announcement, important, update"
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter className="mt-6">
+                          <Button variant="outline" onClick={() => setIsStickyThreadDialogOpen(false)}>
+                            Cancel
+                          </Button>
+                          <Button onClick={handleCreateStickyThread} disabled={!newThreadTitle || !newThreadContent}>
+                            Create Sticky Thread
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                </div>
                         <label className="text-sm font-medium">Thread Title</label>
                         <Input 
                           value={newThreadTitle}
