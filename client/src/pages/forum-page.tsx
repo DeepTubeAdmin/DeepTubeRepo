@@ -532,10 +532,11 @@ export default function ForumPage() {
                         <label className="text-sm font-medium">Category</label>
                         <select 
                           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          value={newThreadCategory}
+                          value={newThreadCategory || ""}
                           onChange={e => setNewThreadCategory(Number(e.target.value))}
                         >
-                          {forumCategories.map(category => (
+                          <option value="">Select a category</option>
+                          {categories.map(category => (
                             <option key={category.id} value={category.id}>
                               {category.name}
                             </option>
