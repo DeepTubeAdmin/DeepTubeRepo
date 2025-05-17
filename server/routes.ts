@@ -4079,7 +4079,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         SELECT * FROM forum_categories ORDER BY id ASC
       `);
       
-      res.status(200).json(results);
+      // Extract just the rows from the result
+      if (results && results.rows) {
+        res.status(200).json(results.rows);
+      } else {
+        throw new Error('No categories found');
+      }
     } catch (error) {
       console.error("Error fetching forum categories:", error);
       res.status(500).json({ error: "Failed to fetch forum categories" });
