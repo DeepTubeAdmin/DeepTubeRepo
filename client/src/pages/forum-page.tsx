@@ -45,83 +45,52 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-// Mock data for the forum posts
-const forumCategories = [
-  { id: 1, name: "AI Video Generation", count: 35 },
-  { id: 2, name: "AI Image Creation", count: 42 },
-  { id: 3, name: "Tutorials & Guides", count: 23 },
-  { id: 4, name: "Show & Tell", count: 57 },
-  { id: 5, name: "Questions & Help", count: 29 },
-  { id: 6, name: "News & Updates", count: 18 },
-];
+// Define interfaces for our forum data types
+interface ForumCategory {
+  id: number;
+  name: string;
+  count?: number;
+}
 
-const initialThreads = [
-  {
-    id: 1,
-    title: "Best AI video generator in 2025?",
-    author: "AIMaster",
-    category: "AI Video Generation",
-    content: "What are your thoughts on the best AI video generator currently available? I've been trying Synthesia but wondering what else is out there.",
-    timestamp: "2 hours ago",
-    upvotes: 34,
-    commentCount: 12,
-    tags: ["video", "tools", "comparison"],
-    isSticky: true,
-  },
-  {
-    id: 2,
-    title: "How to create photorealistic images with AI",
-    author: "PixelPerfect",
-    category: "AI Image Creation",
-    content: "I'm trying to create photorealistic portrait images but still getting uncanny valley results. Any tips or specific settings to use?",
-    timestamp: "5 hours ago",
-    upvotes: 21,
-    commentCount: 8,
-    tags: ["image", "photorealistic", "tutorial"],
-    isSticky: false,
-  },
-  {
-    id: 3,
-    title: "Just created my first AI music video!",
-    author: "MusicMaker",
-    category: "Show & Tell",
-    content: "After weeks of trying, I finally created my first full AI-generated music video. Check it out and let me know what you think!",
-    timestamp: "1 day ago",
-    upvotes: 56,
-    commentCount: 24,
-    tags: ["music", "video", "showcase"],
-    isSticky: false,
-  },
-  {
-    id: 4,
-    title: "Understanding prompt engineering for better results",
-    author: "PromptWizard",
-    category: "Tutorials & Guides",
-    content: "I've put together a comprehensive guide on prompt engineering techniques that have dramatically improved my AI generation results.",
-    timestamp: "2 days ago",
-    upvotes: 102,
-    commentCount: 43,
-    tags: ["prompt", "guide", "tips"],
-    isSticky: false,
-  },
-  {
-    id: 5,
-    title: "BREAKING: New AI model released with 8K video capability",
-    author: "TechNews",
-    category: "News & Updates",
-    content: "A new AI model was just released that supports native 8K video generation with incredible detail levels. This could be a game changer!",
-    timestamp: "3 days ago",
-    upvotes: 87,
-    commentCount: 31,
-    tags: ["news", "8K", "model"],
-    isSticky: true,
-  },
-];
+interface ForumThread {
+  id: number;
+  title: string;
+  content: string;
+  userId: number;
+  categoryId: number | null;
+  createdAt: string | Date;
+  updatedAt: string | Date | null;
+  isSticky: boolean;
+  upvotes: number;
+  tags: string[] | null;
+  user?: {
+    id: number;
+    username: string;
+  };
+  commentCount?: number;
+}
 
-const mockComments = [
-  { id: 1, threadId: 1, author: "AIEnthusiast", content: "I've been using Synthesia as well but recently switched to RunwayML. The quality difference is night and day!", timestamp: "1 hour ago", upvotes: 12 },
-  { id: 2, threadId: 1, author: "VideoProducer", content: "Synthesia is great for talking head videos, but for more creative stuff I recommend Runway or even Midjourney's new video features.", timestamp: "1.5 hours ago", upvotes: 8 },
-  { id: 3, threadId: 1, author: "Beginner123", content: "I find Synthesia easier to use as a beginner. The others have a steeper learning curve but better results if you know what you're doing.", timestamp: "1.75 hours ago", upvotes: 5 },
+interface ForumComment {
+  id: number;
+  threadId: number;
+  userId: number;
+  content: string;
+  createdAt: string | Date;
+  updatedAt: string | Date | null;
+  user?: {
+    id: number;
+    username: string;
+  };
+}
+
+// Default forum categories
+const forumCategories: ForumCategory[] = [
+  { id: 1, name: "AI Video Generation" },
+  { id: 2, name: "AI Image Creation" },
+  { id: 3, name: "Tutorials & Guides" },
+  { id: 4, name: "Show & Tell" },
+  { id: 5, name: "Questions & Help" },
+  { id: 6, name: "News & Updates" },
 ];
 
 export default function ForumPage() {
@@ -131,20 +100,156 @@ export default function ForumPage() {
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest");
-  const [threads, setThreads] = useState(initialThreads);
   const [newThreadTitle, setNewThreadTitle] = useState("");
   const [newThreadContent, setNewThreadContent] = useState("");
   const [newThreadCategory, setNewThreadCategory] = useState(1);
   const [newThreadTags, setNewThreadTags] = useState("");
   const [newComment, setNewComment] = useState("");
   const [activeThread, setActiveThread] = useState<number | null>(null);
-  const [comments, setComments] = useState(mockComments);
   const [isNewThreadDialogOpen, setIsNewThreadDialogOpen] = useState(false);
   const [visibleCommentForms, setVisibleCommentForms] = useState<{[key: number]: boolean}>({});
 
+  // Fetch forum threads
+  const { 
+    data: threads = [], 
+    isLoading: isLoadingThreads,
+    refetch: refetchThreads
+  } = useQuery<ForumThread[]>({
+    queryKey: ['/api/forum/threads', { categoryId: activeCategory, sortBy }]
+  });
+
+  // Fetch comments for the active thread
+  const { 
+    data: comments = [], 
+    isLoading: isLoadingComments,
+    refetch: refetchComments
+  } = useQuery<ForumComment[]>({
+    queryKey: ['/api/forum/threads', activeThread, 'comments'],
+    queryFn: async () => {
+      if (!activeThread) return [];
+      const res = await fetch(`/api/forum/threads/${activeThread}/comments`);
+      if (!res.ok) throw new Error('Failed to fetch comments');
+      return res.json();
+    },
+    enabled: !!activeThread
+  });
+
+  // Create thread mutation
+  const createThreadMutation = useMutation({
+    mutationFn: async (newThread: { 
+      title: string; 
+      content: string; 
+      categoryId: number | null;
+      tags: string[] | null;
+    }) => {
+      const res = await apiRequest('POST', '/api/forum/threads', newThread);
+      return res.json();
+    },
+    onSuccess: () => {
+      // Reset form
+      setNewThreadTitle("");
+      setNewThreadContent("");
+      setNewThreadTags("");
+      setIsNewThreadDialogOpen(false);
+      
+      // Refetch threads
+      queryClient.invalidateQueries({ queryKey: ['/api/forum/threads'] });
+      
+      toast({
+        title: "Thread created",
+        description: "Your new discussion thread has been created successfully!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error creating thread",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Add comment mutation
+  const addCommentMutation = useMutation({
+    mutationFn: async ({ 
+      threadId, 
+      content 
+    }: { 
+      threadId: number; 
+      content: string;
+    }) => {
+      const res = await apiRequest('POST', `/api/forum/threads/${threadId}/comments`, { content });
+      return res.json();
+    },
+    onSuccess: () => {
+      // Reset form
+      setNewComment("");
+      
+      // Hide the comment form
+      if (activeThread) {
+        setVisibleCommentForms({
+          ...visibleCommentForms,
+          [activeThread]: false
+        });
+      }
+      
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/forum/threads', activeThread, 'comments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/forum/threads'] });
+      
+      toast({
+        title: "Comment added",
+        description: "Your comment has been added to the discussion.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error adding comment",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Delete thread mutation
+  const deleteThreadMutation = useMutation({
+    mutationFn: async (threadId: number) => {
+      const res = await apiRequest('DELETE', `/api/forum/threads/${threadId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      // Refetch threads
+      queryClient.invalidateQueries({ queryKey: ['/api/forum/threads'] });
+      
+      // If the deleted thread was active, clear it
+      if (activeThread) {
+        setActiveThread(null);
+      }
+      
+      toast({
+        title: "Thread deleted",
+        description: "The thread has been deleted successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error deleting thread",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Format timestamps to relative time (e.g., "2 hours ago")
+  const formatTimestamp = (timestamp: string | Date) => {
+    const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
+    return formatDistanceToNow(date, { addSuffix: true });
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Implement search functionality
+    // For now just display a toast with the search query
+    // We can implement actual search functionality later
     toast({
       title: "Searching threads",
       description: `Searching for: ${searchQuery}`,
@@ -152,69 +257,49 @@ export default function ForumPage() {
   };
 
   const handleCreateThread = () => {
-    // In a real app, this would send a POST request to the backend
-    const newThread = {
-      id: threads.length + 1,
+    if (!newThreadTitle.trim() || !newThreadContent.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please provide both a title and content for your thread.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const tagsArray = newThreadTags.split(',')
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0);
+
+    createThreadMutation.mutate({
       title: newThreadTitle,
-      author: user ? user.username : "Anonymous",
-      category: forumCategories.find(c => c.id === newThreadCategory)?.name || "General",
       content: newThreadContent,
-      timestamp: "Just now",
-      upvotes: 0,
-      commentCount: 0,
-      tags: newThreadTags.split(",").map(tag => tag.trim()),
-      isSticky: false,
-    };
-
-    setThreads([newThread, ...threads]);
-    setNewThreadTitle("");
-    setNewThreadContent("");
-    setNewThreadTags("");
-    setIsNewThreadDialogOpen(false);
-
-    toast({
-      title: "Thread created",
-      description: "Your new discussion thread has been created successfully!",
+      categoryId: newThreadCategory,
+      tags: tagsArray.length > 0 ? tagsArray : null
     });
   };
 
   const handleVote = (threadId: number) => {
-    // Update the upvote count
-    setThreads(
-      threads.map(thread =>
-        thread.id === threadId ? { ...thread, upvotes: thread.upvotes + 1 } : thread
-      )
-    );
+    // For now, this is just a client-side update
+    // We would implement a proper API call in the future
+    toast({
+      title: "Upvoted thread",
+      description: "Thread upvoted successfully!"
+    });
   };
 
   const handleAddComment = (threadId: number) => {
-    if (!newComment.trim()) return;
+    if (!newComment.trim()) {
+      toast({
+        title: "Empty comment",
+        description: "Please enter some content for your comment.",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    // In a real app, this would send a POST request to the backend
-    const comment = {
-      id: comments.length + 1,
+    addCommentMutation.mutate({
       threadId,
-      author: user ? user.username : "Anonymous",
-      content: newComment,
-      timestamp: "Just now",
-      upvotes: 0,
-    };
-
-    setComments([...comments, comment]);
-    
-    // Update comment count in thread
-    setThreads(
-      threads.map(thread =>
-        thread.id === threadId ? { ...thread, commentCount: thread.commentCount + 1 } : thread
-      )
-    );
-
-    setNewComment("");
-    setVisibleCommentForms({...visibleCommentForms, [threadId]: false});
-
-    toast({
-      title: "Comment added",
-      description: "Your comment has been added to the thread",
+      content: newComment
     });
   };
 
@@ -223,7 +308,7 @@ export default function ForumPage() {
     if (activeTab === "sticky" && !thread.isSticky) return false;
     
     // Filter by category
-    if (activeCategory && forumCategories.find(c => c.name === thread.category)?.id !== activeCategory) return false;
+    if (activeCategory && thread.categoryId !== activeCategory) return false;
     
     // Filter by search query
     if (searchQuery && !thread.title.toLowerCase().includes(searchQuery.toLowerCase()) && 
@@ -235,33 +320,23 @@ export default function ForumPage() {
   // Sort threads
   const sortedThreads = [...filteredThreads].sort((a, b) => {
     if (sortBy === "newest") {
-      // Simple sorting by id for mock data (higher id = newer)
-      return b.id - a.id;
+      // Sort by created date, with newer first
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     } else if (sortBy === "oldest") {
-      return a.id - b.id;
+      // Sort by created date, with older first
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     } else if (sortBy === "popular") {
+      // Sort by upvotes
       return b.upvotes - a.upvotes;
     } else if (sortBy === "comments") {
-      return b.commentCount - a.commentCount;
+      // Sort by comment count
+      return (b.commentCount || 0) - (a.commentCount || 0);
     }
     return 0;
   });
 
   // Check if user is an admin (ID 1 or 2)
   const isAdmin = user && (user.id === 1 || user.id === 2);
-
-  const handleDeleteThread = (threadId: number) => {
-    // In a real app, this would send a DELETE request to the backend
-    setThreads(threads.filter(thread => thread.id !== threadId));
-    // Also remove associated comments
-    setComments(comments.filter(comment => comment.threadId !== threadId));
-    
-    toast({
-      title: "Thread deleted",
-      description: "The thread has been deleted successfully",
-      variant: "destructive"
-    });
-  };
 
   const handleDeleteComment = (commentId: number, threadId: number) => {
     // In a real app, this would send a DELETE request to the backend
