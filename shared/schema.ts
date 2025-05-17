@@ -320,3 +320,65 @@ export type Report = typeof reports.$inferSelect;
 
 export type InsertBlockedUser = z.infer<typeof insertBlockedUserSchema>;
 export type BlockedUser = typeof blockedUsers.$inferSelect;
+
+// Forum tables
+export const forumThreads = pgTable("forum_threads", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  categoryId: integer("category_id").references(() => categories.id),
+  isSticky: boolean("is_sticky").default(false).notNull(),
+  tags: text("tags"), // Comma-separated tags
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at"),
+  upvotes: integer("upvotes").default(0).notNull(),
+});
+
+export const forumThreadsRelations = relations(forumThreads, ({ one, many }) => ({
+  user: one(users, {
+    fields: [forumThreads.userId],
+    references: [users.id],
+  }),
+  category: one(categories, {
+    fields: [forumThreads.categoryId],
+    references: [categories.id],
+  }),
+  comments: many(forumComments),
+}));
+
+export const forumComments = pgTable("forum_comments", {
+  id: serial("id").primaryKey(),
+  content: text("content").notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  threadId: integer("thread_id").references(() => forumThreads.id, { onDelete: "cascade" }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at"),
+});
+
+export const forumCommentsRelations = relations(forumComments, ({ one }) => ({
+  user: one(users, {
+    fields: [forumComments.userId],
+    references: [users.id],
+  }),
+  thread: one(forumThreads, {
+    fields: [forumComments.threadId],
+    references: [forumThreads.id],
+  }),
+}));
+
+// Generate forum schemas for validation
+export const insertForumThreadSchema = createInsertSchema(forumThreads);
+export const insertForumCommentSchema = createInsertSchema(forumComments);
+
+// Define forum types
+export type InsertForumThread = z.infer<typeof insertForumThreadSchema>;
+export type ForumThread = typeof forumThreads.$inferSelect & {
+  user?: User;
+  commentCount?: number;
+};
+
+export type InsertForumComment = z.infer<typeof insertForumCommentSchema>;
+export type ForumComment = typeof forumComments.$inferSelect & {
+  user?: User;
+};

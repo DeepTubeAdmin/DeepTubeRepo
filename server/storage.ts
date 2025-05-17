@@ -1,5 +1,6 @@
 import { 
   users, categories, videos, wishlistItems, comments, likes, likesConstraint, messages, reports, blockedUsers,
+  forumThreads, forumComments,
   type User, type InsertUser, 
   type Category, type InsertCategory,
   type Video, type InsertVideo,
@@ -8,7 +9,9 @@ import {
   type Like, type InsertLike,
   type Message, type InsertMessage,
   type Report, type InsertReport,
-  type BlockedUser, type InsertBlockedUser
+  type BlockedUser, type InsertBlockedUser,
+  type ForumThread, type InsertForumThread,
+  type ForumComment, type InsertForumComment
 } from "@shared/schema";
 import { count } from "drizzle-orm";
 import { db } from "./db";
@@ -110,6 +113,20 @@ export interface IStorage {
   getReportsByVideoId(videoId: number): Promise<Report[]>;
   getPendingReports(limit?: number): Promise<Report[]>;
   updateReportStatus(id: number, status: 'pending' | 'reviewed' | 'ignored', resolvedBy?: number): Promise<Report>;
+  
+  // Forum operations
+  getForumThreads(options?: { categoryId?: number, sortBy?: string, limit?: number, offset?: number }): Promise<ForumThread[]>;
+  getForumThreadById(id: number): Promise<ForumThread | undefined>;
+  createForumThread(thread: InsertForumThread): Promise<ForumThread>;
+  updateForumThread(id: number, data: Partial<InsertForumThread>): Promise<ForumThread>;
+  deleteForumThread(id: number): Promise<void>;
+  getForumThreadCommentCount(threadId: number): Promise<number>;
+  
+  // Forum comment operations
+  getForumCommentsByThreadId(threadId: number): Promise<ForumComment[]>;
+  createForumComment(comment: InsertForumComment): Promise<ForumComment>;
+  updateForumComment(id: number, data: Partial<InsertForumComment>): Promise<ForumComment>;
+  deleteForumComment(id: number): Promise<void>;
   
   // Session store
   sessionStore: SessionStore;
