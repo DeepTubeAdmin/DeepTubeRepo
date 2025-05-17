@@ -4138,11 +4138,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       ensureUser(req);
       
-      const { title, content, categoryId, tags } = req.body;
+      const { title, content, categoryId, tags, isSticky } = req.body;
       
       if (!title || !content) {
         return res.status(400).json({ error: "Title and content are required" });
       }
+      
+      // Only admins can create sticky threads
+      const isAdmin = req.user.isAdmin || req.user.id === 1 || req.user.id === 2;
+      const shouldMakeSticky = isSticky && isAdmin;
       
       const newThread = await dbStorage.createForumThread({
         title,
@@ -4150,7 +4154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.user.id,
         categoryId: categoryId || null,
         tags: tags || null,
-        isSticky: false,
+        isSticky: shouldMakeSticky,
         upvotes: 0
       });
       
