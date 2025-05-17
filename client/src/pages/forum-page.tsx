@@ -113,7 +113,31 @@ export default function ForumPage() {
     isLoading: isLoadingThreads,
     refetch: refetchThreads
   } = useQuery<ForumThread[]>({
-    queryKey: ['/api/forum/threads', { categoryId: activeCategory, sortBy }]
+    queryKey: ['/api/forum/threads', { categoryId: activeCategory, sortBy }],
+    select: (data) => {
+      // Split threads into sticky and non-sticky
+      const stickyThreads = data.filter(thread => thread.isSticky);
+      const regularThreads = data.filter(thread => !thread.isSticky);
+      
+      // Sort both groups by the selected criteria
+      const sortThreads = (threads: ForumThread[]) => {
+        return [...threads].sort((a, b) => {
+          if (sortBy === "newest") {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          } else if (sortBy === "oldest") {
+            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          } else if (sortBy === "popular") {
+            return b.upvotes - a.upvotes;
+          } else if (sortBy === "comments") {
+            return (b.commentCount || 0) - (a.commentCount || 0);
+          }
+          return 0;
+        });
+      };
+      
+      // Combine the two groups with sticky threads first
+      return [...sortThreads(stickyThreads), ...sortThreads(regularThreads)];
+    }
   });
 
   // Fetch comments for the active thread
@@ -381,39 +405,7 @@ export default function ForumPage() {
     return true;
   });
 
-  // Split threads into sticky and non-sticky
-  const stickyThreads = filteredThreads.filter(thread => thread.isSticky);
-  const regularThreads = filteredThreads.filter(thread => !thread.isSticky);
-  
-  // Sort each group separately
-  const sortedStickyThreads = [...stickyThreads].sort((a, b) => {
-    if (sortBy === "newest") {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    } else if (sortBy === "oldest") {
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    } else if (sortBy === "popular") {
-      return b.upvotes - a.upvotes;
-    } else if (sortBy === "comments") {
-      return (b.commentCount || 0) - (a.commentCount || 0);
-    }
-    return 0;
-  });
-  
-  const sortedRegularThreads = [...regularThreads].sort((a, b) => {
-    if (sortBy === "newest") {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    } else if (sortBy === "oldest") {
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    } else if (sortBy === "popular") {
-      return b.upvotes - a.upvotes;
-    } else if (sortBy === "comments") {
-      return (b.commentCount || 0) - (a.commentCount || 0);
-    }
-    return 0;
-  });
-  
-  // Combine the two arrays with sticky threads first
-  const sortedThreads = [...sortedStickyThreads, ...sortedRegularThreads];
+  // The sorting will now be handled by the select function in useQuery
 
   // Check if user is an admin (ID 1 or 2)
   const isAdmin = user && (user.id === 1 || user.id === 2);
@@ -695,7 +687,7 @@ export default function ForumPage() {
                   <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary mb-4" />
                   <p className="text-muted-foreground">Loading forum threads...</p>
                 </div>
-              ) : sortedThreads.length === 0 ? (
+              ) : threads.length === 0 ? (
                 <div className="text-center py-12 bg-muted rounded-lg">
                   <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="font-medium text-lg mb-2">No threads found</h3>
@@ -711,15 +703,15 @@ export default function ForumPage() {
                   </Button>
                 </div>
               ) : (
-                sortedThreads.map(thread => (
+                threads.map(thread => (
                   <Card 
                     key={thread.id} 
                     className={thread.isSticky 
-                      ? "border-primary border-2 shadow-md bg-primary/5" 
+                      ? "border-primary border-2 shadow-md bg-gradient-to-b from-primary/10 to-background" 
                       : ""
                     }
                   >
-                    <CardHeader className={`p-4 pb-2 ${thread.isSticky ? "bg-primary/10 rounded-t-lg" : ""}`}>
+                    <CardHeader className={`p-4 pb-2 ${thread.isSticky ? "bg-primary/20 rounded-t-lg" : ""}`}>
                       <div className="flex flex-col md:flex-row md:items-center gap-2 w-full">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
@@ -805,7 +797,7 @@ export default function ForumPage() {
                                 <Button 
                                   variant="outline" 
                                   size="sm" 
-                                  className="text-xs text-destructive"
+                                  className="text-xs text-destructive hover:bg-destructive hover:text-white"
                                 >
                                   <Trash2 className="h-3 w-3 mr-1" />
                                   Delete
