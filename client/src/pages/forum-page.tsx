@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, AlertCircle, Loader2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -391,24 +391,26 @@ export default function ForumPage() {
     setVisibleCommentForms({...visibleCommentForms, [threadId]: true});
   };
 
-  // First sort threads to ensure sticky ones are at the top
-  const sortedThreads = [...threads].sort((a, b) => {
+  // Process threads to ensure sticky ones are at the top
+  const sortedThreads = useMemo(() => {
     // Sticky threads always come first
-    if (a.isSticky && !b.isSticky) return -1;
-    if (!a.isSticky && b.isSticky) return 1;
-    
-    // Within each group (sticky or non-sticky), apply the selected sort
-    if (sortBy === "newest") {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    } else if (sortBy === "oldest") {
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    } else if (sortBy === "popular") {
-      return b.upvotes - a.upvotes;
-    } else if (sortBy === "comments") {
-      return (b.commentCount || 0) - (a.commentCount || 0);
-    }
-    return 0;
-  });
+    return [...threads].sort((a, b) => {
+      if (a.isSticky && !b.isSticky) return -1;
+      if (!a.isSticky && b.isSticky) return 1;
+      
+      // Within each group (sticky or non-sticky), apply the selected sort
+      if (sortBy === "newest") {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      } else if (sortBy === "oldest") {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      } else if (sortBy === "popular") {
+        return b.upvotes - a.upvotes;
+      } else if (sortBy === "comments") {
+        return (b.commentCount || 0) - (a.commentCount || 0);
+      }
+      return 0;
+    });
+  }, [threads, sortBy]);
   
   // Then filter the sorted threads
   const filteredThreads = sortedThreads.filter(thread => {
@@ -425,36 +427,7 @@ export default function ForumPage() {
     return true;
   });
 
-  // Process threads to put sticky ones at the top
-  const processedThreads = React.useMemo(() => {
-    // Split into sticky and non-sticky threads
-    const stickyThreads = threads.filter(thread => thread.isSticky);
-    const regularThreads = threads.filter(thread => !thread.isSticky);
-
-    // Sort each group separately
-    let sortedSticky = [...stickyThreads];
-    let sortedRegular = [...regularThreads];
-
-    // Apply sorting to each group
-    const sortFunction = (a: ForumThread, b: ForumThread) => {
-      if (sortBy === "newest") {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      } else if (sortBy === "oldest") {
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      } else if (sortBy === "popular") {
-        return b.upvotes - a.upvotes;
-      } else if (sortBy === "comments") {
-        return (b.commentCount || 0) - (a.commentCount || 0);
-      }
-      return 0;
-    };
-
-    sortedSticky = sortedSticky.sort(sortFunction);
-    sortedRegular = sortedRegular.sort(sortFunction);
-
-    // Return with sticky threads first
-    return [...sortedSticky, ...sortedRegular];
-  }, [threads, sortBy]);
+  // We already have sorted threads from above, so we don't need this duplicated logic
 
   // Check if user is an admin (ID 1 or 2, or has isAdmin flag)
   const isAdmin = user && (user.id === 1 || user.id === 2 || user.isAdmin);
