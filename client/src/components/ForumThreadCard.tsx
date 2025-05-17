@@ -4,7 +4,8 @@ import { Link } from "wouter";
 import {
   MessageCircle,
   ChevronUp,
-  Trash2
+  Trash2,
+  Clock
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -58,23 +59,26 @@ export default function ForumThreadCard({
   return (
     <Card 
       key={thread.id} 
-      className={thread.isSticky 
-        ? "border-primary border-2 shadow-md bg-gradient-to-b from-primary/10 to-background" 
-        : ""
-      }
+      className={`hover:shadow-lg transition-all duration-200 ${
+        thread.isSticky 
+          ? "border-primary border-2 shadow-md bg-gradient-to-b from-primary/10 to-background" 
+          : "hover:border-primary/50"
+      }`}
     >
       <CardHeader className={`p-4 pb-2 ${thread.isSticky ? "bg-primary/20 rounded-t-lg" : ""}`}>
         <div className="flex flex-col md:flex-row md:items-center gap-2 w-full">
           <div className="flex-1">
             <div className="flex items-center gap-2">
               {thread.isSticky && (
-                <Badge className="bg-primary text-xs font-bold animate-pulse">Sticky</Badge>
+                <Badge className="bg-primary text-xs font-bold">STICKY</Badge>
               )}
-              <h3 className="text-lg font-semibold">
-                {thread.title}
-              </h3>
+              <Link href={`/forum/thread/${thread.id}`}>
+                <h3 className="text-lg font-semibold hover:text-primary cursor-pointer">
+                  {thread.title}
+                </h3>
+              </Link>
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
               <span className="flex items-center">
                 <Avatar className="h-5 w-5 mr-1">
                   <AvatarFallback>{thread.user?.username?.[0] || '?'}</AvatarFallback>
@@ -91,12 +95,21 @@ export default function ForumThreadCard({
                 <MessageCircle className="h-3 w-3 mr-1" />
                 {thread.commentCount || 0} comment{(thread.commentCount !== 1) ? 's' : ''}
               </span>
+              <span>•</span>
+              <span className="flex items-center">
+                <ChevronUp className="h-3 w-3 mr-1" />
+                {thread.upvotes} upvote{thread.upvotes !== 1 ? 's' : ''}
+              </span>
             </div>
           </div>
         </div>
       </CardHeader>
       <CardContent className="p-4 pt-3">
-        <p className="text-sm whitespace-pre-wrap">{thread.content}</p>
+        <Link href={`/forum/thread/${thread.id}`}>
+          <div className="text-sm whitespace-pre-wrap line-clamp-4 hover:text-foreground/90 cursor-pointer">
+            {thread.content}
+          </div>
+        </Link>
         
         {thread.tags && thread.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-3">
@@ -106,19 +119,30 @@ export default function ForumThreadCard({
           </div>
         )}
       </CardContent>
-      <CardFooter className="p-4 pt-2 flex flex-col">
-        <div className="flex justify-between items-center w-full">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-xs"
-            onClick={() => onUpvote(thread.id)}
-          >
-            <ChevronUp className="h-3 w-3 mr-1" />
-            Upvote
-          </Button>
+      <CardFooter className="p-4 pt-0 flex flex-col border-t border-border/40">
+        <div className="flex justify-between items-center w-full pt-2">
+          <Link href={`/forum/thread/${thread.id}`}>
+            <Button 
+              variant="secondary" 
+              size="sm"
+              className="text-xs"
+            >
+              <MessageCircle className="h-3 w-3 mr-1" />
+              View Discussion
+            </Button>
+          </Link>
           
           <div className="flex gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-xs"
+              onClick={() => onUpvote(thread.id)}
+            >
+              <ChevronUp className="h-4 w-4 mr-1 text-primary" />
+              Upvote
+            </Button>
+            
             <Button 
               variant="outline" 
               size="sm" 
