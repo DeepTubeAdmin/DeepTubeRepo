@@ -456,8 +456,8 @@ export default function ForumPage() {
     return [...sortedSticky, ...sortedRegular];
   }, [threads, sortBy]);
 
-  // Check if user is an admin (ID 1 or 2)
-  const isAdmin = user && (user.id === 1 || user.id === 2);
+  // Check if user is an admin (ID 1 or 2, or has isAdmin flag)
+  const isAdmin = user && (user.id === 1 || user.id === 2 || user.isAdmin);
 
   return (
     <Layout>
@@ -752,7 +752,7 @@ export default function ForumPage() {
                   </Button>
                 </div>
               ) : (
-                threads.map(thread => (
+                filteredThreads.map(thread => (
                   <Card 
                     key={thread.id} 
                     className={thread.isSticky 
