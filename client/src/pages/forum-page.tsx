@@ -393,12 +393,12 @@ export default function ForumPage() {
 
   // Process threads to ensure sticky ones are at the top
   const sortedThreads = useMemo(() => {
-    // Sticky threads always come first
-    return [...threads].sort((a, b) => {
-      if (a.isSticky && !b.isSticky) return -1;
-      if (!a.isSticky && b.isSticky) return 1;
-      
-      // Within each group (sticky or non-sticky), apply the selected sort
+    // Split threads into sticky and non-sticky
+    const stickyThreads = threads.filter(thread => thread.isSticky);
+    const regularThreads = threads.filter(thread => !thread.isSticky);
+    
+    // Sort function to apply within each group
+    const sortFunction = (a: ForumThread, b: ForumThread) => {
       if (sortBy === "newest") {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       } else if (sortBy === "oldest") {
@@ -409,7 +409,14 @@ export default function ForumPage() {
         return (b.commentCount || 0) - (a.commentCount || 0);
       }
       return 0;
-    });
+    };
+    
+    // Sort each group separately
+    const sortedSticky = [...stickyThreads].sort(sortFunction);
+    const sortedRegular = [...regularThreads].sort(sortFunction);
+    
+    // Always return sticky threads first, followed by regular threads
+    return [...sortedSticky, ...sortedRegular];
   }, [threads, sortBy]);
   
   // Then filter the sorted threads
