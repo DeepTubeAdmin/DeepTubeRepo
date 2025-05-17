@@ -404,18 +404,24 @@ export default function ForumPage() {
                   >
                     All Categories
                   </button>
-                  {forumCategories.map(category => (
-                    <button 
-                      key={category.id}
-                      className={`text-left px-4 py-2 hover:bg-muted transition-colors flex justify-between ${activeCategory === category.id ? 'bg-muted font-medium' : ''}`}
-                      onClick={() => setActiveCategory(category.id)}
-                    >
-                      <span>{category.name}</span>
-                      <span className="bg-muted-foreground/20 text-muted-foreground rounded-full px-2 py-0.5 text-xs">
-                        {category.count}
-                      </span>
-                    </button>
-                  ))}
+                  {isLoadingCategories ? (
+                    <div className="p-4 text-center">
+                      <Loader2 className="animate-spin h-5 w-5 mx-auto text-muted-foreground" />
+                    </div>
+                  ) : (
+                    categories.map(category => (
+                      <button 
+                        key={category.id}
+                        className={`text-left px-4 py-2 hover:bg-muted transition-colors flex justify-between ${activeCategory === category.id ? 'bg-muted font-medium' : ''}`}
+                        onClick={() => setActiveCategory(category.id)}
+                      >
+                        <span>{category.name}</span>
+                        <span className="bg-muted-foreground/20 text-muted-foreground rounded-full px-2 py-0.5 text-xs">
+                          {category.count || 0}
+                        </span>
+                      </button>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -605,7 +611,11 @@ export default function ForumPage() {
                           {thread.isSticky && (
                             <Badge variant="outline" className="bg-primary/10 text-primary">Sticky</Badge>
                           )}
-                          <Badge>{thread.category}</Badge>
+                          {thread.categoryId && (
+                            <Badge>
+                              {categories.find(c => c.id === thread.categoryId)?.name || 'Uncategorized'}
+                            </Badge>
+                          )}
                         </div>
                         <h3 
                           className="text-xl font-medium mt-2 cursor-pointer hover:text-primary transition-colors"
