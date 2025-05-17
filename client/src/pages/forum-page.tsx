@@ -83,7 +83,15 @@ interface ForumComment {
   };
 }
 
-// We'll fetch categories with their thread counts from the API
+// Default forum categories
+const forumCategories: ForumCategory[] = [
+  { id: 1, name: "AI Video Generation" },
+  { id: 2, name: "AI Image Creation" },
+  { id: 3, name: "Tutorials & Guides" },
+  { id: 4, name: "Show & Tell" },
+  { id: 5, name: "Questions & Help" },
+  { id: 6, name: "News & Updates" },
+];
 
 export default function ForumPage() {
   const { toast } = useToast();
@@ -100,22 +108,6 @@ export default function ForumPage() {
   const [activeThread, setActiveThread] = useState<number | null>(null);
   const [isNewThreadDialogOpen, setIsNewThreadDialogOpen] = useState(false);
   const [visibleCommentForms, setVisibleCommentForms] = useState<{[key: number]: boolean}>({});
-  
-  // Fetch forum categories with their thread counts
-  const {
-    data: forumCategories = [],
-    isLoading: isLoadingCategories
-  } = useQuery<ForumCategory[]>({
-    queryKey: ['/api/forum/categories'],
-    queryFn: async () => {
-      console.log("Making API request to:", "/api/forum/categories");
-      const response = await fetch("/api/forum/categories");
-      if (!response.ok) {
-        throw new Error("Failed to fetch forum categories");
-      }
-      return response.json();
-    },
-  });
 
   // Fetch forum threads
   const { 
@@ -264,7 +256,7 @@ export default function ForumPage() {
     });
   };
 
-  const handleCreateThread = (isSticky: boolean = false) => {
+  const handleCreateThread = () => {
     if (!newThreadTitle.trim() || !newThreadContent.trim()) {
       toast({
         title: "Missing information",
@@ -282,8 +274,7 @@ export default function ForumPage() {
       title: newThreadTitle,
       content: newThreadContent,
       categoryId: newThreadCategory,
-      tags: tagsArray.length > 0 ? tagsArray : null,
-      isSticky: isSticky
+      tags: tagsArray.length > 0 ? tagsArray : null
     });
   };
 
@@ -580,23 +571,9 @@ export default function ForumPage() {
                       <Button variant="outline" onClick={() => setIsNewThreadDialogOpen(false)}>
                         Cancel
                       </Button>
-                      <div className="flex gap-2">
-                        {user?.isAdmin && (
-                          <Button 
-                            onClick={() => handleCreateThread(true)} 
-                            disabled={!newThreadTitle || !newThreadContent}
-                            variant="secondary"
-                          >
-                            Create Sticky Thread
-                          </Button>
-                        )}
-                        <Button 
-                          onClick={() => handleCreateThread(false)} 
-                          disabled={!newThreadTitle || !newThreadContent}
-                        >
-                          Create Thread
-                        </Button>
-                      </div>
+                      <Button onClick={handleCreateThread} disabled={!newThreadTitle || !newThreadContent}>
+                        Create Thread
+                      </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>

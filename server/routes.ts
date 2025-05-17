@@ -4071,49 +4071,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Forum API endpoints
-  // Get forum categories with thread counts
-  app.get("/api/forum/categories", async (req, res) => {
-    try {
-      let categories = await dbStorage.getCategories();
-      
-      // If no categories exist, create default ones
-      if (categories.length === 0) {
-        const defaultCategories = [
-          { name: "AI Video Generation", slug: "ai-video-generation", icon: "" },
-          { name: "AI Image Creation", slug: "ai-image-creation", icon: "" },
-          { name: "Tutorials & Guides", slug: "tutorials-guides", icon: "" },
-          { name: "Show & Tell", slug: "show-tell", icon: "" },
-          { name: "Questions & Help", slug: "questions-help", icon: "" },
-          { name: "News & Updates", slug: "news-updates", icon: "" },
-        ];
-        
-        // Create each category
-        for (const category of defaultCategories) {
-          await dbStorage.createCategory(category);
-        }
-        
-        // Fetch the newly created categories
-        categories = await dbStorage.getCategories();
-      }
-      
-      // Get thread counts for each category
-      const categoryThreadCounts = await Promise.all(
-        categories.map(async (category) => {
-          const threads = await dbStorage.getForumThreads({ categoryId: category.id });
-          return {
-            ...category,
-            count: threads.length
-          };
-        })
-      );
-      
-      res.json(categoryThreadCounts);
-    } catch (error) {
-      console.error("Error fetching forum categories with counts:", error);
-      res.status(500).json({ error: "Failed to fetch forum categories" });
-    }
-  });
-  
   // Get all forum threads with optional filtering
   app.get("/api/forum/threads", async (req, res) => {
     try {
