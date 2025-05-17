@@ -808,7 +808,7 @@ export default function ForumPage() {
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction 
-                                  onClick={() => handleDeleteThread(thread.id)}
+                                  onClick={() => deleteThreadMutation.mutate(thread.id)}
                                   className="bg-destructive hover:bg-destructive/90"
                                 >
                                   Delete
