@@ -1337,6 +1337,192 @@ export class DatabaseStorage implements IStorage {
       return { content: [], totalCount: 0 };
     }
   }
+
+  // Forum methods
+  async getForumThreads(options: { categoryId?: number, sortBy?: string, limit?: number, offset?: number } = {}): Promise<ForumThread[]> {
+    const { categoryId, sortBy = "newest", limit = 50, offset = 0 } = options;
+    
+    let query = db.select({
+      thread: forumThreads,
+      username: users.username,
+      commentCount: sql<number>`count(${forumComments.id})`.mapWith(Number)
+    })
+    .from(forumThreads)
+    .leftJoin(users, eq(forumThreads.userId, users.id))
+    .leftJoin(forumComments, eq(forumThreads.id, forumComments.threadId))
+    .groupBy(forumThreads.id, users.username);
+    
+    if (categoryId) {
+      query = query.where(eq(forumThreads.categoryId, categoryId));
+    }
+    
+    // Apply sorting
+    if (sortBy === "newest") {
+      query = query.orderBy(desc(forumThreads.createdAt));
+    } else if (sortBy === "oldest") {
+      query = query.orderBy(asc(forumThreads.createdAt));
+    } else if (sortBy === "popular" || sortBy === "upvotes") {
+      query = query.orderBy(desc(forumThreads.upvotes));
+    } else if (sortBy === "comments") {
+      query = query.orderBy(desc(sql<number>`count(${forumComments.id})`));
+    }
+    
+    query = query.limit(limit).offset(offset);
+    
+    const results = await query;
+    
+    // Format the results to match the ForumThread type
+    return results.map(result => ({
+      ...result.thread,
+      user: result.username ? { 
+        id: result.thread.userId, 
+        username: result.username,
+      } as User,
+      commentCount: result.commentCount
+    }));
+  }
+  
+  async getForumThreadById(id: number): Promise<ForumThread | undefined> {
+    const result = await db.select({
+      thread: forumThreads,
+      username: users.username,
+      commentCount: sql<number>`count(${forumComments.id})`.mapWith(Number)
+    })
+    .from(forumThreads)
+    .leftJoin(users, eq(forumThreads.userId, users.id))
+    .leftJoin(forumComments, eq(forumThreads.id, forumComments.threadId))
+    .where(eq(forumThreads.id, id))
+    .groupBy(forumThreads.id, users.username);
+    
+    if (result.length === 0) return undefined;
+    
+    return {
+      ...result[0].thread,
+      user: result[0].username ? {
+        id: result[0].thread.userId,
+        username: result[0].username,
+      } as User,
+      commentCount: result[0].commentCount
+    };
+  }
+  
+  async createForumThread(thread: InsertForumThread): Promise<ForumThread> {
+    const [newThread] = await db
+      .insert(forumThreads)
+      .values({
+        ...thread,
+        createdAt: new Date()
+      })
+      .returning();
+    
+    // Fetch the user name to return a complete thread
+    const user = newThread.userId ? await this.getUser(newThread.userId) : undefined;
+    
+    return {
+      ...newThread,
+      user: user,
+      commentCount: 0
+    };
+  }
+  
+  async updateForumThread(id: number, data: Partial<InsertForumThread>): Promise<ForumThread> {
+    const [updatedThread] = await db
+      .update(forumThreads)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(forumThreads.id, id))
+      .returning();
+    
+    // Fetch the user and comment count
+    const user = updatedThread.userId ? await this.getUser(updatedThread.userId) : undefined;
+    const commentCount = await this.getForumThreadCommentCount(id);
+    
+    return {
+      ...updatedThread,
+      user: user,
+      commentCount
+    };
+  }
+  
+  async deleteForumThread(id: number): Promise<void> {
+    // Delete all related comments first (cascade should handle this, but being explicit)
+    await db.delete(forumComments).where(eq(forumComments.threadId, id));
+    
+    // Then delete the thread
+    await db.delete(forumThreads).where(eq(forumThreads.id, id));
+  }
+  
+  async getForumThreadCommentCount(threadId: number): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)`.mapWith(Number) })
+      .from(forumComments)
+      .where(eq(forumComments.threadId, threadId));
+    
+    return result[0]?.count || 0;
+  }
+  
+  async getForumCommentsByThreadId(threadId: number): Promise<ForumComment[]> {
+    const comments = await db
+      .select({
+        comment: forumComments,
+        username: users.username
+      })
+      .from(forumComments)
+      .leftJoin(users, eq(forumComments.userId, users.id))
+      .where(eq(forumComments.threadId, threadId))
+      .orderBy(asc(forumComments.createdAt));
+    
+    return comments.map(row => ({
+      ...row.comment,
+      user: row.username ? {
+        id: row.comment.userId,
+        username: row.username
+      } as User : undefined
+    }));
+  }
+  
+  async createForumComment(comment: InsertForumComment): Promise<ForumComment> {
+    const [newComment] = await db
+      .insert(forumComments)
+      .values({
+        ...comment,
+        createdAt: new Date()
+      })
+      .returning();
+    
+    // Fetch the user to return a complete comment
+    const user = newComment.userId ? await this.getUser(newComment.userId) : undefined;
+    
+    return {
+      ...newComment,
+      user
+    };
+  }
+  
+  async updateForumComment(id: number, data: Partial<InsertForumComment>): Promise<ForumComment> {
+    const [updatedComment] = await db
+      .update(forumComments)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(forumComments.id, id))
+      .returning();
+    
+    // Fetch the user
+    const user = updatedComment.userId ? await this.getUser(updatedComment.userId) : undefined;
+    
+    return {
+      ...updatedComment,
+      user
+    };
+  }
+  
+  async deleteForumComment(id: number): Promise<void> {
+    await db.delete(forumComments).where(eq(forumComments.id, id));
+  }
 }
 
 export const storage = new DatabaseStorage();
