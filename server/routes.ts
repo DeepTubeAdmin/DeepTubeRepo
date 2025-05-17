@@ -4070,6 +4070,273 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Forum API endpoints
+  // Get all forum threads with optional filtering
+  app.get("/api/forum/threads", async (req, res) => {
+    try {
+      const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
+      const sortBy = req.query.sortBy as string || "newest";
+      const limit = req.query.limit ? Number(req.query.limit) : 50;
+      const offset = req.query.offset ? Number(req.query.offset) : 0;
+      
+      const threads = await dbStorage.getForumThreads({
+        categoryId,
+        sortBy,
+        limit,
+        offset
+      });
+      
+      res.json(threads);
+    } catch (error) {
+      console.error("Error fetching forum threads:", error);
+      res.status(500).json({ error: "Failed to fetch forum threads" });
+    }
+  });
+  
+  // Get a specific forum thread
+  app.get("/api/forum/threads/:id", async (req, res) => {
+    try {
+      const threadId = Number(req.params.id);
+      if (isNaN(threadId)) {
+        return res.status(400).json({ error: "Invalid thread ID" });
+      }
+      
+      const thread = await dbStorage.getForumThreadById(threadId);
+      if (!thread) {
+        return res.status(404).json({ error: "Thread not found" });
+      }
+      
+      res.json(thread);
+    } catch (error) {
+      console.error(`Error fetching forum thread ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to fetch forum thread" });
+    }
+  });
+  
+  // Create a new forum thread
+  app.post("/api/forum/threads", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      
+      const { title, content, categoryId, tags } = req.body;
+      
+      if (!title || !content) {
+        return res.status(400).json({ error: "Title and content are required" });
+      }
+      
+      const newThread = await dbStorage.createForumThread({
+        title,
+        content,
+        userId: req.user.id,
+        categoryId: categoryId || null,
+        tags: tags || null,
+        isSticky: false,
+        upvotes: 0
+      });
+      
+      res.status(201).json(newThread);
+    } catch (error) {
+      console.error("Error creating forum thread:", error);
+      res.status(500).json({ error: "Failed to create forum thread" });
+    }
+  });
+  
+  // Update a forum thread
+  app.put("/api/forum/threads/:id", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      const threadId = Number(req.params.id);
+      
+      if (isNaN(threadId)) {
+        return res.status(400).json({ error: "Invalid thread ID" });
+      }
+      
+      // Get the thread to check ownership
+      const thread = await dbStorage.getForumThreadById(threadId);
+      if (!thread) {
+        return res.status(404).json({ error: "Thread not found" });
+      }
+      
+      // Only allow the thread owner or an admin to update it
+      const isAdmin = req.user.isAdmin || req.user.id === 1 || req.user.id === 2;
+      if (thread.userId !== req.user.id && !isAdmin) {
+        return res.status(403).json({ error: "You don't have permission to update this thread" });
+      }
+      
+      // Update the thread
+      const { title, content, categoryId, tags } = req.body;
+      
+      const updatedThread = await dbStorage.updateForumThread(threadId, {
+        title,
+        content,
+        categoryId: categoryId || null,
+        tags: tags || null,
+        updatedAt: new Date()
+      });
+      
+      res.json(updatedThread);
+    } catch (error) {
+      console.error(`Error updating forum thread ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to update forum thread" });
+    }
+  });
+  
+  // Delete a forum thread
+  app.delete("/api/forum/threads/:id", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      const threadId = Number(req.params.id);
+      
+      if (isNaN(threadId)) {
+        return res.status(400).json({ error: "Invalid thread ID" });
+      }
+      
+      // Get the thread to check ownership
+      const thread = await dbStorage.getForumThreadById(threadId);
+      if (!thread) {
+        return res.status(404).json({ error: "Thread not found" });
+      }
+      
+      // Only allow the thread owner or an admin to delete it
+      const isAdmin = req.user.isAdmin || req.user.id === 1 || req.user.id === 2;
+      if (thread.userId !== req.user.id && !isAdmin) {
+        return res.status(403).json({ error: "You don't have permission to delete this thread" });
+      }
+      
+      // Delete the thread
+      await dbStorage.deleteForumThread(threadId);
+      
+      res.json({ success: true, message: "Thread deleted successfully" });
+    } catch (error) {
+      console.error(`Error deleting forum thread ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to delete forum thread" });
+    }
+  });
+  
+  // Get comments for a specific thread
+  app.get("/api/forum/threads/:id/comments", async (req, res) => {
+    try {
+      const threadId = Number(req.params.id);
+      if (isNaN(threadId)) {
+        return res.status(400).json({ error: "Invalid thread ID" });
+      }
+      
+      const comments = await dbStorage.getForumCommentsByThreadId(threadId);
+      res.json(comments);
+    } catch (error) {
+      console.error(`Error fetching comments for thread ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to fetch thread comments" });
+    }
+  });
+  
+  // Add a comment to a thread
+  app.post("/api/forum/threads/:id/comments", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      const threadId = Number(req.params.id);
+      
+      if (isNaN(threadId)) {
+        return res.status(400).json({ error: "Invalid thread ID" });
+      }
+      
+      // Verify the thread exists
+      const thread = await dbStorage.getForumThreadById(threadId);
+      if (!thread) {
+        return res.status(404).json({ error: "Thread not found" });
+      }
+      
+      const { content } = req.body;
+      if (!content) {
+        return res.status(400).json({ error: "Comment content is required" });
+      }
+      
+      const newComment = await dbStorage.createForumComment({
+        content,
+        userId: req.user.id,
+        threadId
+      });
+      
+      res.status(201).json(newComment);
+    } catch (error) {
+      console.error(`Error adding comment to thread ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to add comment" });
+    }
+  });
+  
+  // Update a comment
+  app.put("/api/forum/comments/:id", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      const commentId = Number(req.params.id);
+      
+      if (isNaN(commentId)) {
+        return res.status(400).json({ error: "Invalid comment ID" });
+      }
+      
+      // Get the comments to check owner
+      const comments = await dbStorage.getForumCommentsByThreadId(-1); // Temporary workaround until we have proper getCommentById
+      const comment = comments.find(c => c.id === commentId);
+      
+      if (!comment) {
+        return res.status(404).json({ error: "Comment not found" });
+      }
+      
+      // Only allow the comment owner or an admin to update it
+      const isAdmin = req.user.isAdmin || req.user.id === 1 || req.user.id === 2;
+      if (comment.userId !== req.user.id && !isAdmin) {
+        return res.status(403).json({ error: "You don't have permission to update this comment" });
+      }
+      
+      const { content } = req.body;
+      if (!content) {
+        return res.status(400).json({ error: "Comment content is required" });
+      }
+      
+      const updatedComment = await dbStorage.updateForumComment(commentId, {
+        content,
+        updatedAt: new Date()
+      });
+      
+      res.json(updatedComment);
+    } catch (error) {
+      console.error(`Error updating comment ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to update comment" });
+    }
+  });
+  
+  // Delete a comment
+  app.delete("/api/forum/comments/:id", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      const commentId = Number(req.params.id);
+      
+      if (isNaN(commentId)) {
+        return res.status(400).json({ error: "Invalid comment ID" });
+      }
+      
+      // Get the comments to check owner
+      const comments = await dbStorage.getForumCommentsByThreadId(-1); // Temporary workaround until we have proper getCommentById
+      const comment = comments.find(c => c.id === commentId);
+      
+      if (!comment) {
+        return res.status(404).json({ error: "Comment not found" });
+      }
+      
+      // Only allow the comment owner or an admin to delete it
+      const isAdmin = req.user.isAdmin || req.user.id === 1 || req.user.id === 2;
+      if (comment.userId !== req.user.id && !isAdmin) {
+        return res.status(403).json({ error: "You don't have permission to delete this comment" });
+      }
+      
+      await dbStorage.deleteForumComment(commentId);
+      
+      res.json({ success: true, message: "Comment deleted successfully" });
+    } catch (error) {
+      console.error(`Error deleting comment ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to delete comment" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Add WebSocket support

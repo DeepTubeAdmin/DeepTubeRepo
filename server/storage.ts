@@ -1376,7 +1376,7 @@ export class DatabaseStorage implements IStorage {
       ...result.thread,
       user: result.username ? { 
         id: result.thread.userId, 
-        username: result.username,
+        username: result.username
       } as User,
       commentCount: result.commentCount
     }));
@@ -1400,7 +1400,7 @@ export class DatabaseStorage implements IStorage {
       ...result[0].thread,
       user: result[0].username ? {
         id: result[0].thread.userId,
-        username: result[0].username,
+        username: result[0].username
       } as User,
       commentCount: result[0].commentCount
     };
