@@ -677,55 +677,6 @@ export default function ForumPage() {
                     </Dialog>
                   )}
                 </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Category</label>
-                        <select 
-                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          value={newThreadCategory || ""}
-                          onChange={e => setNewThreadCategory(Number(e.target.value))}
-                        >
-                          <option value="">Select a category</option>
-                          {categories.map(category => (
-                            <option key={category.id} value={category.id}>
-                              {category.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Thread Content</label>
-                        <Textarea 
-                          value={newThreadContent}
-                          onChange={e => setNewThreadContent(e.target.value)}
-                          placeholder="Share your thoughts, questions, or ideas..."
-                          rows={6}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Tags (comma separated)</label>
-                        <Input 
-                          value={newThreadTags}
-                          onChange={e => setNewThreadTags(e.target.value)}
-                          placeholder="ai, video, tutorial"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Tags help others find your thread. Separate multiple tags with commas.
-                        </p>
-                      </div>
-                    </div>
-                    <DialogFooter className="mt-6">
-                      <Button variant="outline" onClick={() => setIsNewThreadDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button onClick={handleCreateThread} disabled={!newThreadTitle || !newThreadContent}>
-                        Create Thread
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
             </div>
             
             {/* Thread List */}
