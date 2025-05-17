@@ -1377,7 +1377,7 @@ export class DatabaseStorage implements IStorage {
       user: result.username ? { 
         id: result.thread.userId, 
         username: result.username
-      } as User,
+      } as User : undefined,
       commentCount: result.commentCount
     }));
   }
@@ -1401,7 +1401,7 @@ export class DatabaseStorage implements IStorage {
       user: result[0].username ? {
         id: result[0].thread.userId,
         username: result[0].username
-      } as User,
+      } as User : undefined,
       commentCount: result[0].commentCount
     };
   }
