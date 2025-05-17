@@ -336,7 +336,7 @@ export default function ForumPage() {
   };
 
   const handleVote = (threadId: number) => {
-    // Client-side update for now
+    // For now, this is just a client-side update
     toast({
       title: "Upvoted thread",
       description: "Thread upvoted successfully!"
@@ -357,10 +357,6 @@ export default function ForumPage() {
       threadId,
       content: newComment
     });
-  };
-
-  const handleDeleteComment = (commentId: number, threadId: number) => {
-    deleteCommentMutation.mutate({ threadId, commentId });
   };
 
   const openCommentForm = (threadId: number) => {
@@ -675,12 +671,7 @@ export default function ForumPage() {
             
             {/* Thread List */}
             <div className="space-y-4">
-              {isLoadingThreads ? (
-                <div className="text-center py-12">
-                  <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary mb-4" />
-                  <p className="text-muted-foreground">Loading forum threads...</p>
-                </div>
-              ) : sortedThreads.length === 0 ? (
+              {sortedThreads.length === 0 ? (
                 <div className="text-center py-12 bg-muted rounded-lg">
                   <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="font-medium text-lg mb-2">No threads found</h3>
