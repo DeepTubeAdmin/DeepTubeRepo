@@ -83,15 +83,7 @@ interface ForumComment {
   };
 }
 
-// Default forum categories
-const forumCategories: ForumCategory[] = [
-  { id: 1, name: "AI Video Generation" },
-  { id: 2, name: "AI Image Creation" },
-  { id: 3, name: "Tutorials & Guides" },
-  { id: 4, name: "Show & Tell" },
-  { id: 5, name: "Questions & Help" },
-  { id: 6, name: "News & Updates" },
-];
+// We'll fetch categories with their thread counts from the API
 
 export default function ForumPage() {
   const { toast } = useToast();
@@ -108,6 +100,22 @@ export default function ForumPage() {
   const [activeThread, setActiveThread] = useState<number | null>(null);
   const [isNewThreadDialogOpen, setIsNewThreadDialogOpen] = useState(false);
   const [visibleCommentForms, setVisibleCommentForms] = useState<{[key: number]: boolean}>({});
+  
+  // Fetch forum categories with their thread counts
+  const {
+    data: forumCategories = [],
+    isLoading: isLoadingCategories
+  } = useQuery<ForumCategory[]>({
+    queryKey: ['/api/forum/categories'],
+    queryFn: async () => {
+      console.log("Making API request to:", "/api/forum/categories");
+      const response = await fetch("/api/forum/categories");
+      if (!response.ok) {
+        throw new Error("Failed to fetch forum categories");
+      }
+      return response.json();
+    },
+  });
 
   // Fetch forum threads
   const { 

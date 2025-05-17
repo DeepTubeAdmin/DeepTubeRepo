@@ -4071,6 +4071,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Forum API endpoints
+  // Get forum categories with thread counts
+  app.get("/api/forum/categories", async (req, res) => {
+    try {
+      const categories = await dbStorage.getCategories();
+      
+      // Get thread counts for each category
+      const categoryThreadCounts = await Promise.all(
+        categories.map(async (category) => {
+          const threads = await dbStorage.getForumThreads({ categoryId: category.id });
+          return {
+            ...category,
+            count: threads.length
+          };
+        })
+      );
+      
+      res.json(categoryThreadCounts);
+    } catch (error) {
+      console.error("Error fetching forum categories with counts:", error);
+      res.status(500).json({ error: "Failed to fetch forum categories" });
+    }
+  });
+  
   // Get all forum threads with optional filtering
   app.get("/api/forum/threads", async (req, res) => {
     try {
