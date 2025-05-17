@@ -4074,7 +4074,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get forum categories with thread counts
   app.get("/api/forum/categories", async (req, res) => {
     try {
-      const categories = await dbStorage.getCategories();
+      let categories = await dbStorage.getCategories();
+      
+      // If no categories exist, create default ones
+      if (categories.length === 0) {
+        const defaultCategories = [
+          { name: "AI Video Generation", slug: "ai-video-generation", icon: "" },
+          { name: "AI Image Creation", slug: "ai-image-creation", icon: "" },
+          { name: "Tutorials & Guides", slug: "tutorials-guides", icon: "" },
+          { name: "Show & Tell", slug: "show-tell", icon: "" },
+          { name: "Questions & Help", slug: "questions-help", icon: "" },
+          { name: "News & Updates", slug: "news-updates", icon: "" },
+        ];
+        
+        // Create each category
+        for (const category of defaultCategories) {
+          await dbStorage.createCategory(category);
+        }
+        
+        // Fetch the newly created categories
+        categories = await dbStorage.getCategories();
+      }
       
       // Get thread counts for each category
       const categoryThreadCounts = await Promise.all(
