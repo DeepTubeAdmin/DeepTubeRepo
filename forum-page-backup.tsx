@@ -391,27 +391,7 @@ export default function ForumPage() {
     setVisibleCommentForms({...visibleCommentForms, [threadId]: true});
   };
 
-  // First sort threads to ensure sticky ones are at the top
-  const sortedThreads = [...threads].sort((a, b) => {
-    // Sticky threads always come first
-    if (a.isSticky && !b.isSticky) return -1;
-    if (!a.isSticky && b.isSticky) return 1;
-    
-    // Within each group (sticky or non-sticky), apply the selected sort
-    if (sortBy === "newest") {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    } else if (sortBy === "oldest") {
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    } else if (sortBy === "popular") {
-      return b.upvotes - a.upvotes;
-    } else if (sortBy === "comments") {
-      return (b.commentCount || 0) - (a.commentCount || 0);
-    }
-    return 0;
-  });
-  
-  // Then filter the sorted threads
-  const filteredThreads = sortedThreads.filter(thread => {
+  const filteredThreads = threads.filter(thread => {
     // Filter by tab
     if (activeTab === "sticky" && !thread.isSticky) return false;
     
