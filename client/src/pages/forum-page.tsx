@@ -381,13 +381,12 @@ export default function ForumPage() {
     return true;
   });
 
-  // Sort threads with sticky threads always at the top
-  const sortedThreads = [...filteredThreads].sort((a, b) => {
-    // First, sticky threads always come before non-sticky threads
-    if (a.isSticky && !b.isSticky) return -1;
-    if (!a.isSticky && b.isSticky) return 1;
-    
-    // Then sort by the selected criteria
+  // Split threads into sticky and non-sticky
+  const stickyThreads = filteredThreads.filter(thread => thread.isSticky);
+  const regularThreads = filteredThreads.filter(thread => !thread.isSticky);
+  
+  // Sort each group separately
+  const sortedStickyThreads = [...stickyThreads].sort((a, b) => {
     if (sortBy === "newest") {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     } else if (sortBy === "oldest") {
@@ -399,6 +398,22 @@ export default function ForumPage() {
     }
     return 0;
   });
+  
+  const sortedRegularThreads = [...regularThreads].sort((a, b) => {
+    if (sortBy === "newest") {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    } else if (sortBy === "oldest") {
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    } else if (sortBy === "popular") {
+      return b.upvotes - a.upvotes;
+    } else if (sortBy === "comments") {
+      return (b.commentCount || 0) - (a.commentCount || 0);
+    }
+    return 0;
+  });
+  
+  // Combine the two arrays with sticky threads first
+  const sortedThreads = [...sortedStickyThreads, ...sortedRegularThreads];
 
   // Check if user is an admin (ID 1 or 2)
   const isAdmin = user && (user.id === 1 || user.id === 2);
@@ -697,13 +712,19 @@ export default function ForumPage() {
                 </div>
               ) : (
                 sortedThreads.map(thread => (
-                  <Card key={thread.id} className={thread.isSticky ? "border-primary" : ""}>
-                    <CardHeader className="p-4 pb-2">
+                  <Card 
+                    key={thread.id} 
+                    className={thread.isSticky 
+                      ? "border-primary border-2 shadow-md bg-primary/5" 
+                      : ""
+                    }
+                  >
+                    <CardHeader className={`p-4 pb-2 ${thread.isSticky ? "bg-primary/10 rounded-t-lg" : ""}`}>
                       <div className="flex flex-col md:flex-row md:items-center gap-2 w-full">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             {thread.isSticky && (
-                              <Badge className="bg-primary text-xs">Sticky</Badge>
+                              <Badge className="bg-primary text-xs font-bold animate-pulse">Sticky</Badge>
                             )}
                             <h3 
                               className="text-lg font-medium hover:text-primary cursor-pointer"
