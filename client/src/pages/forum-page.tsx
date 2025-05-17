@@ -405,7 +405,36 @@ export default function ForumPage() {
     return true;
   });
 
-  // The sorting will now be handled by the select function in useQuery
+  // Process threads to put sticky ones at the top
+  const processedThreads = React.useMemo(() => {
+    // Split into sticky and non-sticky threads
+    const stickyThreads = threads.filter(thread => thread.isSticky);
+    const regularThreads = threads.filter(thread => !thread.isSticky);
+
+    // Sort each group separately
+    let sortedSticky = [...stickyThreads];
+    let sortedRegular = [...regularThreads];
+
+    // Apply sorting to each group
+    const sortFunction = (a: ForumThread, b: ForumThread) => {
+      if (sortBy === "newest") {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      } else if (sortBy === "oldest") {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      } else if (sortBy === "popular") {
+        return b.upvotes - a.upvotes;
+      } else if (sortBy === "comments") {
+        return (b.commentCount || 0) - (a.commentCount || 0);
+      }
+      return 0;
+    };
+
+    sortedSticky = sortedSticky.sort(sortFunction);
+    sortedRegular = sortedRegular.sort(sortFunction);
+
+    // Return with sticky threads first
+    return [...sortedSticky, ...sortedRegular];
+  }, [threads, sortBy]);
 
   // Check if user is an admin (ID 1 or 2)
   const isAdmin = user && (user.id === 1 || user.id === 2);
