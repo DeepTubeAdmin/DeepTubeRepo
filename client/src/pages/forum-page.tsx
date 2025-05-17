@@ -581,7 +581,7 @@ export default function ForumPage() {
                         Cancel
                       </Button>
                       <div className="flex gap-2">
-                        {user?.role === 'admin' && (
+                        {user?.isAdmin && (
                           <Button 
                             onClick={() => handleCreateThread(true)} 
                             disabled={!newThreadTitle || !newThreadContent}
