@@ -83,16 +83,6 @@ interface ForumComment {
   };
 }
 
-// Default forum categories
-const forumCategories: ForumCategory[] = [
-  { id: 1, name: "AI Video Generation" },
-  { id: 2, name: "AI Image Creation" },
-  { id: 3, name: "Tutorials & Guides" },
-  { id: 4, name: "Show & Tell" },
-  { id: 5, name: "Questions & Help" },
-  { id: 6, name: "News & Updates" },
-];
-
 export default function ForumPage() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -102,12 +92,20 @@ export default function ForumPage() {
   const [sortBy, setSortBy] = useState("newest");
   const [newThreadTitle, setNewThreadTitle] = useState("");
   const [newThreadContent, setNewThreadContent] = useState("");
-  const [newThreadCategory, setNewThreadCategory] = useState(1);
+  const [newThreadCategory, setNewThreadCategory] = useState<number | null>(null);
   const [newThreadTags, setNewThreadTags] = useState("");
   const [newComment, setNewComment] = useState("");
   const [activeThread, setActiveThread] = useState<number | null>(null);
   const [isNewThreadDialogOpen, setIsNewThreadDialogOpen] = useState(false);
   const [visibleCommentForms, setVisibleCommentForms] = useState<{[key: number]: boolean}>({});
+  
+  // Fetch forum categories from the database
+  const { 
+    data: categories = [], 
+    isLoading: isLoadingCategories 
+  } = useQuery<ForumCategory[]>({
+    queryKey: ['/api/forum/categories'],
+  });
 
   // Fetch forum threads
   const { 

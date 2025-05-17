@@ -4071,6 +4071,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Forum API endpoints
+  // Get forum categories
+  app.get("/api/forum/categories", async (req, res) => {
+    try {
+      // Query database for forum categories
+      const results = await db.execute(sql`
+        SELECT * FROM forum_categories ORDER BY id ASC
+      `);
+      
+      res.status(200).json(results);
+    } catch (error) {
+      console.error("Error fetching forum categories:", error);
+      res.status(500).json({ error: "Failed to fetch forum categories" });
+    }
+  });
+  
   // Get all forum threads with optional filtering
   app.get("/api/forum/threads", async (req, res) => {
     try {
