@@ -381,13 +381,12 @@ export default function ForumPage() {
     return true;
   });
 
-  // Sort threads with sticky threads always at the top
-  const sortedThreads = [...filteredThreads].sort((a, b) => {
-    // First, sticky threads always come before non-sticky threads
-    if (a.isSticky && !b.isSticky) return -1;
-    if (!a.isSticky && b.isSticky) return 1;
-    
-    // Then sort by the selected criteria
+  // Split threads into sticky and non-sticky, then sort each group
+  const stickyThreads = filteredThreads.filter(thread => thread.isSticky);
+  const regularThreads = filteredThreads.filter(thread => !thread.isSticky);
+
+  // Sort function for both groups
+  const sortFunction = (a: ForumThread, b: ForumThread) => {
     if (sortBy === "newest") {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     } else if (sortBy === "oldest") {
@@ -398,7 +397,13 @@ export default function ForumPage() {
       return (b.commentCount || 0) - (a.commentCount || 0);
     }
     return 0;
-  });
+  };
+
+  // Sort each group separately and combine
+  const sortedThreads = [
+    ...stickyThreads.sort(sortFunction),
+    ...regularThreads.sort(sortFunction)
+  ];
 
   // Check if user is an admin (ID 1 or 2)
   const isAdmin = user && (user.id === 1 || user.id === 2);
