@@ -810,15 +810,13 @@ export default function ForumPage() {
                         </Button>
                         
                         <div className="flex gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-xs"
-                            onClick={() => openCommentForm(thread.id)}
+                          <a 
+                            href={`/forum/thread/${thread.id}`}
+                            className="inline-flex items-center px-3 py-1 text-xs bg-secondary rounded-md"
                           >
                             <MessageCircle className="h-3 w-3 mr-1" />
-                            Reply
-                          </Button>
+                            View Thread
+                          </a>
                           
                           {(isAdmin || (user && thread.userId === user.id)) && (
                             <AlertDialog>
