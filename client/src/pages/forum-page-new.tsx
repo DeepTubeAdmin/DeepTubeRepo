@@ -704,171 +704,25 @@ export default function ForumPage() {
                 </div>
               ) : (
                 sortedThreads.map(thread => (
-                  <Card 
-                    key={thread.id} 
-                    className={`hover:shadow-lg transition-all duration-200 ${
-                      thread.isSticky 
-                        ? "border-primary border-2 shadow-md bg-gradient-to-b from-primary/10 to-background" 
-                        : "hover:border-primary/50"
-                    }`}
-                  >
-                    <CardHeader className={`p-4 pb-2 ${thread.isSticky ? "bg-primary/20 rounded-t-lg" : ""}`}>
-                      <div className="flex flex-col md:flex-row md:items-center gap-2 w-full">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            {thread.isSticky && (
-                              <Badge className="bg-primary text-xs font-bold">STICKY</Badge>
-                            )}
-                            <Link href={`/forum/thread/${thread.id}`}>
-                              <h3 className="text-lg font-semibold hover:text-primary cursor-pointer">
-                                {thread.title}
-                              </h3>
-                            </Link>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
-                            <span className="flex items-center">
-                              <User className="h-3 w-3 mr-1" />
-                              {thread.user?.username || 'Anonymous'}
-                            </span>
-                            <span>•</span>
-                            <span className="flex items-center">
-                              <Clock className="h-3 w-3 mr-1" />
-                              {formatTimestamp(thread.createdAt)}
-                            </span>
-                            <span>•</span>
-                            <span className="flex items-center">
-                              <MessageCircle className="h-3 w-3 mr-1" />
-                              {thread.commentCount || 0} comment{(thread.commentCount !== 1) ? 's' : ''}
-                            </span>
-                            <span>•</span>
-                            <span className="flex items-center">
-                              <ChevronUp className="h-3 w-3 mr-1" />
-                              {thread.upvotes} upvote{thread.upvotes !== 1 ? 's' : ''}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      {thread.tags && thread.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {thread.tags.map((tag, i) => (
-                            <Badge key={i} variant="secondary" className="text-xs">
-                              #{tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </CardHeader>
-                    
-                    {/* Content preview - Reddit style with 6 rows */}
-                    <CardContent className="p-4 pt-2">
-                      <Link href={`/forum/thread/${thread.id}`}>
-                        <div className="text-sm whitespace-pre-wrap line-clamp-6 hover:text-foreground/90 cursor-pointer bg-muted/30 p-4 rounded-md border border-border/50 min-h-[150px] text-foreground">
-                          {thread.content}
-                        </div>
-                      </Link>
-                    </CardContent>
-                    
-                    <CardFooter className="p-4 pt-0 flex flex-col border-t border-border/40">
-                      <div className="flex justify-between items-center w-full pt-2">
-                        <Link href={`/forum/thread/${thread.id}`}>
-                          <Button 
-                            variant="secondary" 
-                            size="sm"
-                            className="text-xs"
-                          >
-                            <MessageCircle className="h-3 w-3 mr-1" />
-                            View Discussion
-                          </Button>
-                        </Link>
-                        
-                        <div className="flex gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-xs"
-                            onClick={() => handleVote(thread.id)}
-                          >
-                            <ChevronUp className="h-4 w-4 mr-1 text-primary" />
-                            Upvote
-                          </Button>
-                          
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-xs"
-                            onClick={() => openCommentForm(thread.id)}
-                          >
-                            <MessageCircle className="h-3 w-3 mr-1" />
-                            Reply
-                          </Button>
-                          
-                          {(isAdmin || (user && thread.userId === user.id)) && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="text-xs text-destructive hover:bg-destructive hover:text-white"
-                                >
-                                  <Trash2 className="h-3 w-3 mr-1" />
-                                  Delete
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Thread</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete this thread? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction 
-                                    onClick={() => deleteThreadMutation.mutate(thread.id)}
-                                    className="bg-destructive hover:bg-destructive/90"
-                                  >
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </div>
-                      </div>
-                    
-                      {/* Comment Form */}
-                      {visibleCommentForms[thread.id] && (
-                        <div className="mt-4 w-full">
-                          <Separator className="mb-4" />
-                          <div className="space-y-4">
-                            <h4 className="text-sm font-medium">Reply to this thread</h4>
-                            <Textarea 
-                              placeholder="Write your comment here..."
-                              value={newComment}
-                              onChange={e => setNewComment(e.target.value)}
-                              rows={4}
-                            />
-                            <div className="flex justify-end gap-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => setVisibleCommentForms({...visibleCommentForms, [thread.id]: false})}
-                              >
-                                Cancel
-                              </Button>
-                              <Button 
-                                size="sm"
-                                onClick={() => handleAddComment(thread.id)}
-                                disabled={!newComment.trim()}
-                              >
-                                Post Comment
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </CardFooter>
-                  </Card>
+                  <ForumThreadCard
+                    key={thread.id}
+                    thread={thread}
+                    isAdmin={!!user?.isAdmin}
+                    userId={user?.id}
+                    onUpvote={handleVote}
+                    onDelete={(threadId) => deleteThreadMutation.mutate(threadId)}
+                    onReply={openCommentForm}
+                    commentForm={
+                      visibleCommentForms[thread.id] 
+                        ? { 
+                            isVisible: true, 
+                            content: newComment, 
+                            onChange: setNewComment, 
+                            onSubmit: () => handleAddComment(thread.id)
+                          } 
+                        : undefined
+                    }
+                  />
                 ))
                       
                       {/* Thread Actions */}
