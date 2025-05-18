@@ -96,8 +96,8 @@ export async function handleContentFeed(req: Request, res: Response) {
       }
     };
 
-    // On first page load - always show featured content regardless of sort type
-    if (page === 1) {
+    // On first page or if we're refreshing content
+    if (page === 1 || (shuffle && shuffleSeed)) {
       // Reset cache if forced shuffle
       if (shuffle && shuffleSeed) {
         const cacheTimestamp = Date.now();
@@ -109,12 +109,8 @@ export async function handleContentFeed(req: Request, res: Response) {
       console.log(`Featured videos found: ${featuredVideos.length}, first few IDs: [ ${featuredVideos.slice(0, 3).map((v: Video) => v.id).join(', ')} ]`);
       
       if (featuredVideos.length > 0) {
-        // For chronological sorts (newest/oldest), always show the newest featured video
-        if (isChronologicalSort) {
-          response.featured.video = featuredVideos[0];
-        } 
-        // For non-chronological sorts, use shuffle if enabled
-        else if (shuffleSeed) {
+        // Randomize the featured video based on the shuffle seed, or pick the newest one if no shuffle
+        if (shuffleSeed) {
           const seededRandom = createSeededRandom(shuffleSeed + '-featured');
           const randomIndex = Math.floor(seededRandom() * featuredVideos.length);
           response.featured.video = featuredVideos[randomIndex];
