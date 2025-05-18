@@ -406,7 +406,7 @@ export default function ForumPage() {
   });
 
   // Process threads to put sticky ones at the top
-  const processedThreads = useMemo(() => {
+  const processedThreads = (() => {
     // Split into sticky and non-sticky threads
     const stickyThreads = threads.filter(thread => thread.isSticky);
     const regularThreads = threads.filter(thread => !thread.isSticky);
