@@ -754,6 +754,14 @@ export default function ForumPage() {
                         </div>
                       )}
                     </CardHeader>
+                    {/* Always visible content preview */}
+                    <CardContent className="p-4 pt-2">
+                      <div className="text-sm whitespace-pre-wrap line-clamp-6 hover:text-foreground/90 cursor-pointer bg-muted/30 p-3 rounded-md border border-border/50">
+                        {thread.content}
+                      </div>
+                    </CardContent>
+                    
+                    {/* Expanded content visible when clicked */}
                     <CardContent className={`p-4 pt-2 ${activeThread === thread.id ? "" : "hidden"}`}>
                       <Separator className="mb-4" />
                       <div className="prose prose-sm dark:prose-invert max-w-none overflow-hidden">
