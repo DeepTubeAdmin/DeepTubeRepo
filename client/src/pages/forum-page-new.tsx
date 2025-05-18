@@ -756,7 +756,7 @@ export default function ForumPage() {
                     </CardHeader>
                     {/* Always visible content preview */}
                     <CardContent className="p-4 pt-2">
-                      <div className="text-sm whitespace-pre-wrap line-clamp-6 hover:text-foreground/90 cursor-pointer bg-muted/30 p-3 rounded-md border border-border/50">
+                      <div className="text-sm whitespace-pre-wrap line-clamp-6 hover:text-foreground/90 cursor-pointer bg-muted/30 p-4 rounded-md border border-border/50 min-h-[150px] max-h-[250px]">
                         {thread.content}
                       </div>
                     </CardContent>
