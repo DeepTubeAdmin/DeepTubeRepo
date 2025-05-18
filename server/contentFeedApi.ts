@@ -96,7 +96,7 @@ export async function handleContentFeed(req: Request, res: Response) {
       }
     };
 
-    // Always include featured video section regardless of page or sort method
+    // First page always includes featured content
     if (page === 1) {
       // Reset cache if forced shuffle
       if (shuffle && shuffleSeed) {
@@ -104,19 +104,30 @@ export async function handleContentFeed(req: Request, res: Response) {
         resetContentCache(`${categorySlug}_feed_${cacheTimestamp}`, false);
       }
       
-      // 1. Get Featured Video - Pick a random approved video
-      const featuredVideos = await dbStorage.getFeaturedVideos(6);
+      // 1. Get Featured Video - This should ALWAYS work for page 1
+      // Get featured videos directly from storage
+      const featuredVideos = await dbStorage.getFeaturedVideos(10);
       console.log(`Featured videos found: ${featuredVideos.length}, first few IDs: [ ${featuredVideos.slice(0, 3).map((v: Video) => v.id).join(', ')} ]`);
       
+      // Make sure we have a featured video regardless of sort type
       if (featuredVideos.length > 0) {
-        // Randomize the featured video based on the shuffle seed, or pick the newest one if no shuffle
+        // Always select a featured video, regardless of sorting method
         if (shuffleSeed) {
+          // Use seeded random for shuffle views
           const seededRandom = createSeededRandom(shuffleSeed + '-featured');
           const randomIndex = Math.floor(seededRandom() * featuredVideos.length);
           response.featured.video = featuredVideos[randomIndex];
         } else {
           // Default to the newest featured video
           response.featured.video = featuredVideos[0];
+        }
+        console.log(`Selected featured video ID: ${response.featured.video.id}`);
+      } else {
+        // Fallback to a recent video if no featured videos exist
+        const recentVideos = await dbStorage.getNewVideos(5);
+        if (recentVideos.length > 0) {
+          response.featured.video = recentVideos[0];
+          console.log(`No featured videos, falling back to recent video ID: ${response.featured.video.id}`);
         }
       }
       
