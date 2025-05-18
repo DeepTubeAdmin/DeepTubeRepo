@@ -1,0 +1,437 @@
+# DeepTube.co Social Media Integration Plan
+
+This document outlines the implementation plan for optimizing DeepTube.co videos for direct playback on social media platforms. All changes should be implemented in a dedicated production branch without affecting the test environment.
+
+## Production Branch Setup
+
+```bash
+# Create a production branch for social media integration
+git checkout -b production/social-media-integration
+```
+
+## Components to Implement
+
+### 1. Meta Tags Component
+
+Create a reusable component for adding proper Open Graph and Twitter Card meta tags:
+
+```jsx
+// client/src/components/MetaTags.tsx
+
+import React from 'react';
+import { Helmet } from 'react-helmet'; // We'll need to install this
+
+interface MetaTagsProps {
+  title: string;
+  description: string;
+  videoUrl?: string;
+  imageUrl: string;
+  contentType: 'video' | 'image' | 'embed';
+  contentId?: number;
+  duration?: number;
+  publishedAt?: string;
+}
+
+export default function MetaTags({
+  title,
+  description,
+  videoUrl,
+  imageUrl,
+  contentType,
+  contentId,
+  duration,
+  publishedAt,
+}: MetaTagsProps) {
+  const baseUrl = "https://deeptube.co";
+  const fullVideoUrl = videoUrl?.startsWith('http') ? videoUrl : `${baseUrl}${videoUrl}`;
+  const fullImageUrl = imageUrl?.startsWith('http') ? imageUrl : `${baseUrl}${imageUrl}`;
+  
+  return (
+    <Helmet>
+      {/* Basic Meta Tags */}
+      <title>{title} | DeepTube.co</title>
+      <meta name="description" content={description} />
+      
+      {/* Open Graph Tags */}
+      <meta property="og:title" content={title} />
+      <meta property="og:description" content={description} />
+      <meta property="og:url" content={window.location.href} />
+      <meta property="og:site_name" content="DeepTube.co" />
+      
+      {/* Video-specific tags */}
+      {contentType === 'video' && (
+        <>
+          <meta property="og:type" content="video.other" />
+          <meta property="og:video" content={fullVideoUrl} />
+          <meta property="og:video:url" content={fullVideoUrl} />
+          <meta property="og:video:secure_url" content={fullVideoUrl} />
+          <meta property="og:video:type" content="video/mp4" />
+          <meta property="og:video:width" content="1280" />
+          <meta property="og:video:height" content="720" />
+          {duration && <meta property="og:video:duration" content={String(duration)} />}
+          {publishedAt && <meta property="article:published_time" content={publishedAt} />}
+          <meta property="og:image" content={fullImageUrl} />
+        </>
+      )}
+      
+      {/* Twitter Card Tags */}
+      {contentType === 'video' ? (
+        <>
+          <meta name="twitter:card" content="player" />
+          <meta name="twitter:player" content={`${baseUrl}/embed/${contentId}`} />
+          <meta name="twitter:player:width" content="1280" />
+          <meta name="twitter:player:height" content="720" />
+        </>
+      ) : (
+        <meta name="twitter:card" content="summary_large_image" />
+      )}
+      <meta name="twitter:site" content="@DeepTube_Co" />
+      <meta name="twitter:creator" content="@DeepTube_Co" />
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
+      <meta name="twitter:image" content={fullImageUrl} />
+    </Helmet>
+  );
+}
+```
+
+### 2. Structured Data Component
+
+Create a component for adding JSON-LD structured data:
+
+```jsx
+// client/src/components/VideoStructuredData.tsx
+
+import React from 'react';
+import { Video } from '@/types';
+
+interface VideoStructuredDataProps {
+  video: Video;
+}
+
+function formatDuration(seconds?: number): string {
+  if (!seconds) return 'PT0S';
+  
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  
+  return `PT${hours ? hours + 'H' : ''}${minutes ? minutes + 'M' : ''}${secs}S`;
+}
+
+export default function VideoStructuredData({ video }: VideoStructuredDataProps) {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    "name": video.title,
+    "description": video.description || '',
+    "thumbnailUrl": video.thumbnail,
+    "uploadDate": video.createdAt,
+    "contentUrl": video.videoUrl,
+    "embedUrl": `https://deeptube.co/embed/${video.id}`,
+    "duration": formatDuration(video.duration),
+    "interactionStatistic": {
+      "@type": "InteractionCounter",
+      "interactionType": "https://schema.org/WatchAction",
+      "userInteractionCount": video.views
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "DeepTube.co",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://deeptube.co/logo.png"
+      }
+    }
+  };
+  
+  return (
+    <script 
+      type="application/ld+json" 
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} 
+    />
+  );
+}
+```
+
+### 3. Video Embed Endpoint
+
+Add a specialized endpoint for video embedding with platform-specific optimizations:
+
+```typescript
+// server/routes.ts (add to the existing routes)
+
+// Video embed endpoint optimized for social media platforms
+app.get('/embed/:id', async (req, res) => {
+  const { id } = req.params;
+  const { platform = 'default' } = req.query; // Support platform-specific embedding
+  const video = await storage.getVideoById(Number(id));
+  
+  if (!video) {
+    return res.status(404).send('Video not found');
+  }
+  
+  // Generate a signed URL with appropriate expiration
+  const videoUrl = await getSignedS3Url(urlPathToS3Key(video.videoUrl), 86400); // 24-hour expiry
+  
+  // Get platform-specific autoplay behavior
+  let autoplayAttribute = 'autoplay';
+  let muteAttribute = '';
+  
+  // Platform-specific optimizations
+  if (platform === 'facebook' || platform === 'twitter' || platform === 'tiktok') {
+    // These platforms require muted autoplay for inline playing
+    muteAttribute = 'muted';
+  }
+  
+  // Enhancement: Track platform referrer for analytics
+  const trackingScript = `
+    <script>
+      // Basic analytics for embed tracking
+      window.addEventListener('load', function() {
+        if (window.parent !== window) {
+          // This is embedded in an iframe
+          const videoElement = document.querySelector('video');
+          if (videoElement) {
+            videoElement.addEventListener('play', function() {
+              // Send play event to analytics
+              const parentUrl = document.referrer;
+              fetch('/api/analytics/embed-play', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  videoId: ${video.id},
+                  referrer: parentUrl,
+                  platform: '${platform}'
+                })
+              }).catch(err => console.error('Analytics error:', err));
+            });
+          }
+        }
+      });
+    </script>
+  `;
+  
+  // Send an optimized HTML page for embedding
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>${video.title} | DeepTube.co</title>
+      
+      <!-- Common Meta Tags -->
+      <meta property="og:title" content="${video.title}" />
+      <meta property="og:description" content="${video.description || 'Watch on DeepTube.co'}" />
+      <meta property="og:type" content="video.other" />
+      <meta property="og:url" content="https://deeptube.co/videos/${video.id}" />
+      <meta property="og:image" content="${video.thumbnail}" />
+      <meta property="og:site_name" content="DeepTube.co" />
+      
+      <!-- Twitter/X Meta Tags -->
+      <meta name="twitter:card" content="player" />
+      <meta name="twitter:site" content="@DeepTube_Co" />
+      <meta name="twitter:title" content="${video.title}" />
+      <meta name="twitter:description" content="${video.description || 'Watch on DeepTube.co'}" />
+      <meta name="twitter:image" content="${video.thumbnail}" />
+      <meta name="twitter:player" content="https://deeptube.co/embed/${video.id}" />
+      <meta name="twitter:player:width" content="1280" />
+      <meta name="twitter:player:height" content="720" />
+      
+      <!-- Facebook Meta Tags -->
+      <meta property="fb:app_id" content="YOUR_FACEBOOK_APP_ID" />
+      <meta property="og:video" content="${videoUrl}" />
+      <meta property="og:video:secure_url" content="${videoUrl}" />
+      <meta property="og:video:type" content="video/mp4" />
+      <meta property="og:video:width" content="1280" />
+      <meta property="og:video:height" content="720" />
+      
+      <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+        video { width: 100%; height: 100%; object-fit: contain; }
+        .watermark { position: absolute; bottom: 10px; right: 10px; color: white; font-family: Arial; 
+                    font-size: 14px; padding: 5px 8px; background: rgba(0,0,0,0.5); border-radius: 3px; z-index: 10; }
+        .play-button-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                            background: rgba(0,0,0,0.3); justify-content: center; align-items: center; z-index: 5; }
+        .play-button { width: 80px; height: 80px; background: rgba(255,140,0,0.8); border-radius: 50%; 
+                      display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .play-icon { width: 0; height: 0; border-top: 20px solid transparent; border-bottom: 20px solid transparent;
+                    border-left: 30px solid white; margin-left: 8px; }
+        video::-webkit-media-controls-fullscreen-button { display: none; }
+        
+        /* Platform-specific styling */
+        ${platform === 'tiktok' ? '.watermark { background: rgba(0,0,0,0.7); font-size: 16px; }' : ''}
+        ${platform === 'facebook' ? '.watermark { background: rgba(59, 89, 152, 0.7); }' : ''}
+      </style>
+      
+      ${trackingScript}
+    </head>
+    <body>
+      <video 
+        id="video-player"
+        src="${videoUrl}" 
+        controls 
+        ${autoplayAttribute}
+        ${muteAttribute}
+        playsinline
+        poster="${video.thumbnail}"
+      ></video>
+      
+      <div class="play-button-overlay" id="play-overlay">
+        <div class="play-button">
+          <div class="play-icon"></div>
+        </div>
+      </div>
+      
+      <div class="watermark">DeepTube.co</div>
+      
+      <script>
+        // Handle play button overlay for platforms that don't support autoplay
+        const video = document.getElementById('video-player');
+        const overlay = document.getElementById('play-overlay');
+        
+        video.addEventListener('pause', function() {
+          if (video.currentTime === 0) {
+            overlay.style.display = 'flex';
+          }
+        });
+        
+        overlay.addEventListener('click', function() {
+          video.play().then(() => {
+            overlay.style.display = 'none';
+          }).catch(err => {
+            console.error('Failed to play:', err);
+          });
+        });
+        
+        // Initial check if video isn't playing automatically
+        setTimeout(function() {
+          if (video.paused && video.currentTime === 0) {
+            overlay.style.display = 'flex';
+          }
+        }, 1000);
+      </script>
+    </body>
+    </html>
+  `);
+});
+```
+
+### 4. Media Detail Page Integration
+
+Update the media detail page to include meta tags and structured data:
+
+```jsx
+// client/src/pages/media-detail-new.tsx (modifications)
+
+// Import the new components
+import MetaTags from '@/components/MetaTags';
+import VideoStructuredData from '@/components/VideoStructuredData';
+
+// Add these components to the media detail page
+export default function MediaDetailPage() {
+  // Existing code...
+  
+  return (
+    <>
+      {video && (
+        <>
+          <MetaTags 
+            title={video.title}
+            description={video.description || `Watch this ${video.contentType} on DeepTube.co`}
+            videoUrl={video.videoUrl}
+            imageUrl={video.thumbnail || ''}
+            contentType={video.contentType as 'video' | 'image' | 'embed'}
+            contentId={video.id}
+            duration={video.duration}
+            publishedAt={video.createdAt}
+          />
+          <VideoStructuredData video={video} />
+        </>
+      )}
+      
+      {/* Rest of the existing component */}
+    </>
+  );
+}
+```
+
+### 5. S3 Service Module Enhancements
+
+Update the S3 service module with optimized settings for video sharing:
+
+```typescript
+// server/s3.ts (modifications)
+
+export async function uploadFileToS3(filePath: string, s3Key: string): Promise<string> {
+  try {
+    const fileContent = fs.readFileSync(filePath);
+    
+    const uploadParams = {
+      Bucket: process.env.AWS_BUCKET_NAME!,
+      Key: s3Key,
+      Body: fileContent,
+      ContentType: getContentType(filePath),
+      CacheControl: 'max-age=31536000', // Cache for 1 year for better performance
+      ContentDisposition: 'inline', // Important for direct playback in social feeds
+    };
+    
+    // Rest of the existing function...
+  }
+}
+
+function getContentType(filename: string): string {
+  // Enhanced MIME type detection
+  const ext = path.extname(filename).toLowerCase();
+  const mimeTypes: Record<string, string> = {
+    '.mp4': 'video/mp4',
+    '.webm': 'video/webm',
+    '.mov': 'video/quicktime',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.gif': 'image/gif',
+    '.svg': 'image/svg+xml'
+  };
+  
+  return mimeTypes[ext] || 'application/octet-stream';
+}
+```
+
+## Production Deployment Checklist
+
+1. **Multi-Region Infrastructure Setup (us-east-2 primary)**
+   - [ ] Configure S3 CORS policy for cross-origin video playback
+   - [ ] Set up CloudFront distribution with proper cache settings and multi-region support
+   - [ ] Configure SSL certificate for deeptube.co
+   - [ ] Update DNS settings to point to production environment
+   - [ ] Set up region failover for high availability
+
+2. **Video Processing Pipeline**
+   - [ ] Implement ffmpeg transcoding for optimal social media compatibility
+   - [ ] Configure multiple resolution versions (up to 1080p, with 720p for social platforms)
+   - [ ] Set up video processing queue for background processing
+   - [ ] Optimize formats specifically for Facebook, X (Twitter), and TikTok
+
+3. **Testing**
+   - [ ] Test social media embeds on Facebook, X (Twitter), and TikTok (priority platforms)
+   - [ ] Validate structured data with Google's Rich Results Test
+   - [ ] Verify video playback across multiple browsers and devices
+   - [ ] Test embedding on Instagram and LinkedIn as secondary platforms
+
+4. **Analytics Integration**
+   - [ ] Implement Google Analytics 4 for tracking video plays across social platforms
+   - [ ] Set up conversion tracking for social media referrals
+   - [ ] Create custom events for social sharing actions
+   - [ ] Configure dashboard for social media performance monitoring
+
+## Implementation Strategy
+
+1. Develop and test all components in the production branch
+2. Create a staging environment that mirrors production configuration
+3. Test social sharing features in staging before deploying to production
+4. Deploy to production with minimal downtime
+5. Monitor performance and social media engagement metrics
+
+This implementation plan allows for comprehensive social media integration without affecting the current test environment.
