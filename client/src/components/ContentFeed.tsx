@@ -486,14 +486,14 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
                     onClick={() => handleSortChange('newest')}
                     role="menuitem"
                   >
-                    Newest First
+                    Oldest First
                   </button>
                   <button
                     className={`${sortBy === 'oldest' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
                     onClick={() => handleSortChange('oldest')}
                     role="menuitem"
                   >
-                    Oldest First
+                    Newest First
                   </button>
                   <button
                     className={`${sortBy === 'most-viewed' ? 'bg-gray-800 text-orange-500' : 'text-white'} block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
