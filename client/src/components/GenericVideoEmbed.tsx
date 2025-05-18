@@ -279,7 +279,7 @@ const GenericVideoEmbed = ({
               src={embedUrl === 'direct:resolved' ? resolvedUrl : directVideoUrl}
               controls
               autoPlay={true}
-              muted={false} // Allow sound to play automatically on media detail page
+              muted={!autoplay} // Videos in preview thumbnails are muted, videos in media detail page play with sound
               playsInline // For iOS Safari
               loop={loop}
               poster={undefined}
