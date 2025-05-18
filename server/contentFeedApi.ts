@@ -96,8 +96,8 @@ export async function handleContentFeed(req: Request, res: Response) {
       }
     };
 
-    // On first page or if we're refreshing content
-    if (page === 1 || (shuffle && shuffleSeed)) {
+    // Always include featured video section regardless of page or sort method
+    if (page === 1) {
       // Reset cache if forced shuffle
       if (shuffle && shuffleSeed) {
         const cacheTimestamp = Date.now();
