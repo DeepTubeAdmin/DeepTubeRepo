@@ -97,6 +97,7 @@ export default function ForumPage() {
   const [isStickyThreadDialogOpen, setIsStickyThreadDialogOpen] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [activeThread, setActiveThread] = useState<number | null>(null);
+  const [expandedThreads, setExpandedThreads] = useState<{[key: number]: boolean}>({});
   const [visibleCommentForms, setVisibleCommentForms] = useState<{[key: number]: boolean}>({});
   
   // Fetch forum categories from the database
@@ -783,8 +784,21 @@ export default function ForumPage() {
                       )}
                     </CardHeader>
                     <CardContent className="p-4 pt-2">
-                      <div className="prose prose-sm dark:prose-invert max-w-none overflow-hidden bg-transparent p-4 rounded-md border border-border/30">
-                        <p className="text-sm whitespace-pre-wrap line-clamp-6 text-foreground">{thread.content}</p>
+                      <div 
+                        className="prose prose-sm dark:prose-invert max-w-none overflow-hidden bg-transparent p-4 rounded-md border border-border/30 cursor-pointer transition-all duration-200"
+                        onClick={() => setExpandedThreads(prev => ({
+                          ...prev,
+                          [thread.id]: !prev[thread.id]
+                        }))}
+                      >
+                        <p className={`text-sm whitespace-pre-wrap ${expandedThreads[thread.id] ? '' : 'line-clamp-6'} text-foreground`}>
+                          {thread.content}
+                        </p>
+                        <div className="text-center mt-2">
+                          <Badge variant="outline" className="text-xs cursor-pointer">
+                            {expandedThreads[thread.id] ? "Show Less" : "Show More"}
+                          </Badge>
+                        </div>
                       </div>
                       
                       {/* Thread Actions */}
