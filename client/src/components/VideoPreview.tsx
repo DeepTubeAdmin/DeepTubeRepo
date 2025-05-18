@@ -2,25 +2,13 @@ import { useEffect, useRef, useState, useContext } from 'react';
 import { fetchS3Url } from '@/lib/utils';
 
 // Global variable to track if user has interacted with the page
-let userHasInteracted = false;
+// Always set to true to bypass browser autoplay restrictions
+let userHasInteracted = true;
 
 // Helper function to mark user interaction
 const markUserInteraction = () => {
   userHasInteracted = true;
-  
-  // Remove all listeners once interaction is detected
-  ['click', 'touchstart', 'keydown', 'scroll', 'mousedown'].forEach(event => {
-    window.removeEventListener(event, markUserInteraction);
-  });
 };
-
-// Add global event listeners when this module loads
-if (typeof window !== 'undefined') {
-  // Add listeners for each interaction type
-  ['click', 'touchstart', 'keydown', 'scroll', 'mousedown'].forEach(event => {
-    window.addEventListener(event, markUserInteraction, { once: true });
-  });
-}
 
 interface VideoPreviewProps {
   src: string;
@@ -50,26 +38,7 @@ export default function VideoPreview({
   // Always assume user has interacted to avoid showing play buttons
   const [hasUserInteracted, setHasUserInteracted] = useState(true);
 
-  // Listen for the first user interaction with the page
-  useEffect(() => {
-    if (hasUserInteracted) return; // Already detected
-
-    const checkInteraction = () => {
-      setHasUserInteracted(true);
-      userHasInteracted = true; // Update the global variable
-    };
-    
-    // Add event listeners for user interactions
-    window.addEventListener('click', checkInteraction);
-    window.addEventListener('touchstart', checkInteraction);
-    window.addEventListener('keydown', checkInteraction);
-    
-    return () => {
-      window.removeEventListener('click', checkInteraction);
-      window.removeEventListener('touchstart', checkInteraction);
-      window.removeEventListener('keydown', checkInteraction);
-    };
-  }, [hasUserInteracted]);
+  // We no longer need to detect user interaction as we're forcing it to be true
 
   // Resolve S3 URL or thumbnail URL if needed
   useEffect(() => {
@@ -301,11 +270,14 @@ export default function VideoPreview({
 
     const video = videoRef.current;
 
-    if (isHovered && isVideoLoaded) { // Use isVideoLoaded
-      // Play video when hovered and loaded
-      playVideo();
+    if (isHovered) {
+      // Always reset autoplay blocked state on hover
+      setAutoplayBlocked(false);
       
-      // We no longer set a timeout to pause the video - let it play completely
+      if (isVideoLoaded) {
+        // Play video when hovered and loaded
+        playVideo();
+      }
       
     } else if (!isHovered && isPlaying) {
       // Pause video when mouse leaves
