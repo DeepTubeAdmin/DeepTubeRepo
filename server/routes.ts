@@ -1217,6 +1217,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         videoData.reviewStatus = 'approved';
       }
       
+      // Fix for image uploads - set a default resolution for images
+      if (videoData.contentType === 'image') {
+        videoData.resolution = 'HD'; // Set a default resolution for images
+        console.log('Setting default HD resolution for image upload');
+      }
+      
       // Create the video entry
       const video = await dbStorage.createVideo(videoData);
       
