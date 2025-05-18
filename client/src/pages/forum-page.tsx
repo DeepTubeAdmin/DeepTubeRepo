@@ -24,6 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Link } from "wouter";
 import { 
   Dialog,
   DialogContent,
@@ -748,11 +749,10 @@ export default function ForumPage() {
                             {thread.isSticky && (
                               <Badge className="bg-primary text-xs font-bold animate-pulse">Sticky</Badge>
                             )}
-                            <h3 
-                              className="text-lg font-medium hover:text-primary cursor-pointer"
-                              onClick={() => setActiveThread(thread.id === activeThread ? null : thread.id)}
-                            >
-                              {thread.title}
+                            <h3 className="text-lg font-medium hover:text-primary">
+                              <a href={`/forum/thread/${thread.id}`} className="hover:underline">
+                                {thread.title}
+                              </a>
                             </h3>
                           </div>
                           <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
@@ -894,8 +894,8 @@ export default function ForumPage() {
                         </div>
                       )}
                       
-                      {/* Comments Section */}
-                      {activeThread === thread.id && comments.length > 0 && (
+                      {/* Comments Section - Moved to thread detail page */}
+                      {false && comments.length > 0 && (
                         <div className="mt-6">
                           <h4 className="text-sm font-medium mb-2">Comments ({comments.length})</h4>
                           <div className="space-y-4">
