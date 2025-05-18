@@ -66,83 +66,83 @@ export default function ForumThreadCard({
       }`}
     >
       <CardHeader className={`p-4 pb-2 ${thread.isSticky ? "bg-primary/20 rounded-t-lg" : ""}`}>
-        <div className="flex flex-col md:flex-row md:items-center gap-2 w-full">
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              {thread.isSticky && (
-                <Badge className="bg-primary text-xs font-bold">STICKY</Badge>
-              )}
-              <Link href={`/forum/thread/${thread.id}`}>
-                <h3 className="text-lg font-semibold hover:text-primary cursor-pointer">
-                  {thread.title}
-                </h3>
-              </Link>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
-              <span className="flex items-center">
-                <Avatar className="h-5 w-5 mr-1">
-                  <AvatarFallback>{thread.user?.username?.[0] || '?'}</AvatarFallback>
-                </Avatar>
-                {thread.user?.username || 'Anonymous'}
-              </span>
-              <span>•</span>
-              <span className="flex items-center">
-                <Clock className="h-3 w-3 mr-1" />
-                {format(new Date(thread.createdAt), 'MMM d, yyyy')}
-              </span>
-              <span>•</span>
-              <span className="flex items-center">
-                <MessageCircle className="h-3 w-3 mr-1" />
-                {thread.commentCount || 0} comment{(thread.commentCount !== 1) ? 's' : ''}
-              </span>
-              <span>•</span>
-              <span className="flex items-center">
-                <ChevronUp className="h-3 w-3 mr-1" />
-                {thread.upvotes} upvote{thread.upvotes !== 1 ? 's' : ''}
-              </span>
-            </div>
+        <div className="flex flex-col gap-2 w-full">
+          <div className="flex items-center gap-2">
+            {thread.isSticky && (
+              <Badge className="bg-primary text-xs font-bold">STICKY</Badge>
+            )}
+            <Link href={`/forum/thread/${thread.id}`}>
+              <h3 className="text-lg font-semibold hover:text-primary cursor-pointer">
+                {thread.title}
+              </h3>
+            </Link>
           </div>
+          
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span className="flex items-center">
+              <Avatar className="h-5 w-5 mr-1">
+                <AvatarFallback>{thread.user?.username?.[0] || '?'}</AvatarFallback>
+              </Avatar>
+              {thread.user?.username || 'Anonymous'}
+            </span>
+            <span>•</span>
+            <span className="flex items-center">
+              <Clock className="h-3 w-3 mr-1" />
+              {format(new Date(thread.createdAt), 'MMM d, yyyy')}
+            </span>
+            <span>•</span>
+            <span className="flex items-center">
+              <MessageCircle className="h-3 w-3 mr-1" />
+              {thread.commentCount || 0} comment{(thread.commentCount !== 1) ? 's' : ''}
+            </span>
+            <span>•</span>
+            <span className="flex items-center">
+              <ChevronUp className="h-3 w-3 mr-1" />
+              {thread.upvotes} upvote{thread.upvotes !== 1 ? 's' : ''}
+            </span>
+          </div>
+          
+          {thread.tags && thread.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {thread.tags.map((tag, i) => (
+                <Badge key={i} variant="secondary" className="text-xs">#{tag}</Badge>
+              ))}
+            </div>
+          )}
         </div>
       </CardHeader>
-      <CardContent className="p-4 pt-3">
-        <Link href={`/forum/thread/${thread.id}`}>
-          <div className="text-sm whitespace-pre-wrap line-clamp-6 hover:text-foreground/90 cursor-pointer bg-muted/30 p-4 rounded-md border border-border/50 min-h-[150px] text-foreground/80">
-            {thread.content}
-          </div>
-        </Link>
-        
-        {thread.tags && thread.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-3">
-            {thread.tags.map((tag, i) => (
-              <Badge key={i} variant="secondary" className="text-xs">#{tag}</Badge>
-            ))}
-          </div>
-        )}
+      
+      <CardContent className="p-4 pt-0">
+        <div className="text-sm whitespace-pre-wrap line-clamp-6 mt-0 bg-muted/10 p-4 rounded-md border border-border/30 min-h-[120px] text-foreground">
+          {thread.content}
+        </div>
       </CardContent>
-      <CardFooter className="p-4 pt-0 flex flex-col border-t border-border/40">
-        <div className="flex justify-between items-center w-full pt-2">
-          <Link href={`/forum/thread/${thread.id}`}>
+      <CardFooter className="p-4 pt-0 flex flex-col gap-3">
+        <div className="flex justify-center w-full mt-2">
+          <Link href={`/forum/thread/${thread.id}`} className="w-full">
             <Button 
               variant="secondary" 
               size="sm"
-              className="text-xs"
+              className="w-full"
             >
-              <MessageCircle className="h-3 w-3 mr-1" />
-              View Discussion
+              <MessageCircle className="h-4 w-4 mr-2" />
+              View Thread
             </Button>
           </Link>
+        </div>
+        
+        <div className="flex justify-between items-center w-full">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-xs"
+            onClick={() => onUpvote(thread.id)}
+          >
+            <ChevronUp className="h-4 w-4 mr-1 text-primary" />
+            Upvote
+          </Button>
           
           <div className="flex gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-xs"
-              onClick={() => onUpvote(thread.id)}
-            >
-              <ChevronUp className="h-4 w-4 mr-1 text-primary" />
-              Upvote
-            </Button>
-            
             <Button 
               variant="outline" 
               size="sm" 
