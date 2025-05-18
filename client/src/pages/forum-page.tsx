@@ -794,11 +794,7 @@ export default function ForumPage() {
                         <p className={`text-sm whitespace-pre-wrap ${expandedThreads[thread.id] ? '' : 'line-clamp-6'} text-foreground`}>
                           {thread.content}
                         </p>
-                        <div className="text-center mt-2">
-                          <Badge variant="outline" className="text-xs cursor-pointer">
-                            {expandedThreads[thread.id] ? "Show Less" : "Show More"}
-                          </Badge>
-                        </div>
+
                       </div>
                       
                       {/* Thread Actions */}
