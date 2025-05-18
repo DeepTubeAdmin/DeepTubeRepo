@@ -302,7 +302,7 @@ export default function AuthPage() {
                               </Button>
                             </FormControl>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
+                          <PopoverContent className="w-auto p-0 bg-background border-border" align="start">
                             <Calendar
                               mode="single"
                               selected={field.value}
@@ -312,6 +312,7 @@ export default function AuthPage() {
                               captionLayout="dropdown"
                               fromYear={1940}
                               toYear={new Date().getFullYear() - 18}
+                              className="date-picker-custom"
                             />
                           </PopoverContent>
                         </Popover>

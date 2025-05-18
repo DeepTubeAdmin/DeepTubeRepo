@@ -473,3 +473,57 @@
 video[data-error="true"] {
   visibility: hidden;
 }
+
+/* Date picker customization */
+.date-picker-custom {
+  background-color: #1a1a1a;
+  border-color: #333;
+}
+
+.date-picker-custom .rdp-caption {
+  padding: 0.5rem;
+}
+
+.date-picker-custom .rdp-dropdown {
+  appearance: none;
+  background-color: #2a2a2a;
+  color: white;
+  border: 1px solid #444;
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.25rem;
+  margin: 0 0.25rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.date-picker-custom .rdp-dropdown:hover {
+  background-color: #333;
+  border-color: #555;
+}
+
+.date-picker-custom .rdp-dropdown option {
+  background-color: #2a2a2a;
+  color: white;
+}
+
+.date-picker-custom .rdp-nav {
+  color: white;
+}
+
+.date-picker-custom .rdp-day {
+  color: white;
+}
+
+.date-picker-custom .rdp-day_disabled {
+  color: #666;
+}
+
+.date-picker-custom .rdp-day_selected {
+  background-color: #f97316;
+  color: black;
+}
+
+.date-picker-custom .rdp-head_cell {
+  color: #f97316;
+  font-weight: bold;
+}
