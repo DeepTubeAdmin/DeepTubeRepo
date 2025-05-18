@@ -106,7 +106,7 @@ export default function ForumThreadCard({
       </CardHeader>
       <CardContent className="p-4 pt-3">
         <Link href={`/forum/thread/${thread.id}`}>
-          <div className="text-sm whitespace-pre-wrap line-clamp-6 hover:text-foreground/90 cursor-pointer bg-muted/30 p-3 rounded-md border border-border/50">
+          <div className="text-sm whitespace-pre-wrap line-clamp-6 hover:text-foreground/90 cursor-pointer bg-muted/30 p-4 rounded-md border border-border/50 min-h-[120px]">
             {thread.content}
           </div>
         </Link>
