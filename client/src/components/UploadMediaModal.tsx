@@ -440,12 +440,14 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
         }
       }
       
-      // If it's a YouTube embed and no thumbnail has been set, extract the video ID and get one
-      if (contentType === "embed" && !thumbnailUrl) {
+      // If it's a YouTube embed, extract the video ID and get a thumbnail
+      if (contentType === "embed") {
         // Check for YouTube content
         const videoId = extractYoutubeVideoId(originalYoutubeUrl || embedCode);
         if (videoId) {
+          // Always use a fresh YouTube thumbnail URL to avoid validation issues
           finalThumbnailUrl = getYoutubeThumbnailUrl(videoId);
+          console.log("Using YouTube thumbnail for embed:", finalThumbnailUrl);
         } 
         // Check for Reddit content
         else if (isRedditEmbed(embedCode)) {
@@ -510,7 +512,8 @@ export default function UploadMediaModal({ isOpen, onClose }: UploadMediaModalPr
           videoUrl: videoUrl, // This will now be a server path for MP4s
           imageUrl: imageUrl, // This will still be a data URL for images
           embedCode: contentType === "embed" ? embedCode : null,
-          resolution: contentType === "video" ? "HD" : undefined,
+          // Set HD resolution for both videos and embeds
+          resolution: contentType === "video" || contentType === "embed" ? "HD" : "HD",
           duration: 0, // This would come from analyzing the video file
           credits: 0, // Default to 0 credits for free content
         }),
