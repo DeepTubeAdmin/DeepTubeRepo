@@ -770,16 +770,7 @@ export default function ForumPage() {
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 self-end md:self-auto">
-                          <div className="flex flex-col items-center px-3 py-1 rounded-md bg-muted">
-                            <ThumbsUp className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-xs font-medium">{thread.upvotes}</span>
-                          </div>
-                          <div className="flex flex-col items-center px-3 py-1 rounded-md bg-muted">
-                            <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-xs font-medium">{thread.commentCount || 0}</span>
-                          </div>
-                        </div>
+                        {/* Remove the redundant icons */}
                       </div>
                       {thread.tags && thread.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
@@ -792,20 +783,20 @@ export default function ForumPage() {
                       )}
                     </CardHeader>
                     <CardContent className="p-4 pt-2">
-                      <div className="prose prose-sm dark:prose-invert max-w-none overflow-hidden bg-muted/10 p-4 rounded-md border border-border/30">
-                        <p className="text-sm whitespace-pre-wrap line-clamp-6">{thread.content}</p>
+                      <div className="prose prose-sm dark:prose-invert max-w-none overflow-hidden bg-transparent p-4 rounded-md border border-border/30">
+                        <p className="text-sm whitespace-pre-wrap line-clamp-6 text-foreground">{thread.content}</p>
                       </div>
                       
                       {/* Thread Actions */}
                       <div className="flex justify-between items-center mt-4">
                         <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-xs"
+                          variant="ghost" 
+                          size="icon"
+                          className="h-8 w-8"
                           onClick={() => handleVote(thread.id)}
+                          title="Upvote"
                         >
-                          <ThumbsUp className="h-3 w-3 mr-1" />
-                          Upvote
+                          <ThumbsUp className="h-4 w-4 text-primary" />
                         </Button>
                         
                         <div className="flex gap-2">
