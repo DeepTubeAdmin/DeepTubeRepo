@@ -791,10 +791,9 @@ export default function ForumPage() {
                         </div>
                       )}
                     </CardHeader>
-                    <CardContent className={`p-4 pt-2 ${activeThread === thread.id ? "" : "hidden"}`}>
-                      <Separator className="mb-4" />
-                      <div className="prose prose-sm dark:prose-invert max-w-none overflow-hidden">
-                        <p>{thread.content}</p>
+                    <CardContent className="p-4 pt-2">
+                      <div className="prose prose-sm dark:prose-invert max-w-none overflow-hidden bg-muted/10 p-4 rounded-md border border-border/30">
+                        <p className="text-sm whitespace-pre-wrap line-clamp-6">{thread.content}</p>
                       </div>
                       
                       {/* Thread Actions */}
