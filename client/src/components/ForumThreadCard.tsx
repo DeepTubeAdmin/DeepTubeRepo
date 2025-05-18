@@ -90,16 +90,7 @@ export default function ForumThreadCard({
               <Clock className="h-3 w-3 mr-1" />
               {format(new Date(thread.createdAt), 'MMM d, yyyy')}
             </span>
-            <span>•</span>
-            <span className="flex items-center">
-              <MessageCircle className="h-3 w-3 mr-1" />
-              {thread.commentCount || 0} comment{(thread.commentCount !== 1) ? 's' : ''}
-            </span>
-            <span>•</span>
-            <span className="flex items-center">
-              <ChevronUp className="h-3 w-3 mr-1" />
-              {thread.upvotes} upvote{thread.upvotes !== 1 ? 's' : ''}
-            </span>
+            {/* Removed redundant comment/upvote indicators */}
           </div>
           
           {thread.tags && thread.tags.length > 0 && (
@@ -145,8 +136,7 @@ export default function ForumThreadCard({
             className="text-xs"
             onClick={() => onUpvote(thread.id)}
           >
-            <ChevronUp className="h-4 w-4 mr-1 text-primary" />
-            Upvote
+            <ChevronUp className="h-4 w-4 text-primary" />
           </Button>
           
           <div className="flex gap-2">
