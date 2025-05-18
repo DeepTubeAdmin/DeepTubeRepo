@@ -771,16 +771,7 @@ export default function ForumPage() {
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 self-end md:self-auto">
-                          <div className="flex flex-col items-center px-3 py-1 rounded-md bg-muted">
-                            <ThumbsUp className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-xs font-medium">{thread.upvotes}</span>
-                          </div>
-                          <div className="flex flex-col items-center px-3 py-1 rounded-md bg-muted">
-                            <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-xs font-medium">{thread.commentCount || 0}</span>
-                          </div>
-                        </div>
+                        {/* Removed redundant like/comment indicators */}
                       </div>
                       {thread.tags && thread.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
@@ -823,8 +814,7 @@ export default function ForumPage() {
                           className="text-xs"
                           onClick={() => handleVote(thread.id)}
                         >
-                          <ThumbsUp className="h-3 w-3 mr-1" />
-                          Upvote
+                          <ThumbsUp className="h-3 w-3" />
                         </Button>
                         
                         <div className="flex gap-2">
