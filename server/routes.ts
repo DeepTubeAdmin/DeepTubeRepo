@@ -4080,9 +4080,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get forum categories
   app.get("/api/forum/categories", async (req, res) => {
     try {
-      // Query database for forum categories
+      // Query database for forum categories with thread counts
       const results = await db.execute(sql`
-        SELECT * FROM forum_categories ORDER BY id ASC
+        SELECT 
+          fc.id, 
+          fc.name, 
+          COALESCE(COUNT(ft.id), 0)::integer as count
+        FROM 
+          forum_categories fc
+        LEFT JOIN 
+          forum_threads ft ON fc.id = ft.category_id
+        GROUP BY 
+          fc.id, fc.name
+        ORDER BY 
+          fc.id ASC
       `);
       
       // Extract just the rows from the result
