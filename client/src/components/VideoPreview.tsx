@@ -42,12 +42,13 @@ export default function VideoPreview({
   previewDuration = 5
 }: VideoPreviewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isVideoLoaded, setIsVideoLoaded] = useState(false); // Added isVideoLoaded state
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
   const [isLoadingUrl, setIsLoadingUrl] = useState(false);
-  const [hasUserInteracted, setHasUserInteracted] = useState(userHasInteracted);
+  // Always assume user has interacted to avoid showing play buttons
+  const [hasUserInteracted, setHasUserInteracted] = useState(true);
 
   // Listen for the first user interaction with the page
   useEffect(() => {
@@ -262,21 +263,11 @@ export default function VideoPreview({
       // Apply muted and other attributes directly
       video.setAttribute('muted', '');
       video.setAttribute('playsinline', '');
-      video.setAttribute('webkit-playsinline', '');
-      video.setAttribute('autoplay', '');
       
       // Ensure loop is enabled
       video.loop = true;
       
-      // Reset to beginning for consistent playback experience
-      video.currentTime = 0;
-      
       console.log(`VideoPreview: attempting to play muted video for ${src.substring(0, 30)}...`);
-
-      // Always force user interaction state to be true to bypass browser restrictions
-      userHasInteracted = true;
-      setHasUserInteracted(true);
-      setAutoplayBlocked(false);
 
       // Play with promise handling for browsers that return a promise
       const playPromise = video.play();
@@ -290,20 +281,8 @@ export default function VideoPreview({
           })
           .catch(error => {
             console.error('VideoPreview: autoplay prevented:', error);
-            
-            // If we get here, we need to forcefully reset the video element
-            video.load();
-            
-            // Try playing again with a slight delay to let the browser reset
-            setTimeout(() => {
-              video.play().catch(secondError => {
-                console.error('VideoPreview: second autoplay attempt failed:', secondError);
-                // Even if this fails, don't show the blocked state since it confuses users
-                // Just keep the video element in place and let the poster image show
-                setIsPlaying(false);
-                setAutoplayBlocked(false);
-              });
-            }, 50);
+            setIsPlaying(false);
+            setAutoplayBlocked(true);
           });
       } else {
         // For older browsers that don't return a promise
@@ -312,8 +291,7 @@ export default function VideoPreview({
     } catch (err) {
       console.error('VideoPreview: Error starting video:', err);
       setIsPlaying(false);
-      // Don't show the blocked message
-      setAutoplayBlocked(false);
+      setAutoplayBlocked(true);
     }
   };
 
@@ -395,16 +373,24 @@ export default function VideoPreview({
         data-testid="video-preview"
       />
 
-      {/* Hidden overlay to capture user interaction if needed */}
-      {isHovered && (
+      {/* Autoplay blocked message with manual play option */}
+      {isHovered && autoplayBlocked && (
         <div 
-          className="absolute inset-0 z-10 opacity-0"
+          className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 text-white cursor-pointer z-20"
           onClick={(e) => {
             e.stopPropagation(); // Prevent parent click handlers
             markUserInteraction(); // Mark that user has interacted
             userHasInteracted = true; // Force the flag to be true
             setHasUserInteracted(true); // Update state
             setAutoplayBlocked(false); // Clear the blocked state
+            
+            // Try to play all videos on the page now that user has interacted
+            document.querySelectorAll('video').forEach(video => {
+              if (video.paused) {
+                video.muted = true;
+                video.play().catch(() => {/* Ignore errors */});
+              }
+            });
             
             // Try to play this specific video
             if (videoRef.current) {
@@ -414,12 +400,21 @@ export default function VideoPreview({
                   setIsPlaying(true);
                   console.log(`VideoPreview: manual play successful for ${src.substring(0, 30)}...`);
                 })
-                .catch(() => {
-                  // Silently ignore errors
+                .catch(err => {
+                  console.error('VideoPreview: manual play failed:', err);
                 });
             }
           }}
-        />
+        >
+          <div className="bg-orange-500 rounded-full p-3 animate-pulse">
+            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium mt-3 px-4 text-center">Click to enable video previews</p>
+          <p className="text-xs px-4 text-center mt-1 text-gray-300">Browser requires interaction to autoplay videos</p>
+        </div>
       )}
 
       {/* Loading spinner when trying to play */}
