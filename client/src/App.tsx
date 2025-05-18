@@ -10,6 +10,7 @@ import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
 import MediaDetail from "@/pages/media-detail-new";
 import ForumPage from "@/pages/forum-page";
+// import ForumPageNew from "@/pages/forum-page-new";
 import TermsOfService from "@/pages/terms-of-service";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import MyVideosPage from "@/pages/my-videos";

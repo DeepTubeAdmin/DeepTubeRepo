@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, AlertCircle, Loader2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -406,7 +406,7 @@ export default function ForumPage() {
   });
 
   // Process threads to put sticky ones at the top
-  const processedThreads = React.useMemo(() => {
+  const processedThreads = useMemo(() => {
     // Split into sticky and non-sticky threads
     const stickyThreads = threads.filter(thread => thread.isSticky);
     const regularThreads = threads.filter(thread => !thread.isSticky);
@@ -792,8 +792,8 @@ export default function ForumPage() {
                       )}
                     </CardHeader>
                     <CardContent className="p-4 pt-2">
-                      <div className="prose prose-sm dark:prose-invert max-w-none overflow-hidden bg-transparent p-4 rounded-md border border-border/30">
-                        <p className="text-sm whitespace-pre-wrap line-clamp-6 text-foreground">{thread.content}</p>
+                      <div className="prose prose-sm dark:prose-invert max-w-none bg-transparent p-4 rounded-md border border-border/30">
+                        <p className="text-sm whitespace-pre-wrap text-foreground">{thread.content.slice(0, 400)}{thread.content.length > 400 ? '...' : ''}</p>
                       </div>
                       
                       {/* Thread Actions */}
