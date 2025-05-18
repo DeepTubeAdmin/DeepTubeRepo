@@ -953,26 +953,6 @@ export default function ForumPage() {
                           </div>
                         </div>
                       )}
-                    </CardContent>
-                    <CardFooter className="p-4 pt-0">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-xs mx-auto flex gap-1"
-                        onClick={() => setActiveThread(thread.id === activeThread ? null : thread.id)}
-                      >
-                        {activeThread === thread.id ? (
-                          <>
-                            <ChevronUp className="h-3 w-3" />
-                            Collapse
-                          </>
-                        ) : (
-                          <>
-                            <ChevronDown className="h-3 w-3" />
-                            Expand
-                          </>
-                        )}
-                      </Button>
                     </CardFooter>
                   </Card>
                 ))
