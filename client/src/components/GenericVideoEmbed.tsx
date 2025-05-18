@@ -256,15 +256,24 @@ const GenericVideoEmbed = ({
       if (match && match[1]) {
         const youtubeEmbedUrl = match[1];
         
-        // Create a completely new iframe with proper styling
+        // Make sure autoplay parameter is included in the URL
+        const embedUrlWithAutoplay = youtubeEmbedUrl.includes('?') 
+          ? (youtubeEmbedUrl.includes('autoplay=') 
+              ? youtubeEmbedUrl 
+              : `${youtubeEmbedUrl}&autoplay=1&mute=0`)
+          : `${youtubeEmbedUrl}?autoplay=1&mute=0`;
+        
+        // Create a completely new iframe with proper styling and autoplay attributes
         processedHtml = `<iframe 
-          src="${youtubeEmbedUrl}" 
+          src="${embedUrlWithAutoplay}" 
           title="YouTube video player" 
           frameborder="0" 
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
           allowfullscreen 
           style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
         ></iframe>`;
+        
+        console.log("Modified YouTube embed URL for autoplay:", embedUrlWithAutoplay);
       }
     }
     
