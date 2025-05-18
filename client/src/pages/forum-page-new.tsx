@@ -24,6 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Link } from "wouter";
 import { 
   Dialog,
   DialogContent,
@@ -702,71 +703,25 @@ export default function ForumPage() {
                 </div>
               ) : (
                 sortedThreads.map(thread => (
-                  <Card key={thread.id} className={thread.isSticky ? "border-primary" : ""}>
-                    <CardHeader className="p-4 pb-2">
-                      <div className="flex flex-col md:flex-row md:items-center gap-2 w-full">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            {thread.isSticky && (
-                              <Badge className="bg-primary text-xs">Sticky</Badge>
-                            )}
-                            <h3 
-                              className="text-lg font-medium hover:text-primary cursor-pointer"
-                              onClick={() => setActiveThread(thread.id === activeThread ? null : thread.id)}
-                            >
-                              {thread.title}
-                            </h3>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                            <span className="flex items-center gap-1">
-                              <User className="h-3 w-3" />
-                              {thread.user?.username || "Anonymous"}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {formatTimestamp(thread.createdAt)}
-                            </span>
-                            {thread.categoryId && categories.find(c => c.id === thread.categoryId) && (
-                              <Badge variant="outline" className="text-xs">
-                                {categories.find(c => c.id === thread.categoryId)?.name}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 self-end md:self-auto">
-                          <div className="flex flex-col items-center px-3 py-1 rounded-md bg-muted">
-                            <ThumbsUp className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-xs font-medium">{thread.upvotes}</span>
-                          </div>
-                          <div className="flex flex-col items-center px-3 py-1 rounded-md bg-muted">
-                            <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-xs font-medium">{thread.commentCount || 0}</span>
-                          </div>
-                        </div>
-                      </div>
-                      {thread.tags && thread.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {thread.tags.map((tag, i) => (
-                            <Badge key={i} variant="secondary" className="text-xs">
-                              #{tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </CardHeader>
-                    {/* Always visible content preview */}
-                    <CardContent className="p-4 pt-2">
-                      <div className="text-sm whitespace-pre-wrap line-clamp-6 hover:text-foreground/90 cursor-pointer bg-muted/30 p-4 rounded-md border border-border/50 min-h-[150px] max-h-[250px]">
-                        {thread.content}
-                      </div>
-                    </CardContent>
-                    
-                    {/* Expanded content visible when clicked */}
-                    <CardContent className={`p-4 pt-2 ${activeThread === thread.id ? "" : "hidden"}`}>
-                      <Separator className="mb-4" />
-                      <div className="prose prose-sm dark:prose-invert max-w-none overflow-hidden">
-                        <p>{thread.content}</p>
-                      </div>
+                  <ForumThreadCard
+                    key={thread.id}
+                    thread={thread}
+                    isAdmin={!!user?.isAdmin}
+                    userId={user?.id}
+                    onUpvote={handleVote}
+                    onDelete={(threadId) => deleteThreadMutation.mutate(threadId)}
+                    onReply={openCommentForm}
+                    commentForm={
+                      visibleCommentForms[thread.id] 
+                        ? { 
+                            isVisible: true, 
+                            content: newComment, 
+                            onChange: setNewComment, 
+                            onSubmit: () => handleAddComment(thread.id)
+                          } 
+                        : undefined
+                    }
+                  />
                       
                       {/* Thread Actions */}
                       <div className="flex justify-between items-center mt-4">
