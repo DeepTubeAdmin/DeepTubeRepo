@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, AlertCircle, Loader2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -24,7 +24,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Link } from "wouter";
 import { 
   Dialog,
   DialogContent,
@@ -98,7 +97,6 @@ export default function ForumPage() {
   const [isStickyThreadDialogOpen, setIsStickyThreadDialogOpen] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [activeThread, setActiveThread] = useState<number | null>(null);
-  const [expandedThreads, setExpandedThreads] = useState<{[key: number]: boolean}>({});
   const [visibleCommentForms, setVisibleCommentForms] = useState<{[key: number]: boolean}>({});
   
   // Fetch forum categories from the database
@@ -393,36 +391,7 @@ export default function ForumPage() {
     setVisibleCommentForms({...visibleCommentForms, [threadId]: true});
   };
 
-  // Process threads to ensure sticky ones are at the top
-  const sortedThreads = useMemo(() => {
-    // Split threads into sticky and non-sticky
-    const stickyThreads = threads.filter(thread => thread.isSticky);
-    const regularThreads = threads.filter(thread => !thread.isSticky);
-    
-    // Sort function to apply within each group
-    const sortFunction = (a: ForumThread, b: ForumThread) => {
-      if (sortBy === "newest") {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      } else if (sortBy === "oldest") {
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      } else if (sortBy === "popular") {
-        return b.upvotes - a.upvotes;
-      } else if (sortBy === "comments") {
-        return (b.commentCount || 0) - (a.commentCount || 0);
-      }
-      return 0;
-    };
-    
-    // Sort each group separately
-    const sortedSticky = [...stickyThreads].sort(sortFunction);
-    const sortedRegular = [...regularThreads].sort(sortFunction);
-    
-    // Always return sticky threads first, followed by regular threads
-    return [...sortedSticky, ...sortedRegular];
-  }, [threads, sortBy]);
-  
-  // Then filter the sorted threads
-  const filteredThreads = sortedThreads.filter(thread => {
+  const filteredThreads = threads.filter(thread => {
     // Filter by tab
     if (activeTab === "sticky" && !thread.isSticky) return false;
     
@@ -436,10 +405,39 @@ export default function ForumPage() {
     return true;
   });
 
-  // We already have sorted threads from above, so we don't need this duplicated logic
+  // Process threads to put sticky ones at the top
+  const processedThreads = React.useMemo(() => {
+    // Split into sticky and non-sticky threads
+    const stickyThreads = threads.filter(thread => thread.isSticky);
+    const regularThreads = threads.filter(thread => !thread.isSticky);
 
-  // Check if user is an admin (ID 1 or 2, or has isAdmin flag)
-  const isAdmin = user && (user.id === 1 || user.id === 2 || user.isAdmin);
+    // Sort each group separately
+    let sortedSticky = [...stickyThreads];
+    let sortedRegular = [...regularThreads];
+
+    // Apply sorting to each group
+    const sortFunction = (a: ForumThread, b: ForumThread) => {
+      if (sortBy === "newest") {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      } else if (sortBy === "oldest") {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      } else if (sortBy === "popular") {
+        return b.upvotes - a.upvotes;
+      } else if (sortBy === "comments") {
+        return (b.commentCount || 0) - (a.commentCount || 0);
+      }
+      return 0;
+    };
+
+    sortedSticky = sortedSticky.sort(sortFunction);
+    sortedRegular = sortedRegular.sort(sortFunction);
+
+    // Return with sticky threads first
+    return [...sortedSticky, ...sortedRegular];
+  }, [threads, sortBy]);
+
+  // Check if user is an admin (ID 1 or 2)
+  const isAdmin = user && (user.id === 1 || user.id === 2);
 
   return (
     <Layout>
@@ -734,7 +732,7 @@ export default function ForumPage() {
                   </Button>
                 </div>
               ) : (
-                filteredThreads.map(thread => (
+                threads.map(thread => (
                   <Card 
                     key={thread.id} 
                     className={thread.isSticky 
@@ -749,10 +747,11 @@ export default function ForumPage() {
                             {thread.isSticky && (
                               <Badge className="bg-primary text-xs font-bold animate-pulse">Sticky</Badge>
                             )}
-                            <h3 className="text-lg font-medium hover:text-primary">
-                              <a href={`/forum/thread/${thread.id}`} className="hover:underline">
-                                {thread.title}
-                              </a>
+                            <h3 
+                              className="text-lg font-medium hover:text-primary cursor-pointer"
+                              onClick={() => setActiveThread(thread.id === activeThread ? null : thread.id)}
+                            >
+                              {thread.title}
                             </h3>
                           </div>
                           <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
@@ -771,7 +770,16 @@ export default function ForumPage() {
                             )}
                           </div>
                         </div>
-                        {/* Remove the redundant icons */}
+                        <div className="flex items-center gap-2 self-end md:self-auto">
+                          <div className="flex flex-col items-center px-3 py-1 rounded-md bg-muted">
+                            <ThumbsUp className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-xs font-medium">{thread.upvotes}</span>
+                          </div>
+                          <div className="flex flex-col items-center px-3 py-1 rounded-md bg-muted">
+                            <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-xs font-medium">{thread.commentCount || 0}</span>
+                          </div>
+                        </div>
                       </div>
                       {thread.tags && thread.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
@@ -784,33 +792,20 @@ export default function ForumPage() {
                       )}
                     </CardHeader>
                     <CardContent className="p-4 pt-2">
-                      <div 
-                        className="prose prose-sm dark:prose-invert max-w-none overflow-hidden bg-transparent p-4 rounded-md border border-border/30 cursor-pointer transition-all duration-200"
-                        onClick={() => setExpandedThreads(prev => ({
-                          ...prev,
-                          [thread.id]: !prev[thread.id]
-                        }))}
-                      >
-                        <p className={`text-sm whitespace-pre-wrap ${expandedThreads[thread.id] ? '' : 'line-clamp-6'} text-foreground`}>
-                          {thread.content}
-                        </p>
-                        <div className="text-center mt-2">
-                          <Badge variant="outline" className="text-xs cursor-pointer">
-                            {expandedThreads[thread.id] ? "Show Less" : "Show More"}
-                          </Badge>
-                        </div>
+                      <div className="prose prose-sm dark:prose-invert max-w-none overflow-hidden bg-transparent p-4 rounded-md border border-border/30">
+                        <p className="text-sm whitespace-pre-wrap line-clamp-6 text-foreground">{thread.content}</p>
                       </div>
                       
                       {/* Thread Actions */}
                       <div className="flex justify-between items-center mt-4">
                         <Button 
-                          variant="ghost" 
-                          size="icon"
-                          className="h-8 w-8"
+                          variant="outline" 
+                          size="sm" 
+                          className="text-xs"
                           onClick={() => handleVote(thread.id)}
-                          title="Upvote"
                         >
-                          <ThumbsUp className="h-4 w-4 text-primary" />
+                          <ThumbsUp className="h-3 w-3 mr-1" />
+                          Upvote
                         </Button>
                         
                         <div className="flex gap-2">
@@ -894,8 +889,8 @@ export default function ForumPage() {
                         </div>
                       )}
                       
-                      {/* Comments Section - Moved to thread detail page */}
-                      {false && comments.length > 0 && (
+                      {/* Comments Section */}
+                      {activeThread === thread.id && comments.length > 0 && (
                         <div className="mt-6">
                           <h4 className="text-sm font-medium mb-2">Comments ({comments.length})</h4>
                           <div className="space-y-4">
@@ -953,6 +948,26 @@ export default function ForumPage() {
                           </div>
                         </div>
                       )}
+                    </CardContent>
+                    <CardFooter className="p-4 pt-0">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-xs mx-auto flex gap-1"
+                        onClick={() => setActiveThread(thread.id === activeThread ? null : thread.id)}
+                      >
+                        {activeThread === thread.id ? (
+                          <>
+                            <ChevronUp className="h-3 w-3" />
+                            Collapse
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-3 w-3" />
+                            Expand
+                          </>
+                        )}
+                      </Button>
                     </CardFooter>
                   </Card>
                 ))
