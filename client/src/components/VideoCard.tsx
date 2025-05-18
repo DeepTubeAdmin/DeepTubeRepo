@@ -286,16 +286,27 @@ export default function VideoCard({ video, onPreview, onWishlist, size = 'defaul
           contentType={video.contentType}
         />
 
-        {/* Video Preview Layer */}
+        {/* Video Preview Layer - Simple version with direct video element */}
         {video.contentType === 'video' && video.videoUrl && (
           <div className="absolute inset-0">
-            <VideoPreview
-              src={video.videoUrl}
-              poster={checkThumbnail(video.thumbnail || '', video.id)}
-              isHovered={isHovered}
-              className="w-full h-full object-cover"
-              previewDuration={5}
-            />
+            {isHovered ? (
+              <video
+                key={`video-${video.id}-${isHovered}`}
+                className="w-full h-full object-cover"
+                src={video.videoUrl}
+                poster={checkThumbnail(video.thumbnail || '', video.id)}
+                autoPlay
+                muted
+                loop
+                playsInline
+              />
+            ) : (
+              <img 
+                src={checkThumbnail(video.thumbnail || '', video.id)} 
+                alt={video.title}
+                className="w-full h-full object-cover"
+              />
+            )}
           </div>
         )}
 
