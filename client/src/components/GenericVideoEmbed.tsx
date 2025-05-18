@@ -247,15 +247,36 @@ const GenericVideoEmbed = ({
 
   // If we have direct HTML content, render it in a container with proper aspect ratio
   if (html && embedUrl === 'html-content') {
+    // Check if this is a YouTube embed and modify it to ensure it fills the container
+    let processedHtml = html;
+    
+    if (html.includes('youtube.com/embed')) {
+      // Extract the YouTube embed URL
+      const match = html.match(/src="(https:\/\/www\.youtube\.com\/embed\/[^"]+)"/);
+      if (match && match[1]) {
+        const youtubeEmbedUrl = match[1];
+        
+        // Create a completely new iframe with proper styling
+        processedHtml = `<iframe 
+          src="${youtubeEmbedUrl}" 
+          title="YouTube video player" 
+          frameborder="0" 
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+          allowfullscreen 
+          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+        ></iframe>`;
+      }
+    }
+    
     return (
       <div className={`video-embed ${className}`} style={{ width: typeof width === 'number' ? `${width}px` : width }}>
         <div 
-          className={responsive ? 'relative w-full' : 'relative'}
-          style={responsive ? { paddingBottom: `${aspectRatioValue}%` } : {}}
+          className="relative w-full"
+          style={{ paddingBottom: `${aspectRatioValue}%` }}
         >
           <div 
-            className={responsive ? 'absolute top-0 left-0 w-full h-full' : ''}
-            dangerouslySetInnerHTML={{ __html: html }}
+            className="absolute top-0 left-0 w-full h-full"
+            dangerouslySetInnerHTML={{ __html: processedHtml }}
           />
           {aiGenerator && <AIWatermark aiGenerator={aiGenerator} position="bottom-right" size="medium" />}
         </div>
