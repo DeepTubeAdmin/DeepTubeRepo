@@ -98,6 +98,7 @@ export default function ForumPage() {
   const [newComment, setNewComment] = useState("");
   const [activeThread, setActiveThread] = useState<number | null>(null);
   const [visibleCommentForms, setVisibleCommentForms] = useState<{[key: number]: boolean}>({});
+  const [expandedThreads, setExpandedThreads] = useState<{[key: number]: boolean}>({});
   
   // Fetch forum categories from the database
   const { 
@@ -406,7 +407,7 @@ export default function ForumPage() {
   });
 
   // Process threads to put sticky ones at the top
-  const processedThreads = (() => {
+  const processedThreads = (function() {
     // Split into sticky and non-sticky threads
     const stickyThreads = threads.filter(thread => thread.isSticky);
     const regularThreads = threads.filter(thread => !thread.isSticky);
@@ -793,7 +794,25 @@ export default function ForumPage() {
                     </CardHeader>
                     <CardContent className="p-4 pt-2">
                       <div className="prose prose-sm dark:prose-invert max-w-none bg-transparent p-4 rounded-md border border-border/30">
-                        <p className="text-sm whitespace-pre-wrap text-foreground">{thread.content.slice(0, 400)}{thread.content.length > 400 ? '...' : ''}</p>
+                        <p className="text-sm whitespace-pre-wrap text-foreground">
+                          {expandedThreads[thread.id] ? thread.content : (thread.content.slice(0, 400) + (thread.content.length > 400 ? '...' : ''))}
+                        </p>
+                        {thread.content.length > 400 && (
+                          <Button 
+                            variant="link" 
+                            className="px-0 mt-2 text-primary hover:text-primary/80" 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setExpandedThreads(prev => ({
+                                ...prev, 
+                                [thread.id]: !prev[thread.id]
+                              }));
+                            }}
+                          >
+                            {expandedThreads[thread.id] ? 'Show less' : 'Show more'}
+                          </Button>
+                        )}
                       </div>
                       
                       {/* Thread Actions */}

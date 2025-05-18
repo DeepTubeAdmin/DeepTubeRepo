@@ -113,8 +113,15 @@ export default function ForumThreadCard({
       </CardHeader>
       
       <CardContent className="p-4 pt-0">
-        <div className="text-sm whitespace-pre-wrap line-clamp-6 mt-0 bg-muted/10 p-4 rounded-md border border-border/30 min-h-[120px] text-foreground">
+        <div className="text-sm whitespace-pre-wrap mt-0 bg-muted/10 p-4 rounded-md border border-border/30 min-h-[120px] text-foreground">
           {thread.content}
+          {thread.content.length > 300 && (
+            <Link href={`/forum/thread/${thread.id}`}>
+              <Button variant="link" className="p-0 mt-2 text-primary">
+                View full thread
+              </Button>
+            </Link>
+          )}
         </div>
       </CardContent>
       <CardFooter className="p-4 pt-0 flex flex-col gap-3">
