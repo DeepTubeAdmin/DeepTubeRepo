@@ -651,10 +651,15 @@ export default function MediaDetailNew() {
               )}
 
               {media.contentType === "embed" && media.embedCode && (
-                <div className="aspect-video relative">
-                  {/* Parse embed code with dangerouslySetInnerHTML */}
-                  <div
-                    dangerouslySetInnerHTML={{ __html: media.embedCode }}
+                <div className="aspect-video relative w-full h-full">
+                  {/* Use the GenericVideoEmbed component for better sizing */}
+                  <GenericVideoEmbed
+                    html={media.embedCode}
+                    title={media.title}
+                    responsive={true}
+                    autoplay={true}
+                    aiGenerator={media.aiGenerator}
+                    aspectRatio="16:9"
                     className="w-full h-full"
                   />
                 </div>
