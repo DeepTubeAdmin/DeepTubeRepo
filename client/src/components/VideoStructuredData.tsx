@@ -24,6 +24,11 @@ function formatDuration(seconds?: number): string {
  * Not used in the test environment
  */
 export default function VideoStructuredData({ video }: VideoStructuredDataProps) {
+  // Handle optional fields safely
+  const tags = Array.isArray(video.tags) ? video.tags.join(", ") : "";
+  const categoryName = video.category && typeof video.category === 'object' ? video.category.name : "AI Generated Content";
+  const username = video.user && typeof video.user === 'object' ? video.user.username : "DeepTube User";
+
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "VideoObject",
@@ -48,11 +53,11 @@ export default function VideoStructuredData({ video }: VideoStructuredDataProps)
       }
     },
     // Additional fields for better SEO
-    "keywords": video.tags?.join(", ") || "",
-    "genre": video.category?.name || "AI Generated Content",
+    "keywords": tags,
+    "genre": categoryName,
     "creator": {
       "@type": "Person",
-      "name": video.user?.username || "DeepTube User"
+      "name": username
     }
   };
   

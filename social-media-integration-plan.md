@@ -171,6 +171,11 @@ app.get('/embed/:id', async (req, res) => {
     return res.status(404).send('Video not found');
   }
   
+  // Instagram-specific handling - return special page for Instagram's IGTV
+  if (platform === 'instagram') {
+    return handleInstagramEmbed(req, res, video);
+  }
+  
   // Generate a signed URL with appropriate expiration
   const videoUrl = await getSignedS3Url(urlPathToS3Key(video.videoUrl), 86400); // 24-hour expiry
   
@@ -316,6 +321,118 @@ app.get('/embed/:id', async (req, res) => {
     </html>
   `);
 });
+
+// Special handler for Instagram embeds
+async function handleInstagramEmbed(req: Request, res: Response, video: Video) {
+  // Instagram has specific requirements for video embeds
+  // - Square aspect ratio preferred for feed posts
+  // - 9:16 for Stories and Reels
+  // - MP4 format with specific encoding requirements
+  
+  // Get video URL with longer expiry since Instagram may take time to process
+  const videoUrl = await getSignedS3Url(urlPathToS3Key(video.videoUrl), 604800); // 7-day expiry
+  
+  // Return a specialized page optimized for Instagram's requirements
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>${video.title} | DeepTube.co</title>
+      
+      <!-- Instagram-optimized meta tags -->
+      <meta property="og:title" content="${video.title}" />
+      <meta property="og:description" content="${video.description || 'Watch on DeepTube.co'}" />
+      <meta property="og:type" content="video.other" />
+      <meta property="og:url" content="https://deeptube.co/videos/${video.id}" />
+      <meta property="og:image" content="${video.thumbnail}" />
+      <meta property="og:video" content="${videoUrl}" />
+      <meta property="og:video:secure_url" content="${videoUrl}" />
+      <meta property="og:video:type" content="video/mp4" />
+      <meta property="og:video:width" content="1080" />
+      <meta property="og:video:height" content="1080" />
+      
+      <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+        /* Instagram prefers square videos in feed, use object-fit:cover for this ratio */
+        video { width: 100%; height: 100%; object-fit: cover; }
+        .watermark { position: absolute; bottom: 15px; right: 15px; color: white; font-family: Arial, sans-serif; 
+                    font-size: 16px; padding: 6px 12px; background: rgba(0,0,0,0.6); border-radius: 5px; z-index: 10; }
+        /* Instagram-style gradient overlay */
+        .gradient-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 30%; 
+                          background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0)); z-index: 5; }
+        /* Instagram-styled play button */
+        .instagram-play { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                         width: 100px; height: 100px; background: rgba(255,255,255,0.2); border-radius: 50%;
+                         display: flex; align-items: center; justify-content: center; z-index: 10; }
+        .instagram-play-icon { width: 0; height: 0; border-top: 25px solid transparent; 
+                             border-bottom: 25px solid transparent; border-left: 40px solid white; margin-left: 8px; }
+      </style>
+    </head>
+    <body>
+      <video 
+        id="instagram-player"
+        src="${videoUrl}" 
+        controls
+        autoplay
+        muted
+        loop
+        playsinline
+        poster="${video.thumbnail}"
+      ></video>
+      
+      <div class="gradient-overlay"></div>
+      <div class="instagram-play" id="instagram-play">
+        <div class="instagram-play-icon"></div>
+      </div>
+      
+      <div class="watermark">DeepTube.co</div>
+      
+      <script>
+        // Special handling for Instagram's video behavior
+        const video = document.getElementById('instagram-player');
+        const playButton = document.getElementById('instagram-play');
+        
+        // Instagram specific playback optimizations
+        video.addEventListener('loadedmetadata', function() {
+          // Force video to start playing as soon as it loads
+          video.play().catch(e => console.log('Instagram autoplay prevented:', e));
+        });
+        
+        playButton.addEventListener('click', function() {
+          if (video.paused) {
+            video.play().then(() => {
+              playButton.style.display = 'none';
+            }).catch(e => console.log('Instagram play prevented:', e));
+          } else {
+            video.pause();
+            playButton.style.display = 'flex';
+          }
+        });
+        
+        // Handle display of play button
+        video.addEventListener('play', function() {
+          playButton.style.display = 'none';
+        });
+        
+        video.addEventListener('pause', function() {
+          playButton.style.display = 'flex';
+        });
+        
+        // Instagram often prevents autoplay, so we check after a delay
+        setTimeout(function() {
+          if (video.paused) {
+            playButton.style.display = 'flex';
+          } else {
+            playButton.style.display = 'none';
+          }
+        }, 500);
+      </script>
+    </body>
+    </html>
+  `);
+}
 ```
 
 ### 4. Media Detail Page Integration
@@ -412,19 +529,23 @@ function getContentType(filename: string): string {
    - [ ] Implement ffmpeg transcoding for optimal social media compatibility
    - [ ] Configure multiple resolution versions (up to 1080p, with 720p for social platforms)
    - [ ] Set up video processing queue for background processing
-   - [ ] Optimize formats specifically for Facebook, X (Twitter), and TikTok
+   - [ ] Optimize formats specifically for Facebook, X (Twitter), TikTok, and Instagram
+   - [ ] Create special square (1:1) format versions for Instagram Feed posts
+   - [ ] Generate vertical (9:16) format versions for Instagram Stories and Reels
 
 3. **Testing**
    - [ ] Test social media embeds on Facebook, X (Twitter), and TikTok (priority platforms)
+   - [ ] Test Instagram integration with Feed posts, Stories, and Reels formats
    - [ ] Validate structured data with Google's Rich Results Test
    - [ ] Verify video playback across multiple browsers and devices
-   - [ ] Test embedding on Instagram and LinkedIn as secondary platforms
+   - [ ] Confirm autoplay works with appropriate muting on all target platforms
 
 4. **Analytics Integration**
    - [ ] Implement Google Analytics 4 for tracking video plays across social platforms
    - [ ] Set up conversion tracking for social media referrals
    - [ ] Create custom events for social sharing actions
    - [ ] Configure dashboard for social media performance monitoring
+   - [ ] Add platform-specific tracking parameters to shared links
 
 ## Implementation Strategy
 
