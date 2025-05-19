@@ -190,7 +190,7 @@ export default function ProfilePage() {
         ogType="profile"
         keywords="AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
       />
-      <div className="container max-w-4xl py-8">
+      <div className="container max-w-4xl py-8 mx-auto px-4">
         <h1 className="text-4xl font-bold mb-6 text-white">My Profile</h1>
         
         <Tabs defaultValue="profile" className="w-full">
