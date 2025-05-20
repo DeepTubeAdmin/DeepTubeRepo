@@ -248,13 +248,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Initialize MongoDB connection (for future use)
-  try {
-    await mongoDb.connectToMongoDB();
-    console.log('MongoDB initialized for future migration');
-  } catch (mongoError) {
-    console.warn('MongoDB initialization skipped, will continue with PostgreSQL:', mongoError);
-  }
   
   // Import sitemap generator
   const { 

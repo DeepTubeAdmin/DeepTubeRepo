@@ -31,6 +31,7 @@ dist/
 # Temporary files
 .DS_Store
 .tmp
+.qodo
 
 # Uploads directory - don't store uploaded content in git
 uploads/
