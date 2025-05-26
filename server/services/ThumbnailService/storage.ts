@@ -69,6 +69,8 @@ export async function uploadToS3(
  * @returns Pre-signed URL
  */
 export async function getSignedS3Url(s3Key: string, expiresIn: number = 3600): Promise<string> {
+  console.log("BUCKET_NAME", BUCKET_NAME)
+  console.log("s3Key", s3Key)
   const command = new GetObjectCommand({
     Bucket: BUCKET_NAME,
     Key: s3Key,

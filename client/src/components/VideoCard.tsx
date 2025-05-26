@@ -17,28 +17,36 @@ interface ThumbnailImageProps {
 }
 
 // Component to handle thumbnail loading with proper S3 URL resolution
-function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailImageProps) {
+function ThumbnailImage({
+  videoId,
+  thumbnail,
+  title,
+  contentType,
+}: ThumbnailImageProps) {
   // Extract YouTube ID for embeds
   const [youtubeId, setYoutubeId] = useState<string | null>(null);
   // Track loading and error states
-  const [imgSrc, setImgSrc] = useState<string>('');
+  const [imgSrc, setImgSrc] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [loadAttemptTime, setLoadAttemptTime] = useState(Date.now());
   const maxRetries = 3;
-  
+
   // Get YouTube ID for embed content types
   useEffect(() => {
-    if (contentType === 'embed' && thumbnail &&
-      (thumbnail.includes('youtube.com') || thumbnail.includes('youtu.be'))) {
+    if (
+      contentType === "embed" &&
+      thumbnail &&
+      (thumbnail.includes("youtube.com") || thumbnail.includes("youtu.be"))
+    ) {
       // Try to parse YouTube ID from the thumbnail URL
       const patterns = [
         /(?:youtube\.com\/vi\/|img\.youtube\.com\/vi\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
         /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
-        /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/
+        /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
       ];
-      
+
       for (const pattern of patterns) {
         const match = thumbnail.match(pattern);
         if (match && match[1]) {
@@ -54,48 +62,60 @@ function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailIma
     setIsLoading(true);
     setLoadFailed(false);
     setRetryCount(0);
-    
+
     // Reset timestamp for cache busting
     setLoadAttemptTime(Date.now());
-    
+
     // Default to our API endpoint with a cache buster
-    let reliableThumbnail = thumbnail ? 
-      checkThumbnail(thumbnail, videoId) : 
-      `/api/content/${videoId}/thumbnail?t=${Date.now()}`;
+    let reliableThumbnail = thumbnail
+      ? checkThumbnail(thumbnail, videoId)
+      : `/api/content/${videoId}/thumbnail?t=${Date.now()}`;
 
     // Override for YouTube embeds - use direct YouTube image URL
-    if (contentType === 'embed' && youtubeId) {
+    if (contentType === "embed" && youtubeId) {
       reliableThumbnail = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
     }
-    
+
     setImgSrc(reliableThumbnail);
   }, [videoId, thumbnail, contentType, youtubeId]);
-  
+
   // Define an internal retry mechanism
   const retryWithFallback = () => {
-    setRetryCount(prev => prev + 1);
+    setRetryCount((prev) => prev + 1);
     setLoadAttemptTime(Date.now());
-    
+
     // If YouTube content, try different quality levels
-    if (contentType === 'embed' && youtubeId) {
+    if (contentType === "embed" && youtubeId) {
       if (retryCount === 0) {
         // First retry: Try medium quality
-        console.log(`ThumbnailImage: Trying medium quality for video ${videoId}`);
+        console.log(
+          `ThumbnailImage: Trying medium quality for video ${videoId}`
+        );
         setImgSrc(`https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`);
       } else if (retryCount === 1) {
         // Second retry: Try standard quality
-        console.log(`ThumbnailImage: Trying standard quality for video ${videoId}`);
+        console.log(
+          `ThumbnailImage: Trying standard quality for video ${videoId}`
+        );
         setImgSrc(`https://img.youtube.com/vi/${youtubeId}/default.jpg`);
       } else {
         // Final fallback: Force SVG placeholder
-        console.error(`ThumbnailImage: All YouTube qualities failed for video ${videoId}`);
-        setImgSrc(`/api/content/${videoId}/thumbnail?placeholder=true&t=${loadAttemptTime}`);
+        console.error(
+          `ThumbnailImage: All YouTube qualities failed for video ${videoId}`
+        );
+        setImgSrc(
+          `/api/content/${videoId}/thumbnail?placeholder=true&t=${loadAttemptTime}`
+        );
         setLoadFailed(true);
       }
     } else {
       // Non-YouTube content, go directly to API with forced SVG
-      console.error(`ThumbnailImage: Error loading thumbnail for video ${videoId}`);
-      setImgSrc(`/api/content/${videoId}/thumbnail?placeholder=true&t=${loadAttemptTime}`);
+      console.error(
+        `ThumbnailImage: Error loading thumbnail for video ${videoId}`
+      );
+      setImgSrc(
+        `/api/content/${videoId}/thumbnail?placeholder=true&t=${loadAttemptTime}`
+      );
       setLoadFailed(true);
     }
   };
@@ -104,7 +124,7 @@ function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailIma
   const handleImageLoad = () => {
     setIsLoading(false);
   };
-  
+
   const handleImageError = () => {
     if (retryCount < maxRetries) {
       retryWithFallback();
@@ -126,7 +146,15 @@ function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailIma
       {loadFailed && (
         <div className="w-full h-full absolute inset-0 bg-black flex items-center justify-center z-5">
           <div className="w-16 h-16 text-orange-500">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <circle cx="12" cy="12" r="10"></circle>
               <line x1="12" y1="8" x2="12" y2="12"></line>
               <line x1="12" y1="16" x2="12.01" y2="16"></line>
@@ -140,22 +168,29 @@ function ThumbnailImage({ videoId, thumbnail, title, contentType }: ThumbnailIma
         className="w-full h-full object-cover absolute inset-0"
         onLoad={handleImageLoad}
         onError={handleImageError}
-        style={{ opacity: loadFailed ? 0.5 : 1 }} /* Dim failed thumbnails but keep them visible */
+        style={{
+          opacity: loadFailed ? 0.5 : 1,
+        }} /* Dim failed thumbnails but keep them visible */
       />
     </>
   );
 }
 
-
 interface VideoCardProps {
   video: Video;
   onPreview?: (videoId: number) => void;
   onWishlist?: (videoId: number) => void;
-  size?: 'default' | 'small' | 'medium' | 'large';
+  size?: "default" | "small" | "medium" | "large";
   compact?: boolean;
 }
 
-export default function VideoCard({ video, onPreview, onWishlist, size = 'default', compact = false }: VideoCardProps) {
+export default function VideoCard({
+  video,
+  onPreview,
+  onWishlist,
+  size = "default",
+  compact = false,
+}: VideoCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -166,10 +201,18 @@ export default function VideoCard({ video, onPreview, onWishlist, size = 'defaul
 
   // Format duration helper
   const formatDuration = (seconds: number | null): string => {
-    if (!seconds) return '0:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    if (!seconds || seconds <= 0) return "0:00";
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+
+    if (hrs > 0) {
+      return `${hrs}:${mins.toString().padStart(2, "0")}:${secs
+        .toString()
+        .padStart(2, "0")}`;
+    } else {
+      return `${mins}:${secs.toString().padStart(2, "0")}`;
+    }
   };
 
   // Handle like action
@@ -180,30 +223,30 @@ export default function VideoCard({ video, onPreview, onWishlist, size = 'defaul
     setIsLikeLoading(true);
     try {
       const response = await apiRequest(
-        isLiked ? 'DELETE' : 'POST',
+        isLiked ? "DELETE" : "POST",
         `/api/videos/${video.id}/like`
       );
       const data = await response.json();
       setIsLiked(!isLiked);
       setLikeCount(data.count || 0);
     } catch (error) {
-      console.error('Error toggling like:', error);
+      console.error("Error toggling like:", error);
       toast({
-        title: isLiked ? 'Error removing like' : 'Error adding like',
-        description: 'Please try again later',
-        variant: 'destructive'
+        title: isLiked ? "Error removing like" : "Error adding like",
+        description: "Please try again later",
+        variant: "destructive",
       });
     } finally {
       setIsLikeLoading(false);
     }
   };
-  
+
   // Handle report action
   const handleReport = (e: React.MouseEvent) => {
     e.stopPropagation();
     // Open the media detail page with the report dialog in a new tab
     const slug = createSeoFriendlySlug(video);
-    window.open(`/media/${slug}?report=true`, '_blank');
+    window.open(`/media/${slug}?report=true`, "_blank");
   };
 
   // Handle preview click
@@ -222,17 +265,20 @@ export default function VideoCard({ video, onPreview, onWishlist, size = 'defaul
         setUsername(video.uploaderName);
         return;
       }
-      
+
       // Otherwise fetch the username if we have userId
       if (video.userId) {
         try {
-          const response = await apiRequest('GET', `/api/users/${video.userId}/profile`);
+          const response = await apiRequest(
+            "GET",
+            `/api/users/${video.userId}/profile`
+          );
           const data = await response.json();
           if (data && data.username) {
             setUsername(data.username);
           }
         } catch (error) {
-          console.error('Error fetching username:', error);
+          console.error("Error fetching username:", error);
         }
       }
     };
@@ -242,12 +288,15 @@ export default function VideoCard({ video, onPreview, onWishlist, size = 'defaul
   useEffect(() => {
     const fetchLikeStatus = async () => {
       try {
-        const response = await apiRequest('GET', `/api/videos/${video.id}/like`);
+        const response = await apiRequest(
+          "GET",
+          `/api/videos/${video.id}/like`
+        );
         const data = await response.json();
         setIsLiked(data.isLiked);
         setLikeCount(data.count || 0);
       } catch (error) {
-        console.error('Error fetching like status:', error);
+        console.error("Error fetching like status:", error);
       }
     };
     fetchLikeStatus();
@@ -263,10 +312,10 @@ export default function VideoCard({ video, onPreview, onWishlist, size = 'defaul
 
   // Create dynamic sizing classes
   const sizeClass = {
-    small: 'w-full',
-    default: 'w-full',
-    medium: 'w-full',
-    large: 'w-full max-w-4xl mx-auto',
+    small: "w-full",
+    default: "w-full",
+    medium: "w-full",
+    large: "w-full max-w-4xl mx-auto",
   }[size];
 
   return (
@@ -287,22 +336,22 @@ export default function VideoCard({ video, onPreview, onWishlist, size = 'defaul
         />
 
         {/* Video Preview Layer - Simple version with direct video element */}
-        {video.contentType === 'video' && video.videoUrl && (
+        {video.contentType === "video" && video.videoUrl && (
           <div className="absolute inset-0">
             {isHovered ? (
               <video
                 key={`video-${video.id}-${isHovered}`}
                 className="w-full h-full object-cover"
                 src={video.videoUrl}
-                poster={checkThumbnail(video.thumbnail || '', video.id)}
+                poster={checkThumbnail(video.thumbnail || "", video.id)}
                 autoPlay
                 muted
                 loop
                 playsInline
               />
             ) : (
-              <img 
-                src={checkThumbnail(video.thumbnail || '', video.id)} 
+              <img
+                src={checkThumbnail(video.thumbnail || "", video.id)}
                 alt={video.title}
                 className="w-full h-full object-cover"
               />
@@ -311,10 +360,12 @@ export default function VideoCard({ video, onPreview, onWishlist, size = 'defaul
         )}
 
         {/* YouTube Preview Layer */}
-        {video.contentType === 'embed' && video.embedCode && isHovered && (
+        {video.contentType === "embed" && video.embedCode && isHovered && (
           <div className="absolute inset-0 bg-black">
             <iframe
-              src={`https://www.youtube.com/embed/${extractYoutubeIdFromEmbed(video.embedCode)}?autoplay=1&mute=1&controls=0&modestbranding=1`}
+              src={`https://www.youtube.com/embed/${extractYoutubeIdFromEmbed(
+                video.embedCode
+              )}?autoplay=1&mute=1&controls=0&modestbranding=1`}
               className="w-full h-full"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
               allowFullScreen
@@ -325,16 +376,18 @@ export default function VideoCard({ video, onPreview, onWishlist, size = 'defaul
         {/* Hover Overlay */}
         <div
           className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent transition-opacity duration-200 ${
-            isHovered ? 'opacity-100' : 'opacity-40'
+            isHovered ? "opacity-100" : "opacity-40"
           }`}
         />
 
         {/* Duration Badge */}
-        {video.contentType !== 'image' && video.duration && video.duration > 0 && (
-          <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded z-10">
-            {Math.floor(video.duration / 60)}:{String(Math.floor(video.duration % 60)).padStart(2, '0')}
-          </div>
-        )}
+        {video.contentType !== "image" &&
+          video.duration &&
+          video.duration > 0 && (
+            <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded z-10">
+              {formatDuration(video.duration)}
+            </div>
+          )}
       </div>
 
       {/* Video Info Section */}
@@ -342,27 +395,44 @@ export default function VideoCard({ video, onPreview, onWishlist, size = 'defaul
         <h3 className="font-medium text-base md:text-lg truncate text-white">
           {video.title}
         </h3>
-        
+
         {/* Tags display */}
         {video.tags && (
           <div className="flex flex-wrap gap-1 mt-1">
-            {video.tags.split(',').slice(0, 3).map((tag, index) => (
-              <span 
-                key={index} 
-                className="inline-block bg-gray-800/80 text-gray-300 rounded px-1.5 py-0.5 text-[10px]"
-              >
-                #{tag.trim()}
+            {video.tags
+              .split(",")
+              .slice(0, 3)
+              .map((tag, index) => (
+                <span
+                  key={index}
+                  className="inline-block bg-gray-800/80 text-gray-300 rounded px-1.5 py-0.5 text-[10px]"
+                >
+                  #{tag.trim()}
+                </span>
+              ))}
+            {video.tags.split(",").length > 3 && (
+              <span className="inline-block text-gray-400 text-[10px]">
+                +{video.tags.split(",").length - 3}
               </span>
-            ))}
-            {video.tags.split(',').length > 3 && (
-              <span className="inline-block text-gray-400 text-[10px]">+{video.tags.split(',').length - 3}</span>
             )}
           </div>
         )}
 
         <div className="flex justify-between items-center mt-2 text-sm">
           <div className="text-gray-400">
-            {video.aiGenerator || "AI Artist"} {username && <>• <Link to={`/user/${username}`} onClick={(e) => e.stopPropagation()} className="text-orange-500 hover:text-orange-400 hover:underline">{username}</Link></>}
+            {video.aiGenerator || "AI Artist"}{" "}
+            {username && (
+              <>
+                •{" "}
+                <Link
+                  to={`/user/${username}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-orange-500 hover:text-orange-400 hover:underline"
+                >
+                  {username}
+                </Link>
+              </>
+            )}
           </div>
 
           <div className="flex space-x-1">
@@ -370,15 +440,17 @@ export default function VideoCard({ video, onPreview, onWishlist, size = 'defaul
               onClick={handleLike}
               className={`flex items-center px-2 py-1 rounded transition-colors ${
                 isLiked
-                  ? 'text-orange-500 bg-orange-950/40'
-                  : 'text-gray-400 hover:text-orange-400'
+                  ? "text-orange-500 bg-orange-950/40"
+                  : "text-gray-400 hover:text-orange-400"
               }`}
               disabled={isLikeLoading}
               title={isLiked ? "Unlike" : "Like"}
             >
-              <ThumbsUp className={`h-4 w-4 ${isLikeLoading ? 'animate-pulse' : ''}`} />
+              <ThumbsUp
+                className={`h-4 w-4 ${isLikeLoading ? "animate-pulse" : ""}`}
+              />
             </button>
-            
+
             <button
               onClick={handleReport}
               className="flex items-center px-2 py-1 rounded transition-colors text-gray-400 hover:text-orange-400"

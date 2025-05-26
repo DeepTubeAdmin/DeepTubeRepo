@@ -19,11 +19,11 @@ export function calculatePrice(credits: number): string {
 // Extract YouTube video ID from various YouTube URL formats
 export function extractYoutubeVideoId(url: string): string | null {
   if (!url) return null;
-  
+
   console.log("YouTube URL detected:", url);
-  
+
   // Handle YouTube Shorts format
-  if (url.includes('youtube.com/shorts/')) {
+  if (url.includes("youtube.com/shorts/")) {
     const shortsRegex = /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/;
     const shortsMatch = url.match(shortsRegex);
     if (shortsMatch) {
@@ -31,15 +31,16 @@ export function extractYoutubeVideoId(url: string): string | null {
       return shortsMatch[1];
     }
   }
-  
+
   // Handle various other YouTube URL formats
   // youtube.com/watch?v=VIDEOID
   // youtu.be/VIDEOID
   // youtube.com/embed/VIDEOID
   // youtube.com/v/VIDEOID
-  const regex = /(?:youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=)|youtu\.be\/)([\w-]{11})/;
+  const regex =
+    /(?:youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=)|youtu\.be\/)([\w-]{11})/;
   const match = url.match(regex);
-  
+
   console.log("Extracted YouTube ID:", match ? match[1] : null);
   return match ? match[1] : null;
 }
@@ -47,20 +48,21 @@ export function extractYoutubeVideoId(url: string): string | null {
 // Extract YouTube video ID from embed code
 export function extractYoutubeIdFromEmbed(embedCode: string): string | null {
   if (!embedCode) return null;
-  
+
   // Extract from iframe src attribute
-  const srcRegex = /src="https?:\/\/(?:www\.)?youtube\.com\/embed\/([\w-]{11})(?:\?.*)?"/;
+  const srcRegex =
+    /src="https?:\/\/(?:www\.)?youtube\.com\/embed\/([\w-]{11})(?:\?.*)?"/;
   const match = embedCode.match(srcRegex);
-  
+
   return match ? match[1] : null;
 }
 
 // Convert YouTube URL to embed code
 export function youtubeUrlToEmbedCode(url: string): string | null {
   const videoId = extractYoutubeVideoId(url);
-  
+
   if (!videoId) return null;
-  
+
   // Note: We're using different embed parameters for different contexts.
   // In the preview we use mute=1 and in the modal we enable autoplay
   return `<iframe 
@@ -81,51 +83,57 @@ export function getYoutubeThumbnailUrl(videoId: string): string {
 }
 
 // Extract Reddit embed information
-export function extractRedditInfo(embedCode: string): { subreddit: string | null, postId: string | null, user: string | null } {
+export function extractRedditInfo(embedCode: string): {
+  subreddit: string | null;
+  postId: string | null;
+  user: string | null;
+} {
   if (!embedCode) return { subreddit: null, postId: null, user: null };
-  
+
   // Handle blockquote Reddit embed format
   // <blockquote class="reddit-embed-bq" data-embed-height="546">
   // <a href="https://www.reddit.com/r/aivideo/comments/1k80go8/face_punching_iconic_characters/">Face Punching Iconic Characters</a>
   // by<a href="https://www.reddit.com/user/Cloud_Reviews/">u/Cloud_Reviews</a>
   // in<a href="https://www.reddit.com/r/aivideo/">aivideo</a>
   // </blockquote><script async="" src="https://embed.reddit.com/widgets.js" charset="UTF-8"></script>
-  
+
   let subreddit = null;
   let postId = null;
   let user = null;
-  
+
   // Extract subreddit
   const subredditRegex = /reddit\.com\/r\/([^\/]+)/;
   const subredditMatch = embedCode.match(subredditRegex);
   if (subredditMatch) {
     subreddit = subredditMatch[1];
   }
-  
+
   // Extract post ID
   const postIdRegex = /comments\/([^\/]+)/;
   const postIdMatch = embedCode.match(postIdRegex);
   if (postIdMatch) {
     postId = postIdMatch[1];
   }
-  
+
   // Extract username
   const userRegex = /user\/([^\/]+)/;
   const userMatch = embedCode.match(userRegex);
   if (userMatch) {
     user = userMatch[1];
   }
-  
+
   return { subreddit, postId, user };
 }
 
 // Check if a string is a Reddit embed
 export function isRedditEmbed(code: string | undefined): boolean {
   if (!code) return false;
-  
-  return code.includes('reddit-embed-bq') || 
-         code.includes('embed.reddit.com') || 
-         (code.includes('reddit.com/r/') && code.includes('comments'));
+
+  return (
+    code.includes("reddit-embed-bq") ||
+    code.includes("embed.reddit.com") ||
+    (code.includes("reddit.com/r/") && code.includes("comments"))
+  );
 }
 
 // Get a Reddit thumbnail URL (fallback)
@@ -139,120 +147,154 @@ export function getRedditThumbnailUrl(subreddit: string): string {
  * @param maxRetries Maximum number of retry attempts (default: 3)
  * @returns The correctly processed URL
  */
-export async function fetchS3Url(url: string | null, maxRetries: number = 3): Promise<string | null> {
+export async function fetchS3Url(
+  url: string | null,
+  maxRetries: number = 3
+): Promise<string | null> {
   if (!url) return null;
-  
-  console.log('fetchS3Url called with:', url);
-  
+
+  console.log("fetchS3Url called with:", url);
+
   // For direct URLs that aren't API calls, return as is
-  if (!url.startsWith('/api/s3/') && !url.includes('/api/videos/') && !url.includes('/api/content/') && !url.includes('thumbnail')) {
+  if (
+    !url.startsWith("/api/s3/") &&
+    !url.includes("/api/videos/") &&
+    !url.includes("/api/content/") &&
+    !url.includes("thumbnail")
+  ) {
     return url;
   }
-  
+
   // For S3 URLs and thumbnail URLs, implement retry with exponential backoff
   let retries = 0;
   let lastError: Error | null = null;
-  
+
   while (retries <= maxRetries) {
     try {
       // Add a cache-busting parameter to avoid browser cache issues
       const cacheBuster = `_t=${Date.now()}`;
-      const separator = url.includes('?') ? '&' : '?';
+      const separator = url.includes("?") ? "&" : "?";
       let urlWithCacheBuster = `${url}${separator}${cacheBuster}`;
-      
+
       // For S3 URLs, add the getUrl parameter
-      if (url.startsWith('/api/s3/')) {
+      if (url.startsWith("/api/s3/")) {
         urlWithCacheBuster = `${url}${separator}getUrl=true&${cacheBuster}`;
       }
-      
-      console.log(`Fetching URL (attempt ${retries + 1}/${maxRetries + 1}):`, url);
-      
+
+      console.log(
+        `Fetching URL (attempt ${retries + 1}/${maxRetries + 1}):`,
+        url
+      );
+
       const response = await fetch(urlWithCacheBuster, {
         headers: {
-          'Cache-Control': 'no-cache'
-        }
+          "Cache-Control": "no-cache",
+        },
       });
-      
+
       // Handle redirects (common for thumbnail endpoints)
       if (response.redirected) {
-        console.log('Redirected to:', response.url);
+        console.log("Redirected to:", response.url);
         return response.url;
       }
-      
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Failed to fetch URL: ${response.status} ${response.statusText}`
+        );
       }
-      
+
       // Check content type to determine how to handle the response
-      const contentType = response.headers.get('content-type');
-      
-      if (contentType && contentType.includes('application/json')) {
+      const contentType = response.headers.get("content-type");
+
+      if (contentType && contentType.includes("application/json")) {
         // Handle JSON response (typical for S3 API)
         const data = await response.json();
-        
+
         if (!data.url) {
-          throw new Error('Invalid API response: missing URL');
+          throw new Error("Invalid API response: missing URL");
         }
-        
-        console.log('Successfully resolved to URL from JSON response');
+
+        console.log("Successfully resolved to URL from JSON response");
         return data.url;
-      } else if (contentType && (contentType.includes('image/') || contentType.includes('video/'))) {
+      } else if (
+        contentType &&
+        (contentType.includes("image/") || contentType.includes("video/"))
+      ) {
         // Direct media content - use the URL directly
-        console.log('Successfully received direct media content');
+        console.log("Successfully received direct media content");
         return response.url;
       } else {
         // Other response types - use the URL directly
-        console.log('Successfully received response, using URL directly');
+        console.log("Successfully received response, using URL directly");
         return response.url;
       }
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.error(`Error fetching URL (attempt ${retries + 1}/${maxRetries + 1}):`, lastError);
-      
+      console.error(
+        `Error fetching URL (attempt ${retries + 1}/${maxRetries + 1}):`,
+        lastError
+      );
+
       // Only retry if we haven't exceeded max retries
       if (retries < maxRetries) {
         // Exponential backoff: 300ms, 900ms, 2700ms, etc.
         const delay = 300 * Math.pow(3, retries);
         console.log(`Retrying in ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
         retries++;
       } else {
         break;
       }
     }
   }
-  
+
   // All retries failed, but we'll still return the original URL as fallback
-  console.warn('All URL fetch attempts failed, falling back to original URL');
+  console.warn("All URL fetch attempts failed, falling back to original URL");
   return url;
 }
 
 // Convert a Reddit URL to an embed code
 export function redditUrlToEmbedCode(url: string): string | null {
-  if (!url || !url.includes('reddit.com/r/')) return null;
-  
+  if (!url || !url.includes("reddit.com/r/")) return null;
+
   // Regular expression to extract subreddit, post ID, and title
   const regex = /reddit\.com\/r\/([^\/]+)\/comments\/([^\/]+)(?:\/([^\/]+))?/;
   const match = url.match(regex);
-  
+
   if (!match) return null;
-  
+
   const subreddit = match[1];
   const postId = match[2];
-  let title = match[3] || '';
-  
+  let title = match[3] || "";
+
   // Format title for readability
   title = title
-    .replace(/_/g, ' ')
-    .replace(/-/g, ' ')
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-    
+    .replace(/_/g, " ")
+    .replace(/-/g, " ")
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
   // The proper Reddit embed format requires only the blockquote
   // The script will be dynamically added when the embed is displayed
   return `<blockquote class="reddit-embed-bq" style="height:500px" data-embed-height="546" data-embed-live="true">
-  <a href="${url}">${title || 'Reddit Post'}</a>
+  <a href="${url}">${title || "Reddit Post"}</a>
   in <a href="https://www.reddit.com/r/${subreddit}/">r/${subreddit}</a>
   </blockquote>`;
+}
+
+export function formatDuration(durationInSeconds: number): string {
+  const totalSeconds = Math.floor(durationInSeconds);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(
+      seconds
+    ).padStart(2, "0")}`;
+  } else {
+    return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  }
 }

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, real, timestamp, boolean, primaryKey, varchar, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, real, timestamp, boolean, primaryKey, varchar, jsonb, doublePrecision } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -48,7 +48,7 @@ export const videos = pgTable("videos", {
   preview: text("preview"),
   contentType: text("content_type").notNull().default("video"), // "video", "image", or "embed"
   resolution: varchar("resolution", { enum: ["HD", "4K"] }).notNull().default("HD"),
-  duration: integer("duration").default(0), // in seconds, with default to avoid null issues
+  duration: doublePrecision("duration").default(0).notNull(),
   categoryId: integer("category_id").references(() => categories.id),
   vimeoId: text("vimeo_id"), // Store Vimeo video ID
   userId: integer("user_id").references(() => users.id), // Added userId for tracking ownership

@@ -9,6 +9,8 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
+import { execFile as execFileCallback } from 'child_process';
+import { promisify } from 'util';
 import { getSignedS3Url } from '../../s3';
 
 const execPromisified = util.promisify(cpExec);
@@ -298,19 +300,17 @@ export async function generateThumbnailFromVideo(
  */
 export async function getVideoDuration(videoPath: string): Promise<number> {
   try {
-    const { execFile } = require('child_process');
-    const util = require('util');
-    const execFilePromise = util.promisify(execFile);
-
-    const { stderr } = await execFilePromise('ffmpeg', ['-i', videoPath, '-f', 'null', '-']);
+    const execFile = promisify(execFileCallback);
+    const { stderr } = await execFile('ffmpeg', ['-i', videoPath, '-f', 'null', '-']);
     const match = stderr.toString().match(/Duration: (\d{2}):(\d{2}):(\d{2})\.\d{2}/);
-    
+
     if (match) {
-      const hours = parseInt(match[1]);
-      const minutes = parseInt(match[2]);
-      const seconds = parseInt(match[3]);
+      const hours = parseInt(match[1], 10);
+      const minutes = parseInt(match[2], 10);
+      const seconds = parseInt(match[3], 10);
       return hours * 3600 + minutes * 60 + seconds;
     }
+
     return 0;
   } catch (error) {
     console.error('Error getting video duration:', error);
