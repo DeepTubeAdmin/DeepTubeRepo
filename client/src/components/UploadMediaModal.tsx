@@ -213,468 +213,169 @@ export default function UploadMediaModal({
     [toast, contentType]
   );
 
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setIsUploading(true);
 
-      // Validate form - title, category, and AI generator are required
-      if (!title || title.length < 3) {
-        toast({
-          title: "Invalid title",
-          description: "Title must be at least 3 characters long",
-          variant: "destructive",
-        });
-        return;
-      }
+    const showToast = (
+      title: string,
+      description: string,
+      variant: any = "destructive"
+    ) => toast({ title, description, variant });
 
-      if (!categoryId) {
-        toast({
-          title: "Category required",
-          description: `Please select a category for your ${contentType}`,
-          variant: "destructive",
-        });
-        return;
-      }
+    const validateForm = () => {
+      if (!title || title.length < 3)
+        return showToast(
+          "Invalid title",
+          "Title must be at least 3 characters long"
+        );
+      if (!categoryId)
+        return showToast("Category required", "Please select a category");
+      if (!aiGenerator && !customAiGenerator)
+        return showToast(
+          "AI Generator required",
+          "Please select or specify an AI tool"
+        );
+      if (contentType !== "embed" && !selectedFile)
+        return showToast("No file", `Please select a ${contentType} file`);
+      if (contentType === "embed" && !embedCode)
+        return showToast("No embed code", "Embed code is required");
+      return true;
+    };
+    if (validateForm() !== true) return setIsUploading(false);
 
-      // Check if AI Generator is selected or custom one is provided
-      const finalAiGenerator =
-        aiGenerator === "Other" ? customAiGenerator : aiGenerator;
-      if (!finalAiGenerator) {
-        toast({
-          title: "AI Generator required",
-          description:
-            "Please select or specify the AI tool used to generate this content",
-          variant: "destructive",
-        });
-        return;
-      }
+    let finalThumbnail =
+      thumbnailUrl ||
+      `https://placehold.co/400x225?text=${encodeURIComponent(title)}`;
+    let videoUrl = null,
+      imageUrl = null,
+      duration = 0;
 
-      if (contentType !== "embed" && !selectedFile) {
-        toast({
-          title: "No file selected",
-          description: `Please select a ${contentType} file to upload`,
-          variant: "destructive",
-        });
-        return;
-      }
+    const uploadFile = async () => {
+      const formData = new FormData();
+      formData.append("file", selectedFile!);
+      const res = await fetch("/api/upload/file", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+        signal: AbortSignal.timeout(120000),
+      });
+      if (!res.ok) throw new Error("File upload failed");
+      return await res.json();
+    };
 
-      if (contentType === "embed" && !embedCode) {
-        toast({
-          title: "No embed code",
-          description:
-            "Please enter the embed code from YouTube, Vimeo, or other platforms",
-          variant: "destructive",
-        });
-        return;
-      }
+    const generateThumbnailFromVideo = async (videoUrl: string) => {
+      return new Promise<string>((resolve) => {
+        const video = document.createElement("video");
+        video.src = videoUrl;
+        video.crossOrigin = "anonymous";
+        video.muted = true;
+        video.currentTime = 1;
+        const timeout = setTimeout(() => resolve(finalThumbnail), 10000);
 
-      setIsUploading(true);
+        video.onloadeddata = async () => {
+          duration = video.duration;
+          const canvas = document.createElement("canvas");
+          canvas.width = video.videoWidth || 400;
+          canvas.height = video.videoHeight || 225;
+          const ctx = canvas.getContext("2d");
+          if (ctx) ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          clearTimeout(timeout);
+          resolve(canvas.toDataURL("image/jpeg", 0.7));
+        };
+        video.onerror = () => {
+          clearTimeout(timeout);
+          resolve(finalThumbnail);
+        };
+      });
+    };
 
-      try {
-        // Use the existing thumbnail if one was set, otherwise generate a default
-        let finalThumbnailUrl =
-          thumbnailUrl ||
-          "https://placehold.co/400x225?text=" + encodeURIComponent(title);
-        let videoUrl = null;
-        let imageUrl = null;
-        let extractedDuration = 0;
-
-        // Handle different file upload approaches based on content type
-        if (contentType !== "embed" && selectedFile) {
-          if (contentType === "video" && selectedFile.type.includes("mp4")) {
-            console.log("Using direct file upload for MP4 video");
-
-            // Create a FormData object for the file upload
-            const formData = new FormData();
-            formData.append("file", selectedFile);
-
-            console.log("Starting MP4 file upload to /api/upload/file");
-            // Upload the file first
-            const fileUploadResponse = await fetch("/api/upload/file", {
-              method: "POST",
-              body: formData,
-              credentials: "include",
-              // Add timeout and retry options for large uploads
-              signal: AbortSignal.timeout(120000), // 2 minute timeout
-            }).catch((error) => {
-              console.error("Network error during MP4 file upload:", error);
-              throw new Error(`Network error during upload: ${error.message}`);
-            });
-
-            if (!fileUploadResponse.ok) {
-              const errorData = await fileUploadResponse.json();
-              throw new Error(
-                errorData.error || `Failed to upload ${contentType} file`
-              );
-            }
-
-            // Get the file URL from the response (careful to only parse JSON once)
-            let fileData;
-            try {
-              const responseText = await fileUploadResponse.text();
-              console.log("Raw response text:", responseText);
-              fileData = JSON.parse(responseText);
-              console.log("File upload successful:", fileData);
-            } catch (error) {
-              const parseError = error as Error;
-              console.error("Failed to parse response as JSON:", parseError);
-              throw new Error(
-                `Error parsing server response: ${parseError.message}`
-              );
-            }
-
-            // All files are now uploaded to S3
-            console.log("File was uploaded to S3:", fileData);
-            console.log("Full S3 upload response:", fileData);
-
-            // Store the URL for the video
-            videoUrl = fileData.url;
-
-            // Generate a thumbnail from the video if none exists
-            if (!thumbnailUrl) {
-              try {
-                // Create a video element to extract the thumbnail
-                const videoEl = document.createElement("video");
-                videoEl.src = videoUrl;
-                videoEl.crossOrigin = "anonymous";
-                videoEl.muted = true;
-                videoEl.currentTime = 1; // Set to 1 second in to avoid black frames
-
-                // Wait for the video to load enough to extract a frame
-                finalThumbnailUrl = await new Promise((resolve, reject) => {
-                  // Set a timeout to prevent hanging if video loading fails
-                  const timeout = setTimeout(() => {
-                    console.log("Thumbnail extraction timed out");
-                    resolve(
-                      "https://placehold.co/400x225?text=" +
-                        encodeURIComponent(title)
-                    );
-                  }, 10000);
-
-                  videoEl.onloadeddata = async () => {
-                    try {
-                      // Allow some time for the frame to be loaded
-                      await new Promise((r) => setTimeout(r, 1000));
-
-                      // Extract duration
-                      extractedDuration = videoEl.duration;
-                      console.log("Video duration:", extractedDuration);
-
-                      // Create a canvas to draw the video frame
-                      const canvas = document.createElement("canvas");
-                      canvas.width = videoEl.videoWidth || 400;
-                      canvas.height = videoEl.videoHeight || 225;
-
-                      // Draw the current frame of the video onto the canvas
-                      const ctx = canvas.getContext("2d");
-                      if (ctx) {
-                        ctx.drawImage(
-                          videoEl,
-                          0,
-                          0,
-                          canvas.width,
-                          canvas.height
-                        );
-
-                        // Convert canvas to data URL (thumbnail)
-                        const thumbnailDataUrl = canvas.toDataURL(
-                          "image/jpeg",
-                          0.7
-                        );
-                        console.log("Generated thumbnail from video");
-                        clearTimeout(timeout);
-                        resolve(thumbnailDataUrl);
-                      } else {
-                        console.error("Could not get canvas context");
-                        clearTimeout(timeout);
-                        resolve(
-                          "https://placehold.co/400x225?text=" +
-                            encodeURIComponent(title)
-                        );
-                      }
-                    } catch (err) {
-                      console.error("Error generating thumbnail:", err);
-                      clearTimeout(timeout);
-                      resolve(
-                        "https://placehold.co/400x225?text=" +
-                          encodeURIComponent(title)
-                      );
-                    }
-                  };
-
-                  videoEl.onerror = (e) => {
-                    console.error("Error loading video for thumbnail:", e);
-                    clearTimeout(timeout);
-                    resolve(
-                      "https://placehold.co/400x225?text=" +
-                        encodeURIComponent(title)
-                    );
-                  };
-                });
-
-                console.log(
-                  "Final thumbnail URL type:",
-                  typeof finalThumbnailUrl
-                );
-              } catch (thumbnailError) {
-                console.error("Error creating thumbnail:", thumbnailError);
-                // Fall back to placeholder if thumbnail generation fails
-                finalThumbnailUrl =
-                  "https://placehold.co/400x225?text=" +
-                  encodeURIComponent(title);
-              }
-            }
-
-            // Proceed with metadata upload in the next step
-          } else if (contentType === "image") {
-            // For images, we'll continue using the Data URL approach
-            try {
-              // Read image as data URL
-              imageUrl = await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                  const result = e.target?.result as string;
-                  resolve(result);
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(selectedFile);
-              });
-
-              // Use the image data URL as the thumbnail as well
-              if (imageUrl && typeof imageUrl === "string") {
-                finalThumbnailUrl = imageUrl;
-              }
-            } catch (error) {
-              console.error("Error reading image file:", error);
-              toast({
-                title: "File read error",
-                description:
-                  "There was an error processing your image file. Please try a different file.",
-                variant: "destructive",
-              });
-              setIsUploading(false);
-              return;
-            }
-          } else {
-            // For all other video types, upload via FormData
-            try {
-              // Create a FormData object for the file upload
-              const formData = new FormData();
-              formData.append("file", selectedFile);
-
-              console.log("Starting file upload to /api/upload/file");
-              // Upload the file first
-              const fileUploadResponse = await fetch("/api/upload/file", {
-                method: "POST",
-                body: formData,
-                credentials: "include",
-                // Add timeout and retry options for large uploads
-                signal: AbortSignal.timeout(120000), // 2 minute timeout
-              }).catch((error) => {
-                console.error("Network error during file upload:", error);
-                throw new Error(
-                  `Network error during upload: ${error.message}`
-                );
-              });
-
-              if (!fileUploadResponse.ok) {
-                const errorData = await fileUploadResponse.json();
-                throw new Error(
-                  errorData.error || `Failed to upload ${contentType} file`
-                );
-              }
-
-              // Get the file URL from the response (careful to only parse JSON once)
-              let fileData;
-              try {
-                const responseText = await fileUploadResponse.text();
-                console.log("Raw response text:", responseText);
-                fileData = JSON.parse(responseText);
-                console.log("File upload successful:", fileData);
-              } catch (error) {
-                const parseError = error as Error;
-                console.error("Failed to parse response as JSON:", parseError);
-                throw new Error(
-                  `Error parsing server response: ${parseError.message}`
-                );
-              }
-
-              // File is now uploaded to S3
-              console.log("Video was uploaded to S3:", fileData);
-              // Store the URL for the video
-              videoUrl = fileData.url;
-            } catch (error) {
-              console.error("Error uploading video file:", error);
-              toast({
-                title: "Video upload error",
-                description:
-                  "There was an error uploading your video file. Please try a different file.",
-                variant: "destructive",
-              });
-              setIsUploading(false);
-              return;
-            }
-          }
+    try {
+      if (contentType !== "embed" && selectedFile) {
+        const fileData = await uploadFile();
+        if (contentType === "video") {
+          videoUrl = fileData.url;
+          if (!thumbnailUrl)
+            finalThumbnail = await generateThumbnailFromVideo(videoUrl);
+        } else if (contentType === "image") {
+          imageUrl = await new Promise((res, rej) => {
+            const reader = new FileReader();
+            reader.onload = (e) => res(e.target?.result as string);
+            reader.onerror = rej;
+            reader.readAsDataURL(selectedFile!);
+          });
+          finalThumbnail = imageUrl;
         }
+      } else if (contentType === "embed") {
+        const videoId = extractYoutubeVideoId(originalYoutubeUrl || embedCode);
+        if (videoId) finalThumbnail = getYoutubeThumbnailUrl(videoId);
+      }
 
-        // If it's a YouTube embed, extract the video ID and get a thumbnail
-        if (contentType === "embed") {
-          // Check for YouTube content
-          const videoId = extractYoutubeVideoId(
-            originalYoutubeUrl || embedCode
-          );
-          if (videoId) {
-            // Always use a fresh YouTube thumbnail URL to avoid validation issues
-            finalThumbnailUrl = getYoutubeThumbnailUrl(videoId);
-            console.log(
-              "Using YouTube thumbnail for embed:",
-              finalThumbnailUrl
-            );
-          }
-          // Check for Reddit content
-          else if (isRedditEmbed(embedCode)) {
-            const redditInfo = extractRedditInfo(embedCode);
-            // If we have subreddit info, use it for the thumbnail
-            if (redditInfo.subreddit) {
-              finalThumbnailUrl = getRedditThumbnailUrl(redditInfo.subreddit);
+      const userRes = await fetch("/api/user", { credentials: "include" });
+      if (!userRes.ok) throw new Error("User not logged in");
+      const user = await userRes.json();
 
-              // If we didn't extract a title from the form, try to use the post title from Reddit
-              if (!title || title.length < 3) {
-                // Extract title from Reddit embed
-                const titleMatch = embedCode.match(
-                  /reddit\.com\/r\/[^\/]+\/comments\/[^\/]+\/([^\/]+)/
-                );
-                if (titleMatch && titleMatch[1]) {
-                  // Convert URL slug to readable title
-                  const extractedTitle = titleMatch[1]
-                    .replace(/_/g, " ")
-                    .replace(/-/g, " ")
-                    .split(" ")
-                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                    .join(" ");
+      const payload = {
+        userId: user.id,
+        title,
+        description,
+        aiGenerator: aiGenerator === "Other" ? customAiGenerator : aiGenerator,
+        prompt,
+        tags,
+        categoryId: parseInt(categoryId),
+        contentType,
+        thumbnail: finalThumbnail,
+        videoUrl,
+        imageUrl,
+        embedCode: contentType === "embed" ? embedCode : null,
+        resolution: "HD",
+        duration,
+        credits: 0,
+      };
 
-                  setTitle(extractedTitle);
-                }
-              }
-            }
-          }
-        }
+      console.log("Submitting payload:", payload);
 
-        // Upload the form data to the server
-        console.log("Submitting video metadata to /api/videos");
+      const submitRes = await fetch("/api/videos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(60000),
+        body: JSON.stringify(payload),
+        credentials: "include",
+      });
 
-        // Fetch the current user to get the userId
-        const userResponse = await fetch("/api/user", {
-          credentials: "include",
-        });
-
-        if (!userResponse.ok) {
-          throw new Error("You must be logged in to upload content");
-        }
-
-        const userData = await userResponse.json();
-        console.log("Current user data:", userData);
-
-        const response = await fetch("/api/videos", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          // Add a longer timeout for large data payloads (especially base64 images)
-          signal: AbortSignal.timeout(60000), // 1 minute timeout
-          body: JSON.stringify({
-            userId: userData.id, // Explicitly include the user ID
-            title,
-            description,
-            aiGenerator:
-              aiGenerator === "Other" ? customAiGenerator : aiGenerator,
-            prompt,
-            tags,
-            categoryId: categoryId ? parseInt(categoryId, 10) : undefined, // Convert to number
-            contentType,
-            // Use YouTube thumbnail for embeds when available
-            thumbnail: finalThumbnailUrl,
-            videoUrl: videoUrl, // This will now be a server path for MP4s
-            imageUrl: imageUrl, // This will still be a data URL for images
-            embedCode: contentType === "embed" ? embedCode : null,
-            // Set HD resolution for both videos and embeds
-            resolution:
-              contentType === "video" || contentType === "embed" ? "HD" : "HD",
-            duration: extractedDuration || 0, // This would come from analyzing the video file
-            credits: 0, // Default to 0 credits for free content
-          }),
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-
-          // Check specifically for duplicate content error
-          if (
-            response.status === 409 &&
-            errorData.error === "Duplicate content detected"
-          ) {
-            toast({
-              title: "Duplicate Content",
-              description:
-                "This content appears to be a duplicate of existing content. Please upload original content only.",
-              variant: "destructive",
-            });
-            setIsUploading(false);
-            return; // Stop execution but don't close modal
-          }
-
-          throw new Error(
-            errorData.error ||
-              errorData.message ||
-              `Failed to upload ${contentType}`
+      if (!submitRes.ok) {
+        const err = await submitRes.json();
+        if (
+          submitRes.status === 409 &&
+          err.error === "Duplicate content detected"
+        ) {
+          return (
+            showToast("Duplicate", "This content is a duplicate"),
+            setIsUploading(false)
           );
         }
-
-        toast({
-          title: "Upload successful",
-          description: `Your ${contentType} has been uploaded and is under review`,
-        });
-
-        // Reset form
-        setTitle("");
-        setAiGenerator("");
-        setCustomAiGenerator("");
-        setShowCustomAiGenerator(false);
-        setPrompt("");
-        setDescription("");
-        setCategoryId("");
-        setSelectedFile(null);
-        onClose();
-      } catch (error: any) {
-        console.error("Upload error:", error);
-        toast({
-          title: "Upload failed",
-          description:
-            error.message || `There was an error uploading your ${contentType}`,
-          variant: "destructive",
-        });
-      } finally {
-        setIsUploading(false);
+        throw new Error(err.error || "Upload failed");
       }
-    },
-    [
-      title,
-      description,
-      aiGenerator,
-      customAiGenerator,
-      prompt,
-      categoryId,
-      contentType,
-      selectedFile,
-      embedCode,
-      thumbnailUrl,
-      originalYoutubeUrl,
-      originalRedditUrl,
-      toast,
-      onClose,
-    ]
-  );
+
+      toast({
+        title: "Upload successful",
+        description: "Content submitted and under review",
+      });
+      setTitle("");
+      setAiGenerator("");
+      setCustomAiGenerator("");
+      setShowCustomAiGenerator(false);
+      setPrompt("");
+      setDescription("");
+      setCategoryId("");
+      setSelectedFile(null);
+      onClose();
+    } catch (err: any) {
+      showToast("Upload error", err.message);
+    } finally {
+      setIsUploading(false);
+    }
+  }
 
   return (
     <SimpleDialog

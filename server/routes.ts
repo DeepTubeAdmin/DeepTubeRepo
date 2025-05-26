@@ -1397,8 +1397,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("Setting default HD resolution for image upload");
       }
 
-      console.log("videoData", videoData);
-
       // Create the video entry
       const video = await dbStorage.createVideo(videoData);
 
@@ -1451,7 +1449,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               `Triggering thumbnail generation for new ${video.contentType} with ID ${video.id}`
             );
             await fetch(
-              `http://localhost:5000/api/content/${video.id}/thumbnail?force=true`,
+              `http://${process.env.HOST}:${process.env.PORT}/api/content/${video.id}/thumbnail?force=true`,
               {
                 method: "GET",
               }
@@ -1845,6 +1843,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if we're forcing a thumbnail regeneration
       const forceRegeneration = req.query.force === "true";
       const forcePlaceholder = req.query.placeholder === "true";
+      console.log(
+        `Force regeneration: ${forceRegeneration}, Force placeholder: ${forcePlaceholder}`
+      );
 
       // Check if request is from admin (use the isAdmin middleware function manually)
       const isAdminRequest =
@@ -1854,8 +1855,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error("Invalid content ID");
       }
 
+      const skipVisibilityCheck = forceRegeneration;
+
       // Get content info from database
-      const content = await dbStorage.getVideoById(contentId);
+      const content = await dbStorage.getVideoById(
+        contentId,
+        skipVisibilityCheck
+      );
       if (!content) {
         throw new Error("Content not found");
       }

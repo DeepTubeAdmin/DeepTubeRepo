@@ -19,7 +19,9 @@ console.log("Checking FFmpeg availability...");
       }
     } else {
       console.warn(`⚠ FFmpeg may not be available: ${ffmpegTest.message}`);
-      console.warn("Some thumbnail generation features might not work correctly.");
+      console.warn(
+        "Some thumbnail generation features might not work correctly."
+      );
     }
   } catch (error) {
     console.error("Error checking FFmpeg:", error);
@@ -32,13 +34,13 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 // Increase JSON payload size limit to 500MB for large uploads
-app.use(express.json({ limit: '500mb' }));
-app.use(express.urlencoded({ extended: false, limit: '500mb' }));
+app.use(express.json({ limit: "500mb" }));
+app.use(express.urlencoded({ extended: false, limit: "500mb" }));
 
 // Serve uploaded files statically - make sure this happens before other routes
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 // Serve placeholder files statically
-app.use('/placeholder', express.static(path.join(__dirname, '../placeholder')));
+app.use("/placeholder", express.static(path.join(__dirname, "../placeholder")));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -93,12 +95,15 @@ app.use((req, res, next) => {
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen({
-    port,
-    host: "127.0.0.1",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
+  const port = process.env.PORT || 5000;
+  server.listen(
+    {
+      port,
+      host: process.env.HOST,
+      reusePort: true,
+    },
+    () => {
+      log(`serving on port ${port}`);
+    }
+  );
 })();
