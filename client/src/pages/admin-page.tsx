@@ -1,541 +1,334 @@
-import { useState, useEffect } from 'react';
-import Layout from '@/components/Layout';
-import SEO from '@/components/SEO';
-import { useAuth } from '@/hooks/use-auth';
-import { useLocation } from 'wouter';
-import { Video, User } from '@shared/schema';
-import ThumbnailImage from '@/components/ThumbnailImage';
-import { Link } from "wouter";
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient, apiRequest } from '@/lib/queryClient';
-import { Loader2, X, Info, Trash2, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { useState, useEffect } from "react";
+import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
+import { useAuth } from "@/hooks/use-auth";
+import { useLocation, Link } from "wouter";
+import { Video, User } from "@shared/schema";
+import ThumbnailImage from "@/components/ThumbnailImage";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import {
+  Loader2,
+  X,
+  Info,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+} from "lucide-react";
 
-// Helper function to view content with admin privileges
-const viewContentAsAdmin = (contentId: number) => {
-  console.log(`Opening content ID ${contentId} with admin privileges`);
-  window.open(`/media/${contentId}?admin=true`, '_blank');
-};
+// UI primitives --------------------------------------------------------------
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
 
-// Type augmentation for admin purposes
-type AdminUser = User & { banned: boolean };
+// ---------------------------------------------------------------------------
+// TYPES
+// ---------------------------------------------------------------------------
 
-// Define content types for admin page
-type PendingContent = Video;
-
-// Extended type for reported content
-type ReportedContent = Video & { 
+export type AdminUser = User & { banned: boolean };
+export type PendingContent = Video;
+export type ReportedContent = Video & {
   reportReason: string;
   reportedAt: string;
   reportedBy: string;
 };
-
-// Featured content type
-type FeaturedContent = Video & {
-  uploaderName?: string | null;
-};
-
-// Approved content response type
-type ApprovedContentResponse = {
+export type FeaturedContent = Video & { uploaderName?: string | null };
+export type ApprovedResponse = {
   content: (Video & { uploaderName?: string | null })[];
   totalCount: number;
 };
-// apiRequest imported above
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
+// ---------------------------------------------------------------------------
+// ADMIN PAGE COMPONENT
+// ---------------------------------------------------------------------------
 export default function AdminPage() {
-  const { user } = useAuth();
-  const [, setLocation] = useLocation();
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [reportedContent, setReportedContent] = useState<ReportedContent[]>([]);
-  const [pendingContent, setPendingContent] = useState<PendingContent[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [activeTab, setActiveTab] = useState('pending');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [approvedContent, setApprovedContent] = useState<(Video & { uploaderName?: string | null })[]>([]);
-  const [totalApprovedCount, setTotalApprovedCount] = useState(0);
-  
-  // Effect to load approved content when the approved tab is selected
-  useEffect(() => {
-    if (activeTab === 'approved') {
-      fetchApprovedContent(currentPage);
-    }
-  }, [activeTab, currentPage]);
+  const { user, isLoading: authLoading } = useAuth();
+  const [, navigate] = useLocation();
+  const toast = useToast();
+  const queryClient = useQueryClient();
 
-  // Fetch featured content using React Query
-  const featuredContent = useQuery<FeaturedContent[]>({
-    queryKey: ['/api/admin/content/featured'],
-    queryFn: async () => {
-      const res = await apiRequest('GET', '/api/admin/content/featured');
-      return res.json();
-    }
+  const [activeTab, setActiveTab] = useState<
+    "pending" | "reported" | "users" | "featured" | "approved"
+  >("pending");
+
+  // -------------------------------------------------------------------------
+  //  LOCAL STATE
+  // -------------------------------------------------------------------------
+  const [pending, setPending] = useState<PendingContent[]>([]);
+  const [reported, setReported] = useState<ReportedContent[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [approved, setApproved] = useState<ApprovedResponse["content"]>([]);
+  const [approvedTotal, setApprovedTotal] = useState(0);
+  const [approvedPage, setApprovedPage] = useState(1);
+
+  // -------------------------------------------------------------------------
+  //  FEATURED (react‑query cache)
+  // -------------------------------------------------------------------------
+  const {
+    data: featured,
+    isLoading: featuredLoading,
+    error: featuredError,
+  } = useQuery<FeaturedContent[]>({
+    queryKey: ["/api/admin/content/featured"],
+    queryFn: () => apiRequest("GET", "/api/admin/content/featured").then((r) => r.json()),
   });
-  const [userSearchQuery, setUserSearchQuery] = useState('');
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  
 
-  
-  // For duplicate detection feature
-  const [isGeneratingHashes, setIsGeneratingHashes] = useState(false);
-  const [hashResults, setHashResults] = useState<any>(null);
-  const [contentWithoutHashes, setContentWithoutHashes] = useState(0);
-
-  // Handle approving content
-  const handleApproveContent = async (videoId: number) => {
-    try {
-      await apiRequest('POST', `/api/admin/content/${videoId}/approve`);
-      setPendingContent(prev => prev.filter(item => item.id !== videoId));
-      toast({
-        title: 'Success',
-        description: 'Content approved successfully',
-        variant: 'default'
-      });
-    } catch (error) {
-      console.error('Error approving content:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to approve content',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  // Handle rejecting content
-  const handleRejectContent = async (videoId: number) => {
-    try {
-      await apiRequest('POST', `/api/admin/content/${videoId}/reject`, {
-        reason: 'Content rejected by admin'
-      });
-      setPendingContent(prev => prev.filter(item => item.id !== videoId));
-      toast({
-        title: 'Success',
-        description: 'Content rejected successfully',
-        variant: 'default'
-      });
-    } catch (error) {
-      console.error('Error rejecting content:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to reject content',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  // Handle featuring content
-  const handleFeatureContent = async (videoId: number) => {
-    try {
-      const response = await apiRequest('POST', `/api/admin/content/${videoId}/feature`);
-      const updatedVideo = await response.json();
-
-      // Update the pending content list with the updated featured status
-      setPendingContent(prev => prev.map(item => 
-        item.id === videoId ? { ...item, featured: updatedVideo.featured } : item
-      ));
-
-      toast({
-        title: 'Success',
-        description: `Content ${updatedVideo.featured ? 'featured' : 'unfeatured'} successfully`,
-        variant: 'default'
-      });
-    } catch (error) {
-      console.error('Error toggling feature status:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update feature status',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  // Handle unfeaturing content from the featured tab
-  const handleToggleFeature = async (contentId: number) => {
-    try {
-      await apiRequest('POST', `/api/admin/content/${contentId}/feature`);
-
-      // Refresh the featured content list
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/content/featured'] });
-
-      toast({
-        title: 'Success',
-        description: 'Content removed from featured section',
-        variant: 'default'
-      });
-    } catch (error) {
-      console.error('Error toggling feature status:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update feature status',
-        variant: 'destructive'
-      });
-    }
-  };
-  
-  // Function to handle deletion from approved content tab has been consolidated with the existing handleDeleteContent function
-  
-  // Fetch approved content
-  const fetchApprovedContent = async (page: number) => {
-    try {
-      setLoading(true);
-      const response = await apiRequest('GET', `/api/admin/content/approved?page=${page}&limit=20`);
-      const data: ApprovedContentResponse = await response.json();
-      
-      setApprovedContent(data.content);
-      setTotalApprovedCount(data.totalCount);
-    } catch (error) {
-      console.error('Error fetching approved content:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load approved content',
-        variant: 'destructive'
-      });
-      setApprovedContent([]);
-      setTotalApprovedCount(0);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Handle pagination for approved content
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
-  };
-
-  // Filter users based on search query
+  // -------------------------------------------------------------------------
+  //  AUTH GUARD
+  // -------------------------------------------------------------------------
   useEffect(() => {
-    if (userSearchQuery.trim() === '') {
-      setFilteredUsers(users);
-    } else {
-      const query = userSearchQuery.toLowerCase();
-      const filtered = users.filter(user => 
-        user.username.toLowerCase().includes(query) || 
-        (user.email && user.email.toLowerCase().includes(query))
-      );
-      setFilteredUsers(filtered);
-    }
-  }, [userSearchQuery, users]);
+    if (authLoading) return;
+    if (!user || (user.id !== 1 && user.id !== 2)) navigate("/");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user]);
 
-  // Process content to generate perceptual hashes
-  const handleGenerateHashes = async () => {
-    setIsGeneratingHashes(true);
-    setHashResults(null);
-    
+  // -------------------------------------------------------------------------
+  //  NOTIFICATION HELPERS
+  // -------------------------------------------------------------------------
+  const notifyError = (msg = "Something went wrong") =>
+    toast.toast({ title: "Error", description: msg, variant: "destructive" });
+  const notifySuccess = (msg: string) =>
+    toast.toast({ title: "Success", description: msg, variant: "default" });
+
+  // -------------------------------------------------------------------------
+  //  DATA LOADERS
+  // -------------------------------------------------------------------------
+  const load = async <T,>(url: string, setter: (d: T) => void) => {
     try {
-      const response = await apiRequest('POST', '/api/admin/generate-hashes');
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || errorData.message || `Server returned ${response.status}`);
-      }
-      
-      const data = await response.json();
-      setHashResults(data);
-      
-      // Update stat counts if successfully processed
-      if (data.success) {
-        setContentWithoutHashes(prev => Math.max(0, prev - data.processed));
-      }
-      
-      toast({
-        title: data.success ? 'Success' : 'Error',
-        description: data.message || 
-          (data.success ? `Processed ${data.processed} content items` : 'Error generating hashes'),
-        variant: data.success ? 'default' : 'destructive'
-      });
-    } catch (error) {
-      console.error('Error generating perceptual hashes:', error);
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to generate hashes',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsGeneratingHashes(false);
+      const res = await apiRequest("GET", url);
+      setter(await res.json());
+    } catch (e: any) {
+      notifyError(e.message);
     }
   };
 
+  const loadApproved = async (page: number) => {
+    try {
+      const res = await apiRequest(
+        "GET",
+        `/api/admin/content/approved?page=${page}&limit=20`
+      );
+      const data: ApprovedResponse = await res.json();
+      setApproved(data.content);
+      setApprovedTotal(data.totalCount);
+    } catch (e: any) {
+      notifyError(e.message);
+    }
+  };
+
+  // -------------------------------------------------------------------------
+  //  INITIAL + TAB CHANGE LOADS
+  // -------------------------------------------------------------------------
   useEffect(() => {
-    // Only admin can access this page (user with ID 1 or 2 as defined in server/routes.ts)
-    console.log("AdminPage: Current user:", user);
-
-    if (!user) {
-      console.log("AdminPage: No user logged in, redirecting to home");
-      setLocation('/');
-      return;
+    switch (activeTab) {
+      case "pending":
+        load("/api/admin/content/pending", setPending);
+        break;
+      case "reported":
+        load("/api/admin/content/reported", setReported);
+        break;
+      case "users":
+        load("/api/admin/users", setUsers);
+        break;
+      case "approved":
+        loadApproved(approvedPage);
+        break;
+      default:
+        break;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, approvedPage]);
 
-    if (user.id !== 1 && user.id !== 2) {
-      console.log("AdminPage: User is not an admin (ID not 1 or 2), redirecting to home");
-      setLocation('/');
-      return;
-    }
-
-    console.log("AdminPage: User is an admin, allowing access");
-
-    const fetchData = async () => {
-      try {
-        // Fetch all users
-        const usersRes = await apiRequest('GET', '/api/admin/users');
-        const usersData = await usersRes.json();
-        setUsers(usersData);
-
-        // Fetch pending content for review
-        try {
-          const pendingRes = await apiRequest('GET', '/api/admin/content/pending');
-          if (pendingRes.ok) {
-            const pendingData = await pendingRes.json();
-            setPendingContent(pendingData);
-          }
-        } catch (pendingError) {
-          console.error('Could not load pending content:', pendingError);
-          setPendingContent([]);
-        }
-
-        // Fetch actual reported content
-        try {
-          const reportedRes = await apiRequest('GET', '/api/admin/content/reported');
-          if (reportedRes.ok) {
-            const reportedData = await reportedRes.json();
-            console.log('Loaded reported content:', reportedData);
-            setReportedContent(reportedData);
-          } else {
-            console.error('Failed to load reported content, status:', reportedRes.status);
-            setReportedContent([]);
-          }
-        } catch (contentError) {
-          console.error('Could not load reported content:', contentError);
-          // Continue with empty reported content
-          setReportedContent([]);
-        }
-        
-        // Fetch dashboard stats to get content without hashes count
-        try {
-          const dashboardRes = await apiRequest('GET', '/api/admin/dashboard');
-          if (dashboardRes.ok) {
-            const dashboardData = await dashboardRes.json();
-            if (dashboardData.stats && typeof dashboardData.stats.contentWithoutHashes === 'number') {
-              setContentWithoutHashes(dashboardData.stats.contentWithoutHashes);
-            }
-          }
-        } catch (statsError) {
-          console.error('Could not load dashboard stats:', statsError);
-        }
-
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching admin data:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load admin data',
-          variant: 'destructive'
-        });
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [user, setLocation, toast]);
-
-  const handleDeleteContent = async (videoId: number) => {
+  // -------------------------------------------------------------------------
+  //  ACTION WRAPPER (POST / DELETE / FEATURE etc.)
+  // -------------------------------------------------------------------------
+  const doAction = async (
+    method: "POST" | "DELETE",
+    url: string,
+    successMsg: string
+  ) => {
     try {
-      console.log(`Attempting to delete content with ID: ${videoId}`);
-      const response = await apiRequest('DELETE', `/api/admin/content/${videoId}`);
+      const res = await apiRequest(method, url);
+      if (!res.ok) throw new Error(await res.text());
 
-      // Check if the request was successful
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('Error response from server:', errorData);
-        throw new Error(errorData.error || `Server returned ${response.status}`);
+      const id = Number(url.match(/\d+/)?.[0]);
+
+      // ---------------- UI cache updates ----------------
+      if (activeTab === "approved") {
+        if (url.includes("/feature")) {
+          // refresh list so "featured" badge disappears but keep row
+          loadApproved(approvedPage);
+        } else if (method === "DELETE") {
+          setApproved((prev) => prev.filter((c) => c.id !== id));
+        }
+      } else if (activeTab === "pending") {
+        setPending((prev) => prev.filter((c) => c.id !== id));
+      } else if (activeTab === "reported") {
+        setReported((prev) => prev.filter((c) => c.id !== id));
+      } else if (activeTab === "featured") {
+        // immediately remove from the list for a snappy UX
+        queryClient.setQueryData<FeaturedContent[]>(
+          ["/api/admin/content/featured"],
+          (old) => old?.filter((v) => v.id !== id) || []
+        );
       }
 
-      console.log(`Successfully deleted content with ID: ${videoId}`);
-      setReportedContent(prev => prev.filter(item => item.id !== videoId));
-      toast({
-        title: 'Success',
-        description: 'Content deleted successfully',
-        variant: 'default'
-      });
-    } catch (error) {
-      console.error('Error deleting content:', error);
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete content',
-        variant: 'destructive'
-      });
+      // re‑validate featured list and any others
+      queryClient.invalidateQueries(["/api/admin/content/featured"]);
+
+      notifySuccess(successMsg);
+    } catch (e: any) {
+      notifyError(e.message);
     }
   };
 
-  const handleBanUser = async (userId: number, currentBanStatus: boolean) => {
-    try {
-      await apiRequest('PUT', `/api/admin/users/${userId}`, {
-        banned: !currentBanStatus
-      });
+  // -------------------------------------------------------------------------
+  //  RENDER HELPERS
+  // -------------------------------------------------------------------------
+  const fmtDur = (s?: number | null) =>
+    s ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}` : "-";
 
-      // Update the local state to reflect the change
-      setUsers(prev =>
-        prev.map(user =>
-          user.id === userId ? { ...user, banned: !currentBanStatus } : user
-        )
-      );
+  const thumb = (c: Video, cls = "w-20 h-12") => (
+    <div className={`relative overflow-hidden rounded ${cls}`}>
+      <ThumbnailImage
+        contentId={c.id}
+        contentType={c.contentType || "video"}
+        title={c.title}
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+    </div>
+  );
 
-      toast({
-        title: 'Success',
-        description: `User ${currentBanStatus ? 'unbanned' : 'banned'} successfully`,
-        variant: 'default'
-      });
-    } catch (error) {
-      console.error('Error updating user ban status:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update user status',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  if (loading) {
-    return (
-      <Layout>
-        <SEO 
-          title="Admin Dashboard | DeepTube: Ethical AI Media Hub"
-          description="DeepTube.co administrator dashboard for content moderation, user management, and platform analytics. Restricted access area for managing AI-generated media."
-          canonicalUrl="https://deeptube.co/admin"
-          ogType="website"
-          keywords="Admin dashboard, content moderation, user management, DeepTube admin, AI content management"
-        />
-        <div className="flex justify-center items-center h-[calc(100vh-160px)]">
-          <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full"></div>
-        </div>
-      </Layout>
-    );
-  }
-
+  // ---------------------------------------------------------------------------
   return (
     <Layout>
-      <SEO 
-        title="Admin Dashboard | DeepTube: Ethical AI Media Hub"
-        description="DeepTube.co administrator dashboard for content moderation, user management, and platform analytics. Restricted access area for managing AI-generated media."
-        canonicalUrl="https://deeptube.co/admin"
-        ogType="website"
-        keywords="Admin dashboard, content moderation, user management, DeepTube admin, AI content management"
-      />
+      <SEO title="Admin Dashboard | DeepTube" />
       <div className="container mx-auto py-8">
         <h1 className="text-3xl font-bold mb-6 text-white">Admin Dashboard</h1>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
           <TabsList className="w-full bg-gray-800">
-            <TabsTrigger value="pending" className="flex-1">Pending Review</TabsTrigger>
-            <TabsTrigger value="content" className="flex-1">Reported Content</TabsTrigger>
-            <TabsTrigger value="users" className="flex-1">User Management</TabsTrigger>
-            <TabsTrigger value="featured" className="flex-1">Featured Videos</TabsTrigger>
-            <TabsTrigger value="approved" className="flex-1">All Approved</TabsTrigger>
+            <TabsTrigger value="pending" className="flex-1">
+              Pending Review
+            </TabsTrigger>
+            <TabsTrigger value="reported" className="flex-1">
+              Reported
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex-1">
+              Users
+            </TabsTrigger>
+            <TabsTrigger value="featured" className="flex-1">
+              Featured
+            </TabsTrigger>
+            <TabsTrigger value="approved" className="flex-1">
+              Approved
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="pending" className="py-4">
+          {/* ---------------- PENDING ---------------- */}
+          <TabsContent value="pending">
             <Card className="bg-gray-900 border-gray-800">
               <CardHeader>
-                <CardTitle>Pending Content Review</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Approve or reject user-submitted content before it appears publicly
+                <CardTitle>Pending Content</CardTitle>
+                <CardDescription>
+                  Approve / reject uploaded items
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[500px]">
-                  {pendingContent.length === 0 ? (
-                    <p className="text-center text-gray-400 py-8">No content pending review</p>
+                  {pending.length === 0 ? (
+                    <p className="text-center py-8 text-gray-400">
+                      Nothing pending
+                    </p>
                   ) : (
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-gray-800 hover:bg-gray-800">
-                          <TableHead className="text-gray-300">Thumbnail</TableHead>
-                          <TableHead className="text-gray-300">Title</TableHead>
-                          <TableHead className="text-gray-300">Uploader</TableHead>
-                          <TableHead className="text-gray-300">Content Type</TableHead>
-                          <TableHead className="text-gray-300">
-                              Duration
-                          </TableHead>
-                          <TableHead className="text-gray-300">Upload Date</TableHead>
-                          <TableHead className="text-gray-300">Actions</TableHead>
+                        <TableRow className="hover:bg-transparent">
+                          <TableHead>#</TableHead>
+                          <TableHead>Preview</TableHead>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Duration</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {pendingContent.map((content) => (
-                          <TableRow key={content.id} className="border-gray-800 hover:bg-gray-800">
-                            <TableCell className="w-24">
-                              <div className="h-16 w-24 overflow-hidden rounded border border-gray-700">
-                                <ThumbnailImage 
-                                  contentId={content.id} 
-                                  contentType={content.contentType} 
-                                  title={content.title}
-                                  className="h-full w-full object-cover"
-                                />
-                              </div>
+                        {pending.map((c) => (
+                          <TableRow key={c.id} className="hover:bg-gray-800">
+                            <TableCell>{c.id}</TableCell>
+                            <TableCell>{thumb(c)}</TableCell>
+                            <TableCell>{c.title}</TableCell>
+                            <TableCell className="capitalize">
+                              {c.contentType}
                             </TableCell>
-                            <TableCell className="text-white font-medium">{content.title}</TableCell>
-                            <TableCell className="text-gray-300">
-                              {content.uploaderName ? (
-                                <Link 
-                                  href={`/user/${content.uploaderName}`} 
-                                  className="text-primary hover:text-primary/80 underline"
-                                >
-                                  {content.uploaderName}
-                                </Link>
-                              ) : 'Anonymous'}
-                            </TableCell>
-                            <TableCell className="text-gray-300 capitalize">{content.contentType}</TableCell>
+                            <TableCell>{fmtDur(c.duration)}</TableCell>
                             <TableCell>
-                              {content.duration ? `${Math.floor(content.duration / 60)}:${String(Math.floor(content.duration % 60)).padStart(2, '0')}` : '-'}
-                            </TableCell>
-                            <TableCell className="text-gray-300">
-                              {new Date(content.createdAt).toLocaleDateString()}
+                              {new Date(c.createdAt).toLocaleDateString()}
                             </TableCell>
                             <TableCell>
-                              <div className="flex space-x-2">
-                                <Button 
-                                  variant="outline" 
+                              <div className="flex gap-2 justify-end">
+                                <Button
+                                  variant="outline"
                                   size="sm"
-                                  onClick={() => window.open(`/media/${content.id}`, '_blank')}
+                                  onClick={() =>
+                                    window.open(`/media/${c.id}`, "_blank")
+                                  }
                                 >
                                   View
                                 </Button>
-                                <Button 
-                                  variant="secondary" 
+                                <Button
                                   size="sm"
-                                  onClick={() => handleFeatureContent(content.id)}
-                                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                                  className="bg-amber-600 hover:bg-amber-700"
+                                  onClick={() =>
+                                    doAction(
+                                      "POST",
+                                      `/api/admin/content/${c.id}/feature`,
+                                      "Toggled featured"
+                                    )
+                                  }
                                 >
-                                  {content.featured ? 'Unfeature' : 'Feature'}
+                                  {c.featured ? "Unfeature" : "Feature"}
                                 </Button>
-                                <Button 
-                                  variant="default" 
+                                <Button
                                   size="sm"
-                                  onClick={() => handleApproveContent(content.id)}
+                                  onClick={() =>
+                                    doAction(
+                                      "POST",
+                                      `/api/admin/content/${c.id}/approve`,
+                                      "Approved"
+                                    )
+                                  }
                                 >
                                   Approve
                                 </Button>
-                                <Button 
-                                  variant="destructive" 
+                                <Button
+                                  variant="destructive"
                                   size="sm"
-                                  onClick={() => handleRejectContent(content.id)}
+                                  onClick={() =>
+                                    doAction(
+                                      "POST",
+                                      `/api/admin/content/${c.id}/reject`,
+                                      "Rejected"
+                                    )
+                                  }
                                 >
                                   Reject
                                 </Button>
@@ -551,52 +344,262 @@ export default function AdminPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="content" className="py-4">
+          {/* ---------------- REPORTED ---------------- */}
+          <TabsContent value="reported">
             <Card className="bg-gray-900 border-gray-800">
               <CardHeader>
                 <CardTitle>Reported Content</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Review and moderate content that has been reported by users
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[500px]">
-                  {reportedContent.length === 0 ? (
-                    <p className="text-center text-gray-400 py-8">No reported content to review</p>
+                  {reported.length === 0 ? (
+                    <p className="text-center py-8 text-gray-400">No reports</p>
                   ) : (
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-gray-800 hover:bg-gray-800">
-                          <TableHead className="text-gray-300">Title</TableHead>
-                          <TableHead className="text-gray-300">Report Reason</TableHead>
-                          <TableHead className="text-gray-300">Content Type</TableHead>
-                          <TableHead className="text-gray-300">Report Date</TableHead>
-                          <TableHead className="text-gray-300">Actions</TableHead>
+                        <TableRow>
+                          <TableHead>Preview</TableHead>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Reason</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {reportedContent.map((content) => (
-                          <TableRow key={content.id} className="border-gray-800 hover:bg-gray-800">
-                            <TableCell className="text-white font-medium">{content.title}</TableCell>
-                            <TableCell className="text-gray-300">{content.reportReason}</TableCell>
-                            <TableCell className="text-gray-300 capitalize">{content.contentType}</TableCell>
-                            <TableCell className="text-gray-300">
-                              {new Date(content.reportedAt).toLocaleDateString()}
-                            </TableCell>
+                        {reported.map((r) => (
+                          <TableRow key={r.id} className="hover:bg-gray-800">
+                            <TableCell>{thumb(r)}</TableCell>
+                            <TableCell>{r.title}</TableCell>
+                            <TableCell>{r.reportReason}</TableCell>
                             <TableCell>
-                              <div className="flex space-x-2">
-                                <Button 
-                                  variant="outline" 
+                              {new Date(r.reportedAt).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex gap-2 justify-end">
+                                <Button
+                                  variant="outline"
                                   size="sm"
-                                  onClick={() => window.open(`/media/${content.id}`, '_blank')}
+                                  onClick={() =>
+                                    window.open(`/media/${r.id}`, "_blank")
+                                  }
                                 >
                                   View
                                 </Button>
-                                <Button 
-                                  variant="destructive" 
+                                <Button
+                                  variant="destructive"
                                   size="sm"
-                                  onClick={() => handleDeleteContent(content.id)}
+                                  onClick={() =>
+                                    doAction(
+                                      "DELETE",
+                                      `/api/admin/content/${r.id}`,
+                                      "Deleted"
+                                    )
+                                  }
                                 >
+                                  Delete <Trash2 className="ml-1 h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ---------------- USERS ---------------- */}
+          <TabsContent value="users">
+            <Card className="bg-gray-900 border-gray-800">
+              <CardHeader>
+                <CardTitle>Users</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[500px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Username</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map((u) => (
+                        <TableRow key={u.id} className="hover:bg-gray-800">
+                          <TableCell>{u.username}</TableCell>
+                          <TableCell>{u.email || "N/A"}</TableCell>
+                          <TableCell>
+                            {u.banned ? "Banned" : "Active"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              variant={u.banned ? "default" : "destructive"}
+                              onClick={() =>
+                                doAction(
+                                  "POST",
+                                  `/api/admin/users/${u.id}`,
+                                  `User ${
+                                    u.banned ? "unbanned" : "banned"
+                                  } successfully`
+                                )
+                              }
+                            >
+                              {u.banned ? "Unban" : "Ban"}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ---------------- FEATURED ---------------- */}
+          <TabsContent value="featured">
+            <Card className="bg-gray-900 border-gray-800">
+              <CardHeader>
+                <CardTitle>Featured Videos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {featuredLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="animate-spin" />
+                  </div>
+                ) : featuredError ? (
+                  <p className="text-red-500">Error loading featured</p>
+                ) : featured && featured.length === 0 ? (
+                  <div className="flex flex-col items-center py-16 text-center text-gray-400">
+                    <Info className="h-10 w-10 mb-4 text-orange-500" />
+                    <p>
+                      No featured videos. Mark content as "Feature" in the
+                      Pending tab.
+                    </p>
+                  </div>
+                ) : (
+                  <ScrollArea className="h-[500px]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>ID</TableHead>
+                          <TableHead>Preview</TableHead>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Uploader</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {featured!.map((f) => (
+                          <TableRow key={f.id} className="hover:bg-gray-800">
+                            <TableCell>{f.id}</TableCell>
+                            <TableCell>{thumb(f)}</TableCell>
+                            <TableCell>{f.title}</TableCell>
+                            <TableCell>{f.uploaderName || "Unknown"}</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  doAction(
+                                    "POST",
+                                    `/api/admin/content/${f.id}/feature`,
+                                    "Removed from featured"
+                                  )
+                                }
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Remove
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ---------------- APPROVED ---------------- */}
+          <TabsContent value="approved">
+            <Card className="bg-gray-900 border-gray-800">
+              <CardHeader>
+                <CardTitle>Approved Content</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[500px]">
+                  {approved.length === 0 ? (
+                    <p className="text-center py-8 text-gray-400">No content</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>ID</TableHead>
+                          <TableHead>Preview</TableHead>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {approved.map((a) => (
+                          <TableRow key={a.id} className="hover:bg-gray-800">
+                            <TableCell>{a.id}</TableCell>
+                            <TableCell>{thumb(a)}</TableCell>
+                            <TableCell>{a.title}</TableCell>
+                            <TableCell className="capitalize">
+                              {a.contentType}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(a.createdAt).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex gap-2 justify-end">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    window.open(`/media/${a.id}`, "_blank")
+                                  }
+                                >
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  View
+                                </Button>
+                                {!a.featured && (
+                                  <Button
+                                    size="sm"
+                                    className="bg-amber-600 hover:bg-amber-700"
+                                    onClick={() =>
+                                      doAction(
+                                        "POST",
+                                        `/api/admin/content/${a.id}/feature`,
+                                        "Featured"
+                                      )
+                                    }
+                                  >
+                                    Feature
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() =>
+                                    doAction(
+                                      "DELETE",
+                                      `/api/admin/content/${a.id}`,
+                                      "Deleted"
+                                    )
+                                  }
+                                >
+                                  <Trash2 className="h-4 w-4 mr-1" />
                                   Delete
                                 </Button>
                               </div>
@@ -607,310 +610,33 @@ export default function AdminPage() {
                     </Table>
                   )}
                 </ScrollArea>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          <TabsContent value="users" className="py-4">
-            <Card className="bg-gray-900 border-gray-800">
-              <CardHeader>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Manage user accounts, including banning problematic users
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {/* User search input */}
-                <div className="mb-4">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="Search users by username or email..."
-                      value={userSearchQuery}
-                      onChange={(e) => setUserSearchQuery(e.target.value)}
-                    />
-                    <div className="absolute right-3 top-2.5 text-gray-400">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                      </svg>
-                    </div>
+                {/* Pagination */}
+                {approvedTotal > 20 && (
+                  <div className="flex items-center justify-between mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={approvedPage === 1}
+                      onClick={() => setApprovedPage((p) => p - 1)}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Prev
+                    </Button>
+                    <span className="text-sm text-gray-400">
+                      Page {approvedPage} of {Math.ceil(approvedTotal / 20)}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={approvedPage >= Math.ceil(approvedTotal / 20)}
+                      onClick={() => setApprovedPage((p) => p + 1)}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
                   </div>
-                </div>
-                <ScrollArea className="h-[500px]">
-                  {filteredUsers.length === 0 ? (
-                    <p className="text-center text-gray-400 py-8">No users found</p>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-gray-800 hover:bg-gray-800">
-                          <TableHead className="text-gray-300">Username</TableHead>
-                          <TableHead className="text-gray-300">Email</TableHead>
-                          <TableHead className="text-gray-300">Join Date</TableHead>
-                          <TableHead className="text-gray-300">Status</TableHead>
-                          <TableHead className="text-gray-300">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredUsers.map((user) => (
-                          <TableRow key={user.id} className="border-gray-800 hover:bg-gray-800">
-                            <TableCell className="text-white font-medium">{user.username}</TableCell>
-                            <TableCell className="text-gray-300">{user.email || 'N/A'}</TableCell>
-                            <TableCell className="text-gray-300">
-                              {new Date(user.createdAt).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell>
-                              <span 
-                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  (user as AdminUser).banned ? 
-                                  'bg-red-900 text-red-300' : 
-                                  'bg-green-900 text-green-300'
-                                }`}
-                              >
-                                {(user as AdminUser).banned ? 'Banned' : 'Active'}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <Button 
-                                variant={(user as AdminUser).banned ? "default" : "destructive"} 
-                                size="sm"
-                                onClick={() => handleBanUser(user.id, (user as AdminUser).banned)}
-                              >
-                                {(user as AdminUser).banned ? 'Unban User' : 'Ban User'}
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="featured" className="py-4">
-            <Card className="bg-gray-900 border-gray-800">
-              <CardHeader>
-                <CardTitle>Featured Videos Management</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Manage videos that appear in the featured section of the home page
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {featuredContent.isLoading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
-                  </div>
-                ) : featuredContent.error ? (
-                  <div className="p-10 text-center text-red-500">
-                    <p>Error loading featured content: {featuredContent.error.message}</p>
-                  </div>
-                ) : (
-                  <ScrollArea className="h-[500px]">
-                    {featuredContent.data?.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-10 text-center">
-                        <div className="mb-4 bg-orange-800/20 p-4 rounded-full">
-                          <Info className="h-8 w-8 text-orange-500" />
-                        </div>
-                        <h3 className="text-lg font-medium mb-1">No Featured Content</h3>
-                        <p className="text-gray-400 max-w-md">
-                          There are currently no featured videos. To feature content, go to the "Pending Approval" 
-                          tab and click the "Feature" button on any approved content.
-                        </p>
-                      </div>
-                    ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-[80px]">ID</TableHead>
-                            <TableHead className="w-[120px]">Thumbnail</TableHead>
-                            <TableHead className="min-w-[200px]">Title</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Uploader</TableHead>
-                            <TableHead>Views</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {featuredContent.data?.map((item) => (
-                          <TableRow key={item.id}>
-                            <TableCell>{item.id}</TableCell>
-                            <TableCell>
-                              <div className="relative w-20 h-12 overflow-hidden rounded">
-                                <ThumbnailImage 
-                                  contentId={item.id}
-                                  contentType={item.contentType || 'video'}
-                                  title={item.title}
-                                  className="absolute inset-0 w-full h-full object-cover"
-                                />
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-medium">{item.title}</TableCell>
-                            <TableCell>{item.contentType}</TableCell>
-                            <TableCell>
-                              {item.uploaderName ? (
-                                <Link to={`/user/${item.uploaderName}`} className="text-blue-400 hover:underline">
-                                  {item.uploaderName}
-                                </Link>
-                              ) : (
-                                <span className="text-gray-500">Unknown</span>
-                              )}
-                            </TableCell>
-                            <TableCell>{item.views || 0}</TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleToggleFeature(item.id)}
-                                className="bg-orange-600 hover:bg-orange-700 border-orange-500 text-white"
-                              >
-                                <X className="h-4 w-4 mr-1" /> 
-                                Remove from featured
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                    )}
-                  </ScrollArea>
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          {/* All Approved Content Tab */}
-          <TabsContent value="approved" className="py-4">
-            <Card className="bg-gray-900 border-gray-800">
-              <CardHeader>
-                <CardTitle>All Approved Content</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Browse and manage all approved content on the platform
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[500px]">
-                  {loading ? (
-                    <div className="flex items-center justify-center h-64">
-                      <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                    </div>
-                  ) : approvedContent.length > 0 ? (
-                    <>
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="hover:bg-gray-800">
-                            <TableHead className="w-[80px]">ID</TableHead>
-                            <TableHead className="w-[120px]">Preview</TableHead>
-                            <TableHead>Title</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Uploader</TableHead>
-                            <TableHead>Upload Date</TableHead>
-                            <TableHead>Views</TableHead>
-                            <TableHead>Likes</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {approvedContent.map((content) => (
-                            <TableRow key={content.id} className="hover:bg-gray-800">
-                              <TableCell>{content.id}</TableCell>
-                              <TableCell>
-                                <div className="relative w-20 h-12 overflow-hidden rounded">
-                                  <ThumbnailImage 
-                                    contentId={content.id}
-                                    contentType={content.contentType || 'video'}
-                                    title={content.title}
-                                    className="object-cover w-full h-full"
-                                  />
-                                </div>
-                              </TableCell>
-                              <TableCell className="font-medium max-w-[200px] truncate" title={content.title}>
-                                {content.title}
-                              </TableCell>
-                              <TableCell>
-                                {content.videoUrl ? 'Video' : content.imageUrl ? 'Image' : 'Embed'}
-                              </TableCell>
-                              <TableCell>{content.uploaderName || 'Anonymous'}</TableCell>
-                              <TableCell>
-                                {new Date(content.createdAt).toLocaleDateString()}
-                              </TableCell>
-                              <TableCell>{content.views}</TableCell>
-                              <TableCell>{content.likes}</TableCell>
-                              <TableCell>
-                                <div className="flex gap-2 justify-end">
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => window.open(`/media/${content.id}`, '_blank')}
-                                  >
-                                    <Eye className="h-4 w-4 mr-1" />
-                                    View
-                                  </Button>
-                                  {!content.featured && (
-                                    <Button 
-                                      variant="secondary" 
-                                      size="sm"
-                                      onClick={() => handleFeatureContent(content.id)}
-                                      className="bg-amber-600 hover:bg-amber-700 text-white"
-                                    >
-                                      Feature
-                                    </Button>
-                                  )}
-                                  <Button 
-                                    variant="destructive" 
-                                    size="sm"
-                                    onClick={() => handleDeleteContent(content.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-1" />
-                                    Delete
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                      
-                      {/* Pagination controls */}
-                      <div className="flex items-center justify-between mt-6 px-2">
-                        <div className="text-sm text-gray-400">
-                          Showing {((currentPage - 1) * 20) + 1} to {Math.min(currentPage * 20, totalApprovedCount)} of {totalApprovedCount} items
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage <= 1}
-                          >
-                            <ChevronLeft className="h-4 w-4 mr-1" />
-                            Prev
-                          </Button>
-                          
-                          <div className="text-sm text-gray-400">
-                            Page {currentPage} of {Math.max(1, Math.ceil(totalApprovedCount / 20))}
-                          </div>
-                          
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage >= Math.ceil(totalApprovedCount / 20)}
-                          >
-                            Next
-                            <ChevronRight className="h-4 w-4 ml-1" />
-                          </Button>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-                      <p>No approved content found</p>
-                    </div>
-                  )}
-                </ScrollArea>
               </CardContent>
             </Card>
           </TabsContent>

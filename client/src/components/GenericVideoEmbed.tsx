@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
-import AIWatermark from './AIWatermark';
+import { useState, useEffect, useMemo } from "react";
+import AIWatermark from "./AIWatermark";
+import { extractYoutubeVideoId } from "@/lib/youtubeUtils";
 
-interface GenericVideoEmbedProps {
+interface Props {
   videoUrl?: string;
   html?: string;
   title?: string;
@@ -9,226 +10,114 @@ interface GenericVideoEmbedProps {
   height?: string | number;
   autoplay?: boolean;
   loop?: boolean;
-  showTitle?: boolean;
-  showByline?: boolean;
-  showPortrait?: boolean;
-  aspectRatio?: string;
+  aspectRatio?: string; // e.g. "16:9"
   responsive?: boolean;
   className?: string;
   aiGenerator?: string | null;
 }
 
-/**
- * A generic component for embedding videos from various sources 
- * Supports MP4 videos from S3, YouTube embeds, and direct video URLs
- */
-const GenericVideoEmbed = ({
+// Parse a "W:H" string into a percentage padding-bottom for aspect ratio
+const parseAspectRatio = (ratio: string): number => {
+  const [w, h] = ratio.split(":").map(Number);
+  return w > 0 && h > 0 ? (h / w) * 100 : 0;
+};
+
+// Build YouTube embed URL with common params
+const buildYoutubeUrl = (
+  vid: string,
+  opts: { autoplay: boolean; loop: boolean }
+): string => {
+  const origin = encodeURIComponent(window.location.origin);
+  const params = [
+    "rel=0",
+    "enablejsapi=1",
+    "modestbranding=1",
+    "playsinline=1",
+    opts.autoplay && "autoplay=1",
+    opts.loop && "loop=1",
+    `origin=${origin}`,
+  ]
+    .filter(Boolean)
+    .join("&");
+  return `https://www.youtube.com/embed/${vid}?${params}`;
+};
+
+// Fetch a signed S3 URL from your backend
+async function fetchSignedUrl(key: string): Promise<string> {
+  const res = await fetch(`/api/s3/${key}?getUrl=true&ts=${Date.now()}`);
+  if (!res.ok) throw new Error("Failed to fetch S3 URL");
+  const { url } = await res.json();
+  return url;
+}
+
+export default function GenericVideoEmbed({
   videoUrl,
   html,
-  title = 'Video player',
-  width = '100%',
-  height = 'auto',
+  title = "Video player",
+  width = "100%",
+  height = "auto",
   autoplay = false,
   loop = false,
-  showTitle = false,
-  showByline = false,
-  showPortrait = false,
-  aspectRatio = '16:9',
+  aspectRatio = "16:9",
   responsive = true,
-  className = '',
+  className = "",
   aiGenerator = null,
-}: GenericVideoEmbedProps) => {
-  const [aspectRatioValue, setAspectRatioValue] = useState<number>(0);
-  const [embedUrl, setEmbedUrl] = useState<string>('');
-  const [error, setError] = useState<string>('');
-  const [videoId, setVideoId] = useState<string>('');
-  const [isLoadingUrl, setIsLoadingUrl] = useState<boolean>(false);
-  const [resolvedUrl, setResolvedUrl] = useState<string>('');
+}: Props) {
+  const ratioPct = useMemo(() => parseAspectRatio(aspectRatio), [aspectRatio]);
+  const [embedUrl, setEmbedUrl] = useState<string>("");
+  const [resolved, setResolved] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [ytId, setYtId] = useState<string>("");
 
-  // Function to fetch signed S3 URL
-  const fetchSignedUrl = async (s3Url: string) => {
-    try {
-      setIsLoadingUrl(true);
-      console.log(`GenericVideoEmbed: Fetching signed URL for ${s3Url}`);
-      
-      // Add a timestamp to prevent caching
-      const timestamp = Date.now();
-      const url = `${s3Url}?getUrl=true&t=${timestamp}`;
-      
-      const response = await fetch(url);
-      const data = await response.json();
-      
-      if (data.url) {
-        console.log(`GenericVideoEmbed: Resolved URL successfully for ${s3Url}`);
-        return data.url;
-      } else {
-        throw new Error('No URL in response');
-      }
-    } catch (error) {
-      console.error(`GenericVideoEmbed: Error fetching signed URL for ${s3Url}:`, error);
-      throw error;
-    } finally {
-      setIsLoadingUrl(false);
-    }
-  };
-
+  // Determine base embed URL on inputs
   useEffect(() => {
-    // Parse aspect ratio string (e.g. "16:9")
-    const [width, height] = aspectRatio.split(':').map(Number);
-    if (width && height) {
-      setAspectRatioValue((height / width) * 100);
-    }
-
-    // If we receive HTML directly, use that instead of processing a URL
     if (html) {
-      // Just set a dummy URL to indicate we have content
-      setEmbedUrl('html-content');
+      setEmbedUrl("HTML");
       return;
     }
-    
-    // Early return if no videoUrl provided
     if (!videoUrl) {
-      setError('No video URL provided');
+      setError("No video URL provided");
       return;
     }
-
-    // Parse the video URL to determine the source type
-    if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-      // Handle YouTube URLs
-      let youtubeId = '';
-      
-      // Clear previous error
-      setError('');
-      
-      try {
-        if (videoUrl.includes('youtu.be/')) {
-          youtubeId = videoUrl.split('youtu.be/')[1]?.split(/[?&]/)[0] || '';
-        } else if (videoUrl.includes('youtube.com/watch')) {
-          const queryPart = videoUrl.split('?')[1];
-          if (queryPart) {
-            youtubeId = new URLSearchParams(queryPart).get('v') || '';
-          }
-        } else if (videoUrl.includes('youtube.com/embed/')) {
-          youtubeId = videoUrl.split('youtube.com/embed/')[1]?.split(/[?&]/)[0] || '';
-        }
-        
-        if (!youtubeId) {
-          throw new Error('Could not extract YouTube video ID');
-        }
-        
-        // Store the video ID for error handling
-        setVideoId(youtubeId);
-        
-        // Build the parameter string in a more robust way
-        const host = window.location.host;
-        const protocol = window.location.protocol;
-        const origin = `${protocol}//${host}`;
-        
-        // Create a simple string array of parameters instead of using URLSearchParams
-        // This avoids issues with encoding and is more reliable
-        const params = [
-          'rel=0',                  // Don't show related videos
-          'enablejsapi=1',          // Enable JavaScript API
-          'modestbranding=1',       // Reduce YouTube branding
-          'playsinline=1',          // Play inline on mobile devices
-          autoplay ? 'autoplay=1' : '', // Autoplay when requested
-          loop ? 'loop=1' : '',     // Loop when requested
-          `origin=${encodeURIComponent(origin)}` // Set origin for postMessage API
-        ].filter(Boolean).join('&');
-        
-        setEmbedUrl(`https://www.youtube.com/embed/${youtubeId}?${params}`);
-      } catch (err) {
-        console.error('Error processing YouTube URL:', err);
-        setError('Could not load YouTube video. The URL format may be invalid.');
+    // YouTube
+    if (/youtu\.be\/|youtube\.com/.test(videoUrl)) {
+      const id = extractYoutubeVideoId(videoUrl) || "";
+      if (!id) {
+        setError("Invalid YouTube URL");
+        return;
       }
-    } else if (videoUrl.startsWith('/api/s3/') || videoUrl.includes('amazonaws.com') || videoUrl.includes('.mp4') || videoUrl.includes('video/mp4') || videoUrl.includes('uploads/videos/')) {
-      // For S3 or direct MP4 URLs, we'll use a video element instead of an iframe
-      
-      // Fix paths that may contain workspace path references
-      let cleanedUrl = videoUrl;
-      
-      // If the URL contains workspace paths, extract just the uploads part
-      if (videoUrl.includes('/home/runner/workspace/')) {
-        const match = videoUrl.match(/\/home\/runner\/workspace\/(.+)/);
-        if (match && match[1]) {
-          cleanedUrl = `/${match[1]}`;
-          console.log(`GenericVideoEmbed: Cleaned workspace path: ${videoUrl} → ${cleanedUrl}`);
-        }
-      }
-      
-      // Special case for absolute path references that should be relative
-      if (cleanedUrl.startsWith('/api/s3/home/')) {
-        const pathParts = cleanedUrl.split('/home/');
-        if (pathParts.length > 1) {
-          // Extract just the filename
-          const fileParts = pathParts[1].split('/');
-          cleanedUrl = `/uploads/videos/${fileParts[fileParts.length - 1]}`;
-          console.log(`GenericVideoEmbed: Converted absolute path: ${videoUrl} → ${cleanedUrl}`);
-        }
-      }
-      
-      // Special case for the /api/s3/uploads/ format (missing videos directory)
-      if (cleanedUrl.startsWith('/api/s3/uploads/') && cleanedUrl.match(/\.(mp4|mov|webm|avi)$/i)) {
-        // Extract the filename
-        const filename = cleanedUrl.split('/').pop();
-        if (filename) {
-          cleanedUrl = `/uploads/videos/${filename}`;
-          console.log(`Video URL adjusted: ${videoUrl} → ${cleanedUrl}`);
-        }
-      }
-
-      // For S3 URLs, we need to get a signed URL
-      if (cleanedUrl.startsWith('/api/s3/')) {
-        console.log(`GenericVideoEmbed: S3 URL detected: ${cleanedUrl} - will fetch signed URL`);
-        // We'll set a temporary direct URL and then fetch the signed URL in another effect
-        setEmbedUrl(`s3:${cleanedUrl}`);
-      } else {
-        console.log(`GenericVideoEmbed: Direct video URL: ${cleanedUrl}`);
-        setEmbedUrl(`direct:${cleanedUrl}`);
-      }
-    } else {
-      // For other URLs, just use the URL directly
+      setYtId(id);
+      setEmbedUrl(buildYoutubeUrl(id, { autoplay, loop }));
+      return;
+    }
+    // S3 (prefixed)
+    if (videoUrl.startsWith("s3:")) {
       setEmbedUrl(videoUrl);
+      return;
     }
-  }, [videoUrl, html, aspectRatio, autoplay, loop, showTitle, showByline, showPortrait]);
+    // Direct
+    setEmbedUrl(videoUrl);
+  }, [videoUrl, html, autoplay, loop]);
 
-  // Effect to handle S3 URLs by fetching a signed URL
+  // Resolve S3 signed URL
   useEffect(() => {
-    if (embedUrl.startsWith('s3:')) {
-      const s3Url = embedUrl.substring(3);
-      
-      // Fetch the signed URL
-      fetchSignedUrl(s3Url)
-        .then(signedUrl => {
-          setResolvedUrl(signedUrl);
-          // Update embedUrl to use the direct format with the signed URL
-          setEmbedUrl(`direct:resolved`);
-        })
-        .catch(error => {
-          console.error('Failed to get signed URL:', error);
-          setError(`Could not load video. Error: ${error.message || 'Unknown error'}`);
-        });
-    }
+    if (!embedUrl.startsWith("s3:")) return;
+    const key = embedUrl.slice(3);
+    fetchSignedUrl(key)
+      .then(setResolved)
+      .catch((e) => setError(e.message));
   }, [embedUrl]);
 
-  // Handle error state
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center p-4 bg-slate-900 text-white rounded-md min-h-[200px]">
-        <div className="text-red-500 mb-3">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
-        </div>
-        <div className="text-center mb-4">{error}</div>
-        {videoId && (
-          <a 
-            href={`https://www.youtube.com/watch?v=${videoId}`} 
-            target="_blank" 
+      <div className="p-4 bg-gray-800 text-white rounded text-center">
+        <p className="mb-2">⚠️ {error}</p>
+        {ytId && (
+          <a
+            href={`https://youtu.be/${ytId}`}
+            target="_blank"
             rel="noopener noreferrer"
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors"
+            className="px-3 py-1 bg-red-600 rounded"
           >
             Watch on YouTube
           </a>
@@ -236,157 +125,75 @@ const GenericVideoEmbed = ({
       </div>
     );
   }
-  
-  if (!embedUrl) {
-    return <div className="flex items-center justify-center p-4">Loading video...</div>;
-  }
 
-  // Check if it's a direct video URL
-  const isDirectVideo = embedUrl.startsWith('direct:');
-  const directVideoUrl = isDirectVideo ? embedUrl.substring(7) : '';
+  if (!embedUrl) return <div className="p-4">Loading...</div>;
 
-  // If we have direct HTML content, render it in a container with proper aspect ratio
-  if (html && embedUrl === 'html-content') {
-    // Check if this is a YouTube embed and modify it to ensure it fills the container
-    let processedHtml = html;
-    
-    if (html.includes('youtube.com/embed')) {
-      // Extract the YouTube embed URL
-      const match = html.match(/src="(https:\/\/www\.youtube\.com\/embed\/[^"]+)"/);
-      if (match && match[1]) {
-        const youtubeEmbedUrl = match[1];
-        
-        // Make sure autoplay parameter is included in the URL
-        const embedUrlWithAutoplay = youtubeEmbedUrl.includes('?') 
-          ? (youtubeEmbedUrl.includes('autoplay=') 
-              ? youtubeEmbedUrl 
-              : `${youtubeEmbedUrl}&autoplay=1&mute=0`)
-          : `${youtubeEmbedUrl}?autoplay=1&mute=0`;
-        
-        // Create a completely new iframe with proper styling and autoplay attributes
-        processedHtml = `<iframe 
-          src="${embedUrlWithAutoplay}" 
-          title="YouTube video player" 
-          frameborder="0" 
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-          allowfullscreen 
-          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
-        ></iframe>`;
-        
-        console.log("Modified YouTube embed URL for autoplay:", embedUrlWithAutoplay);
-      }
-    }
-    
+  // HTML embed branch
+  if (html && embedUrl === "HTML") {
     return (
-      <div className={`video-embed ${className}`} style={{ width: typeof width === 'number' ? `${width}px` : width }}>
-        <div 
+      <div className={className} style={{ width }}>
+        <div
           className="relative w-full"
-          style={{ paddingBottom: `${aspectRatioValue}%` }}
+          style={{ paddingBottom: `${ratioPct}%` }}
         >
-          <div 
-            className="absolute top-0 left-0 w-full h-full"
-            dangerouslySetInnerHTML={{ __html: processedHtml }}
+          <div
+            className="absolute inset-0"
+            dangerouslySetInnerHTML={{ __html: html }}
           />
-          {aiGenerator && <AIWatermark aiGenerator={aiGenerator} position="bottom-right" size="medium" />}
+          {aiGenerator && <AIWatermark aiGenerator={aiGenerator} />}
         </div>
       </div>
     );
   }
-  
-  return (
-    <div className={`video-embed ${className}`} style={{ width: typeof width === 'number' ? `${width}px` : width }}>
-      {isDirectVideo ? (
-        // Render a native video player for direct video URLs (S3, MP4)
-        <div className={responsive ? 'relative w-full' : 'relative'} 
-          style={responsive ? { paddingBottom: `${aspectRatioValue}%` } : {}}
+
+  // Determine src for direct video
+  const isDirect = embedUrl === videoUrl || embedUrl.startsWith("s3:");
+  const src = isDirect ? resolved || (videoUrl as string) : embedUrl;
+
+  // Direct video tag branch
+  if (isDirect) {
+    return (
+      <div className={className} style={{ width }}>
+        <div
+          className={responsive ? "relative w-full" : undefined}
+          style={responsive ? { paddingBottom: `${ratioPct}%` } : {}}
         >
-          {isLoadingUrl ? (
-            <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-black">
-              <div className="text-white">Loading video...</div>
-            </div>
-          ) : (
-            <video 
-              src={embedUrl === 'direct:resolved' ? resolvedUrl : directVideoUrl}
-              controls
-              autoPlay={true}
-              muted={!autoplay} // Videos in preview thumbnails are muted, videos in media detail page play with sound
-              playsInline // For iOS Safari
-              loop={loop}
-              poster={undefined}
-              className={responsive ? 'absolute top-0 left-0 w-full h-full' : ''}
-              width={responsive ? '100%' : width}
-              height={responsive ? '100%' : height}
-              onError={(e) => {
-                console.error('Video playback error:', e);
-                // Set a data attribute to indicate error to apply styles
-                e.currentTarget.setAttribute('data-error', 'true');
-                
-                // Add an overlay error message element
-                const container = e.currentTarget.parentElement;
-                if (container) {
-                  const errorEl = document.createElement('div');
-                  errorEl.className = 'video-error-overlay';
-                  errorEl.innerHTML = `
-                    <div class="p-4 bg-black bg-opacity-75 rounded text-center text-white">
-                      <p class="mb-2">Error playing video</p>
-                      <p class="text-sm text-gray-300 mb-3">The video may not be available or accessible.</p>
-                      <button class="px-3 py-1 bg-orange-500 hover:bg-orange-600 rounded text-white text-sm">
-                        Retry
-                      </button>
-                    </div>
-                  `;
-                  container.appendChild(errorEl);
-                  
-                  // Add click listener to retry button
-                  const retryBtn = errorEl.querySelector('button');
-                  if (retryBtn) {
-                    retryBtn.addEventListener('click', () => {
-                      // Remove the error overlay
-                      errorEl.remove();
-                      // Reset the error state
-                      e.currentTarget.removeAttribute('data-error');
-                      // Try to load the video again
-                      e.currentTarget.load();
-                    });
-                  }
-                }
-              }}
-            />
-          )}
-          {aiGenerator && <AIWatermark aiGenerator={aiGenerator} position="bottom-right" size="medium" />}
-        </div>
-      ) : responsive ? (
-        // Responsive iframe for non-direct videos
-        <div style={{ position: 'relative', paddingBottom: `${aspectRatioValue}%`, height: 0, overflow: 'hidden' }}>
-          <iframe
-            src={embedUrl}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            frameBorder="0"
-            allowFullScreen
-            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-            title={title}
-            loading="lazy"
+          <video
+            src={src}
+            controls
+            autoPlay={autoplay}
+            loop={loop}
+            muted={!autoplay}
+            playsInline
+            className={responsive ? "absolute inset-0 w-full h-full" : ""}
+            width={responsive ? undefined : width}
+            height={responsive ? undefined : height}
+            onError={() => setError("Playback error")}
           />
-          {aiGenerator && <AIWatermark aiGenerator={aiGenerator} position="bottom-right" size="medium" />}
+          {aiGenerator && <AIWatermark aiGenerator={aiGenerator} />}
         </div>
-      ) : (
-        // Fixed size iframe for non-direct videos
-        <div className="relative">
-          <iframe
-            src={embedUrl}
-            width={width}
-            height={height === 'auto' ? (aspectRatioValue ? `${aspectRatioValue}%` : undefined) : height}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            frameBorder="0"
-            allowFullScreen
-            title={title}
-            loading="lazy"
-          />
-          {aiGenerator && <AIWatermark aiGenerator={aiGenerator} position="bottom-right" size="medium" />}
-        </div>
-      )}
+      </div>
+    );
+  }
+
+  // Iframe embed branch
+  return (
+    <div className={className} style={{ width }}>
+      <div
+        className="relative overflow-hidden"
+        style={{ paddingBottom: `${ratioPct}%`, height: 0 }}
+      >
+        <iframe
+          src={src}
+          title={title}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          frameBorder="0"
+          allowFullScreen
+          className="absolute inset-0 w-full h-full"
+          loading="lazy"
+        />
+        {aiGenerator && <AIWatermark aiGenerator={aiGenerator} />}
+      </div>
     </div>
   );
-};
-
-export default GenericVideoEmbed;
+}

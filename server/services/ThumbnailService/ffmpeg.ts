@@ -2,16 +2,16 @@
  * FFmpeg utilities for ThumbnailService
  */
 
-import { FFmpegOptions } from './types';
-import { exec as cpExec } from 'child_process';
-import util from 'util';
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fetch from 'node-fetch';
-import { execFile as execFileCallback } from 'child_process';
-import { promisify } from 'util';
-import { getSignedS3Url } from '../../s3';
+import { FFmpegOptions } from "./types";
+import { exec as cpExec } from "child_process";
+import util from "util";
+import fs from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
+import fetch from "node-fetch";
+import { execFile as execFileCallback } from "child_process";
+import { promisify } from "util";
+import { getSignedS3Url } from "../../s3";
 
 const execPromisified = util.promisify(cpExec);
 
@@ -20,7 +20,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Path for temporary files
-const TEMP_DIR = path.join(__dirname, '../../../.tmp');
+const TEMP_DIR = path.join(__dirname, "../../../.tmp");
 
 /**
  * Download a file from a URL to a temporary location
@@ -31,41 +31,49 @@ export async function downloadFileToTemp(url: string): Promise<string | null> {
   try {
     // Ensure temp directory exists
     await ensureTempDir();
-    
+
     // Generate a unique filename
-    const filename = `temp-${Date.now()}-${Math.round(Math.random() * 1000000)}.bin`;
+    const filename = `temp-${Date.now()}-${Math.round(
+      Math.random() * 1000000
+    )}.bin`;
     const outputPath = path.join(TEMP_DIR, filename);
-    
+
     console.log(`Downloading file from ${url} to ${outputPath}`);
-    
+
     // If it's an S3 URL, try to get a signed URL
     let fetchUrl = url;
-    if (url.startsWith('/api/s3/')) {
-      const s3Key = url.split('/api/s3/')[1];
+    if (url.startsWith("/api/s3/")) {
+      const s3Key = url.split("/api/s3/")[1];
       try {
         const signedUrl = await getSignedS3Url(s3Key);
-        console.log(`Generated signed URL for download: ${signedUrl.substring(0, 100)}...`);
+        console.log(
+          `Generated signed URL for download: ${signedUrl.substring(0, 100)}...`
+        );
         fetchUrl = signedUrl;
       } catch (error) {
         console.error(`Error getting signed URL for ${s3Key}:`, error);
         // Continue with the original URL
       }
     }
-    
+
     // Download the file
     const response = await fetch(fetchUrl);
     if (!response.ok) {
-      throw new Error(`Failed to download file: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Failed to download file: ${response.status} ${response.statusText}`
+      );
     }
-    
+
     // Write to file
     const buffer = Buffer.from(await response.arrayBuffer());
     await fs.writeFile(outputPath, buffer);
-    
-    console.log(`Successfully downloaded ${buffer.length} bytes to ${outputPath}`);
+
+    console.log(
+      `Successfully downloaded ${buffer.length} bytes to ${outputPath}`
+    );
     return outputPath;
   } catch (error) {
-    console.error('Error downloading file:', error);
+    console.error("Error downloading file:", error);
     return null;
   }
 }
@@ -77,7 +85,7 @@ export async function ensureTempDir(): Promise<void> {
   try {
     await fs.mkdir(TEMP_DIR, { recursive: true });
   } catch (error) {
-    console.error('Error creating temp directory:', error);
+    console.error("Error creating temp directory:", error);
     throw error;
   }
 }
@@ -89,53 +97,59 @@ export async function ensureTempDir(): Promise<void> {
  */
 export function cleanWorkspacePath(filePath: string): string {
   console.log(`Cleaning path: ${filePath}`);
-  let result = '';
-  
+  let result = "";
+
   // Handle /api/s3/ URLs
-  if (filePath.includes('/api/s3/')) {
+  if (filePath.includes("/api/s3/")) {
     // Extract the relative path after /api/s3/
-    let relativePath = filePath.split('/api/s3/')[1];
-    
+    let relativePath = filePath.split("/api/s3/")[1];
+
     // Remove any workspace/uploads path components that might be duplicated
-    relativePath = relativePath.replace(/^home\/runner\/workspace\/uploads\//, '');
-    relativePath = relativePath.replace(/^uploads\/uploads\//, '');
-    
-    // If the path doesn't contain videos/ or images/, add videos/ prefix 
+    relativePath = relativePath.replace(
+      /^home\/runner\/workspace\/uploads\//,
+      ""
+    );
+    relativePath = relativePath.replace(/^uploads\/uploads\//, "");
+
+    // If the path doesn't contain videos/ or images/, add videos/ prefix
     // since most files will be videos and this is the best guess
-    if (!relativePath.includes('videos/') && !relativePath.includes('images/')) {
+    if (
+      !relativePath.includes("videos/") &&
+      !relativePath.includes("images/")
+    ) {
       // Determine appropriate subfolder based on file extension
       const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(relativePath);
-      const subfolder = isImage ? 'images' : 'videos';
-      
+      const subfolder = isImage ? "images" : "videos";
+
       // Remove any leading uploads/ as we'll add the proper structure
-      relativePath = relativePath.replace(/^uploads\//, '');
-      
+      relativePath = relativePath.replace(/^uploads\//, "");
+
       // Add the appropriate subfolder
-      result = path.join(process.cwd(), 'uploads', subfolder, relativePath);
+      result = path.join(process.cwd(), "uploads", subfolder, relativePath);
     } else {
       // Already has a subfolder, so use as is
-      result = path.join(process.cwd(), 'uploads', relativePath);
+      result = path.join(process.cwd(), "uploads", relativePath);
     }
   }
   // Handle direct S3 URLs
-  else if (filePath.includes('.amazonaws.com/')) {
+  else if (filePath.includes(".amazonaws.com/")) {
     // Extract the S3 key (everything after the bucket name)
-    let s3Key = filePath.split('.amazonaws.com/')[1];
-    
+    let s3Key = filePath.split(".amazonaws.com/")[1];
+
     // If the path doesn't specify a folder, check for the proper subfolder
-    if (!s3Key.includes('videos/') && !s3Key.includes('images/')) {
+    if (!s3Key.includes("videos/") && !s3Key.includes("images/")) {
       // Determine appropriate subfolder based on file extension
       const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(s3Key);
-      const subfolder = isImage ? 'images' : 'videos';
-      
+      const subfolder = isImage ? "images" : "videos";
+
       // Remove any uploads/ prefix
-      s3Key = s3Key.replace(/^uploads\//, '');
-      
+      s3Key = s3Key.replace(/^uploads\//, "");
+
       // Construct path with the appropriate subfolder
-      result = path.join(process.cwd(), 'uploads', subfolder, s3Key);
+      result = path.join(process.cwd(), "uploads", subfolder, s3Key);
     } else {
       // Already has subfolder structure
-      if (!s3Key.startsWith('uploads/')) {
+      if (!s3Key.startsWith("uploads/")) {
         s3Key = `uploads/${s3Key}`;
       }
       // Construct the full path to the file within the project's uploads directory
@@ -145,25 +159,37 @@ export function cleanWorkspacePath(filePath: string): string {
   // For paths that already look like local file paths
   else {
     // Remove any relative path components that might navigate up directories
-    let normalizedPath = path.normalize(filePath).replace(/^(\.\.(\/|\\|$))+/, '');
-    
+    let normalizedPath = path
+      .normalize(filePath)
+      .replace(/^(\.\.(\/|\\|$))+/, "");
+
     // Fix duplicate uploads paths
-    normalizedPath = normalizedPath.replace(/\/uploads\/uploads\//, '/uploads/');
-    
+    normalizedPath = normalizedPath.replace(
+      /\/uploads\/uploads\//,
+      "/uploads/"
+    );
+
     // If path starts with /uploads, make it relative to the project root
-    if (normalizedPath.startsWith('/uploads/')) {
+    if (normalizedPath.startsWith("/uploads/")) {
       // Check if the path includes a subfolder, if not, add 'videos' as the best guess
-      if (!normalizedPath.includes('/videos/') && !normalizedPath.includes('/images/')) {
+      if (
+        !normalizedPath.includes("/videos/") &&
+        !normalizedPath.includes("/images/")
+      ) {
         // Determine appropriate subfolder based on file extension
-        const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(normalizedPath);
-        const subfolder = isImage ? 'images' : 'videos';
-        
+        const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(
+          normalizedPath
+        );
+        const subfolder = isImage ? "images" : "videos";
+
         // Split the path to get just the filename without /uploads/
-        const filename = normalizedPath.substring('/uploads/'.length);
-        
+        const filename = normalizedPath.substring("/uploads/".length);
+
         // Join with proper subfolder
-        result = path.join(process.cwd(), 'uploads', subfolder, filename);
-        console.log(`Adjusted path to include subfolder ${subfolder}: ${result}`);
+        result = path.join(process.cwd(), "uploads", subfolder, filename);
+        console.log(
+          `Adjusted path to include subfolder ${subfolder}: ${result}`
+        );
       } else {
         // Already has a subfolder structure
         result = path.join(process.cwd(), normalizedPath.substring(1));
@@ -173,7 +199,7 @@ export function cleanWorkspacePath(filePath: string): string {
       result = normalizedPath;
     }
   }
-  
+
   console.log(`Path cleaned: ${filePath} → ${result}`);
   return result;
 }
@@ -194,7 +220,10 @@ export async function fileExists(filePath: string): Promise<boolean> {
     try {
       const dir = path.dirname(filePath);
       const files = await fs.readdir(dir);
-      console.log(`Files in directory ${dir}:`, files.slice(0, 10).join(', ') + (files.length > 10 ? '...' : ''));
+      console.log(
+        `Files in directory ${dir}:`,
+        files.slice(0, 10).join(", ") + (files.length > 10 ? "..." : "")
+      );
     } catch (dirError) {
       console.log(`Could not read directory for ${filePath}:`, dirError);
     }
@@ -226,31 +255,44 @@ export async function cleanupTempFiles(filePaths: string[]): Promise<void> {
  * @returns Whether the thumbnail generation was successful
  */
 export async function generateThumbnailFromVideo(
-  videoPath: string, 
-  outputPath: string, 
+  videoPath: string,
+  outputPath: string,
   options: FFmpegOptions = {}
 ): Promise<boolean> {
+  console.log(`Checking if video exists at path:pre: ${videoPath}`);
   // Ensure paths are clean
-  videoPath = cleanWorkspacePath(videoPath);
+  videoPath =
+    videoPath.includes("/api/s3/") || videoPath.includes(".amazonaws.com/")
+      ? videoPath
+      : cleanWorkspacePath(videoPath);
   outputPath = cleanWorkspacePath(outputPath);
-  
+
   // Ensure the temp directory exists
   await ensureTempDir();
-  
+
   // Default options
   const {
     width = 640,
     height = 360,
-    timestamps = ['00:00:03'], // Default to 3 seconds
+    timestamps = ["00:00:03"], // Default to 3 seconds
     quality = 3, // Lower is better quality (1-31)
   } = options;
-  
+
   // Check if video exists
   console.log(`Checking if video exists at path: ${videoPath}`);
-  if (!await fileExists(videoPath)) {
+  if (
+    !videoPath.includes("/api/s3/") &&
+    !videoPath.includes(".amazonaws.com/") &&
+    !(await fileExists(videoPath))
+  ) {
     // Try to fetch the file directly if it's a URL
-    if (videoPath.startsWith('/api/s3/') || videoPath.includes('.amazonaws.com/')) {
-      console.log(`Video not found locally. Attempting to download from: ${videoPath}`);
+    if (
+      videoPath.startsWith("/api/s3/") ||
+      videoPath.includes(".amazonaws.com/")
+    ) {
+      console.log(
+        `Video not found locally. Attempting to download from: ${videoPath}`
+      );
       try {
         // Download the file to a temporary location
         const tempVideoPath = await downloadFileToTemp(videoPath);
@@ -262,34 +304,38 @@ export async function generateThumbnailFromVideo(
         }
       } catch (error: any) {
         console.error(`Error downloading video:`, error);
-        throw new Error(`Failed to access video file: ${videoPath} - ${error.message || 'Unknown error'}`);
+        throw new Error(
+          `Failed to access video file: ${videoPath} - ${
+            error.message || "Unknown error"
+          }`
+        );
       }
     } else {
       throw new Error(`Video file does not exist: ${videoPath}`);
     }
   }
   console.log(`Video file exists, continuing with thumbnail generation`);
-  
+
   // Ensure output directory exists
   const outputDir = path.dirname(outputPath);
   await fs.mkdir(outputDir, { recursive: true });
-  
+
   // Build FFmpeg command
   const timestamp = timestamps[0];
   const command = `ffmpeg -ss ${timestamp} -i "${videoPath}" -vframes 1 -q:v ${quality} -vf "scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2" "${outputPath}" -y`;
-  
+
   try {
     // Execute FFmpeg command
     const { stdout, stderr } = await execPromisified(command);
-    
+
     // Log output
-    if (stdout) console.log('FFmpeg stdout:', stdout);
-    if (stderr) console.debug('FFmpeg stderr:', stderr);
-    
+    if (stdout) console.log("FFmpeg stdout:", stdout);
+    if (stderr) console.debug("FFmpeg stderr:", stderr);
+
     // Check if the output file was created
     return await fileExists(outputPath);
   } catch (error) {
-    console.error('FFmpeg error:', error);
+    console.error("FFmpeg error:", error);
     return false;
   }
 }
@@ -301,8 +347,16 @@ export async function generateThumbnailFromVideo(
 export async function getVideoDuration(videoPath: string): Promise<number> {
   try {
     const execFile = promisify(execFileCallback);
-    const { stderr } = await execFile('ffmpeg', ['-i', videoPath, '-f', 'null', '-']);
-    const match = stderr.toString().match(/Duration: (\d{2}):(\d{2}):(\d{2})\.\d{2}/);
+    const { stderr } = await execFile("ffmpeg", [
+      "-i",
+      videoPath,
+      "-f",
+      "null",
+      "-",
+    ]);
+    const match = stderr
+      .toString()
+      .match(/Duration: (\d{2}):(\d{2}):(\d{2})\.\d{2}/);
 
     if (match) {
       const hours = parseInt(match[1], 10);
@@ -313,7 +367,7 @@ export async function getVideoDuration(videoPath: string): Promise<number> {
 
     return 0;
   } catch (error) {
-    console.error('Error getting video duration:', error);
+    console.error("Error getting video duration:", error);
     return 0;
   }
 }
@@ -328,45 +382,49 @@ export async function testFFmpegAvailability(): Promise<{
 }> {
   try {
     // Use shell check for ffmpeg availability
-    const { stdout, stderr } = await execPromisified('which ffmpeg || echo "not found"');
-    
+    const { stdout, stderr } = await execPromisified(
+      'which ffmpeg || echo "not found"'
+    );
+
     const ffmpegPath = stdout.trim();
-    if (ffmpegPath === 'not found') {
+    if (ffmpegPath === "not found") {
       return {
         success: false,
-        message: 'FFmpeg executable not found in PATH',
-        details: { }
+        message: "FFmpeg executable not found in PATH",
+        details: {},
       };
     }
-    
+
     // Now try to get the version
     try {
-      const versionResult = await execPromisified('ffmpeg -version');
+      const versionResult = await execPromisified("ffmpeg -version");
       const versionMatch = versionResult.stdout.match(/ffmpeg version (\S+)/);
-      const version = versionMatch ? versionMatch[1] : 'unknown';
-      
+      const version = versionMatch ? versionMatch[1] : "unknown";
+
       return {
         success: true,
         message: `FFmpeg is available at ${ffmpegPath}`,
         details: {
           version,
-          path: ffmpegPath
-        }
+          path: ffmpegPath,
+        },
       };
     } catch (versionError) {
       return {
         success: true,
         message: `FFmpeg found at ${ffmpegPath} but couldn't get version info`,
         details: {
-          path: ffmpegPath
-        }
+          path: ffmpegPath,
+        },
       };
     }
   } catch (error) {
     return {
       success: false,
-      message: `Error checking FFmpeg: ${error instanceof Error ? error.message : String(error)}`,
-      details: { }
+      message: `Error checking FFmpeg: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+      details: {},
     };
   }
 }

@@ -2,15 +2,20 @@
  * S3 storage utilities for ThumbnailService
  */
 
-import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import fs from 'fs/promises';
-import path from 'path';
-import { s3Client } from '../../s3';
-import { StorageOptions } from './types';
+import {
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  HeadObjectCommand,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import fs from "fs/promises";
+import path from "path";
+import { s3Client } from "../../s3";
+import { StorageOptions } from "./types";
 
 // Default bucket
-const BUCKET_NAME = process.env.AWS_BUCKET_NAME || '';
+const BUCKET_NAME = process.env.AWS_BUCKET_NAME || "";
 
 /**
  * Get the S3 key for a content thumbnail
@@ -19,7 +24,11 @@ const BUCKET_NAME = process.env.AWS_BUCKET_NAME || '';
  * @param extension File extension (jpg by default)
  * @returns S3 key for the thumbnail
  */
-export function getThumbnailS3Key(contentId: number, contentType: string = 'video', extension: string = 'jpg'): string {
+export function getThumbnailS3Key(
+  contentId: number,
+  contentType: string = "video",
+  extension: string = "jpg"
+): string {
   return `thumbnails/${contentType}-${contentId}.${extension}`;
 }
 
@@ -36,9 +45,9 @@ export async function uploadToS3(
   options: StorageOptions = {}
 ): Promise<string> {
   const {
-    contentType = 'image/jpeg',
+    contentType = "image/jpeg",
     encoding,
-    cacheControl = 'public, max-age=31536000', // 1 year
+    cacheControl = "public, max-age=31536000", // 1 year
   } = options;
 
   const params = {
@@ -57,7 +66,7 @@ export async function uploadToS3(
     await s3Client.send(new PutObjectCommand(params));
     return s3Key;
   } catch (error) {
-    console.error('Error uploading to S3:', error);
+    console.error("Error uploading to S3:", error);
     throw error;
   }
 }
@@ -68,9 +77,12 @@ export async function uploadToS3(
  * @param expiresIn Expiration time in seconds (default: 1 hour)
  * @returns Pre-signed URL
  */
-export async function getSignedS3Url(s3Key: string, expiresIn: number = 3600): Promise<string> {
-  console.log("BUCKET_NAME", BUCKET_NAME)
-  console.log("s3Key", s3Key)
+export async function getSignedS3Url(
+  s3Key: string,
+  expiresIn: number = 3600
+): Promise<string> {
+  console.log("BUCKET_NAME", BUCKET_NAME);
+  console.log("s3Key", s3Key);
   const command = new GetObjectCommand({
     Bucket: BUCKET_NAME,
     Key: s3Key,
@@ -79,7 +91,7 @@ export async function getSignedS3Url(s3Key: string, expiresIn: number = 3600): P
   try {
     return await getSignedUrl(s3Client, command, { expiresIn });
   } catch (error) {
-    console.error('Error generating signed URL:', error);
+    console.error("Error generating signed URL:", error);
     throw error;
   }
 }
@@ -90,14 +102,16 @@ export async function getSignedS3Url(s3Key: string, expiresIn: number = 3600): P
  */
 export async function deleteFromS3(s3Key: string): Promise<void> {
   try {
-    await s3Client.send(
+    console.log("s3Key to delete from S3", s3Key);
+    const data = await s3Client.send(
       new DeleteObjectCommand({
         Bucket: BUCKET_NAME,
         Key: s3Key,
       })
     );
+    console.log("data", data);
   } catch (error) {
-    console.error('Error deleting from S3:', error);
+    console.error("Error deleting from S3:", error);
     throw error;
   }
 }
@@ -112,9 +126,9 @@ export async function checkIfObjectExists(s3Key: string): Promise<boolean> {
   try {
     const command = new HeadObjectCommand({
       Bucket: process.env.AWS_BUCKET_NAME,
-      Key: s3Key
+      Key: s3Key,
     });
-    
+
     await s3Client.send(command);
     return true;
   } catch (error) {
@@ -122,9 +136,12 @@ export async function checkIfObjectExists(s3Key: string): Promise<boolean> {
   }
 }
 
-export async function thumbnailExists(contentId: number, contentType?: string): Promise<boolean> {
+export async function thumbnailExists(
+  contentId: number,
+  contentType?: string
+): Promise<boolean> {
   const s3Key = getThumbnailS3Key(contentId, contentType);
-  
+
   try {
     await s3Client.send(
       new GetObjectCommand({

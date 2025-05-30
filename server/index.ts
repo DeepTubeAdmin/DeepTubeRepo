@@ -104,6 +104,7 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+      log(`Click http://${process.env.HOST}:${port}`);
     }
   );
 })();

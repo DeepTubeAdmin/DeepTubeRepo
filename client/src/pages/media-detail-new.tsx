@@ -79,20 +79,21 @@ export default function MediaDetailNew() {
 
   // Extract the numeric ID from the slug - with better debugging
   console.log(`Media detail page - Raw slug from URL:`, slug);
-  
+
   // If the slug contains a dash, it's likely a SEO-friendly URL
   let rawId;
-  if (slug && slug.includes('-')) {
+  if (slug && slug.includes("-")) {
     rawId = getIdFromSlug(slug);
   } else {
     // Fall back to direct ID if it doesn't look like a slug
     rawId = slug ? parseInt(slug) : undefined;
   }
-  
   // Make sure we have a valid ID
   const id = rawId ? String(rawId) : undefined;
 
-  console.log(`Media detail page - Extracted ID: ${id}, Slug: ${slug}, Raw ID: ${rawId}`);
+  console.log(
+    `Media detail page - Extracted ID: ${id}, Slug: ${slug}, Raw ID: ${rawId}`
+  );
 
   const [commentText, setCommentText] = useState("");
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -131,7 +132,7 @@ export default function MediaDetailNew() {
         const res = await apiRequest("GET", `/api/videos/${id}`);
         if (!res.ok) {
           throw new Error(
-            `Failed to fetch media: ${res.status} ${res.statusText}`,
+            `Failed to fetch media: ${res.status} ${res.statusText}`
           );
         }
         const data = await res.json();
@@ -176,7 +177,7 @@ export default function MediaDetailNew() {
         try {
           const response = await apiRequest(
             "GET",
-            `/api/users/${media.userId}/profile`,
+            `/api/users/${media.userId}/profile`
           );
           const data = await response.json();
           if (data && data.username) {
@@ -406,7 +407,7 @@ export default function MediaDetailNew() {
       if (embedHtml && embedHtml.includes("youtube.com/embed/")) {
         // Extract YouTube ID from existing embed code
         const youtubeMatch = embedHtml.match(
-          /youtube\.com\/embed\/([^"&?\/\s]+)/,
+          /youtube\.com\/embed\/([^"&?\/\s]+)/
         );
         if (youtubeMatch && youtubeMatch[1]) {
           return `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%">
@@ -487,20 +488,28 @@ export default function MediaDetailNew() {
 
     switch (platform) {
       case "twitter":
-        shareLink = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareTitle)}`;
+        shareLink = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+          shareUrl
+        )}&text=${encodeURIComponent(shareTitle)}`;
         break;
       case "facebook":
-        shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+        shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+          shareUrl
+        )}`;
         break;
       case "tiktok":
         // TikTok doesn't have a direct web sharing API, but we can open TikTok and let the user copy/paste
         shareLink = `https://www.tiktok.com/`;
         break;
       case "reddit":
-        shareLink = `https://www.reddit.com/submit?url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(shareTitle)}`;
+        shareLink = `https://www.reddit.com/submit?url=${encodeURIComponent(
+          shareUrl
+        )}&title=${encodeURIComponent(shareTitle)}`;
         break;
       case "linkedin":
-        shareLink = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+        shareLink = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+          shareUrl
+        )}`;
         break;
       default:
         shareLink = shareUrl;
@@ -559,10 +568,14 @@ export default function MediaDetailNew() {
 
   // Create description including prompt if available
   const promptInfo = media.prompt
-    ? ` Prompt: "${media.prompt.substring(0, 50)}${media.prompt.length > 50 ? "..." : ""}"`
+    ? ` Prompt: "${media.prompt.substring(0, 50)}${
+        media.prompt.length > 50 ? "..." : ""
+      }"`
     : "";
   const baseDescription = media.description
-    ? `${media.description.substring(0, 100)}${media.description.length > 100 ? "..." : ""}`
+    ? `${media.description.substring(0, 100)}${
+        media.description.length > 100 ? "..." : ""
+      }`
     : `Experience this AI-generated ${media.contentType}${generatorInfo}.`;
 
   const seoDescription = `DeepTube.co: ${baseDescription}${promptInfo}`;
@@ -618,7 +631,6 @@ export default function MediaDetailNew() {
                     autoplay={true}
                     aiGenerator={media.aiGenerator}
                   />
-
                 </div>
               )}
 
@@ -688,7 +700,9 @@ export default function MediaDetailNew() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className={`flex items-center gap-1 ${isLiked ? "text-orange-500 border-orange-500" : ""}`}
+                  className={`flex items-center gap-1 ${
+                    isLiked ? "text-orange-500 border-orange-500" : ""
+                  }`}
                   onClick={() => {
                     if (isLikeLoading) return;
                     if (isLiked) {
@@ -749,21 +763,23 @@ export default function MediaDetailNew() {
               {media.categoryId && media.category && (
                 <div className="mb-4">
                   <Link
-                    href={`/?category=${media.category.slug || media.categoryId}`}
+                    href={`/?category=${
+                      media.category.slug || media.categoryId
+                    }`}
                     className="inline-block bg-orange-600 bg-opacity-20 text-orange-500 rounded-full px-3 py-1 text-sm"
                   >
                     {media.category.name}
                   </Link>
                 </div>
               )}
-              
+
               {/* Tags if available */}
               {media.tags && (
                 <div className="mb-4">
                   <div className="flex flex-wrap gap-2">
-                    {media.tags.split(',').map((tag, index) => (
-                      <span 
-                        key={index} 
+                    {media.tags.split(",").map((tag, index) => (
+                      <span
+                        key={index}
                         className="inline-block bg-gray-800 text-gray-300 rounded-full px-3 py-1 text-xs"
                       >
                         #{tag.trim()}
@@ -777,7 +793,6 @@ export default function MediaDetailNew() {
               {media.aiGenerator && (
                 <div className="mb-4 p-3 bg-black bg-opacity-50 rounded-md border border-[#333]">
                   <div className="text-sm flex items-center">
-                    <Terminal className="w-4 h-4 mr-2 text-orange-500" />
                     <span className="font-medium text-orange-500">
                       AI Generator:
                     </span>

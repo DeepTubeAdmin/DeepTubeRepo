@@ -28,7 +28,7 @@ export default function ThumbnailImage({
     retryCount.current = 0;
 
     // Use our unified thumbnail endpoint with cache busting
-    const thumbnailUrl = `/api/content/${contentId}/thumbnail?t=${Date.now()}&force=true`;
+    const thumbnailUrl = `/api/content/${contentId}/thumbnail?t=${Date.now()}`;
     setImgSrc(thumbnailUrl);
   }, [contentId]);
 

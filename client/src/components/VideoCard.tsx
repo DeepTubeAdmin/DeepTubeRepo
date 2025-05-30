@@ -162,16 +162,18 @@ function ThumbnailImage({
           </div>
         </div>
       )}
-      <img
-        src={imgSrc}
-        alt={title}
-        className="w-full h-full object-cover absolute inset-0"
-        onLoad={handleImageLoad}
-        onError={handleImageError}
-        style={{
-          opacity: loadFailed ? 0.5 : 1,
-        }} /* Dim failed thumbnails but keep them visible */
-      />
+      {imgSrc && (
+        <img
+          src={imgSrc}
+          alt={title}
+          className="w-full h-full object-cover absolute inset-0"
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+          style={{
+            opacity: loadFailed ? 0.5 : 1,
+          }} /* Dim failed thumbnails but keep them visible */
+        />
+      )}
     </>
   );
 }
@@ -317,6 +319,8 @@ export default function VideoCard({
     medium: "w-full",
     large: "w-full max-w-4xl mx-auto",
   }[size];
+
+  console.log(`VideoCard: Rendering video ${video.id} ===> ${video}`);
 
   return (
     <div

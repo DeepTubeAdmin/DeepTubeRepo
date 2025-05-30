@@ -19,7 +19,7 @@ import { handleContentFeed } from "./contentFeedApi";
 // Vimeo service no longer used as we've migrated to S3
 import multer from "multer";
 import path from "path";
-import fs from "fs/promises";
+import fs from "node:fs/promises";
 import fsSync from "fs";
 import { fileURLToPath } from "url";
 import thumbnailService from "./services/ThumbnailService";
@@ -55,6 +55,7 @@ import {
   localPathToS3Key,
   generateAndStoreS3Thumbnail,
   generateSvgPlaceholder,
+  deleteFileFromS3,
 } from "./combined-services";
 
 // Generate placeholder SVG for videos and images
@@ -117,6 +118,7 @@ function sendSvgPlaceholder(res: Response, contentType = "video") {
   }
 }
 import { WebSocketServer } from "ws";
+import { urlPathToS3Key } from "./s3";
 
 // Get directory paths in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -1855,13 +1857,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error("Invalid content ID");
       }
 
-      const skipVisibilityCheck = forceRegeneration;
-
       // Get content info from database
-      const content = await dbStorage.getVideoById(
-        contentId,
-        skipVisibilityCheck
-      );
+      const content = await dbStorage.getVideoById(contentId, true);
       if (!content) {
         throw new Error("Content not found");
       }
@@ -3831,7 +3828,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error(`Content with ID ${contentId} not found for rejection`);
           return res.status(404).json({ error: "Content not found" });
         }
-
         console.log(
           `Found content for rejection: ${content.title} (ID: ${contentId})`
         );
@@ -3850,6 +3846,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Then delete the content
         await dbStorage.deleteVideo(contentId);
+        console.log(`Content ID: ${contentId} successfully deleted`);
+
+       await removeFromS3(content);
 
         console.log(
           `Content ID: ${contentId} successfully deleted after rejection`
@@ -3893,13 +3892,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const client = await pool.connect();
         try {
           const reportUpdateResult = await client.query(
-            `UPDATE reports 
-           SET status = 'reviewed', resolved_at = NOW(), resolved_by = $1 
-           WHERE video_id = $2 AND status = 'pending' 
+            `UPDATE reports
+           SET status = 'reviewed', resolved_at = NOW(), resolved_by = $1
+           WHERE video_id = $2 AND status = 'pending'
            RETURNING id`,
             [req.user.id, contentId]
           );
-
           console.log(
             `Updated ${reportUpdateResult.rowCount} report(s) status for content ID: ${contentId}`
           );
@@ -3914,6 +3912,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Attempting to delete video with ID: ${contentId}`);
           await dbStorage.deleteVideo(contentId);
           console.log(`Video with ID: ${contentId} successfully deleted`);
+          await removeFromS3(content);
+
           res.json({ success: true, message: "Content deleted successfully" });
         } catch (deleteError) {
           console.error(
@@ -3938,6 +3938,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
   );
+
+  async function removeFromS3(content: any) {
+    let videoUrl = content.videoUrl;
+    let thumbnailUrl = content.thumbnail;
+
+    if (videoUrl && videoUrl.startsWith("/api/s3")) {
+      await deleteFileFromS3(videoUrl.replace("/api/s3/", ""));
+    }
+
+    if (thumbnailUrl && thumbnailUrl.startsWith("/api/content")) {
+      thumbnailUrl = `thumbnails/video-${content.id}.jpg`;
+      await deleteFileFromS3(thumbnailUrl);
+    }
+  }
 
   // Endpoint to resolve a report without deleting content
   app.post(
@@ -4682,7 +4696,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Verify file exists
         try {
-          const fs = await import("fs/promises");
+          const fs = await import("node:fs/promises");
           await fs.access(filePath);
           console.log(`Verified file exists at path: ${filePath}`);
         } catch (accessError: any) {

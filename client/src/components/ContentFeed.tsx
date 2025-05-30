@@ -165,7 +165,6 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     setShowSortMenu((prev) => !prev);
   }, []);
 
-
   const handleSortChange = useCallback((option: SortOption) => {
     console.log("Changing sort option to:", option);
     setSortBy(option);
