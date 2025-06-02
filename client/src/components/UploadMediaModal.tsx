@@ -298,13 +298,13 @@ export default function UploadMediaModal({
           if (!thumbnailUrl)
             finalThumbnail = await generateThumbnailFromVideo(videoUrl);
         } else if (contentType === "image") {
-          imageUrl = await new Promise((res, rej) => {
+          imageUrl= fileData.url;
+          finalThumbnail = await new Promise((res, rej) => {
             const reader = new FileReader();
             reader.onload = (e) => res(e.target?.result as string);
             reader.onerror = rej;
             reader.readAsDataURL(selectedFile!);
           });
-          finalThumbnail = imageUrl;
         }
       } else if (contentType === "embed") {
         const videoId = extractYoutubeVideoId(originalYoutubeUrl || embedCode);

@@ -3848,7 +3848,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await dbStorage.deleteVideo(contentId);
         console.log(`Content ID: ${contentId} successfully deleted`);
 
-       await removeFromS3(content);
+        await removeFromS3(content);
 
         console.log(
           `Content ID: ${contentId} successfully deleted after rejection`
@@ -3940,15 +3940,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   async function removeFromS3(content: any) {
-    let videoUrl = content.videoUrl;
+    const contentType = content.contentType || "video";
+
+    let contenturl =
+      contentType === "video" ? content.videoUrl : content.imageUrl;
     let thumbnailUrl = content.thumbnail;
 
-    if (videoUrl && videoUrl.startsWith("/api/s3")) {
-      await deleteFileFromS3(videoUrl.replace("/api/s3/", ""));
+    if (contenturl && contenturl.startsWith("/api/s3")) {
+      await deleteFileFromS3(contenturl.replace("/api/s3/", ""));
     }
 
     if (thumbnailUrl && thumbnailUrl.startsWith("/api/content")) {
-      thumbnailUrl = `thumbnails/video-${content.id}.jpg`;
+      thumbnailUrl = `thumbnails/${contentType}-${content.id}.jpg`;
       await deleteFileFromS3(thumbnailUrl);
     }
   }
