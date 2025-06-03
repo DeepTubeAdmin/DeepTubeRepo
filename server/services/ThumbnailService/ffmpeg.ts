@@ -20,7 +20,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Path for temporary files
-const TEMP_DIR = path.join(__dirname, "../../../.tmp");
+const TEMP_DIR =
+  process.env.NODE_ENV === "production"
+    ? path.join(__dirname, "../.tmp")
+    : path.join(__dirname, "../../../.tmp");
 
 /**
  * Download a file from a URL to a temporary location
