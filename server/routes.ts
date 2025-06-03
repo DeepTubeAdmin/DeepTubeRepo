@@ -1024,17 +1024,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Define all required categories
       const requiredCategories = [
-        { name: "Sci-Fi", slug: "sci-fi", icon: "rocket" },
-        { name: "Comedy", slug: "comedy", icon: "smile" },
-        { name: "Animation", slug: "animation", icon: "film" },
-        { name: "Music", slug: "music", icon: "music" },
-        { name: "Horror", slug: "horror", icon: "skull" },
-        { name: "Romance", slug: "romance", icon: "heart" },
-        { name: "Action", slug: "action", icon: "zap" },
-        { name: "Surreal", slug: "surreal", icon: "cloud-rain" },
-        { name: "Historical", slug: "historical", icon: "book" },
-        { name: "Kids", slug: "kids", icon: "baby" },
-        { name: "People", slug: "people", icon: "users" },
+        { name: "Parody", slug: "parody", icon: "laugh" }, // Humor-focused
+        { name: "Short Film", slug: "short-film", icon: "clapperboard" }, // Represents filmmaking
+        { name: "TV Show", slug: "tv-show", icon: "tv" },
+        { name: "Documentary", slug: "documentary", icon: "book-open" },
+        { name: "Anime", slug: "anime", icon: "eye" },
+        { name: "Uncanny", slug: "uncanny", icon: "alert-octagon" }, // For eerie/odd content
+        { name: "Avatars", slug: "avatars", icon: "user-circle" },
+        { name: "Marketing", slug: "marketing", icon: "megaphone" },
+        { name: "Design", slug: "design", icon: "pen-tool" },
+        { name: "Music", slug: "music", icon: "music" }, // Already included in first set
+        { name: "Education", slug: "education", icon: "graduation-cap" },
       ];
 
       // Find which categories need to be created
