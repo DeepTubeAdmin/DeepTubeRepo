@@ -54,7 +54,7 @@ export default function UploadMediaModal({
   // AI Generator options
   const aiGeneratorOptions = [
     "Runway",
-    "Google VEO2",
+    "Google Veo",
     "Kling",
     "Vidu",
     "Luma",

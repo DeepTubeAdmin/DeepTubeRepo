@@ -25,7 +25,7 @@ const generators: Generator[] = [
     url: "https://hailuoai.video"
   },
   {
-    name: "Google Veo2",
+    name: "Google Veo",
     description: "Precise, 4K videos with realistic physics and dynamic camerawork.",
     url: "https://deepmind.google/technologies/veo"
   },
