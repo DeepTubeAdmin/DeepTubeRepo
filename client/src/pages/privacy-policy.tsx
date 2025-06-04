@@ -8,7 +8,7 @@ export default function PrivacyPolicy() {
       <SEO 
         title="Privacy Policy | DeepTube: Ethical AI Media Hub"
         description="DeepTube.co: Where innovative creators share responsible AI-powered media. Learn how we safeguard your data and respect your privacy rights on our trusted platform."
-        canonicalUrl="https://deeptube.co/privacy-policy"
+        canonicalUrl="https://www.deeptubeai.com/privacy-policy"
         ogType="article"
         keywords="AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
       />

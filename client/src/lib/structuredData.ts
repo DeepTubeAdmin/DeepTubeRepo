@@ -15,7 +15,7 @@ type Video = SchemaVideo | TypeVideo;
  * @param baseUrl The base URL of the site
  * @returns JSON-LD structured data as a string
  */
-export function generateVideoStructuredData(video: Video, baseUrl: string = 'https://deeptube.co'): string {
+export function generateVideoStructuredData(video: Video, baseUrl: string = 'https://www.deeptubeai.com'): string {
   const videoUrl = `${baseUrl}/media/${video.id}`;
   const embedUrl = video.videoUrl || '';
   const thumbnailUrl = video.thumbnail || '';
@@ -71,7 +71,7 @@ export function generateVideoStructuredData(video: Video, baseUrl: string = 'htt
  * @param baseUrl The base URL of the site
  * @returns JSON-LD structured data as a string
  */
-export function generateImageStructuredData(image: Video, baseUrl: string = 'https://deeptube.co'): string {
+export function generateImageStructuredData(image: Video, baseUrl: string = 'https://www.deeptubeai.com'): string {
   const imageUrl = `${baseUrl}/media/${image.id}`;
   const contentUrl = image.imageUrl || image.thumbnail || '';
   
@@ -127,7 +127,7 @@ export function generateImageStructuredData(image: Video, baseUrl: string = 'htt
  * @param baseUrl The base URL of the site
  * @returns JSON-LD structured data as a string
  */
-export function generateWebsiteStructuredData(baseUrl: string = 'https://deeptube.co'): string {
+export function generateWebsiteStructuredData(baseUrl: string = 'https://www.deeptubeai.com'): string {
   const websiteData = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',

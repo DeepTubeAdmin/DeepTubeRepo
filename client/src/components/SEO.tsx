@@ -16,7 +16,7 @@ interface SEOProps {
 export default function SEO({
   title = 'DeepTube: Ethical AI Media Hub',
   description = 'DeepTube.co: Where innovative creators share responsible AI-powered media. Host, view, and explore trusted video content!',
-  canonicalUrl = 'https://deeptube.co',
+  canonicalUrl = 'https://www.deeptubeai.com',
   ogType = 'website',
   ogImage = '/og-image.jpg',
   keywords = 'AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing',
@@ -35,12 +35,14 @@ export default function SEO({
   return (
     <Helmet>
       {/* Basic Meta Tags */}
+      <link rel="icon" href="/favicon.png" type="image/png" />
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords} />
       
       {/* Canonical URL */}
       <link rel="canonical" href={canonicalUrl} />
+      
       
       {/* Open Graph Meta Tags */}
       <meta property="og:title" content={fullTitle} />

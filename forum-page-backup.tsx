@@ -444,7 +444,7 @@ export default function ForumPage() {
       <SEO 
         title="Community Forum | DeepTube: Ethical AI Media Hub"
         description="DeepTube.co: Where innovative creators share responsible AI-powered media. Join our community forum to discuss AI-generated videos, share tips, and connect with other creators."
-        canonicalUrl="https://deeptube.co/forum"
+        canonicalUrl="https://www.deeptubeai.com/forum"
         ogType="website"
         keywords="AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
       />

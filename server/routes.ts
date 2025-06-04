@@ -1024,6 +1024,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Define all required categories
       const requiredCategories = [
+        { name: "Entertainment", slug: "entertainment", icon: "party-popper" }, 
         { name: "Parody", slug: "parody", icon: "laugh" }, // Humor-focused
         { name: "Short Film", slug: "short-film", icon: "clapperboard" }, // Represents filmmaking
         { name: "TV Show", slug: "tv-show", icon: "tv" },

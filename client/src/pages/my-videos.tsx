@@ -117,7 +117,7 @@ export default function MyVideosPage() {
         <SEO 
           title="My Videos | DeepTube: Ethical AI Media Hub"
           description="Manage your uploaded AI-generated videos and images on DeepTube.co. View your media statistics, edit details, and control your content sharing preferences."
-          canonicalUrl="https://deeptube.co/my-videos"
+          canonicalUrl="https://www.deeptubeai.com/my-videos"
           ogType="website"
           keywords="My videos, uploaded content, content management, DeepTube, AI-powered video, content creator, media dashboard"
         />
@@ -134,7 +134,7 @@ export default function MyVideosPage() {
       <SEO 
         title="My Videos | DeepTube: Ethical AI Media Hub"
         description="Manage your uploaded AI-generated videos and images on DeepTube.co. View your media statistics, edit details, and control your content sharing preferences."
-        canonicalUrl="https://deeptube.co/my-videos"
+        canonicalUrl="https://www.deeptubeai.com/my-videos"
         ogType="website"
         keywords="My videos, uploaded content, content management, DeepTube, AI-powered video, content creator, media dashboard"
       />

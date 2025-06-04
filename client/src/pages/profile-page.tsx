@@ -58,7 +58,7 @@ export default function ProfilePage() {
         <SEO 
           title="Profile | DeepTube: Ethical AI Media Hub"
           description="DeepTube.co: Where innovative creators share responsible AI-powered media. Manage your account settings on the trusted video content platform."
-          canonicalUrl="https://deeptube.co/profile"
+          canonicalUrl="https://www.deeptubeai.com/profile"
           ogType="website"
           keywords="AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
         />
@@ -186,7 +186,7 @@ export default function ProfilePage() {
       <SEO 
         title={`Profile: ${user?.username || 'User'} | DeepTube: Ethical AI Media Hub`}
         description="DeepTube.co: Where innovative creators share responsible AI-powered media. Manage your creator account on our trusted video platform."
-        canonicalUrl="https://deeptube.co/profile"
+        canonicalUrl="https://www.deeptubeai.com/profile"
         ogType="profile"
         keywords="AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
       />

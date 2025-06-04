@@ -8,7 +8,7 @@ export default function TermsOfService() {
       <SEO 
         title="Terms of Service | DeepTube: Ethical AI Media Hub"
         description="DeepTube.co: Where innovative creators share responsible AI-powered media. Review our terms regarding content ownership, acceptable use, and platform policies."
-        canonicalUrl="https://deeptube.co/terms-of-service"
+        canonicalUrl="https://www.deeptubeai.com/terms-of-service"
         ogType="article"
         keywords="AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
       />

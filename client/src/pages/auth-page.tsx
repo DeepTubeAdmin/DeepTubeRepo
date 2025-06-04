@@ -144,7 +144,7 @@ export default function AuthPage() {
       <SEO 
         title="Sign In or Register | DeepTube: Ethical AI Media Hub"
         description="Join DeepTube.co - the ethical AI media platform where creators share innovative and responsible AI-generated videos. Sign in or create an account to start uploading and sharing your content."
-        canonicalUrl="https://deeptube.co/auth"
+        canonicalUrl="https://www.deeptubeai.com/auth"
         ogType="website"
         keywords="AI media hosting, login, register, create account, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
       />

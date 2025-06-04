@@ -580,7 +580,7 @@ export default function MediaDetailNew() {
 
   const seoDescription = `DeepTube.co: ${baseDescription}${promptInfo}`;
   const seoImage = media.thumbnail || media.imageUrl || "";
-  const seoCanonicalUrl = `https://deeptube.co/media/${id}`;
+  const seoCanonicalUrl = `https://www.deeptubeai.com/media/${id}`;
 
   // Create specific keywords including media attributes
   const specificKeywords = [

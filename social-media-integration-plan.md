@@ -42,7 +42,7 @@ export default function MetaTags({
   duration,
   publishedAt,
 }: MetaTagsProps) {
-  const baseUrl = "https://deeptube.co";
+  const baseUrl = "https://www.deeptubeai.com";
   const fullVideoUrl = videoUrl?.startsWith('http') ? videoUrl : `${baseUrl}${videoUrl}`;
   const fullImageUrl = imageUrl?.startsWith('http') ? imageUrl : `${baseUrl}${imageUrl}`;
   
@@ -128,7 +128,7 @@ export default function VideoStructuredData({ video }: VideoStructuredDataProps)
     "thumbnailUrl": video.thumbnail,
     "uploadDate": video.createdAt,
     "contentUrl": video.videoUrl,
-    "embedUrl": `https://deeptube.co/embed/${video.id}`,
+    "embedUrl": `https://www.deeptubeai.com/embed/${video.id}`,
     "duration": formatDuration(video.duration),
     "interactionStatistic": {
       "@type": "InteractionCounter",
@@ -140,7 +140,7 @@ export default function VideoStructuredData({ video }: VideoStructuredDataProps)
       "name": "DeepTube.co",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://deeptube.co/logo.png"
+        "url": "https://www.deeptubeai.com/logo.png"
       }
     }
   };
@@ -230,7 +230,7 @@ app.get('/embed/:id', async (req, res) => {
       <meta property="og:title" content="${video.title}" />
       <meta property="og:description" content="${video.description || 'Watch on DeepTube.co'}" />
       <meta property="og:type" content="video.other" />
-      <meta property="og:url" content="https://deeptube.co/videos/${video.id}" />
+      <meta property="og:url" content="https://www.deeptubeai.com/videos/${video.id}" />
       <meta property="og:image" content="${video.thumbnail}" />
       <meta property="og:site_name" content="DeepTube.co" />
       
@@ -240,7 +240,7 @@ app.get('/embed/:id', async (req, res) => {
       <meta name="twitter:title" content="${video.title}" />
       <meta name="twitter:description" content="${video.description || 'Watch on DeepTube.co'}" />
       <meta name="twitter:image" content="${video.thumbnail}" />
-      <meta name="twitter:player" content="https://deeptube.co/embed/${video.id}" />
+      <meta name="twitter:player" content="https://www.deeptubeai.com/embed/${video.id}" />
       <meta name="twitter:player:width" content="1280" />
       <meta name="twitter:player:height" content="720" />
       
@@ -345,7 +345,7 @@ async function handleInstagramEmbed(req: Request, res: Response, video: Video) {
       <meta property="og:title" content="${video.title}" />
       <meta property="og:description" content="${video.description || 'Watch on DeepTube.co'}" />
       <meta property="og:type" content="video.other" />
-      <meta property="og:url" content="https://deeptube.co/videos/${video.id}" />
+      <meta property="og:url" content="https://www.deeptubeai.com/videos/${video.id}" />
       <meta property="og:image" content="${video.thumbnail}" />
       <meta property="og:video" content="${videoUrl}" />
       <meta property="og:video:secure_url" content="${videoUrl}" />

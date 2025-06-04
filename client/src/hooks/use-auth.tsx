@@ -36,7 +36,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
-  
+
   const {
     data: user,
     error,
@@ -49,7 +49,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       const res = await apiRequest("POST", "/api/login", credentials);
-      return await res.json();
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Login failed");
+      }
+      return await res.json(); // only runs on success
     },
     onSuccess: (user) => {
       queryClient.setQueryData(["/api/user"], user);
@@ -59,9 +63,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     },
     onError: (error: Error) => {
+      console.log("error", error);
       toast({
         title: "Login failed",
-        description: error.message || "Invalid username or password",
+        description: error?.message || "Invalid username or password",
         variant: "destructive",
       });
     },

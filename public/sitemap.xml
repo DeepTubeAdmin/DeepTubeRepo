@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://deeptube.co/</loc>
+    <loc>https://www.deeptubeai.com/</loc>
     <lastmod>2025-04-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://deeptube.co/auth</loc>
+    <loc>https://www.deeptubeai.com/auth</loc>
     <lastmod>2025-04-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://deeptube.co/forum</loc>
+    <loc>https://www.deeptubeai.com/forum</loc>
     <lastmod>2025-04-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://deeptube.co/terms-of-service</loc>
+    <loc>https://www.deeptubeai.com/terms-of-service</loc>
     <lastmod>2025-04-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://deeptube.co/privacy-policy</loc>
+    <loc>https://www.deeptubeai.com/privacy-policy</loc>
     <lastmod>2025-04-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>

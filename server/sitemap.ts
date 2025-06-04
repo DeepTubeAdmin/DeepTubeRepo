@@ -11,7 +11,7 @@ import { formatISO } from 'date-fns';
 import { storage } from './storage';
 import { getSignedS3Url } from './combined-services';
 
-const BASE_URL = 'https://deeptube.co';
+const BASE_URL = 'https://www.deeptubeai.com';
 
 /**
  * Generate the basic site sitemap

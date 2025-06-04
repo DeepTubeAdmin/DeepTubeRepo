@@ -298,7 +298,7 @@ export default function SearchResults() {
       <SEO 
         title={seoTitle}
         description={seoDescription}
-        canonicalUrl={`https://deeptube.co/search?q=${encodeURIComponent(currentQuery)}`}
+        canonicalUrl={`https://www.deeptubeai.com/search?q=${encodeURIComponent(currentQuery)}`}
         ogType="website"
         keywords="AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
       />

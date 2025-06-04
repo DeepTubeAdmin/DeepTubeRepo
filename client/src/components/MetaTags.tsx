@@ -24,7 +24,7 @@ export default function MetaTags({
   duration,
   publishedAt,
 }: MetaTagsProps) {
-  const baseUrl = "https://deeptube.co";
+  const baseUrl = "https://www.deeptubeai.com";
   const fullVideoUrl = videoUrl?.startsWith('http') ? videoUrl : `${baseUrl}${videoUrl}`;
   const fullImageUrl = imageUrl?.startsWith('http') ? imageUrl : `${baseUrl}${imageUrl}`;
   

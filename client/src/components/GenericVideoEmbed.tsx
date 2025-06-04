@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-import AIWatermark from "./AIWatermark";
 import { extractYoutubeVideoId } from "@/lib/youtubeUtils";
 
 interface Props {
@@ -140,7 +139,6 @@ export default function GenericVideoEmbed({
             className="absolute inset-0"
             dangerouslySetInnerHTML={{ __html: html }}
           />
-          {aiGenerator && <AIWatermark aiGenerator={aiGenerator} />}
         </div>
       </div>
     );
@@ -170,7 +168,6 @@ export default function GenericVideoEmbed({
             height={responsive ? undefined : height}
             onError={() => setError("Playback error")}
           />
-          {aiGenerator && <AIWatermark aiGenerator={aiGenerator} />}
         </div>
       </div>
     );
@@ -192,7 +189,6 @@ export default function GenericVideoEmbed({
           className="absolute inset-0 w-full h-full"
           loading="lazy"
         />
-        {aiGenerator && <AIWatermark aiGenerator={aiGenerator} />}
       </div>
     </div>
   );

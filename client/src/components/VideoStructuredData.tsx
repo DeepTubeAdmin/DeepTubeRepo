@@ -37,7 +37,7 @@ export default function VideoStructuredData({ video }: VideoStructuredDataProps)
     "thumbnailUrl": video.thumbnail,
     "uploadDate": video.createdAt,
     "contentUrl": video.videoUrl,
-    "embedUrl": `https://deeptube.co/embed/${video.id}`,
+    "embedUrl": `https://www.deeptubeai.com/embed/${video.id}`,
     "duration": formatDuration(video.duration),
     "interactionStatistic": {
       "@type": "InteractionCounter",
@@ -49,7 +49,7 @@ export default function VideoStructuredData({ video }: VideoStructuredDataProps)
       "name": "DeepTube.co",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://deeptube.co/logo.png"
+        "url": "https://www.deeptubeai.com/logo.png"
       }
     },
     // Additional fields for better SEO
