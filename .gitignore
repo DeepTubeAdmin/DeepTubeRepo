@@ -41,9 +41,6 @@ thumbnails/
 
 # Local media files
 *.mp4
-*.jpg
-*.png
-*.gif
 *.mov
 
 # Replit specific files
