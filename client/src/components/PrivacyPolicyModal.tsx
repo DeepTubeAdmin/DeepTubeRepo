@@ -37,7 +37,7 @@ export default function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyMod
 
         <div className="space-y-6 py-4 text-sm text-gray-300">
           <p>
-            DeepTube.co (the "Platform"), operated by DeepTube LLC ("we," "us," or "our"), is a video hosting and marketplace service for AI-generated videos. We are committed to protecting your privacy and providing transparency about how we collect, use, share, and protect your personal information. This Privacy Policy explains our practices and your choices regarding your data when you use DeepTube.co, including browsing, uploading, viewing, or monetizing videos.
+            DeepTubeAI.com (the "Platform"), operated by DeepTube LLC ("we," "us," or "our"), is a video hosting and marketplace service for AI-generated videos. We are committed to protecting your privacy and providing transparency about how we collect, use, share, and protect your personal information. This Privacy Policy explains our practices and your choices regarding your data when you use DeepTubeAI.com, including browsing, uploading, viewing, or monetizing videos.
           </p>
           
           <p>
@@ -68,7 +68,7 @@ export default function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyMod
             <ul className="list-disc pl-5 space-y-1">
               <li><strong>Social Media</strong>: If you sign up or log in via third-party services (e.g., Google, Facebook), we collect information like your name, email, or profile picture, subject to their privacy policies.</li>
               <li><strong>Partners</strong>: Data from payment processors (e.g., Stripe) for monetization or analytics providers to improve Platform performance.</li>
-              <li><strong>Publicly Available Data</strong>: Information from public sources (e.g., social media profiles) if you link them to your DeepTube.co account.</li>
+              <li><strong>Publicly Available Data</strong>: Information from public sources (e.g., social media profiles) if you link them to your DeepTubeAI.com account.</li>
             </ul>
           </div>
           
@@ -170,7 +170,7 @@ export default function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyMod
           <div className="faq-section">
             <h3 className="text-lg font-semibold text-orange-500 mb-2">8. International Data Transfers</h3>
             <p>
-              DeepTube.co operates globally, and your data may be processed in the United States or other countries. We comply with GDPR and other laws for cross-border transfers, using Standard Contractual Clauses or equivalent safeguards. By using the Platform, you consent to such transfers.
+              DeepTubeAI.com operates globally, and your data may be processed in the United States or other countries. We comply with GDPR and other laws for cross-border transfers, using Standard Contractual Clauses or equivalent safeguards. By using the Platform, you consent to such transfers.
             </p>
           </div>
           
@@ -191,7 +191,7 @@ export default function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyMod
           <div className="faq-section">
             <h3 className="text-lg font-semibold text-orange-500 mb-2">11. Updates to This Policy</h3>
             <p>
-              We may update this Privacy Policy to reflect changes in our practices or legal requirements. We will notify you via email or Platform notice at least 7 days before significant changes take effect. Your continued use of DeepTube.co constitutes acceptance of the updated policy.
+              We may update this Privacy Policy to reflect changes in our practices or legal requirements. We will notify you via email or Platform notice at least 7 days before significant changes take effect. Your continued use of DeepTubeAI.com constitutes acceptance of the updated policy.
             </p>
           </div>
           
@@ -209,7 +209,7 @@ export default function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyMod
           </div>
           
           <p className="mt-2">
-            Thank you for trusting DeepTube.co with your data. We are committed to keeping your information safe and respecting your privacy.
+            Thank you for trusting DeepTubeAI.com with your data. We are committed to keeping your information safe and respecting your privacy.
           </p>
         </div>
 

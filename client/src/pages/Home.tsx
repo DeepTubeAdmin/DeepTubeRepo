@@ -79,7 +79,7 @@ export default function Home() {
     <Layout showHeader={true}>
       <SEO 
         title="DeepTube: Ethical AI Media Hub"
-        description="DeepTube.co: Where innovative creators share responsible AI-powered media. Host, view, and explore trusted video content!"
+        description="DeepTubeAI.com: Where innovative creators share responsible AI-powered media. Host, view, and explore trusted video content!"
         keywords="AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
         isHome={true} 
       />

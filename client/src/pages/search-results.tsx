@@ -290,8 +290,8 @@ export default function SearchResults() {
     : 'Search | DeepTube: Ethical AI Media Hub';
   
   const seoDescription = currentQuery 
-    ? `DeepTube.co: Where innovative creators share responsible AI-powered media. Browse search results for "${currentQuery}". Find ${contentType !== 'all' ? contentType + 's' : 'trusted video content'} ${categorySlug ? `in the ${categorySlug} category` : ''}` 
-    : 'DeepTube.co: Where innovative creators share responsible AI-powered media. Host, view, and explore trusted video content!';
+    ? `DeepTubeAI.com: Where innovative creators share responsible AI-powered media. Browse search results for "${currentQuery}". Find ${contentType !== 'all' ? contentType + 's' : 'trusted video content'} ${categorySlug ? `in the ${categorySlug} category` : ''}` 
+    : 'DeepTubeAI.com: Where innovative creators share responsible AI-powered media. Host, view, and explore trusted video content!';
   
   return (
     <Layout>

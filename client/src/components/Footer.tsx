@@ -7,7 +7,7 @@ export default function Footer() {
         {/* Top section with main links */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div>
-            <h4 className="text-white text-lg font-semibold mb-4">DeepTube.co</h4>
+            <h4 className="text-white text-lg font-semibold mb-4">DeepTubeAI.com</h4>
             <ul className="space-y-3">
               <li>
                 <Link href="/" className="text-gray-400 hover:text-white text-sm">
@@ -138,7 +138,7 @@ export default function Footer() {
         {/* Bottom section with copyright */}
         <div className="border-t border-gray-800 pt-6 flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-500 text-sm mb-4 md:mb-0">
-            &copy; 2025 DeepTube.co - All content on this website is AI-generated. No real people appear in any images or videos.
+            &copy; 2025 DeepTubeAI.com - All content on this website is AI-generated. No real people appear in any images or videos.
           </p>
           <div className="flex space-x-6">
             <a href="#" className="text-gray-400 hover:text-white">

@@ -444,7 +444,7 @@ export default function ForumPage() {
     <Layout>
       <SEO 
         title="Community Forum | DeepTube: Ethical AI Media Hub"
-        description="DeepTube.co: Where innovative creators share responsible AI-powered media. Join our community forum to discuss AI-generated videos, share tips, and connect with other creators."
+        description="DeepTubeAI.com: Where innovative creators share responsible AI-powered media. Join our community forum to discuss AI-generated videos, share tips, and connect with other creators."
         canonicalUrl="https://www.deeptubeai.com/forum"
         ogType="website"
         keywords="AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
@@ -452,7 +452,7 @@ export default function ForumPage() {
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="flex items-center gap-4 mb-8">
           <MessageSquare className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">DeepTube.co Forum</h1>
+          <h1 className="text-3xl font-bold">DeepTubeAI.com Forum</h1>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

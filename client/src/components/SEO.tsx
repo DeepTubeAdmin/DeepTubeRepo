@@ -15,7 +15,7 @@ interface SEOProps {
 
 export default function SEO({
   title = 'DeepTube: Ethical AI Media Hub',
-  description = 'DeepTube.co: Where innovative creators share responsible AI-powered media. Host, view, and explore trusted video content!',
+  description = 'DeepTubeAI.com: Where innovative creators share responsible AI-powered media. Host, view, and explore trusted video content!',
   canonicalUrl = 'https://www.deeptubeai.com',
   ogType = 'website',
   ogImage = '/og-image.jpg',

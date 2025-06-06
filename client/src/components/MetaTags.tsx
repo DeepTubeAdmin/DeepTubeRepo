@@ -31,14 +31,14 @@ export default function MetaTags({
   return (
     <Helmet>
       {/* Basic Meta Tags */}
-      <title>{title} | DeepTube.co</title>
+      <title>{title} | DeepTubeAI.com</title>
       <meta name="description" content={description} />
       
       {/* Open Graph Tags */}
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:url" content={window.location.href} />
-      <meta property="og:site_name" content="DeepTube.co" />
+      <meta property="og:site_name" content="DeepTubeAI.com" />
       
       {/* Video-specific tags */}
       {contentType === 'video' && (

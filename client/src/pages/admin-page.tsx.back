@@ -404,7 +404,7 @@ export default function AdminPage() {
       <Layout>
         <SEO
           title="Admin Dashboard | DeepTube: Ethical AI Media Hub"
-          description="DeepTube.co administrator dashboard for content moderation, user management, and platform analytics. Restricted access area for managing AI-generated media."
+          description="DeepTubeAI.com administrator dashboard for content moderation, user management, and platform analytics. Restricted access area for managing AI-generated media."
           canonicalUrl="https://www.deeptubeai.com/admin"
           ogType="website"
           keywords="Admin dashboard, content moderation, user management, DeepTube admin, AI content management"
@@ -420,7 +420,7 @@ export default function AdminPage() {
     <Layout>
       <SEO
         title="Admin Dashboard | DeepTube: Ethical AI Media Hub"
-        description="DeepTube.co administrator dashboard for content moderation, user management, and platform analytics. Restricted access area for managing AI-generated media."
+        description="DeepTubeAI.com administrator dashboard for content moderation, user management, and platform analytics. Restricted access area for managing AI-generated media."
         canonicalUrl="https://www.deeptubeai.com/admin"
         ogType="website"
         keywords="Admin dashboard, content moderation, user management, DeepTube admin, AI content management"

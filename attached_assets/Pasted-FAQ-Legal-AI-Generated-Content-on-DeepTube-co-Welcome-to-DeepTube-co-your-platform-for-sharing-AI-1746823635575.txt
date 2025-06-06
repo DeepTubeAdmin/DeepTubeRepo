@@ -1,8 +1,8 @@
-FAQ: Legal AI-Generated Content on DeepTube.co
-Welcome to DeepTube.co, your platform for sharing AI-generated videos in a safe, legal, and creative community. Below, we answer common questions about what types of AI-generated content are allowed, how to ensure your videos comply with the law, and why certain restrictions (like the ban on nudity) are in place.
+FAQ: Legal AI-Generated Content on DeepTubeAI.com
+Welcome to DeepTubeAI.com, your platform for sharing AI-generated videos in a safe, legal, and creative community. Below, we answer common questions about what types of AI-generated content are allowed, how to ensure your videos comply with the law, and why certain restrictions (like the ban on nudity) are in place.
 
 1. What is AI-generated content?
-AI-generated content refers to videos created or enhanced using artificial intelligence tools. On DeepTube.co, this includes videos in our entertainment categories, such as:
+AI-generated content refers to videos created or enhanced using artificial intelligence tools. On DeepTubeAI.com, this includes videos in our entertainment categories, such as:
 
 Animated shorts
 Virtual music videos
@@ -32,7 +32,7 @@ Interactive Videos: Choose-your-own-adventure stories or gamified content (e.g.,
 
 All content must be free of nudity, explicit material, or illegal elements (e.g., violence, hate speech). Creators must verify that their videos are original or use licensed/public domain assets.
 
-3. Are deepfakes allowed on DeepTube.co?
+3. Are deepfakes allowed on DeepTubeAI.com?
 Deepfake videos are allowed under specific conditions. We permit deepfakes that are:
 
 Used for parody, satire, or artistic expression, provided they do not defame or harm the subject’s reputation.
@@ -52,9 +52,9 @@ Clearly label the video as a deepfake.
 Ensure it complies with our community guidelines and applicable laws.
 
 What happens if I upload a deepfake video that violates these guidelines?
-DeepTube.co reserves the right to remove any content that violates our policies or the law. Users who repeatedly upload prohibited content may face account suspension or termination.
+DeepTubeAI.com reserves the right to remove any content that violates our policies or the law. Users who repeatedly upload prohibited content may face account suspension or termination.
 
-4. Why is nudity forbidden on DeepTube.co?
+4. Why is nudity forbidden on DeepTubeAI.com?
 Nudity, pornography, or sexually explicit content is strictly prohibited to maintain a safe, inclusive, and legal platform for all users. This aligns with:
 
 Our 18+ age restriction.
@@ -91,7 +91,7 @@ Reporting to authorities if the content involves serious violations.
 Potential legal action from affected parties or regulators.
 
 
-8. How does DeepTube.co prevent illegal content?
+8. How does DeepTubeAI.com prevent illegal content?
 We take proactive steps to ensure a safe platform:
 
 Human Moderation: Trained moderators review flagged videos for compliance.

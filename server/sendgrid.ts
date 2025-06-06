@@ -52,7 +52,7 @@ export async function sendPasswordResetEmail(
         <p>If you didn't request a password reset, you can safely ignore this email.</p>
         <p>This link will expire in 1 hour for security reasons.</p>
         <hr style="border-top: 1px solid #eee; margin: 30px 0;" />
-        <p style="color: #666; font-size: 12px;">© ${new Date().getFullYear()} DeepTube.co - The ethical AI media platform</p>
+        <p style="color: #666; font-size: 12px;">© ${new Date().getFullYear()} DeepTubeAI.com - The ethical AI media platform</p>
       </div>
     `,
     text: `Reset your DeepTube password by visiting this link: ${resetLink}. If you didn't request this, please ignore this email.`

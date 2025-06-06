@@ -69,7 +69,7 @@ export default function ForgotPassword() {
     <Layout simpleHeader showFooter>
       <SEO
         title="Forgot Password | DeepTube: Ethical AI Media Hub"
-        description="Reset your password for DeepTube.co - the ethical AI media platform. Recover your account to continue sharing and accessing innovative and responsible AI-generated videos."
+        description="Reset your password for DeepTubeAI.com - the ethical AI media platform. Recover your account to continue sharing and accessing innovative and responsible AI-generated videos."
         canonicalUrl="https://www.deeptubeai.com/forgot-password"
         ogType="website"
         keywords="password reset, account recovery, forgot password, DeepTube, AI media"

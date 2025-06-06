@@ -1,6 +1,6 @@
-# DeepTube.co Social Media Integration Plan
+# DeepTubeAI.com Social Media Integration Plan
 
-This document outlines the implementation plan for optimizing DeepTube.co videos for direct playback on social media platforms. All changes should be implemented in a dedicated production branch without affecting the test environment.
+This document outlines the implementation plan for optimizing DeepTubeAI.com videos for direct playback on social media platforms. All changes should be implemented in a dedicated production branch without affecting the test environment.
 
 ## Production Branch Setup
 
@@ -49,14 +49,14 @@ export default function MetaTags({
   return (
     <Helmet>
       {/* Basic Meta Tags */}
-      <title>{title} | DeepTube.co</title>
+      <title>{title} | DeepTubeAI.com</title>
       <meta name="description" content={description} />
       
       {/* Open Graph Tags */}
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:url" content={window.location.href} />
-      <meta property="og:site_name" content="DeepTube.co" />
+      <meta property="og:site_name" content="DeepTubeAI.com" />
       
       {/* Video-specific tags */}
       {contentType === 'video' && (
@@ -137,7 +137,7 @@ export default function VideoStructuredData({ video }: VideoStructuredDataProps)
     },
     "publisher": {
       "@type": "Organization",
-      "name": "DeepTube.co",
+      "name": "DeepTubeAI.com",
       "logo": {
         "@type": "ImageObject",
         "url": "https://www.deeptubeai.com/logo.png"
@@ -224,21 +224,21 @@ app.get('/embed/:id', async (req, res) => {
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <title>${video.title} | DeepTube.co</title>
+      <title>${video.title} | DeepTubeAI.com</title>
       
       <!-- Common Meta Tags -->
       <meta property="og:title" content="${video.title}" />
-      <meta property="og:description" content="${video.description || 'Watch on DeepTube.co'}" />
+      <meta property="og:description" content="${video.description || 'Watch on DeepTubeAI.com'}" />
       <meta property="og:type" content="video.other" />
       <meta property="og:url" content="https://www.deeptubeai.com/videos/${video.id}" />
       <meta property="og:image" content="${video.thumbnail}" />
-      <meta property="og:site_name" content="DeepTube.co" />
+      <meta property="og:site_name" content="DeepTubeAI.com" />
       
       <!-- Twitter/X Meta Tags -->
       <meta name="twitter:card" content="player" />
       <meta name="twitter:site" content="@DeepTube_Co" />
       <meta name="twitter:title" content="${video.title}" />
-      <meta name="twitter:description" content="${video.description || 'Watch on DeepTube.co'}" />
+      <meta name="twitter:description" content="${video.description || 'Watch on DeepTubeAI.com'}" />
       <meta name="twitter:image" content="${video.thumbnail}" />
       <meta name="twitter:player" content="https://www.deeptubeai.com/embed/${video.id}" />
       <meta name="twitter:player:width" content="1280" />
@@ -289,7 +289,7 @@ app.get('/embed/:id', async (req, res) => {
         </div>
       </div>
       
-      <div class="watermark">DeepTube.co</div>
+      <div class="watermark">DeepTubeAI.com</div>
       
       <script>
         // Handle play button overlay for platforms that don't support autoplay
@@ -339,11 +339,11 @@ async function handleInstagramEmbed(req: Request, res: Response, video: Video) {
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <title>${video.title} | DeepTube.co</title>
+      <title>${video.title} | DeepTubeAI.com</title>
       
       <!-- Instagram-optimized meta tags -->
       <meta property="og:title" content="${video.title}" />
-      <meta property="og:description" content="${video.description || 'Watch on DeepTube.co'}" />
+      <meta property="og:description" content="${video.description || 'Watch on DeepTubeAI.com'}" />
       <meta property="og:type" content="video.other" />
       <meta property="og:url" content="https://www.deeptubeai.com/videos/${video.id}" />
       <meta property="og:image" content="${video.thumbnail}" />
@@ -387,7 +387,7 @@ async function handleInstagramEmbed(req: Request, res: Response, video: Video) {
         <div class="instagram-play-icon"></div>
       </div>
       
-      <div class="watermark">DeepTube.co</div>
+      <div class="watermark">DeepTubeAI.com</div>
       
       <script>
         // Special handling for Instagram's video behavior
@@ -456,7 +456,7 @@ export default function MediaDetailPage() {
         <>
           <MetaTags 
             title={video.title}
-            description={video.description || `Watch this ${video.contentType} on DeepTube.co`}
+            description={video.description || `Watch this ${video.contentType} on DeepTubeAI.com`}
             videoUrl={video.videoUrl}
             imageUrl={video.thumbnail || ''}
             contentType={video.contentType as 'video' | 'image' | 'embed'}

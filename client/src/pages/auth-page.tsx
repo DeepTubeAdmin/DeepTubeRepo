@@ -143,7 +143,7 @@ export default function AuthPage() {
     <Layout simpleHeader showFooter>
       <SEO 
         title="Sign In or Register | DeepTube: Ethical AI Media Hub"
-        description="Join DeepTube.co - the ethical AI media platform where creators share innovative and responsible AI-generated videos. Sign in or create an account to start uploading and sharing your content."
+        description="Join DeepTubeAI.com - the ethical AI media platform where creators share innovative and responsible AI-generated videos. Sign in or create an account to start uploading and sharing your content."
         canonicalUrl="https://www.deeptubeai.com/auth"
         ogType="website"
         keywords="AI media hosting, login, register, create account, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
@@ -422,7 +422,7 @@ export default function AuthPage() {
       <div className="w-full md:w-1/2 bg-gradient-to-br from-primary/90 to-primary-foreground/90 p-8 flex flex-col justify-center text-white">
         <div className="max-w-lg mx-auto space-y-8">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Welcome to DeepTube.co
+            Welcome to DeepTubeAI.com
           </h2>
           <p className="text-lg mb-6">
             Discover and share high-quality AI-generated media from creators around the world. 

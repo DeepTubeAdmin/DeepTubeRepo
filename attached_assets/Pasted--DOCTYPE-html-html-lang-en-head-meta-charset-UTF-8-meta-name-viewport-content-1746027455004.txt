@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FAQ: Legal AI-Generated Content on DeepTube.co</title>
+  <title>FAQ: Legal AI-Generated Content on DeepTubeAI.com</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -37,12 +37,12 @@
   </style>
 </head>
 <body>
-  <h1>FAQ: Legal AI-Generated Content on DeepTube.co</h1>
-  <p>Welcome to DeepTube.co, your platform for sharing AI-generated videos in a safe, legal, and creative community. Below, we answer common questions about what types of AI-generated content, including deepfakes, are permitted on our platform. Our goal is to foster ethical and entertaining content while strictly adhering to laws and our <a href="/terms">Terms of Use</a>. If you have further questions, contact us at <a href="mailto:support@deeptube.co">support@deeptube.co</a>.</p>
+  <h1>FAQ: Legal AI-Generated Content on DeepTubeAI.com</h1>
+  <p>Welcome to DeepTubeAI.com, your platform for sharing AI-generated videos in a safe, legal, and creative community. Below, we answer common questions about what types of AI-generated content, including deepfakes, are permitted on our platform. Our goal is to foster ethical and entertaining content while strictly adhering to laws and our <a href="/terms">Terms of Use</a>. If you have further questions, contact us at <a href="mailto:support@deeptube.co">support@deeptube.co</a>.</p>
 
   <div class="faq-section">
     <h2>1. What is AI-generated content?</h2>
-    <p>AI-generated content refers to videos created or enhanced using artificial intelligence tools, such as text-to-video generators (e.g., Runway, Pika), AI avatars (e.g., Synthesia), or deepfake technology. On DeepTube.co, this includes videos in our 12 entertainment categories: Sci-Fi, Comedy, Animation, Music, Horror, Romance, Action, Surreal, Parody, Interactive, Historical, and Kids.</p>
+    <p>AI-generated content refers to videos created or enhanced using artificial intelligence tools, such as text-to-video generators (e.g., Runway, Pika), AI avatars (e.g., Synthesia), or deepfake technology. On DeepTubeAI.com, this includes videos in our 12 entertainment categories: Sci-Fi, Comedy, Animation, Music, Horror, Romance, Action, Surreal, Parody, Interactive, Historical, and Kids.</p>
     <p>Examples include animated shorts, virtual music videos, or interactive stories created with AI. All content must comply with our strict guidelines, and <strong>nudity or explicit material is strictly forbidden</strong>.</p>
   </div>
 
@@ -60,7 +60,7 @@
   </div>
 
   <div class="faq-section">
-    <h2>3. Are deepfakes allowed on DeepTube.co?</h2>
+    <h2>3. Are deepfakes allowed on DeepTubeAI.com?</h2>
     <p>Deepfakes—videos that use AI to manipulate or swap faces, voices, or likenesses—are only permitted if they are <strong>ethical, consensual, and clearly labeled as synthetic</strong>. Legal deepfakes include:</p>
     <ul>
       <li><strong>Consensual Parodies</strong>: Spoofs or humorous videos in the Parody category, such as an AI-generated celebrity likeness with their explicit permission (e.g., a comedic movie scene reenactment).</li>
@@ -72,13 +72,13 @@
   </div>
 
   <div class="faq-section">
-    <h2>4. Why is nudity forbidden on DeepTube.co?</h2>
+    <h2>4. Why is nudity forbidden on DeepTubeAI.com?</h2>
     <p>Nudity, pornography, or sexually explicit content is strictly prohibited to maintain a safe, inclusive, and legal platform for all users. This aligns with our 18+ age restriction and compliance with laws like the U.S. TAKE IT DOWN Act and UK Online Safety Act, which prioritize preventing non-consensual or harmful material. Our focus is on creative, entertainment-driven AI content (e.g., Sci-Fi, Animation, Music), not adult content.</p>
     <p>Any video containing nudity or explicit material will be removed, and the uploader’s account may be suspended or banned, as outlined in our <a href="/terms">Terms of Use</a>.</p>
   </div>
 
   <div class="faq-section">
-    <h2>5. What laws govern AI-generated content on DeepTube.co?</h2>
+    <h2>5. What laws govern AI-generated content on DeepTubeAI.com?</h2>
     <p>We comply with strict legal standards to ensure all content is lawful, including:</p>
     <ul>
       <li><strong>U.S. DMCA</strong>: Protects against copyright infringement. Upload only original or licensed content, and report violations to <a href="mailto:dmca@deeptube.co">dmca@deeptube.co</a>.</li>
@@ -123,7 +123,7 @@
   </div>
 
   <div class="faq-section">
-    <h2>9. How does DeepTube.co prevent illegal content?</h2>
+    <h2>9. How does DeepTubeAI.com prevent illegal content?</h2>
     <p>We take proactive steps to ensure a safe platform:</p>
     <ul>
       <li><strong>AI Moderation</strong>: Tools like deepfake detection and content fingerprinting identify non-consensual or illegal content.</li>
@@ -148,7 +148,7 @@
   </div>
 
   <div class="faq-section">
-    <h2>11. Can I monetize my AI-generated content on DeepTube.co?</h2>
+    <h2>11. Can I monetize my AI-generated content on DeepTubeAI.com?</h2>
     <p>Yes, eligible creators can monetize legal AI-generated content through subscriptions, pay-per-view, or ads, as outlined in our <a href="/monetization">Monetization Policy</a>. However, content containing nudity, non-consensual deepfakes, or other illegal material cannot be monetized and will be removed.</p>
     <p>To monetize, ensure your videos comply with our Content Guidelines, are labeled as AI-generated where required, and use only licensed or original assets. For example, a consensual AI-generated parody in the Parody category or an animated music video in the Music category can be monetized if it meets all legal standards.</p>
   </div>
@@ -160,7 +160,7 @@
   </div>
 
   <div class="faq-section">
-    <h2>13. Which AI tools can I use to create legal content for DeepTube.co?</h2>
+    <h2>13. Which AI tools can I use to create legal content for DeepTubeAI.com?</h2>
     <p>You can use any reputable AI tool to create legal content, provided the output complies with our guidelines. Popular tools include:</p>
     <ul>
       <li><strong>Synthesia</strong>: For AI avatars in Comedy or Romance videos.</li>
@@ -180,15 +180,15 @@
       <li><strong>UK Users</strong>: The Online Safety Act requires preventing illegal content, like revenge porn, and age verification. Avoid nudity and non-consensual content.</li>
       <li><strong>Other Jurisdictions</strong>: Laws vary (e.g., Canada’s Bill C-27 regulates AI transparency). Consult local regulations before uploading.</li>
     </ul>
-    <p>Regardless of location, nudity and non-consensual deepfakes are banned on DeepTube.co. Contact <a href="mailto:support@deeptube.co">support@deeptube.co</a> for guidance on your region’s laws.</p>
+    <p>Regardless of location, nudity and non-consensual deepfakes are banned on DeepTubeAI.com. Contact <a href="mailto:support@deeptube.co">support@deeptube.co</a> for guidance on your region’s laws.</p>
   </div>
 
   <div class="faq-section">
-    <h2>15. Why is DeepTube.co restricted to users 18 and older?</h2>
-    <p>DeepTube.co is restricted to users 18+ to ensure a safe, legal environment and comply with laws like the UK Online Safety Act and U.S. regulations. This helps us prevent minors from accessing or uploading potentially sensitive AI-generated content, even though nudity and explicit material are strictly forbidden.</p>
+    <h2>15. Why is DeepTubeAI.com restricted to users 18 and older?</h2>
+    <p>DeepTubeAI.com is restricted to users 18+ to ensure a safe, legal environment and comply with laws like the UK Online Safety Act and U.S. regulations. This helps us prevent minors from accessing or uploading potentially sensitive AI-generated content, even though nudity and explicit material are strictly forbidden.</p>
     <p>We use age verification (e.g., ID checks) to enforce this restriction. If you’re under 18, do not attempt to use the platform, as accounts will be terminated. For more details, see our <a href="/privacy">Privacy Policy</a>.</p>
   </div>
 
-  <p><strong>Still have questions?</strong> Reach out to DeepTube LLC at 123 Main St, Wilmington, DE 19801, email <a href="mailto:support@deeptube.co">support@deeptube.co</a>, or call (800) 555-1234. Let’s keep DeepTube.co a vibrant, legal, and nudity-free community!</p>
+  <p><strong>Still have questions?</strong> Reach out to DeepTube LLC at 123 Main St, Wilmington, DE 19801, email <a href="mailto:support@deeptube.co">support@deeptube.co</a>, or call (800) 555-1234. Let’s keep DeepTubeAI.com a vibrant, legal, and nudity-free community!</p>
 </body>
 </html>

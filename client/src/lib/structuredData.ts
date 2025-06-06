@@ -131,7 +131,7 @@ export function generateWebsiteStructuredData(baseUrl: string = 'https://www.dee
   const websiteData = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    'name': 'DeepTube.co',
+    'name': 'DeepTubeAI.com',
     'alternateName': 'DeepTube',
     'url': baseUrl,
     'description': 'Discover and share AI-generated videos, images, and content. Join DeepTube, the ethical community for AI media creators and enthusiasts.',

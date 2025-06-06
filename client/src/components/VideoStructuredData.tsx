@@ -46,7 +46,7 @@ export default function VideoStructuredData({ video }: VideoStructuredDataProps)
     },
     "publisher": {
       "@type": "Organization",
-      "name": "DeepTube.co",
+      "name": "DeepTubeAI.com",
       "logo": {
         "@type": "ImageObject",
         "url": "https://www.deeptubeai.com/logo.png"

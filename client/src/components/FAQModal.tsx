@@ -21,7 +21,7 @@ export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
       <DialogContent className="max-w-[800px] max-h-[80vh] overflow-y-auto bg-[#121212] text-white border border-gray-700">
         <DialogHeader className="pb-2 border-b border-gray-700">
           <div className="flex justify-between items-center">
-            <DialogTitle className="text-xl font-bold text-white">FAQ: Legal AI-Generated Content on DeepTube.co</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-white">FAQ: Legal AI-Generated Content on DeepTubeAI.com</DialogTitle>
             <Button 
               className="h-8 w-8 p-0 rounded-full" 
               variant="ghost" 
@@ -31,7 +31,7 @@ export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
             </Button>
           </div>
           <DialogDescription className="text-gray-300 mt-2">
-            Welcome to DeepTube.co, your platform for sharing AI-generated videos in a safe, legal, and creative community. Below, we answer common questions about what types of AI-generated content are allowed, how to ensure your videos comply with the law, and why certain restrictions (like the ban on nudity) are in place.
+            Welcome to DeepTubeAI.com, your platform for sharing AI-generated videos in a safe, legal, and creative community. Below, we answer common questions about what types of AI-generated content are allowed, how to ensure your videos comply with the law, and why certain restrictions (like the ban on nudity) are in place.
           </DialogDescription>
         </DialogHeader>
 
@@ -39,7 +39,7 @@ export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
           <div className="faq-section">
             <h3 className="text-lg font-semibold text-orange-500 mb-2">1. What is AI-generated content?</h3>
             <p className="mb-2">
-              AI-generated content refers to videos created or enhanced using artificial intelligence tools. On DeepTube.co, this includes videos in our entertainment categories, such as:
+              AI-generated content refers to videos created or enhanced using artificial intelligence tools. On DeepTubeAI.com, this includes videos in our entertainment categories, such as:
             </p>
             <ul className="list-disc pl-5 space-y-1">
               <li>Animated shorts</li>
@@ -84,7 +84,7 @@ export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
           </div>
 
           <div className="faq-section">
-            <h3 className="text-lg font-semibold text-orange-500 mb-2">3. Are deepfakes allowed on DeepTube.co?</h3>
+            <h3 className="text-lg font-semibold text-orange-500 mb-2">3. Are deepfakes allowed on DeepTubeAI.com?</h3>
             <p className="mb-2">
               Deepfake videos are allowed under specific conditions. We permit deepfakes that are:
             </p>
@@ -111,12 +111,12 @@ export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
             </ul>
             <p className="mt-2">
               <strong>What happens if I upload a deepfake video that violates these guidelines?</strong><br/>
-              DeepTube.co reserves the right to remove any content that violates our policies or the law. Users who repeatedly upload prohibited content may face account suspension or termination.
+              DeepTubeAI.com reserves the right to remove any content that violates our policies or the law. Users who repeatedly upload prohibited content may face account suspension or termination.
             </p>
           </div>
 
           <div className="faq-section">
-            <h3 className="text-lg font-semibold text-orange-500 mb-2">4. Why is nudity forbidden on DeepTube.co?</h3>
+            <h3 className="text-lg font-semibold text-orange-500 mb-2">4. Why is nudity forbidden on DeepTubeAI.com?</h3>
             <p className="mb-2">
               Nudity, pornography, or sexually explicit content is strictly prohibited to maintain a safe, inclusive, and legal platform for all users. This aligns with:
             </p>
@@ -171,7 +171,7 @@ export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
           </div>
 
           <div className="faq-section">
-            <h3 className="text-lg font-semibold text-orange-500 mb-2">8. How does DeepTube.co prevent illegal content?</h3>
+            <h3 className="text-lg font-semibold text-orange-500 mb-2">8. How does DeepTubeAI.com prevent illegal content?</h3>
             <p className="mb-2">
               We take proactive steps to ensure a safe platform:
             </p>

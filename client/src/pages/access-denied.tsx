@@ -19,7 +19,7 @@ export default function AccessDenied() {
         
         <p className="text-gray-400 text-sm mb-6">
           Even ethical AI content requires viewers be 18+.
-          DeepTube.co contains AI-generated content intended for adult audiences.
+          DeepTubeAI.com contains AI-generated content intended for adult audiences.
           If you are under 18, please exit this site now.
         </p>
         
@@ -34,7 +34,7 @@ export default function AccessDenied() {
         
         <div className="mt-8 pt-4 border-t border-gray-800">
           <p className="text-xs text-gray-500">
-            &copy; 2025 DeepTube.co - Ethical AI Media
+            &copy; 2025 DeepTubeAI.com - Ethical AI Media
           </p>
         </div>
       </div>

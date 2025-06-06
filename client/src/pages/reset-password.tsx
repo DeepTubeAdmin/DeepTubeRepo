@@ -269,7 +269,7 @@ export default function ResetPassword() {
     <Layout simpleHeader showFooter>
       <SEO
         title="Reset Password | DeepTube: Ethical AI Media Hub"
-        description="Reset your password for DeepTube.co - the ethical AI media platform. Create a new password to secure your account."
+        description="Reset your password for DeepTubeAI.com - the ethical AI media platform. Create a new password to secure your account."
         canonicalUrl="https://www.deeptubeai.com/reset-password"
         ogType="website"
         keywords="password reset, create new password, account security, DeepTube, AI media"

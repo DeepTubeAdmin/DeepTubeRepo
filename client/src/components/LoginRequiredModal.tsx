@@ -43,7 +43,7 @@ export default function LoginRequiredModal({ isOpen, onClose }: LoginRequiredMod
     >
       <div className="space-y-5">
         <p className="text-center text-muted-foreground mb-2">
-          You need to be logged in to upload media to DeepTube.co
+          You need to be logged in to upload media to DeepTubeAI.com
         </p>
         
         <div className="flex flex-col space-y-3">
@@ -93,7 +93,7 @@ export default function LoginRequiredModal({ isOpen, onClose }: LoginRequiredMod
         </div>
         
         <p className="text-xs text-center text-muted-foreground pt-2">
-          By continuing, you agree to DeepTube.co's Terms of Service and Privacy Policy.
+          By continuing, you agree to DeepTubeAI.com's Terms of Service and Privacy Policy.
         </p>
       </div>
     </SimpleDialog>

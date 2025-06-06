@@ -578,7 +578,7 @@ export default function MediaDetailNew() {
       }`
     : `Experience this AI-generated ${media.contentType}${generatorInfo}.`;
 
-  const seoDescription = `DeepTube.co: ${baseDescription}${promptInfo}`;
+  const seoDescription = `DeepTubeAI.com: ${baseDescription}${promptInfo}`;
   const seoImage = media.thumbnail || media.imageUrl || "";
   const seoCanonicalUrl = `https://www.deeptubeai.com/media/${id}`;
 

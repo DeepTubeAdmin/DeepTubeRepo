@@ -21,7 +21,7 @@ export default function TermsOfServiceModal({ isOpen, onClose }: TermsOfServiceM
       <DialogContent className="max-w-[800px] max-h-[80vh] overflow-y-auto bg-[#121212] text-white border border-gray-700">
         <DialogHeader className="pb-2 border-b border-gray-700">
           <div className="flex justify-between items-center">
-            <DialogTitle className="text-xl font-bold text-white">Terms of Service for DeepTube.co</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-white">Terms of Service for DeepTubeAI.com</DialogTitle>
             <Button 
               className="h-8 w-8 p-0 rounded-full" 
               variant="ghost" 
@@ -37,23 +37,23 @@ export default function TermsOfServiceModal({ isOpen, onClose }: TermsOfServiceM
 
         <div className="space-y-6 py-4 text-sm text-gray-300">
           <p>
-            Welcome to DeepTube.co, a platform operated by DeepTube LLC ("DeepTube," "we," "us," or "our") for hosting and sharing AI-generated video content. By accessing or using DeepTube.co (the "Service"), including uploading, viewing, or sharing content, you ("User," "you," or "your") agree to be bound by these Terms of Service ("Terms"). If you do not agree, you must not use the Service.
+            Welcome to DeepTubeAI.com, a platform operated by DeepTube LLC ("DeepTube," "we," "us," or "our") for hosting and sharing AI-generated video content. By accessing or using DeepTubeAI.com (the "Service"), including uploading, viewing, or sharing content, you ("User," "you," or "your") agree to be bound by these Terms of Service ("Terms"). If you do not agree, you must not use the Service.
           </p>
           
           <div className="faq-section">
             <h3 className="text-lg font-semibold text-orange-500 mb-2">1. Acceptance of Terms</h3>
             <p>
-              By creating an account, uploading content, or accessing the Service, you confirm that you have read, understood, and agree to these Terms, our Privacy Policy, and any additional guidelines posted on DeepTube.co. These Terms form a legally binding agreement between you and DeepTube LLC.
+              By creating an account, uploading content, or accessing the Service, you confirm that you have read, understood, and agree to these Terms, our Privacy Policy, and any additional guidelines posted on DeepTubeAI.com. These Terms form a legally binding agreement between you and DeepTube LLC.
             </p>
           </div>
           
           <div className="faq-section">
             <h3 className="text-lg font-semibold text-orange-500 mb-2">2. Eligibility</h3>
             <p>
-              You must be at least 18 years old to use the Service. By accessing DeepTube.co, you represent and warrant that you are 18 or older and have the legal capacity to enter into these Terms.
+              You must be at least 18 years old to use the Service. By accessing DeepTubeAI.com, you represent and warrant that you are 18 or older and have the legal capacity to enter into these Terms.
             </p>
             <p>
-              DeepTube.co is not intended for users under 18, and we comply with the Children's Online Privacy Protection Act (COPPA) by prohibiting access to minors. If we discover a user is under 18, their account and content will be terminated immediately.
+              DeepTubeAI.com is not intended for users under 18, and we comply with the Children's Online Privacy Protection Act (COPPA) by prohibiting access to minors. If we discover a user is under 18, their account and content will be terminated immediately.
             </p>
           </div>
           
@@ -69,7 +69,7 @@ export default function TermsOfServiceModal({ isOpen, onClose }: TermsOfServiceM
           <div className="faq-section">
             <h3 className="text-lg font-semibold text-orange-500 mb-2">4. Content Ownership and Licensing</h3>
             <ul className="list-disc pl-5 space-y-1">
-              <li><strong>Transfer of Ownership</strong>: By uploading content to DeepTube.co, including but not limited to videos, images, text, or metadata (collectively, "Content"), you irrevocably transfer all ownership rights, including intellectual property rights (e.g., copyright, trademark), to DeepTube LLC. Upon upload, DeepTube LLC becomes the sole owner of the Content, and you waive any claim to ownership or control over the Content.</li>
+              <li><strong>Transfer of Ownership</strong>: By uploading content to DeepTubeAI.com, including but not limited to videos, images, text, or metadata (collectively, "Content"), you irrevocably transfer all ownership rights, including intellectual property rights (e.g., copyright, trademark), to DeepTube LLC. Upon upload, DeepTube LLC becomes the sole owner of the Content, and you waive any claim to ownership or control over the Content.</li>
               <li><strong>Monetization Rights</strong>: You grant DeepTube LLC an exclusive, worldwide, perpetual, royalty-free license to use, reproduce, distribute, modify, display, perform, and monetize the Content in any manner, including through advertising, subscriptions, or licensing, without any obligation to share profits or revenue with you.</li>
               <li><strong>User Representations</strong>: You represent and warrant that:
                 <ul className="list-disc pl-5 space-y-1">
@@ -85,7 +85,7 @@ export default function TermsOfServiceModal({ isOpen, onClose }: TermsOfServiceM
           <div className="faq-section">
             <h3 className="text-lg font-semibold text-orange-500 mb-2">5. Content Guidelines</h3>
             <p>
-              DeepTube.co is committed to hosting ethical, legal, and nudity-free AI-generated content. You agree to comply with the following guidelines when uploading Content:
+              DeepTubeAI.com is committed to hosting ethical, legal, and nudity-free AI-generated content. You agree to comply with the following guidelines when uploading Content:
             </p>
             <h4 className="text-md font-semibold text-orange-400 mb-1 mt-2">Prohibited Content:</h4>
             <ul className="list-disc pl-5 space-y-1">
@@ -105,7 +105,7 @@ export default function TermsOfServiceModal({ isOpen, onClose }: TermsOfServiceM
           <div className="faq-section">
             <h3 className="text-lg font-semibold text-orange-500 mb-2">6. User Responsibilities</h3>
             <ul className="list-disc pl-5 space-y-1">
-              <li><strong>Compliance</strong>: You are solely responsible for ensuring your Content complies with these Terms, applicable laws, and DeepTube.co's Content Guidelines.</li>
+              <li><strong>Compliance</strong>: You are solely responsible for ensuring your Content complies with these Terms, applicable laws, and DeepTubeAI.com's Content Guidelines.</li>
               <li><strong>Reporting Violations</strong>: If you encounter Content that violates these Terms, report it immediately to support@deeptube.co using the "Report" feature. DeepTube LLC will investigate and remove non-compliant Content within 24–48 hours, per the Take It Down Act.</li>
               <li><strong>Accuracy</strong>: You must not misrepresent the nature, origin, or consent status of your Content (e.g., claiming a deepfake is real).</li>
               <li><strong>Liability</strong>: You agree to indemnify and hold DeepTube LLC harmless from any claims, damages, or liabilities arising from your Content or use of the Service.</li>
@@ -115,7 +115,7 @@ export default function TermsOfServiceModal({ isOpen, onClose }: TermsOfServiceM
           <div className="faq-section">
             <h3 className="text-lg font-semibold text-orange-500 mb-2">7. Intellectual Property and DMCA Compliance</h3>
             <ul className="list-disc pl-5 space-y-1">
-              <li><strong>DeepTube's Ownership</strong>: All Content uploaded to DeepTube.co becomes the property of DeepTube LLC, as outlined in Section 4. The Service itself, including its design, code, and branding, is owned by DeepTube LLC and protected by copyright, trademark, and other laws.</li>
+              <li><strong>DeepTube's Ownership</strong>: All Content uploaded to DeepTubeAI.com becomes the property of DeepTube LLC, as outlined in Section 4. The Service itself, including its design, code, and branding, is owned by DeepTube LLC and protected by copyright, trademark, and other laws.</li>
               <li><strong>DMCA Policy</strong>: DeepTube LLC complies with the Digital Millennium Copyright Act (DMCA). If you believe Content infringes your copyright, submit a takedown notice to support@deeptube.co with:
                 <ul className="list-disc pl-5 space-y-1">
                   <li>Your contact information and signature.</li>
@@ -134,7 +134,7 @@ export default function TermsOfServiceModal({ isOpen, onClose }: TermsOfServiceM
             <ul className="list-disc pl-5 space-y-1">
               <li>Upload or share illegal, harmful, or non-compliant Content.</li>
               <li>Use bots, scripts, or automated tools to manipulate the Service (e.g., fake views, uploads).</li>
-              <li>Attempt to hack, reverse-engineer, or disrupt DeepTube.co's systems.</li>
+              <li>Attempt to hack, reverse-engineer, or disrupt DeepTubeAI.com's systems.</li>
               <li>Impersonate others or misrepresent Content ownership or consent.</li>
               <li>Engage in spamming, phishing, or other malicious activities.</li>
             </ul>
@@ -152,7 +152,7 @@ export default function TermsOfServiceModal({ isOpen, onClose }: TermsOfServiceM
           <div className="faq-section">
             <h3 className="text-lg font-semibold text-orange-500 mb-2">10. Disclaimers and Limitation of Liability</h3>
             <ul className="list-disc pl-5 space-y-1">
-              <li><strong>As-Is Service</strong>: DeepTube.co is provided "as is" without warranties of any kind, express or implied, including fitness for a particular purpose or non-infringement.</li>
+              <li><strong>As-Is Service</strong>: DeepTubeAI.com is provided "as is" without warranties of any kind, express or implied, including fitness for a particular purpose or non-infringement.</li>
               <li><strong>No Liability for Content</strong>: DeepTube LLC is not liable for any Content uploaded by Users, including its accuracy, legality, or impact. You use the Service at your own risk.</li>
               <li><strong>Limitation of Liability</strong>: To the fullest extent permitted by law, DeepTube LLC's total liability for any claims arising from the Service shall not exceed $100. We are not liable for indirect, consequential, or punitive damages.</li>
             </ul>
@@ -177,7 +177,7 @@ export default function TermsOfServiceModal({ isOpen, onClose }: TermsOfServiceM
           <div className="faq-section">
             <h3 className="text-lg font-semibold text-orange-500 mb-2">13. Changes to Terms</h3>
             <p>
-              DeepTube LLC may update these Terms at any time by posting the revised version on DeepTube.co. Continued use of the Service after changes constitutes acceptance. We will notify Users of material changes via email or site announcements.
+              DeepTube LLC may update these Terms at any time by posting the revised version on DeepTubeAI.com. Continued use of the Service after changes constitutes acceptance. We will notify Users of material changes via email or site announcements.
             </p>
           </div>
           
@@ -201,7 +201,7 @@ export default function TermsOfServiceModal({ isOpen, onClose }: TermsOfServiceM
           </div>
           
           <p className="mt-6">
-            By using DeepTube.co, you acknowledge that you are over 18, agree to transfer Content ownership to DeepTube LLC, and allow us to monetize Content without sharing profits. Thank you for helping us maintain an ethical, legal, and creative community.
+            By using DeepTubeAI.com, you acknowledge that you are over 18, agree to transfer Content ownership to DeepTube LLC, and allow us to monetize Content without sharing profits. Thank you for helping us maintain an ethical, legal, and creative community.
           </p>
         </div>
 
