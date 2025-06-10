@@ -1,4 +1,16 @@
-import { pgTable, text, serial, integer, real, timestamp, boolean, primaryKey, varchar, jsonb, doublePrecision } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  serial,
+  integer,
+  real,
+  timestamp,
+  boolean,
+  primaryKey,
+  varchar,
+  jsonb,
+  doublePrecision,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -9,6 +21,8 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   email: text("email").notNull(), // Email is now required
+  provider: varchar("provider", { length: 50 }).default("local"),
+  providerId: varchar("provider_id", { length: 255 }),
   dateOfBirth: timestamp("date_of_birth"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   banned: boolean("banned").default(false),
@@ -26,7 +40,7 @@ export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
-  icon: text("icon").notNull().default(''),
+  icon: text("icon").notNull().default(""),
   image: text("image"),
 });
 
@@ -47,7 +61,9 @@ export const videos = pgTable("videos", {
   embedCode: text("embed_code"),
   preview: text("preview"),
   contentType: text("content_type").notNull().default("video"), // "video", "image", or "embed"
-  resolution: varchar("resolution", { enum: ["HD", "4K"] }).notNull().default("HD"),
+  resolution: varchar("resolution", { enum: ["HD", "4K"] })
+    .notNull()
+    .default("HD"),
   duration: doublePrecision("duration").default(0).notNull(),
   categoryId: integer("category_id").references(() => categories.id),
   vimeoId: text("vimeo_id"), // Store Vimeo video ID
@@ -56,7 +72,11 @@ export const videos = pgTable("videos", {
   credits: integer("credits").notNull().default(0), // Number of credits required to purchase
   views: integer("views").notNull().default(0), // Track number of views
   featured: boolean("featured").default(false).notNull(), // Marks video as featured for display in Featured Videos section
-  reviewStatus: varchar("review_status", { enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
+  reviewStatus: varchar("review_status", {
+    enum: ["pending", "approved", "rejected"],
+  })
+    .notNull()
+    .default("pending"),
   reviewedAt: timestamp("reviewed_at"),
   reviewedBy: integer("reviewed_by").references(() => users.id),
   rejectionReason: text("rejection_reason"),
@@ -104,7 +124,9 @@ export const wishlistItemsRelations = relations(wishlistItems, ({ one }) => ({
 // Comments table for videos/images
 export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
-  videoId: integer("video_id").references(() => videos.id, { onDelete: "cascade" }).notNull(),
+  videoId: integer("video_id")
+    .references(() => videos.id, { onDelete: "cascade" })
+    .notNull(),
   username: text("username").notNull(), // Can be anonymous
   userId: integer("user_id").references(() => users.id), // Optional for anonymous users
   content: text("content").notNull(),
@@ -125,7 +147,9 @@ export const commentsRelations = relations(comments, ({ one }) => ({
 // Likes table for videos/images (supports both anonymous and logged-in users)
 export const likes = pgTable("likes", {
   id: serial("id").primaryKey(),
-  videoId: integer("video_id").references(() => videos.id, { onDelete: "cascade" }).notNull(),
+  videoId: integer("video_id")
+    .references(() => videos.id, { onDelete: "cascade" })
+    .notNull(),
   userId: integer("user_id").references(() => users.id), // Optional for anonymous users
   ipAddress: text("ip_address"), // To track anonymous likes by IP
   sessionId: text("session_id"), // Alternative to IP for tracking anonymous users
@@ -133,21 +157,30 @@ export const likes = pgTable("likes", {
 });
 
 // Create a unique constraint to prevent duplicate likes
-export const likesConstraint = pgTable("likes_constraint", {
-  videoId: integer("video_id").references(() => videos.id).notNull(),
-  userId: integer("user_id").references(() => users.id),
-  ipAddress: text("ip_address"),
-  sessionId: text("session_id"),
-}, (table) => {
-  // Constraint ensures a user/IP/session can only like a video once
-  return {
-    unique_like: primaryKey({ columns: [table.videoId, 
-      // Use either userId or the combination of IP and session
-      table.userId || table.ipAddress, 
-      table.sessionId] 
-    })
-  };
-});
+export const likesConstraint = pgTable(
+  "likes_constraint",
+  {
+    videoId: integer("video_id")
+      .references(() => videos.id)
+      .notNull(),
+    userId: integer("user_id").references(() => users.id),
+    ipAddress: text("ip_address"),
+    sessionId: text("session_id"),
+  },
+  (table) => {
+    // Constraint ensures a user/IP/session can only like a video once
+    return {
+      unique_like: primaryKey({
+        columns: [
+          table.videoId,
+          // Use either userId or the combination of IP and session
+          table.userId || table.ipAddress,
+          table.sessionId,
+        ],
+      }),
+    };
+  }
+);
 
 export const likesRelations = relations(likes, ({ one }) => ({
   video: one(videos, {
@@ -163,8 +196,12 @@ export const likesRelations = relations(likes, ({ one }) => ({
 // Messages table for user-to-user messaging
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
-  senderId: integer("sender_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
-  receiverId: integer("receiver_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  senderId: integer("sender_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  receiverId: integer("receiver_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
   content: text("content").notNull(),
   read: boolean("read").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -184,13 +221,21 @@ export const messagesRelations = relations(messages, ({ one }) => ({
 // Content reports table
 export const reports = pgTable("reports", {
   id: serial("id").primaryKey(),
-  videoId: integer("video_id").references(() => videos.id, { onDelete: "cascade" }).notNull(),
-  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+  videoId: integer("video_id")
+    .references(() => videos.id, { onDelete: "cascade" })
+    .notNull(),
+  userId: integer("user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
   reason: text("reason").notNull(),
-  status: varchar("status", { enum: ["pending", "reviewed", "ignored"] }).default("pending").notNull(),
+  status: varchar("status", { enum: ["pending", "reviewed", "ignored"] })
+    .default("pending")
+    .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   resolvedAt: timestamp("resolved_at"),
-  resolvedBy: integer("resolved_by").references(() => users.id, { onDelete: "set null" }),
+  resolvedBy: integer("resolved_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
 });
 
 export const reportsRelations = relations(reports, ({ one }) => ({
@@ -209,13 +254,21 @@ export const reportsRelations = relations(reports, ({ one }) => ({
 }));
 
 // Blocked users table
-export const blockedUsers = pgTable("blocked_users", {
-  userId: integer("userId").references(() => users.id, { onDelete: "cascade" }).notNull(),
-  blockedUserId: integer("blockedUserId").references(() => users.id, { onDelete: "cascade" }).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-}, (table) => ({
-  pk: primaryKey(table.userId, table.blockedUserId)
-}));
+export const blockedUsers = pgTable(
+  "blocked_users",
+  {
+    userId: integer("userId")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    blockedUserId: integer("blockedUserId")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    pk: primaryKey(table.userId, table.blockedUserId),
+  })
+);
 
 export const blockedUsersRelations = relations(blockedUsers, ({ one }) => ({
   user: one(users, {
@@ -236,12 +289,18 @@ export const insertUserSchema = createInsertSchema(users)
     email: true,
     dateOfBirth: true,
     isAdmin: true,
+    provider: true,
+    providerId: true,
   })
   .extend({
     // Add additional validation for username format
-    username: z.string()
+    username: z
+      .string()
       .min(3, "Username must be at least 3 characters")
-      .regex(/^[a-zA-Z0-9_-]+$/, "Username can only contain letters, numbers, underscores, and hyphens"),
+      .regex(
+        /^[a-zA-Z0-9_-]+$/,
+        "Username can only contain letters, numbers, underscores, and hyphens"
+      ),
   });
 
 export const insertCategorySchema = createInsertSchema(categories);
@@ -270,7 +329,7 @@ export const insertVideoSchema = createInsertSchema(videos).pick({
   reviewedBy: true,
   rejectionReason: true,
   tags: true,
-  perceptualHashes: true
+  perceptualHashes: true,
 });
 export const insertWishlistItemSchema = createInsertSchema(wishlistItems);
 export const insertCommentSchema = createInsertSchema(comments);
@@ -279,11 +338,11 @@ export const insertMessageSchema = createInsertSchema(messages);
 export const insertReportSchema = createInsertSchema(reports).pick({
   videoId: true,
   userId: true,
-  reason: true
+  reason: true,
 });
 export const insertBlockedUserSchema = createInsertSchema(blockedUsers).pick({
   userId: true,
-  blockedUserId: true
+  blockedUserId: true,
 });
 
 // Type definitions
@@ -294,7 +353,7 @@ export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Category = typeof categories.$inferSelect;
 
 export type InsertVideo = z.infer<typeof insertVideoSchema>;
-export type Video = typeof videos.$inferSelect & { 
+export type Video = typeof videos.$inferSelect & {
   uploaderName?: string;
   adminNotice?: string; // For admin-only notifications about content status
 };
@@ -322,7 +381,9 @@ export const forumThreads = pgTable("forum_threads", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   content: text("content").notNull(),
-  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  userId: integer("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
   categoryId: integer("category_id").references(() => categories.id),
   isSticky: boolean("is_sticky").default(false).notNull(),
   tags: text("tags"), // Comma-separated tags
@@ -331,23 +392,30 @@ export const forumThreads = pgTable("forum_threads", {
   upvotes: integer("upvotes").default(0).notNull(),
 });
 
-export const forumThreadsRelations = relations(forumThreads, ({ one, many }) => ({
-  user: one(users, {
-    fields: [forumThreads.userId],
-    references: [users.id],
-  }),
-  category: one(categories, {
-    fields: [forumThreads.categoryId],
-    references: [categories.id],
-  }),
-  comments: many(forumComments),
-}));
+export const forumThreadsRelations = relations(
+  forumThreads,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [forumThreads.userId],
+      references: [users.id],
+    }),
+    category: one(categories, {
+      fields: [forumThreads.categoryId],
+      references: [categories.id],
+    }),
+    comments: many(forumComments),
+  })
+);
 
 export const forumComments = pgTable("forum_comments", {
   id: serial("id").primaryKey(),
   content: text("content").notNull(),
-  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
-  threadId: integer("thread_id").references(() => forumThreads.id, { onDelete: "cascade" }).notNull(),
+  userId: integer("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  threadId: integer("thread_id")
+    .references(() => forumThreads.id, { onDelete: "cascade" })
+    .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at"),
 });
