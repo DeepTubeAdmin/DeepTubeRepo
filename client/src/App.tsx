@@ -26,14 +26,16 @@ import { AuthProvider } from "@/hooks/use-auth";
 import Layout from "@/components/Layout";
 import AgeVerificationModal from "@/components/AgeVerificationModal";
 import AdSenseInitializer from "@/components/AdSenseInitializer";
+import FAQ from "./pages/faq";
+import DataDeletion from "./pages/data-deletion";
 
 // Create a context for shuffle functionality
 export const ShuffleContext = createContext<{
   shuffleSeed: string;
   triggerShuffle: () => void;
-}>({ 
-  shuffleSeed: '',
-  triggerShuffle: () => {} 
+}>({
+  shuffleSeed: "",
+  triggerShuffle: () => {},
 });
 
 // Custom hook to use the shuffle context
@@ -51,6 +53,8 @@ function Router() {
       <Route path="/forum" component={ForumPage} />
       <Route path="/terms-of-service" component={TermsOfService} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/faq" component={FAQ} />
+      <Route path="/data-deletion" component={DataDeletion} />
       <ProtectedRoute path="/my-videos" component={MyVideosPage} />
       <ProtectedRoute path="/my-messages" component={MyMessages} />
       <ProtectedRoute path="/profile" component={ProfilePage} />
@@ -65,52 +69,52 @@ function Router() {
 function App() {
   const [location] = useLocation();
   const [showAgeVerification, setShowAgeVerification] = useState(false);
-  
+
   // Create a state for the shuffle seed
   const [shuffleSeed, setShuffleSeed] = useState(() => {
     const timestamp = new Date().getTime();
     const random = Math.random().toString(36).substring(2, 10);
     return `${timestamp}-${random}`;
   });
-  
+
   // Function to trigger a new shuffle (much simpler approach)
   const triggerShuffle = () => {
     // Generate a simple random seed that includes the timestamp
     const timestamp = new Date().getTime();
-    const random = Math.random().toString(36).substring(2, 8); 
+    const random = Math.random().toString(36).substring(2, 8);
     const newSeed = `${timestamp}-${random}`;
-    
-    console.log('Triggering content shuffle with seed:', newSeed);
-    
+
+    console.log("Triggering content shuffle with seed:", newSeed);
+
     // Update the shuffle seed state for any components still using it
     setShuffleSeed(newSeed);
-    
+
     // Basic cache clearing is still helpful
-    queryClient.invalidateQueries({ queryKey: ['/api/content/feed'] });
-    
+    queryClient.invalidateQueries({ queryKey: ["/api/content/feed"] });
+
     // We no longer need the forced page reload here
     // The Header component now handles that directly with its handleLogoClick function
   };
-  
+
   useEffect(() => {
     // Check if user has already verified their age
-    const isVerified = localStorage.getItem('ageVerified') === 'true';
-    
+    const isVerified = localStorage.getItem("ageVerified") === "true";
+
     // Skip age verification if on the access-denied page
-    if (location === '/access-denied') {
+    if (location === "/access-denied") {
       return;
     }
-    
+
     // Show age verification if not already verified
     if (!isVerified) {
       setShowAgeVerification(true);
     }
   }, [location]);
-  
+
   const handleAgeVerified = () => {
     setShowAgeVerification(false);
   };
-  
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -120,7 +124,7 @@ function App() {
               {/* Initialize AdSense when the app loads */}
               <AdSenseInitializer />
               <Toaster />
-              <AgeVerificationModal 
+              <AgeVerificationModal
                 isOpen={showAgeVerification}
                 onVerify={handleAgeVerified}
               />

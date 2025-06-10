@@ -87,7 +87,8 @@ export default function AdminPage() {
     error: featuredError,
   } = useQuery<FeaturedContent[]>({
     queryKey: ["/api/admin/content/featured"],
-    queryFn: () => apiRequest("GET", "/api/admin/content/featured").then((r) => r.json()),
+    queryFn: () =>
+      apiRequest("GET", "/api/admin/content/featured").then((r) => r.json()),
   });
 
   // -------------------------------------------------------------------------
@@ -95,7 +96,8 @@ export default function AdminPage() {
   // -------------------------------------------------------------------------
   useEffect(() => {
     if (authLoading) return;
-    if (!user || (user.id !== 1 && user.id !== 2)) navigate("/");
+    if (!user || (!user.isAdmin && user.id !== 1 && user.id !== 2))
+      navigate("/");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user]);
 
@@ -203,7 +205,9 @@ export default function AdminPage() {
   //  RENDER HELPERS
   // -------------------------------------------------------------------------
   const fmtDur = (s?: number | null) =>
-    s ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}` : "-";
+    s
+      ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`
+      : "-";
 
   const thumb = (c: Video, cls = "w-20 h-12") => (
     <div className={`relative overflow-hidden rounded ${cls}`}>

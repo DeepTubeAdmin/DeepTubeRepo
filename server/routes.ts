@@ -953,6 +953,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ) {
       return next();
     }
+    console.log("req.user", req.user);
     res.status(403).json({ error: "Admin access required" });
   };
 
@@ -1024,7 +1025,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Define all required categories
       const requiredCategories = [
-        { name: "Entertainment", slug: "entertainment", icon: "party-popper" }, 
+        { name: "Entertainment", slug: "entertainment", icon: "party-popper" },
         { name: "Parody", slug: "parody", icon: "laugh" }, // Humor-focused
         { name: "Short Film", slug: "short-film", icon: "clapperboard" }, // Represents filmmaking
         { name: "TV Show", slug: "tv-show", icon: "tv" },
@@ -1680,7 +1681,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if the user is an admin or the owner of the video
-      const isAdmin = req.user.id === 1 || req.user.id === 2;
+      const isAdmin =
+        req.user.isAdmin || req.user.id === 1 || req.user.id === 2;
       if (!isAdmin && video.userId && video.userId !== req.user.id) {
         return res
           .status(403)
@@ -1852,7 +1854,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if request is from admin (use the isAdmin middleware function manually)
       const isAdminRequest =
-        req.isAuthenticated() && (req.user.id === 1 || req.user.id === 2);
+        req.isAuthenticated() &&
+        (req.user.isAdmin || req.user.id === 1 || req.user.id === 2);
 
       if (!contentId) {
         throw new Error("Invalid content ID");

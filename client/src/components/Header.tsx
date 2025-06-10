@@ -228,7 +228,9 @@ export default function Header({ simple = false }: HeaderProps) {
                   onClick={toggleUserDropdown}
                 >
                   <span>
-                    {user?.username ? user.username.charAt(0).toUpperCase() : "A"}
+                    {user?.username
+                      ? user.username.charAt(0).toUpperCase()
+                      : "A"}
                   </span>
                   {user && unreadMessageData?.count > 0 && (
                     <div className="absolute -top-1 -right-1 h-4 w-4 bg-orange-500 rounded-full flex items-center justify-center text-[10px] font-bold border border-black">
@@ -295,17 +297,18 @@ export default function Header({ simple = false }: HeaderProps) {
                             </span>
                           )}
                         </a>
-                        {user && (user.id === 1 || user.id === 2) && (
-                          <a
-                            onClick={() => {
-                              setLocation("/admin");
-                              setShowUserDropdown(false);
-                            }}
-                            className="block px-4 py-2 text-sm text-red-300 hover:bg-gray-800 cursor-pointer"
-                          >
-                            Admin Dashboard
-                          </a>
-                        )}
+                        {user &&
+                          (user.isAdmin || user.id === 1 || user.id === 2) && (
+                            <a
+                              onClick={() => {
+                                setLocation("/admin");
+                                setShowUserDropdown(false);
+                              }}
+                              className="block px-4 py-2 text-sm text-red-300 hover:bg-gray-800 cursor-pointer"
+                            >
+                              Admin Dashboard
+                            </a>
+                          )}
                         <a
                           onClick={handleLogout}
                           className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"
@@ -533,17 +536,18 @@ export default function Header({ simple = false }: HeaderProps) {
                         )}
                       </a>
                       {/* Show Admin Dashboard link only for admin users */}
-                      {user && (user.id === 1 || user.id === 2) && (
-                        <a
-                          onClick={() => {
-                            setLocation("/admin");
-                            setShowUserDropdown(false);
-                          }}
-                          className="block px-4 py-2 text-sm text-red-300 hover:bg-gray-800 cursor-pointer"
-                        >
-                          Admin Dashboard
-                        </a>
-                      )}
+                      {user &&
+                        (user.isAdmin || user.id === 1 || user.id === 2) && (
+                          <a
+                            onClick={() => {
+                              setLocation("/admin");
+                              setShowUserDropdown(false);
+                            }}
+                            className="block px-4 py-2 text-sm text-red-300 hover:bg-gray-800 cursor-pointer"
+                          >
+                            Admin Dashboard
+                          </a>
+                        )}
                       <a
                         onClick={handleLogout}
                         className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"

@@ -12,16 +12,16 @@ export default function MiniFooter() {
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
-  
+
   useEffect(() => {
     const handleOpenRulesModal = () => {
       setIsRulesModalOpen(true);
     };
-    
-    window.addEventListener('open-rules-modal', handleOpenRulesModal);
-    
+
+    window.addEventListener("open-rules-modal", handleOpenRulesModal);
+
     return () => {
-      window.removeEventListener('open-rules-modal', handleOpenRulesModal);
+      window.removeEventListener("open-rules-modal", handleOpenRulesModal);
     };
   }, []);
 
@@ -33,26 +33,26 @@ export default function MiniFooter() {
             {/* All content grouped together - navigation prioritized on mobile */}
             <div className="flex items-center gap-1 sm:gap-2 md:gap-4 flex-nowrap overflow-hidden">
               {/* Navigation links - highest priority on mobile */}
-              <Link 
-                href="/terms-of-service" 
+              <Link
+                href="/terms-of-service"
                 className="text-xs text-gray-400 hover:text-white flex-shrink-0"
               >
                 Terms
               </Link>
               <div className="h-3 w-px bg-gray-600"></div>
-              <Link 
-                href="/privacy-policy" 
+              <Link
+                href="/privacy-policy"
                 className="text-xs text-gray-400 hover:text-white flex-shrink-0"
               >
                 Privacy
               </Link>
               <div className="h-3 w-px bg-gray-600"></div>
-              <button
-                onClick={() => setIsFAQModalOpen(true)}
-                className="text-xs text-gray-400 hover:text-white bg-transparent border-none cursor-pointer flex-shrink-0"
+              <Link
+                href="/faq"
+                className="text-xs text-gray-400 hover:text-white flex-shrink-0"
               >
                 FAQ
-              </button>
+              </Link>
               <div className="h-3 w-px bg-gray-600"></div>
               <button
                 onClick={() => setIsRulesModalOpen(true)}
@@ -67,9 +67,7 @@ export default function MiniFooter() {
               >
                 Contact
               </button>
-              
-              
-              
+
               {/* Disclaimer and copyright - lowest priority */}
               <div className="h-3 w-px bg-gray-600 hidden lg:block"></div>
               <span className="text-xs text-gray-400 hidden lg:inline flex-shrink-0">
@@ -83,11 +81,11 @@ export default function MiniFooter() {
           </div>
         </div>
       </footer>
-      
+
       {/* Contact Modal */}
-      <ContactModal 
-        isOpen={isContactModalOpen} 
-        onClose={() => setIsContactModalOpen(false)} 
+      <ContactModal
+        isOpen={isContactModalOpen}
+        onClose={() => setIsContactModalOpen(false)}
       />
 
       {/* FAQ Modal */}

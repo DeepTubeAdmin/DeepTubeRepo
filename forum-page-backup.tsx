@@ -1,7 +1,17 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, AlertCircle, Loader2 } from "lucide-react";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -9,28 +19,28 @@ import { formatDistanceToNow } from "date-fns";
 import Layout from "@/components/Layout";
 import MiniFooter from "@/components/MiniFooter";
 import SEO from "@/components/SEO";
-import { 
-  MessageSquare, 
-  Plus, 
-  Filter, 
-  SortDesc, 
-  ChevronUp, 
+import {
+  MessageSquare,
+  Plus,
+  Filter,
+  SortDesc,
+  ChevronUp,
   ChevronDown,
   ThumbsUp,
   MessageCircle,
   Clock,
-  User
+  User,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { 
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -41,7 +51,12 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
 // Define interfaces for our forum data types
@@ -91,41 +106,49 @@ export default function ForumPage() {
   const [sortBy, setSortBy] = useState("newest");
   const [newThreadTitle, setNewThreadTitle] = useState("");
   const [newThreadContent, setNewThreadContent] = useState("");
-  const [newThreadCategory, setNewThreadCategory] = useState<number | null>(null);
+  const [newThreadCategory, setNewThreadCategory] = useState<number | null>(
+    null
+  );
   const [newThreadTags, setNewThreadTags] = useState("");
   const [isNewThreadDialogOpen, setIsNewThreadDialogOpen] = useState(false);
-  const [isStickyThreadDialogOpen, setIsStickyThreadDialogOpen] = useState(false);
+  const [isStickyThreadDialogOpen, setIsStickyThreadDialogOpen] =
+    useState(false);
   const [newComment, setNewComment] = useState("");
   const [activeThread, setActiveThread] = useState<number | null>(null);
-  const [visibleCommentForms, setVisibleCommentForms] = useState<{[key: number]: boolean}>({});
-  
+  const [visibleCommentForms, setVisibleCommentForms] = useState<{
+    [key: number]: boolean;
+  }>({});
+
   // Fetch forum categories from the database
-  const { 
-    data: categories = [], 
-    isLoading: isLoadingCategories 
-  } = useQuery<ForumCategory[]>({
-    queryKey: ['/api/forum/categories'],
+  const { data: categories = [], isLoading: isLoadingCategories } = useQuery<
+    ForumCategory[]
+  >({
+    queryKey: ["/api/forum/categories"],
   });
 
   // Fetch forum threads
-  const { 
-    data: threads = [], 
+  const {
+    data: threads = [],
     isLoading: isLoadingThreads,
-    refetch: refetchThreads
+    refetch: refetchThreads,
   } = useQuery<ForumThread[]>({
-    queryKey: ['/api/forum/threads', { categoryId: activeCategory, sortBy }],
+    queryKey: ["/api/forum/threads", { categoryId: activeCategory, sortBy }],
     select: (data) => {
       // Split threads into sticky and non-sticky
-      const stickyThreads = data.filter(thread => thread.isSticky);
-      const regularThreads = data.filter(thread => !thread.isSticky);
-      
+      const stickyThreads = data.filter((thread) => thread.isSticky);
+      const regularThreads = data.filter((thread) => !thread.isSticky);
+
       // Sort both groups by the selected criteria
       const sortThreads = (threads: ForumThread[]) => {
         return [...threads].sort((a, b) => {
           if (sortBy === "newest") {
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            return (
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
           } else if (sortBy === "oldest") {
-            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            return (
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            );
           } else if (sortBy === "popular") {
             return b.upvotes - a.upvotes;
           } else if (sortBy === "comments") {
@@ -134,38 +157,38 @@ export default function ForumPage() {
           return 0;
         });
       };
-      
+
       // Combine the two groups with sticky threads first
       return [...sortThreads(stickyThreads), ...sortThreads(regularThreads)];
-    }
+    },
   });
 
   // Fetch comments for the active thread
-  const { 
-    data: comments = [], 
+  const {
+    data: comments = [],
     isLoading: isLoadingComments,
-    refetch: refetchComments
+    refetch: refetchComments,
   } = useQuery<ForumComment[]>({
-    queryKey: ['/api/forum/threads', activeThread, 'comments'],
+    queryKey: ["/api/forum/threads", activeThread, "comments"],
     queryFn: async () => {
       if (!activeThread) return [];
       const res = await fetch(`/api/forum/threads/${activeThread}/comments`);
-      if (!res.ok) throw new Error('Failed to fetch comments');
+      if (!res.ok) throw new Error("Failed to fetch comments");
       return res.json();
     },
-    enabled: !!activeThread
+    enabled: !!activeThread,
   });
 
   // Create thread mutation
   const createThreadMutation = useMutation({
-    mutationFn: async (newThread: { 
-      title: string; 
-      content: string; 
+    mutationFn: async (newThread: {
+      title: string;
+      content: string;
       categoryId: number | null;
       tags: string[] | null;
       isSticky?: boolean;
     }) => {
-      const res = await apiRequest('POST', '/api/forum/threads', newThread);
+      const res = await apiRequest("POST", "/api/forum/threads", newThread);
       return res.json();
     },
     onSuccess: () => {
@@ -176,10 +199,10 @@ export default function ForumPage() {
       setNewThreadCategory(null);
       setIsNewThreadDialogOpen(false);
       setIsStickyThreadDialogOpen(false);
-      
+
       // Refetch threads
-      queryClient.invalidateQueries({ queryKey: ['/api/forum/threads'] });
-      
+      queryClient.invalidateQueries({ queryKey: ["/api/forum/threads"] });
+
       toast({
         title: "Thread created",
         description: "Your discussion thread has been created successfully!",
@@ -189,39 +212,45 @@ export default function ForumPage() {
       toast({
         title: "Error creating thread",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 
   // Add comment mutation
   const addCommentMutation = useMutation({
-    mutationFn: async ({ 
-      threadId, 
-      content 
-    }: { 
-      threadId: number; 
+    mutationFn: async ({
+      threadId,
+      content,
+    }: {
+      threadId: number;
       content: string;
     }) => {
-      const res = await apiRequest('POST', `/api/forum/threads/${threadId}/comments`, { content });
+      const res = await apiRequest(
+        "POST",
+        `/api/forum/threads/${threadId}/comments`,
+        { content }
+      );
       return res.json();
     },
     onSuccess: () => {
       // Reset form
       setNewComment("");
-      
+
       // Hide the comment form
       if (activeThread) {
         setVisibleCommentForms({
           ...visibleCommentForms,
-          [activeThread]: false
+          [activeThread]: false,
         });
       }
-      
+
       // Refresh data
-      queryClient.invalidateQueries({ queryKey: ['/api/forum/threads', activeThread, 'comments'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/forum/threads'] });
-      
+      queryClient.invalidateQueries({
+        queryKey: ["/api/forum/threads", activeThread, "comments"],
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/forum/threads"] });
+
       toast({
         title: "Comment added",
         description: "Your comment has been added to the discussion.",
@@ -231,26 +260,26 @@ export default function ForumPage() {
       toast({
         title: "Error adding comment",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 
   // Delete thread mutation
   const deleteThreadMutation = useMutation({
     mutationFn: async (threadId: number) => {
-      const res = await apiRequest('DELETE', `/api/forum/threads/${threadId}`);
+      const res = await apiRequest("DELETE", `/api/forum/threads/${threadId}`);
       return res.json();
     },
     onSuccess: () => {
       // Refetch threads
-      queryClient.invalidateQueries({ queryKey: ['/api/forum/threads'] });
-      
+      queryClient.invalidateQueries({ queryKey: ["/api/forum/threads"] });
+
       // If the deleted thread was active, clear it
       if (activeThread) {
         setActiveThread(null);
       }
-      
+
       toast({
         title: "Thread deleted",
         description: "The thread has been deleted successfully.",
@@ -260,46 +289,52 @@ export default function ForumPage() {
       toast({
         title: "Error deleting thread",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 
   // Delete comment mutation
   const deleteCommentMutation = useMutation({
-    mutationFn: async ({ 
-      threadId, 
-      commentId 
-    }: { 
-      threadId: number; 
+    mutationFn: async ({
+      threadId,
+      commentId,
+    }: {
+      threadId: number;
       commentId: number;
     }) => {
-      const res = await apiRequest('DELETE', `/api/forum/threads/${threadId}/comments/${commentId}`);
+      const res = await apiRequest(
+        "DELETE",
+        `/api/forum/threads/${threadId}/comments/${commentId}`
+      );
       return res.json();
     },
     onSuccess: () => {
       // Refetch comments and threads (to update comment count)
-      queryClient.invalidateQueries({ queryKey: ['/api/forum/threads', activeThread, 'comments'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/forum/threads'] });
-      
+      queryClient.invalidateQueries({
+        queryKey: ["/api/forum/threads", activeThread, "comments"],
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/forum/threads"] });
+
       toast({
         title: "Comment deleted",
         description: "The comment has been deleted successfully",
-        variant: "destructive"
+        variant: "destructive",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Error deleting comment",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 
   // Format timestamps to relative time (e.g., "2 hours ago")
   const formatTimestamp = (timestamp: string | Date) => {
-    const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
+    const date =
+      typeof timestamp === "string" ? new Date(timestamp) : timestamp;
     return formatDistanceToNow(date, { addSuffix: true });
   };
 
@@ -317,45 +352,48 @@ export default function ForumPage() {
       toast({
         title: "Missing information",
         description: "Please provide both a title and content for your thread.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
-    const tagsArray = newThreadTags.split(',')
-      .map(tag => tag.trim())
-      .filter(tag => tag.length > 0);
+    const tagsArray = newThreadTags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
 
     createThreadMutation.mutate({
       title: newThreadTitle,
       content: newThreadContent,
       categoryId: newThreadCategory,
       tags: tagsArray.length > 0 ? tagsArray : null,
-      isSticky: false
+      isSticky: false,
     });
   };
-  
+
   // Handle creating a sticky thread (admin only)
   const handleCreateStickyThread = () => {
     if (!newThreadTitle.trim() || !newThreadContent.trim()) {
       toast({
         title: "Missing information",
-        description: "Please provide both a title and content for your sticky thread.",
-        variant: "destructive"
+        description:
+          "Please provide both a title and content for your sticky thread.",
+        variant: "destructive",
       });
       return;
     }
 
-    const tagsArray = newThreadTags.split(',')
-      .map(tag => tag.trim())
-      .filter(tag => tag.length > 0);
+    const tagsArray = newThreadTags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
 
     createThreadMutation.mutate({
       title: newThreadTitle,
       content: newThreadContent,
       categoryId: newThreadCategory,
       tags: tagsArray.length > 0 ? tagsArray : null,
-      isSticky: true
+      isSticky: true,
     });
   };
 
@@ -363,7 +401,7 @@ export default function ForumPage() {
     // Client-side update for now
     toast({
       title: "Upvoted thread",
-      description: "Thread upvoted successfully!"
+      description: "Thread upvoted successfully!",
     });
   };
 
@@ -372,14 +410,14 @@ export default function ForumPage() {
       toast({
         title: "Empty comment",
         description: "Please enter some content for your comment.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     addCommentMutation.mutate({
       threadId,
-      content: newComment
+      content: newComment,
     });
   };
 
@@ -388,28 +426,32 @@ export default function ForumPage() {
   };
 
   const openCommentForm = (threadId: number) => {
-    setVisibleCommentForms({...visibleCommentForms, [threadId]: true});
+    setVisibleCommentForms({ ...visibleCommentForms, [threadId]: true });
   };
 
-  const filteredThreads = threads.filter(thread => {
+  const filteredThreads = threads.filter((thread) => {
     // Filter by tab
     if (activeTab === "sticky" && !thread.isSticky) return false;
-    
+
     // Filter by category
     if (activeCategory && thread.categoryId !== activeCategory) return false;
-    
+
     // Filter by search query
-    if (searchQuery && !thread.title.toLowerCase().includes(searchQuery.toLowerCase()) && 
-        !thread.content.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    
+    if (
+      searchQuery &&
+      !thread.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !thread.content.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+      return false;
+
     return true;
   });
 
   // Process threads to put sticky ones at the top
   const processedThreads = React.useMemo(() => {
     // Split into sticky and non-sticky threads
-    const stickyThreads = threads.filter(thread => thread.isSticky);
-    const regularThreads = threads.filter(thread => !thread.isSticky);
+    const stickyThreads = threads.filter((thread) => thread.isSticky);
+    const regularThreads = threads.filter((thread) => !thread.isSticky);
 
     // Sort each group separately
     let sortedSticky = [...stickyThreads];
@@ -418,9 +460,13 @@ export default function ForumPage() {
     // Apply sorting to each group
     const sortFunction = (a: ForumThread, b: ForumThread) => {
       if (sortBy === "newest") {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
       } else if (sortBy === "oldest") {
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        return (
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
       } else if (sortBy === "popular") {
         return b.upvotes - a.upvotes;
       } else if (sortBy === "comments") {
@@ -437,11 +483,11 @@ export default function ForumPage() {
   }, [threads, sortBy]);
 
   // Check if user is an admin (ID 1 or 2)
-  const isAdmin = user && (user.id === 1 || user.id === 2);
+  const isAdmin = user && (user.isAdmin || user.id === 1 || user.id === 2);
 
   return (
     <Layout>
-      <SEO 
+      <SEO
         title="Community Forum | DeepTube: Ethical AI Media Hub"
         description="DeepTubeAI.com: Where innovative creators share responsible AI-powered media. Join our community forum to discuss AI-generated videos, share tips, and connect with other creators."
         canonicalUrl="https://www.deeptubeai.com/forum"
@@ -453,16 +499,20 @@ export default function ForumPage() {
           <MessageSquare className="h-8 w-8 text-primary" />
           <h1 className="text-3xl font-bold">DeepTubeAI.com Forum</h1>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* Sidebar with Categories */}
           <div className="md:col-span-1 space-y-6">
             <Card>
-              <CardHeader className="font-bold text-lg pb-2">Categories</CardHeader>
+              <CardHeader className="font-bold text-lg pb-2">
+                Categories
+              </CardHeader>
               <CardContent className="p-0">
                 <div className="flex flex-col">
-                  <button 
-                    className={`text-left px-4 py-2 hover:bg-muted transition-colors ${activeCategory === null ? 'bg-muted font-medium' : ''}`}
+                  <button
+                    className={`text-left px-4 py-2 hover:bg-muted transition-colors ${
+                      activeCategory === null ? "bg-muted font-medium" : ""
+                    }`}
                     onClick={() => setActiveCategory(null)}
                   >
                     All Categories
@@ -472,10 +522,14 @@ export default function ForumPage() {
                       <Loader2 className="animate-spin h-5 w-5 mx-auto text-muted-foreground" />
                     </div>
                   ) : (
-                    categories.map(category => (
-                      <button 
+                    categories.map((category) => (
+                      <button
                         key={category.id}
-                        className={`text-left px-4 py-2 hover:bg-muted transition-colors flex justify-between ${activeCategory === category.id ? 'bg-muted font-medium' : ''}`}
+                        className={`text-left px-4 py-2 hover:bg-muted transition-colors flex justify-between ${
+                          activeCategory === category.id
+                            ? "bg-muted font-medium"
+                            : ""
+                        }`}
                         onClick={() => setActiveCategory(category.id)}
                       >
                         <span>{category.name}</span>
@@ -490,7 +544,9 @@ export default function ForumPage() {
             </Card>
 
             <Card>
-              <CardHeader className="font-bold text-lg pb-2">Forum Stats</CardHeader>
+              <CardHeader className="font-bold text-lg pb-2">
+                Forum Stats
+              </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Total Threads:</span>
@@ -507,7 +563,7 @@ export default function ForumPage() {
               </CardContent>
             </Card>
           </div>
-          
+
           {/* Main Forum Content */}
           <div className="md:col-span-3 space-y-6">
             {/* Search and Actions Bar */}
@@ -518,20 +574,20 @@ export default function ForumPage() {
                     type="text"
                     placeholder="Search discussions..."
                     value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                     className="pr-10"
                   />
-                  <Button 
-                    type="submit" 
-                    size="icon" 
-                    variant="ghost" 
+                  <Button
+                    type="submit"
+                    size="icon"
+                    variant="ghost"
                     className="absolute right-0 top-0 h-full"
                   >
                     <AlertCircle className="h-4 w-4" />
                   </Button>
                 </form>
               </div>
-              
+
               <div className="flex gap-2 ml-auto">
                 {/* Sort Dropdown */}
                 <DropdownMenu>
@@ -556,7 +612,7 @@ export default function ForumPage() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                
+
                 {/* Filter Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -574,9 +630,12 @@ export default function ForumPage() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                
+
                 <div className="flex gap-2">
-                  <Dialog open={isNewThreadDialogOpen} onOpenChange={setIsNewThreadDialogOpen}>
+                  <Dialog
+                    open={isNewThreadDialogOpen}
+                    onOpenChange={setIsNewThreadDialogOpen}
+                  >
                     <DialogTrigger asChild>
                       <Button size="sm" className="flex gap-2">
                         <Plus size={16} />
@@ -585,35 +644,49 @@ export default function ForumPage() {
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
-                        <DialogTitle>Create a New Discussion Thread</DialogTitle>
+                        <DialogTitle>
+                          Create a New Discussion Thread
+                        </DialogTitle>
                       </DialogHeader>
                       <div className="space-y-4 mt-4">
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">Thread Title</label>
-                          <Input 
+                          <label className="text-sm font-medium">
+                            Thread Title
+                          </label>
+                          <Input
                             value={newThreadTitle}
-                            onChange={e => setNewThreadTitle(e.target.value)}
+                            onChange={(e) => setNewThreadTitle(e.target.value)}
                             placeholder="Enter a descriptive title for your thread"
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">Thread Content</label>
-                          <Textarea 
+                          <label className="text-sm font-medium">
+                            Thread Content
+                          </label>
+                          <Textarea
                             value={newThreadContent}
-                            onChange={e => setNewThreadContent(e.target.value)}
+                            onChange={(e) =>
+                              setNewThreadContent(e.target.value)
+                            }
                             placeholder="Enter the content of your thread"
                             className="min-h-[200px]"
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">Category</label>
-                          <select 
+                          <label className="text-sm font-medium">
+                            Category
+                          </label>
+                          <select
                             className="w-full px-3 py-2 border border-border rounded-md bg-background"
                             value={newThreadCategory || ""}
-                            onChange={e => setNewThreadCategory(e.target.value ? Number(e.target.value) : null)}
+                            onChange={(e) =>
+                              setNewThreadCategory(
+                                e.target.value ? Number(e.target.value) : null
+                              )
+                            }
                           >
                             <option value="">Select a category</option>
-                            {categories.map(category => (
+                            {categories.map((category) => (
                               <option key={category.id} value={category.id}>
                                 {category.name}
                               </option>
@@ -621,29 +694,44 @@ export default function ForumPage() {
                           </select>
                         </div>
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">Tags (comma separated)</label>
-                          <Input 
+                          <label className="text-sm font-medium">
+                            Tags (comma separated)
+                          </label>
+                          <Input
                             value={newThreadTags}
-                            onChange={e => setNewThreadTags(e.target.value)}
+                            onChange={(e) => setNewThreadTags(e.target.value)}
                             placeholder="e.g. question, help, feedback"
                           />
                         </div>
                       </div>
                       <DialogFooter className="mt-6">
-                        <Button variant="outline" onClick={() => setIsNewThreadDialogOpen(false)}>
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsNewThreadDialogOpen(false)}
+                        >
                           Cancel
                         </Button>
-                        <Button onClick={handleCreateThread} disabled={!newThreadTitle || !newThreadContent}>
+                        <Button
+                          onClick={handleCreateThread}
+                          disabled={!newThreadTitle || !newThreadContent}
+                        >
                           Create Thread
                         </Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                  
+
                   {isAdmin && (
-                    <Dialog open={isStickyThreadDialogOpen} onOpenChange={setIsStickyThreadDialogOpen}>
+                    <Dialog
+                      open={isStickyThreadDialogOpen}
+                      onOpenChange={setIsStickyThreadDialogOpen}
+                    >
                       <DialogTrigger asChild>
-                        <Button size="sm" className="flex gap-2" variant="outline">
+                        <Button
+                          size="sm"
+                          className="flex gap-2"
+                          variant="outline"
+                        >
                           <Plus size={16} />
                           <span>Sticky Thread</span>
                         </Button>
@@ -654,31 +742,45 @@ export default function ForumPage() {
                         </DialogHeader>
                         <div className="space-y-4 mt-4">
                           <div className="space-y-2">
-                            <label className="text-sm font-medium">Thread Title</label>
-                            <Input 
+                            <label className="text-sm font-medium">
+                              Thread Title
+                            </label>
+                            <Input
                               value={newThreadTitle}
-                              onChange={e => setNewThreadTitle(e.target.value)}
+                              onChange={(e) =>
+                                setNewThreadTitle(e.target.value)
+                              }
                               placeholder="Enter a descriptive title for your sticky thread"
                             />
                           </div>
                           <div className="space-y-2">
-                            <label className="text-sm font-medium">Thread Content</label>
-                            <Textarea 
+                            <label className="text-sm font-medium">
+                              Thread Content
+                            </label>
+                            <Textarea
                               value={newThreadContent}
-                              onChange={e => setNewThreadContent(e.target.value)}
+                              onChange={(e) =>
+                                setNewThreadContent(e.target.value)
+                              }
                               placeholder="Enter the content of your sticky thread"
                               className="min-h-[200px]"
                             />
                           </div>
                           <div className="space-y-2">
-                            <label className="text-sm font-medium">Category</label>
-                            <select 
+                            <label className="text-sm font-medium">
+                              Category
+                            </label>
+                            <select
                               className="w-full px-3 py-2 border border-border rounded-md bg-background"
                               value={newThreadCategory || ""}
-                              onChange={e => setNewThreadCategory(e.target.value ? Number(e.target.value) : null)}
+                              onChange={(e) =>
+                                setNewThreadCategory(
+                                  e.target.value ? Number(e.target.value) : null
+                                )
+                              }
                             >
                               <option value="">Select a category</option>
-                              {categories.map(category => (
+                              {categories.map((category) => (
                                 <option key={category.id} value={category.id}>
                                   {category.name}
                                 </option>
@@ -686,19 +788,27 @@ export default function ForumPage() {
                             </select>
                           </div>
                           <div className="space-y-2">
-                            <label className="text-sm font-medium">Tags (comma separated)</label>
-                            <Input 
+                            <label className="text-sm font-medium">
+                              Tags (comma separated)
+                            </label>
+                            <Input
                               value={newThreadTags}
-                              onChange={e => setNewThreadTags(e.target.value)}
+                              onChange={(e) => setNewThreadTags(e.target.value)}
                               placeholder="e.g. announcement, important, update"
                             />
                           </div>
                         </div>
                         <DialogFooter className="mt-6">
-                          <Button variant="outline" onClick={() => setIsStickyThreadDialogOpen(false)}>
+                          <Button
+                            variant="outline"
+                            onClick={() => setIsStickyThreadDialogOpen(false)}
+                          >
                             Cancel
                           </Button>
-                          <Button onClick={handleCreateStickyThread} disabled={!newThreadTitle || !newThreadContent}>
+                          <Button
+                            onClick={handleCreateStickyThread}
+                            disabled={!newThreadTitle || !newThreadContent}
+                          >
                             Create Sticky Thread
                           </Button>
                         </DialogFooter>
@@ -708,13 +818,15 @@ export default function ForumPage() {
                 </div>
               </div>
             </div>
-            
+
             {/* Thread List */}
             <div className="space-y-4">
               {isLoadingThreads ? (
                 <div className="text-center py-12">
                   <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary mb-4" />
-                  <p className="text-muted-foreground">Loading forum threads...</p>
+                  <p className="text-muted-foreground">
+                    Loading forum threads...
+                  </p>
                 </div>
               ) : threads.length === 0 ? (
                 <div className="text-center py-12 bg-muted rounded-lg">
@@ -723,33 +835,46 @@ export default function ForumPage() {
                   <p className="text-muted-foreground mb-4">
                     There are no discussions matching your current filters.
                   </p>
-                  <Button onClick={() => {
-                    setSearchQuery("");
-                    setActiveCategory(null);
-                    setActiveTab("all");
-                  }}>
+                  <Button
+                    onClick={() => {
+                      setSearchQuery("");
+                      setActiveCategory(null);
+                      setActiveTab("all");
+                    }}
+                  >
                     Clear filters
                   </Button>
                 </div>
               ) : (
-                threads.map(thread => (
-                  <Card 
-                    key={thread.id} 
-                    className={thread.isSticky 
-                      ? "border-primary border-2 shadow-md bg-gradient-to-b from-primary/10 to-background" 
-                      : ""
+                threads.map((thread) => (
+                  <Card
+                    key={thread.id}
+                    className={
+                      thread.isSticky
+                        ? "border-primary border-2 shadow-md bg-gradient-to-b from-primary/10 to-background"
+                        : ""
                     }
                   >
-                    <CardHeader className={`p-4 pb-2 ${thread.isSticky ? "bg-primary/20 rounded-t-lg" : ""}`}>
+                    <CardHeader
+                      className={`p-4 pb-2 ${
+                        thread.isSticky ? "bg-primary/20 rounded-t-lg" : ""
+                      }`}
+                    >
                       <div className="flex flex-col md:flex-row md:items-center gap-2 w-full">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             {thread.isSticky && (
-                              <Badge className="bg-primary text-xs font-bold animate-pulse">Sticky</Badge>
+                              <Badge className="bg-primary text-xs font-bold animate-pulse">
+                                Sticky
+                              </Badge>
                             )}
-                            <h3 
+                            <h3
                               className="text-lg font-medium hover:text-primary cursor-pointer"
-                              onClick={() => setActiveThread(thread.id === activeThread ? null : thread.id)}
+                              onClick={() =>
+                                setActiveThread(
+                                  thread.id === activeThread ? null : thread.id
+                                )
+                              }
                             >
                               {thread.title}
                             </h3>
@@ -763,69 +888,88 @@ export default function ForumPage() {
                               <Clock className="h-3 w-3" />
                               {formatTimestamp(thread.createdAt)}
                             </span>
-                            {thread.categoryId && categories.find(c => c.id === thread.categoryId) && (
-                              <Badge variant="outline" className="text-xs">
-                                {categories.find(c => c.id === thread.categoryId)?.name}
-                              </Badge>
-                            )}
+                            {thread.categoryId &&
+                              categories.find(
+                                (c) => c.id === thread.categoryId
+                              ) && (
+                                <Badge variant="outline" className="text-xs">
+                                  {
+                                    categories.find(
+                                      (c) => c.id === thread.categoryId
+                                    )?.name
+                                  }
+                                </Badge>
+                              )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 self-end md:self-auto">
                           <div className="flex flex-col items-center px-3 py-1 rounded-md bg-muted">
                             <ThumbsUp className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-xs font-medium">{thread.upvotes}</span>
+                            <span className="text-xs font-medium">
+                              {thread.upvotes}
+                            </span>
                           </div>
                           <div className="flex flex-col items-center px-3 py-1 rounded-md bg-muted">
                             <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-xs font-medium">{thread.commentCount || 0}</span>
+                            <span className="text-xs font-medium">
+                              {thread.commentCount || 0}
+                            </span>
                           </div>
                         </div>
                       </div>
                       {thread.tags && thread.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                           {thread.tags.map((tag, i) => (
-                            <Badge key={i} variant="secondary" className="text-xs">
+                            <Badge
+                              key={i}
+                              variant="secondary"
+                              className="text-xs"
+                            >
                               #{tag}
                             </Badge>
                           ))}
                         </div>
                       )}
                     </CardHeader>
-                    <CardContent className={`p-4 pt-2 ${activeThread === thread.id ? "" : "hidden"}`}>
+                    <CardContent
+                      className={`p-4 pt-2 ${
+                        activeThread === thread.id ? "" : "hidden"
+                      }`}
+                    >
                       <Separator className="mb-4" />
                       <div className="prose prose-sm dark:prose-invert max-w-none overflow-hidden">
                         <p>{thread.content}</p>
                       </div>
-                      
+
                       {/* Thread Actions */}
                       <div className="flex justify-between items-center mt-4">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           className="text-xs"
                           onClick={() => handleVote(thread.id)}
                         >
                           <ThumbsUp className="h-3 w-3 mr-1" />
                           Upvote
                         </Button>
-                        
+
                         <div className="flex gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="text-xs"
                             onClick={() => openCommentForm(thread.id)}
                           >
                             <MessageCircle className="h-3 w-3 mr-1" />
                             Reply
                           </Button>
-                          
+
                           {(isAdmin || (user && thread.userId === user.id)) && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
+                                <Button
+                                  variant="outline"
+                                  size="sm"
                                   className="text-xs text-destructive hover:bg-destructive hover:text-white"
                                 >
                                   <Trash2 className="h-3 w-3 mr-1" />
@@ -834,15 +978,20 @@ export default function ForumPage() {
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Thread</AlertDialogTitle>
+                                  <AlertDialogTitle>
+                                    Delete Thread
+                                  </AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Are you sure you want to delete this thread? This action cannot be undone.
+                                    Are you sure you want to delete this thread?
+                                    This action cannot be undone.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction 
-                                    onClick={() => deleteThreadMutation.mutate(thread.id)}
+                                  <AlertDialogAction
+                                    onClick={() =>
+                                      deleteThreadMutation.mutate(thread.id)
+                                    }
                                     className="bg-destructive hover:bg-destructive/90"
                                   >
                                     Delete
@@ -853,26 +1002,31 @@ export default function ForumPage() {
                           )}
                         </div>
                       </div>
-                      
+
                       {/* Comment Form */}
                       {visibleCommentForms[thread.id] && (
                         <div className="mt-4 bg-muted p-3 rounded-md">
-                          <Textarea 
+                          <Textarea
                             value={newComment}
-                            onChange={e => setNewComment(e.target.value)}
+                            onChange={(e) => setNewComment(e.target.value)}
                             placeholder="Write your comment..."
                             className="mb-2"
                             rows={3}
                           />
                           <div className="flex justify-end gap-2">
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
-                              onClick={() => setVisibleCommentForms({...visibleCommentForms, [thread.id]: false})}
+                              onClick={() =>
+                                setVisibleCommentForms({
+                                  ...visibleCommentForms,
+                                  [thread.id]: false,
+                                })
+                              }
                             >
                               Cancel
                             </Button>
-                            <Button 
+                            <Button
                               size="sm"
                               onClick={() => handleAddComment(thread.id)}
                               disabled={addCommentMutation.isPending}
@@ -889,19 +1043,25 @@ export default function ForumPage() {
                           </div>
                         </div>
                       )}
-                      
+
                       {/* Comments Section */}
                       {activeThread === thread.id && comments.length > 0 && (
                         <div className="mt-6">
-                          <h4 className="text-sm font-medium mb-2">Comments ({comments.length})</h4>
+                          <h4 className="text-sm font-medium mb-2">
+                            Comments ({comments.length})
+                          </h4>
                           <div className="space-y-4">
-                            {comments.map(comment => (
-                              <div key={comment.id} className="bg-muted p-3 rounded-md">
+                            {comments.map((comment) => (
+                              <div
+                                key={comment.id}
+                                className="bg-muted p-3 rounded-md"
+                              >
                                 <div className="flex justify-between items-start mb-2">
                                   <div className="flex items-center gap-2">
                                     <Avatar className="h-6 w-6">
                                       <AvatarFallback className="text-xs">
-                                        {comment.user?.username?.charAt(0) || 'A'}
+                                        {comment.user?.username?.charAt(0) ||
+                                          "A"}
                                       </AvatarFallback>
                                     </Avatar>
                                     <span className="text-sm font-medium">
@@ -911,11 +1071,12 @@ export default function ForumPage() {
                                       {formatTimestamp(comment.createdAt)}
                                     </span>
                                   </div>
-                                  
-                                  {(isAdmin || (user && comment.userId === user.id)) && (
+
+                                  {(isAdmin ||
+                                    (user && comment.userId === user.id)) && (
                                     <AlertDialog>
                                       <AlertDialogTrigger asChild>
-                                        <Button 
+                                        <Button
                                           variant="ghost"
                                           size="icon"
                                           className="h-6 w-6 text-muted-foreground hover:text-destructive"
@@ -925,15 +1086,26 @@ export default function ForumPage() {
                                       </AlertDialogTrigger>
                                       <AlertDialogContent>
                                         <AlertDialogHeader>
-                                          <AlertDialogTitle>Delete Comment</AlertDialogTitle>
+                                          <AlertDialogTitle>
+                                            Delete Comment
+                                          </AlertDialogTitle>
                                           <AlertDialogDescription>
-                                            Are you sure you want to delete this comment? This action cannot be undone.
+                                            Are you sure you want to delete this
+                                            comment? This action cannot be
+                                            undone.
                                           </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
-                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                          <AlertDialogAction 
-                                            onClick={() => handleDeleteComment(comment.id, thread.id)}
+                                          <AlertDialogCancel>
+                                            Cancel
+                                          </AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() =>
+                                              handleDeleteComment(
+                                                comment.id,
+                                                thread.id
+                                              )
+                                            }
                                             className="bg-destructive hover:bg-destructive/90"
                                           >
                                             Delete
@@ -951,11 +1123,15 @@ export default function ForumPage() {
                       )}
                     </CardContent>
                     <CardFooter className="p-4 pt-0">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="text-xs mx-auto flex gap-1"
-                        onClick={() => setActiveThread(thread.id === activeThread ? null : thread.id)}
+                        onClick={() =>
+                          setActiveThread(
+                            thread.id === activeThread ? null : thread.id
+                          )
+                        }
                       >
                         {activeThread === thread.id ? (
                           <>
@@ -977,7 +1153,7 @@ export default function ForumPage() {
           </div>
         </div>
       </main>
-      
+
       {/* Add MiniFooter */}
       <MiniFooter />
     </Layout>
