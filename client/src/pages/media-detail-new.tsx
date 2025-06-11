@@ -566,35 +566,40 @@ export default function MediaDetailNew() {
     : "";
   const seoTitle = `${media.title}${generatorInfo} | DeepTube: Ethical AI Media Hub`;
 
-  // Create description including prompt if available
+  // Create rich description with metadata
   const promptInfo = media.prompt
-    ? ` Prompt: "${media.prompt.substring(0, 50)}${
+    ? ` Generated using prompt: "${media.prompt.substring(0, 50)}${
         media.prompt.length > 50 ? "..." : ""
       }"`
     : "";
+  const typeInfo = `${media.contentType.charAt(0).toUpperCase() + media.contentType.slice(1)}`;
+  const qualityInfo = media.resolution ? ` in ${media.resolution}` : "";
   const baseDescription = media.description
-    ? `${media.description.substring(0, 100)}${
-        media.description.length > 100 ? "..." : ""
+    ? `${media.description.substring(0, 150)}${
+        media.description.length > 150 ? "..." : ""
       }`
-    : `Experience this AI-generated ${media.contentType}${generatorInfo}.`;
+    : `Experience this AI-generated ${typeInfo}${qualityInfo}${generatorInfo}.`;
 
-  const seoDescription = `DeepTubeAI.com: ${baseDescription}${promptInfo}`;
+  const seoDescription = `${baseDescription}${promptInfo} View more AI-generated content on DeepTubeAI.com`;
   const seoImage = media.thumbnail || media.imageUrl || "";
   const seoCanonicalUrl = `https://www.deeptubeai.com/media/${id}`;
 
-  // Create specific keywords including media attributes
-  const specificKeywords = [
+  // Create comprehensive keyword list
+  const keywords = [
+    media.title,
     `AI ${media.contentType}`,
     media.aiGenerator || "AI generation",
-    media.title.split(" ").slice(0, 3).join(", "),
-    media.prompt ? media.prompt.split(" ").slice(0, 5).join(", ") : "",
-  ]
-    .filter(Boolean)
-    .join(", ");
+    media.resolution,
+    "AI media",
+    "DeepTube",
+    "AI content",
+    ...(media.tags ? media.tags.split(",").map((tag) => tag.trim()) : []),
+    ...(media.prompt ? media.prompt.split(" ").slice(0, 5) : []),
+  ].filter(Boolean);
 
-  const seoKeywords = `${specificKeywords}, AI media hosting, Responsible AI media, DeepTube, AI-powered ${media.contentType}, Trusted content, Creator media platform`;
+  const seoKeywords = keywords.join(", ");
 
-  // Generate structured data for rich snippets in search results
+  // Generate structured data
   const mediaStructuredData =
     media.contentType === "image"
       ? generateImageStructuredData(media)
