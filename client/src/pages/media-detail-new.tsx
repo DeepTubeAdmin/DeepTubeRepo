@@ -572,7 +572,9 @@ export default function MediaDetailNew() {
         media.prompt.length > 50 ? "..." : ""
       }"`
     : "";
-  const typeInfo = `${media.contentType.charAt(0).toUpperCase() + media.contentType.slice(1)}`;
+  const typeInfo = `${
+    media.contentType.charAt(0).toUpperCase() + media.contentType.slice(1)
+  }`;
   const qualityInfo = media.resolution ? ` in ${media.resolution}` : "";
   const baseDescription = media.description
     ? `${media.description.substring(0, 150)}${
@@ -581,7 +583,15 @@ export default function MediaDetailNew() {
     : `Experience this AI-generated ${typeInfo}${qualityInfo}${generatorInfo}.`;
 
   const seoDescription = `${baseDescription}${promptInfo} View more AI-generated content on DeepTubeAI.com`;
-  const seoImage = media.thumbnail || media.imageUrl || "";
+  // https://deeptubebucket.s3.us-east-2.amazonaws.com/thumbnails/video-13.jpg
+  //www.deeptubeai.com/api/content/13/thumbnail
+  // const seoImage = media.thumbnail || media.imageUrl || "";
+  let seoImage = `https://www.deeptubeai.com/logo.png`;
+
+  if (media.thumbnail) {
+    seoImage = `https://deeptubebucket.s3.us-east-2.amazonaws.com/thumbnails/${media.contentType}-${media.id}.jpg`;
+  }
+
   const seoCanonicalUrl = `https://www.deeptubeai.com/media/${id}`;
 
   // Create comprehensive keyword list
