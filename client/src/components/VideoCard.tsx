@@ -199,9 +199,57 @@ export default function VideoCard({
   const [isLikeLoading, setIsLikeLoading] = useState(false);
   const [username, setUsername] = useState<string>("");
   const [isMuted, setIsMuted] = useState(true);
+  const [isInCenter, setIsInCenter] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const { toast } = useToast();
   const cardRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const { toast } = useToast();
+
+  // Set up intersection observer for center detection
+  useEffect(() => {
+    // Only set up observer for video content on mobile
+    if (video.contentType !== "video" || !video.videoUrl || window.innerWidth >= 768) {
+      return;
+    }
+
+    const options = {
+      root: null,
+      rootMargin: "-40% 0px -40% 0px", // Creates a band in the middle 20% of the viewport
+      threshold: [0, 0.25, 0.5, 0.75, 1.0], // More granular thresholds
+    };
+
+    const handleIntersection = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry) => {
+        // Consider a video centered when it's more than 50% visible in the center band
+        const isCentered = entry.isIntersecting && entry.intersectionRatio >= 0.5;
+        
+        if (isCentered !== isInCenter) { // Only update state if it changed
+          setIsInCenter(isCentered);
+          if (videoRef.current) {
+            if (isCentered) {
+              videoRef.current.currentTime = 0; // Reset video to start
+              videoRef.current.muted = isMuted;
+            } else {
+              videoRef.current.pause();
+            }
+          }
+        }
+      });
+    };
+
+    observerRef.current = new IntersectionObserver(handleIntersection, options);
+
+    if (cardRef.current) {
+      observerRef.current.observe(cardRef.current);
+    }
+
+    // Cleanup
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [video.contentType, video.videoUrl, isMuted, isInCenter]);
 
   // Format duration helper
   const formatDuration = (seconds: number | null): string => {
@@ -330,6 +378,16 @@ export default function VideoCard({
     large: "w-full max-w-4xl mx-auto",
   }[size];
 
+  // Effects for video playback
+  useEffect(() => {
+    if (isInCenter && videoRef.current) {
+      videoRef.current.muted = isMuted;
+      videoRef.current.play().catch((error) => {
+        console.log("Autoplay failed:", error);
+      });
+    }
+  }, [isInCenter, isMuted]);
+
   console.log(`VideoCard: Rendering video ${video.id} ===> ${video}`);
 
   return (
@@ -349,18 +407,18 @@ export default function VideoCard({
           contentType={video.contentType}
         />
 
-        {/* Video Preview Layer - Simple version with direct video element */}
+        {/* Video Preview Layer - Updated for mobile autoplay */}
         {video.contentType === "video" && video.videoUrl && (
           <div className="absolute inset-0">
-            {isHovered ? (
+            {(isHovered || isInCenter) ? (
               <>
                 <video
                   ref={videoRef}
-                  key={`video-${video.id}-${isHovered}`}
+                  key={`video-${video.id}-${isHovered || isInCenter}`}
                   className="w-full h-full object-cover"
                   src={video.videoUrl}
                   poster={checkThumbnail(video.thumbnail || "", video.id)}
-                  autoPlay
+                  autoPlay={isHovered || isInCenter}
                   muted={isMuted}
                   loop
                   playsInline
@@ -447,7 +505,10 @@ export default function VideoCard({
 
         <div className="flex justify-between items-center mt-2 text-sm">
           <div className="text-gray-400">
-            <span style={{color:"#9333ea"}}> {video.category?.name || "Category"} </span>
+            <span style={{ color: "#9333ea" }}>
+              {" "}
+              {video.category?.name || "Category"}{" "}
+            </span>
             •{" "}
             {video.aiGenerator || "AI Artist"}{" "}
             {username && (
