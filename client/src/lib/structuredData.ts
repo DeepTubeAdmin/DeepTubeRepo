@@ -134,7 +134,7 @@ export function generateWebsiteStructuredData(baseUrl: string = 'https://www.dee
     'name': 'DeepTubeAI.com',
     'alternateName': 'DeepTube',
     'url': baseUrl,
-    'description': 'Discover and share AI-generated videos, images, and content. Join DeepTube, the ethical community for AI media creators and enthusiasts.',
+    'description': 'AI-generated video & image sharing platform for cutting-edge tech and creators. Connect with innovators and showcase your work!',
     'potentialAction': {
       '@type': 'SearchAction',
       'target': {
