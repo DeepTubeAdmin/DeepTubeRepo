@@ -506,8 +506,7 @@ export default function VideoCard({
         <div className="flex justify-between items-center mt-2 text-sm">
           <div className="text-gray-400">
             <span style={{ color: "#9333ea" }}>
-              {" "}
-              {video.category?.name || "Category"}{" "}
+              {video.categoryName || "Category"}{" "}
             </span>
             •{" "}
             {video.aiGenerator || "AI Artist"}{" "}
