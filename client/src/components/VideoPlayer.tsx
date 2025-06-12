@@ -157,13 +157,6 @@ export default function VideoPlayer({
                       className="max-h-[80vh] max-w-full object-contain"
                     />
 
-                    {video.aiGenerator && (
-                      <AIWatermark
-                        aiGenerator={video.aiGenerator}
-                        position="bottom-right"
-                        size="large"
-                      />
-                    )}
                   </div>
                 )}
 

@@ -670,10 +670,6 @@ export default function MediaDetailNew() {
                     <Maximize className="w-5 h-5 text-white" />
                   </div>
 
-                  {/* AI Generator Watermark */}
-                  {media.aiGenerator && (
-                    <AIWatermark generator={media.aiGenerator} />
-                  )}
                 </div>
               )}
 

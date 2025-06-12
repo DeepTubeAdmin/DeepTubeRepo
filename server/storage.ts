@@ -555,8 +555,13 @@ export class DatabaseStorage implements IStorage {
     // since these are explicitly chosen by admins and should be displayed
     // regardless of their review status
     const results = await db
-      .select()
+      .select({
+        ...videos,
+        categoryName: categories.name,
+        categorySlug: categories.slug
+      })
       .from(videos)
+      .leftJoin(categories, eq(videos.categoryId, categories.id))
       .where(eq(videos.featured, true))
       .orderBy(desc(videos.createdAt))
       .limit(limit);
@@ -1214,8 +1219,13 @@ export class DatabaseStorage implements IStorage {
       );
 
       let query = db
-        .select()
+        .select({
+          ...videos,
+          categoryName: categories.name,
+          categorySlug: categories.slug,
+        })
         .from(videos)
+        .leftJoin(categories, eq(videos.categoryId, categories.id))
         .where(and(...conditions));
 
       const isChronological = ["newest", "oldest", "popular"].includes(sortBy);
