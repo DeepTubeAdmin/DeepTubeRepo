@@ -586,7 +586,7 @@ export default function MediaDetailNew() {
   // https://deeptubebucket.s3.us-east-2.amazonaws.com/thumbnails/video-13.jpg
   //www.deeptubeai.com/api/content/13/thumbnail
   // const seoImage = media.thumbnail || media.imageUrl || "";
-  let seoImage = `https://www.deeptubeai.com/logo.png`;
+  let seoImage = `https://www.deeptubeai.com/logo.jpg`;
 
   if (media.thumbnail) {
     seoImage = `https://deeptubebucket.s3.us-east-2.amazonaws.com/thumbnails/${media.contentType}-${media.id}.jpg`;

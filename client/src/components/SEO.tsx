@@ -18,7 +18,7 @@ export default function SEO({
   description = 'DeepTubeAI.com: Where innovative creators share responsible AI-powered media. Host, view, and explore trusted video content!',
   canonicalUrl = 'https://www.deeptubeai.com',
   ogType = 'website',
-  ogImage = '/logo.png',
+  ogImage = '/logo.jpg',
   keywords = 'AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing',
   structuredData,
   isHome = false

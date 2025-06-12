@@ -134,7 +134,7 @@ export default function AuthPage() {
   };
 
   const handleSocialLogin = (provider: string) => {
-    const available = ["google"]; // add "apple" when ready
+    const available = ["google", "facebook"]; // add "apple" when ready
     if (!available.includes(provider)) {
       toast({
         title: `${provider} login not available`,

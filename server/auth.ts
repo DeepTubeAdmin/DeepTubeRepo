@@ -233,6 +233,41 @@ export function setupAuth(app: Express) {
       }
     )
   );
+
+  // ──────── Facebook OAuth Strategy ─────────
+  passport.use(
+    new FacebookStrategy(
+      {
+        clientID: process.env.FACEBOOK_APP_ID!,
+        clientSecret: process.env.FACEBOOK_APP_SECRET!,
+        callbackURL: process.env.FACEBOOK_CALLBACK_URL!,
+        profileFields: ["id", "displayName", "email"],
+      },
+      async (accessToken, refreshToken, profile, done) => {
+        try {
+          const email = profile.emails?.[0]?.value;
+          if (!email) return done(null, false);
+
+          let user = await storage.getUserByEmail(email);
+
+          if (!user) {
+            user = await storage.createUser({
+              username: profile.displayName || email.split("@")[0],
+              email,
+              password: "", // leave empty for OAuth users
+              provider: "facebook",
+              providerId: profile.id,
+            });
+          }
+
+          return done(null, user);
+        } catch (err) {
+          return done(err, false);
+        }
+      }
+    )
+  );
+
   // ──────── Routes ─────────
   app.get(
     "/auth/google",
@@ -254,19 +289,25 @@ export function setupAuth(app: Express) {
     }
   );
 
-  // app.get(
-  //   "/auth/facebook",
-  //   passport.authenticate("facebook", { scope: ["email"] })
-  // );
-  // app.get(
-  //   "/auth/facebook/callback",
-  //   passport.authenticate("facebook", {
-  //     failureRedirect: "/login",
-  //   }),
-  //   (req, res) => {
-  //     res.redirect("/");
-  //   }
-  // );
+  app.get(
+    "/auth/facebook",
+    passport.authenticate("facebook", { scope: ["email", "public_profile"] })
+  );
+
+  app.get(
+    "/auth/facebook/callback",
+    passport.authenticate("facebook", {
+      failureRedirect: "/auth?error=facebook",
+      session: true,
+    }),
+    async (req, res) => {
+      // ✅ Optional: Do post-login logic here
+      console.log(`Facebook login successful for user: ${req.user?.username}`);
+
+      // Redirect to dashboard or homepage
+      res.redirect("/"); // or /dashboard or /upload
+    }
+  );
 
   // app.get("/auth/apple", passport.authenticate("apple"));
   // app.post(

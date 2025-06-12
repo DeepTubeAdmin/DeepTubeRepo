@@ -178,7 +178,7 @@ export async function handleEmbedRequest(req: Request, res: Response, getVideoBy
     }
     
     // Generate base URL
-    const baseUrl = process.env.HOST || req.protocol + '://' + req.get('host');
+    const baseUrl = req.protocol + '://' + req.get('host');
     
     // Generate HTML
     const embedHtml = generateEmbedHtml(content, baseUrl);

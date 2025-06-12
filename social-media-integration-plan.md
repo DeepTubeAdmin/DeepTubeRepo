@@ -140,7 +140,7 @@ export default function VideoStructuredData({ video }: VideoStructuredDataProps)
       "name": "DeepTubeAI.com",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://www.deeptubeai.com/logo.png"
+        "url": "https://www.deeptubeai.com/logo.jpg"
       }
     }
   };
