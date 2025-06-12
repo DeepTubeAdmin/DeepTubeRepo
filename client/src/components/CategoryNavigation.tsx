@@ -53,7 +53,7 @@ export default function CategoryNavigation({
           <div 
             className={`px-4 py-1.5 rounded-full cursor-pointer transition-all ${
               !activeCategory 
-                ? 'bg-primary text-black font-medium' 
+                ? 'bg-primary text-white font-medium' 
                 : 'bg-[#1a1a1a] text-gray-300 hover:bg-[#252525]'
             }`}
             onClick={() => onCategoryChange('')}
@@ -67,7 +67,7 @@ export default function CategoryNavigation({
               key={category.slug}
               className={`px-4 py-1.5 rounded-full cursor-pointer transition-all ${
                 activeCategory === category.slug 
-                  ? 'bg-primary text-black font-medium' 
+                  ? 'bg-primary text-white font-medium' 
                   : 'bg-[#1a1a1a] text-gray-300 hover:bg-[#252525]'
               }`}
               onClick={() => onCategoryChange(category.slug)}
