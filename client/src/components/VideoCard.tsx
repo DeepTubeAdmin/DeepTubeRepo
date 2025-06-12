@@ -1,4 +1,4 @@
-import { Heart, Play, ThumbsUp, Flag } from "lucide-react";
+import { Heart, Play, ThumbsUp, Flag, Volume2, VolumeX } from "lucide-react";
 import { Video } from "@/types";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
@@ -198,6 +198,8 @@ export default function VideoCard({
   const [likeCount, setLikeCount] = useState(0);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
   const [username, setUsername] = useState<string>("");
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -258,6 +260,14 @@ export default function VideoCard({
     console.log(`Navigating to video with slug: ${slug}`);
     // Use direct navigation with ID instead for reliability
     window.location.href = `/media/${video.id}`;
+  };
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted;
+      setIsMuted(!isMuted);
+    }
   };
 
   useEffect(() => {
@@ -343,16 +353,29 @@ export default function VideoCard({
         {video.contentType === "video" && video.videoUrl && (
           <div className="absolute inset-0">
             {isHovered ? (
-              <video
-                key={`video-${video.id}-${isHovered}`}
-                className="w-full h-full object-cover"
-                src={video.videoUrl}
-                poster={checkThumbnail(video.thumbnail || "", video.id)}
-                autoPlay
-                muted
-                loop
-                playsInline
-              />
+              <>
+                <video
+                  ref={videoRef}
+                  key={`video-${video.id}-${isHovered}`}
+                  className="w-full h-full object-cover"
+                  src={video.videoUrl}
+                  poster={checkThumbnail(video.thumbnail || "", video.id)}
+                  autoPlay
+                  muted={isMuted}
+                  loop
+                  playsInline
+                />
+                <button
+                  onClick={toggleMute}
+                  className="absolute top-2 right-2 p-2 bg-black/70 rounded-full text-white hover:bg-black/90 transition-colors z-20"
+                >
+                  {isMuted ? (
+                    <VolumeX className="h-4 w-4" />
+                  ) : (
+                    <Volume2 className="h-4 w-4" />
+                  )}
+                </button>
+              </>
             ) : (
               <img
                 src={checkThumbnail(video.thumbnail || "", video.id)}
@@ -424,7 +447,7 @@ export default function VideoCard({
 
         <div className="flex justify-between items-center mt-2 text-sm">
           <div className="text-gray-400">
-            <span style={{color:"#9333ea"}}> {video.categoryName || "Category"} </span>
+            <span style={{color:"#9333ea"}}> {video.category?.name || "Category"} </span>
             •{" "}
             {video.aiGenerator || "AI Artist"}{" "}
             {username && (
