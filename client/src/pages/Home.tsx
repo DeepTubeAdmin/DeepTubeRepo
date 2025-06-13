@@ -78,9 +78,10 @@ export default function Home() {
   return (
     <Layout showHeader={true}>
       <SEO 
-        title="DeepTube: Ethical AI Media Hub"
-        description="AI-generated video & image sharing platform for cutting-edge tech and creators. Connect with innovators and showcase your work!"
-        keywords="AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
+        title="DeepTubeAI.com | AI Media Sharing Platform - Create, Share & Discover AI-Generated Content"
+        description="Discover and share the latest AI-generated videos, images, and digital art. Join our community of creators, developers, and AI enthusiasts showcasing cutting-edge artificial intelligence content."
+        keywords="AI videos, AI-generated content, artificial intelligence, AI art, machine learning, AI community, deepfake technology, AI creators, digital art platform, AI innovation, synthetic media, AI marketplace"
+        canonicalUrl="https://www.deeptubeai.com"
         isHome={true} 
       />
       {!isCategoriesLoading && (
