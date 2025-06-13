@@ -64,10 +64,7 @@ export function generateEmbedHtml(content: Video, baseUrl: string): string {
         <meta property="og:video:width" content="1280">
         <meta property="og:video:height" content="720">
         <meta property="og:locale" content="en_US">
-
-        <!-- This causes auto redirect after 2 seconds -->
-        <meta http-equiv="refresh" content="2; url=/media/${content.id}">
-
+        
         <!-- Twitter -->
         <meta name="twitter:card" content="player">
         <meta name="twitter:title" content="${content.title}">
