@@ -40,9 +40,24 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
-  app.use(vite.middlewares);
+  // Use a more specific middleware that doesn't catch /media routes for bots, but allows fallthrough for browsers
+  app.use((req, res, next) => {
+    // Skip Vite handling for API routes only
+    if (req.url.startsWith('/api/')) {
+      return next();
+    }
+    // For /media routes, let the route handler decide whether to pass through to Vite
+    // Otherwise, pass to Vite middleware
+    vite.middlewares(req, res, next);
+  });
+
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
+
+    // Skip Vite handling for API routes only (let /media fall through)
+    if (url.startsWith('/api/')) {
+      return next();
+    }
 
     try {
       const clientTemplate = path.resolve(
