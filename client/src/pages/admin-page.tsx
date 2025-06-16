@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLocation, Link } from "wouter";
 import { Video, User } from "@shared/schema";
 import ThumbnailImage from "@/components/ThumbnailImage";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import {
   Loader2,
@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  Edit,
 } from "lucide-react";
 
 // UI primitives --------------------------------------------------------------
@@ -36,6 +37,17 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 // ---------------------------------------------------------------------------
@@ -77,6 +89,11 @@ export default function AdminPage() {
   const [approved, setApproved] = useState<ApprovedResponse["content"]>([]);
   const [approvedTotal, setApprovedTotal] = useState(0);
   const [approvedPage, setApprovedPage] = useState(1);
+
+  // Edit functionality state
+  const [videoToEdit, setVideoToEdit] = useState<Video | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
 
   // -------------------------------------------------------------------------
   //  FEATURED (react‑query cache)
@@ -199,6 +216,55 @@ export default function AdminPage() {
     } catch (e: any) {
       notifyError(e.message);
     }
+  };
+
+  // Edit functionality
+  const editMutation = useMutation({
+    mutationFn: async ({ videoId, title, description }: { videoId: number; title: string; description: string }) => {
+      const response = await apiRequest("PUT", `/api/videos/${videoId}`, {
+        title,
+        description,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast.toast({
+        title: "Video updated",
+        description: "Video has been successfully updated",
+      });
+      // Refresh the approved list
+      loadApproved(approvedPage);
+      setVideoToEdit(null);
+    },
+    onError: (error: any) => {
+      toast.toast({
+        title: "Error",
+        description: `Failed to update video: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const openEditModal = (video: Video) => {
+    setVideoToEdit(video);
+    setEditTitle(video.title);
+    setEditDescription(video.description || '');
+  };
+
+  const handleEdit = () => {
+    if (videoToEdit) {
+      editMutation.mutate({
+        videoId: videoToEdit.id,
+        title: editTitle,
+        description: editDescription,
+      });
+    }
+  };
+
+  const closeEditModal = () => {
+    setVideoToEdit(null);
+    setEditTitle('');
+    setEditDescription('');
   };
 
   // -------------------------------------------------------------------------
@@ -577,6 +643,14 @@ export default function AdminPage() {
                                   <Eye className="h-4 w-4 mr-1" />
                                   View
                                 </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openEditModal(a)}
+                                >
+                                  <Edit className="h-4 w-4 mr-1" />
+                                  Edit
+                                </Button>
                                 {!a.featured && (
                                   <Button
                                     size="sm"
@@ -646,6 +720,61 @@ export default function AdminPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Edit Video Modal */}
+      <Dialog open={videoToEdit !== null} onOpenChange={closeEditModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Video</DialogTitle>
+            <DialogDescription>
+              Update the title and description for this video.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Enter video title"
+                maxLength={100}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Enter video description"
+                rows={4}
+                maxLength={500}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={closeEditModal}
+              disabled={editMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleEdit}
+              disabled={editMutation.isPending || !editTitle.trim()}
+            >
+              {editMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Edit className="h-4 w-4 mr-2" />
+              )}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
