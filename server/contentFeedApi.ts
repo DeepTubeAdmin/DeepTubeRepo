@@ -85,8 +85,8 @@ export async function handleContentFeed(req: Request, res: Response) {
       }
     }
 
-    const videoLimit = page === 1 ? 50 : 30;
-    const imageLimit = page === 1 ? 20 : 10;
+    const videoLimit = page === 1 ? 15 : 12;  // More videos for first page to fill 4 rows
+    const imageLimit = page === 1 ? 8 : 6;   // More images for first page to fill 2 rows
 
     let videos: Video[] = [];
     let images: Video[] = [];
@@ -103,71 +103,80 @@ export async function handleContentFeed(req: Request, res: Response) {
     if (page === 1) {
       if (sortBy === "trending") {
         const trendingVideos = await dbStorage.getTrendingVideos(
-          videoLimit,
+          Math.ceil(videoLimit * 0.6), // 60% from trending
           "video",
           shuffle ? shuffleSeed : undefined,
           categoryId
         );
 
         const newVideos = await dbStorage.getVideos(
-          videoLimit,
+          Math.ceil(videoLimit * 0.3), // 30% from newest
           "video",
           categoryId,
           "newest",
-          undefined
+          undefined,
+          0
         );
 
         const popularVideos = await dbStorage.getVideos(
-          videoLimit,
+          Math.ceil(videoLimit * 0.1), // 10% from popular
           "video",
           categoryId,
           "most-viewed",
-          undefined
+          undefined,
+          0
         );
 
         const trendingImages = await dbStorage.getTrendingVideos(
-          imageLimit,
+          Math.ceil(imageLimit * 0.7), // 70% from trending
           "image",
           shuffle ? shuffleSeed : undefined,
           categoryId
         );
 
         const newImages = await dbStorage.getVideos(
-          imageLimit,
+          Math.ceil(imageLimit * 0.3), // 30% from newest
           "image",
           categoryId,
           "newest",
-          undefined
+          undefined,
+          0
         );
 
         videos = mergeAndDeduplicate(
           [...trendingVideos, ...newVideos, ...popularVideos],
           uniqueContentIds
-        );
+        ).slice(0, videoLimit); // Enforce final limit
         images = mergeAndDeduplicate(
           [...trendingImages, ...newImages],
           uniqueContentIds
-        );
+        ).slice(0, imageLimit); // Enforce final limit
       } else {
         const sortedVideos = await dbStorage.getVideos(
           videoLimit,
           "video",
           categoryId,
           sortBy,
-          shuffle ? shuffleSeed : undefined
+          shuffle ? shuffleSeed : undefined,
+          0
         );
         const sortedImages = await dbStorage.getVideos(
           imageLimit,
           "image",
           categoryId,
           sortBy,
-          shuffle ? shuffleSeed : undefined
+          shuffle ? shuffleSeed : undefined,
+          0
         );
 
         videos = mergeAndDeduplicate(sortedVideos, uniqueContentIds);
         images = mergeAndDeduplicate(sortedImages, uniqueContentIds);
       }
     } else {
+      // For subsequent pages, calculate offset
+      const videoOffset = (page - 1) * videoLimit;
+      const imageOffset = (page - 1) * imageLimit;
+      
       const seedForPage =
         shuffle && !isChronologicalSort
           ? `${shuffleSeed}-page${page}`
@@ -177,14 +186,16 @@ export async function handleContentFeed(req: Request, res: Response) {
         "video",
         categoryId,
         sortBy,
-        seedForPage
+        seedForPage,
+        videoOffset
       );
       const moreImages = await dbStorage.getVideos(
         imageLimit,
         "image",
         categoryId,
         sortBy,
-        seedForPage
+        seedForPage,
+        imageOffset
       );
 
       videos = mergeAndDeduplicate(moreVideos, uniqueContentIds);
@@ -192,8 +203,8 @@ export async function handleContentFeed(req: Request, res: Response) {
     }
 
     const numChunks = Math.max(
-      Math.ceil(videos.length / (4 * 3)),
-      Math.ceil(images.length / (2 * 3))
+      Math.ceil(videos.length / (4 * 3)), // 4 video rows (3 columns = 12 videos per chunk)
+      Math.ceil(images.length / (2 * 3))  // 2 image rows (3 columns = 6 images per chunk)
     );
 
     const adPositions = [];
@@ -204,8 +215,83 @@ export async function handleContentFeed(req: Request, res: Response) {
     response.content.videos = videos;
     response.content.images = images;
     response.content.adPositions = adPositions;
-    response.content.hasMore =
-      videos.length >= videoLimit || images.length >= imageLimit;
+    
+    // Check if there's more content by requesting one extra item for the next page
+    const nextVideoLimit = 1;
+    const nextImageLimit = 1;
+    const nextPage = page + 1;
+    
+    let hasMoreVideos = false;
+    let hasMoreImages = false;
+    
+    // Simple fallback: if we got less than requested, there's likely no more
+    if (videos.length < videoLimit && images.length < imageLimit) {
+      hasMoreVideos = false;
+      hasMoreImages = false;
+    } else {
+      // Calculate theoretical maximum items we could have seen so far
+      const expectedVideosSoFar = (page - 1) * videoLimit + videos.length;
+      const expectedImagesSoFar = (page - 1) * imageLimit + images.length;
+      
+      // For chronological sorts, we can be more precise about running out
+      if (isChronologicalSort) {
+        // For chronological sorts, check if we're approaching database limits
+        // This is a rough estimate - you'd want to replace with actual DB counts
+        hasMoreVideos = expectedVideosSoFar < 45; // Assume ~45 videos max
+        hasMoreImages = expectedImagesSoFar < 25; // Assume ~25 images max
+      } else {
+        try {
+          const nextVideoOffset = page * videoLimit;
+          const nextImageOffset = page * imageLimit;
+          
+          if (sortBy === "trending") {
+            const nextVideos = await dbStorage.getTrendingVideos(
+              nextVideoLimit,
+              "video",
+              shuffle ? `${shuffleSeed}-page${nextPage}` : undefined,
+              categoryId
+            );
+            const nextImages = await dbStorage.getTrendingVideos(
+              nextImageLimit,
+              "image",
+              shuffle ? `${shuffleSeed}-page${nextPage}` : undefined,
+              categoryId
+            );
+            hasMoreVideos = nextVideos.length > 0;
+            hasMoreImages = nextImages.length > 0;
+          } else {
+            const seedForNextPage = shuffle && !isChronologicalSort 
+              ? `${shuffleSeed}-page${nextPage}` 
+              : undefined;
+            const nextVideos = await dbStorage.getVideos(
+              nextVideoLimit,
+              "video",
+              categoryId,
+              sortBy,
+              seedForNextPage,
+              nextVideoOffset
+            );
+            const nextImages = await dbStorage.getVideos(
+              nextImageLimit,
+              "image",
+              categoryId,
+              sortBy,
+              seedForNextPage,
+              nextImageOffset
+            );
+            hasMoreVideos = nextVideos.length > 0;
+            hasMoreImages = nextImages.length > 0;
+          }
+        } catch (error) {
+          console.error("Error checking for more content:", error);
+          // Default to false if we can't check and got partial results
+          hasMoreVideos = videos.length >= videoLimit;
+          hasMoreImages = images.length >= imageLimit;
+        }
+      }
+    }
+    
+    response.content.hasMore = hasMoreVideos || hasMoreImages;
 
     return res.json(response);
   } catch (error) {

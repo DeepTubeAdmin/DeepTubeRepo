@@ -26,6 +26,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import Layout from "@/components/Layout";
 import AgeVerificationModal from "@/components/AgeVerificationModal";
 import AdSenseInitializer from "@/components/AdSenseInitializer";
+import PerformanceMonitor from "@/components/PerformanceMonitor";
 import FAQ from "./pages/faq";
 import DataDeletion from "./pages/data-deletion";
 
@@ -129,6 +130,8 @@ function App() {
                 onVerify={handleAgeVerified}
               />
               <Router />
+              {/* Performance monitor for debugging API calls - commented out for now */}
+              {/* <PerformanceMonitor /> */}
             </div>
           </TooltipProvider>
         </ShuffleContext.Provider>
