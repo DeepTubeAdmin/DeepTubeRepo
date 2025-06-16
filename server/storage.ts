@@ -571,14 +571,29 @@ export class DatabaseStorage implements IStorage {
         `Featured videos found: ${results.length}, first few IDs:`,
         results.slice(0, 3).map((v) => v.id)
       );
+      return results;
     } else {
       console.log(
         "No featured videos found in database, falling back to newest videos"
       );
       // Fallback to newest videos if no featured videos exist
-    }
+      const fallbackVideos = await db
+        .select({
+          ...videos,
+          categoryName: categories.name,
+          categorySlug: categories.slug
+        })
+        .from(videos)
+        .leftJoin(categories, eq(videos.categoryId, categories.id))
+        .where(eq(videos.reviewStatus, 'approved'))
+        .orderBy(desc(videos.createdAt))
+        .limit(limit);
 
-    return results;
+      console.log(
+        `Fallback: returning ${fallbackVideos.length} newest videos instead`
+      );
+      return fallbackVideos;
+    }
   }
 
   // Get all featured content with uploader usernames
