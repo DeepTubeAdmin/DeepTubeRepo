@@ -1988,6 +1988,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update video endpoint
+  app.put("/api/videos/:id", isAuthenticated, async (req, res) => {
+    try {
+      ensureUser(req);
+      const videoId = parseInt(req.params.id);
+      const { title, description } = req.body;
+
+      // Validate input
+      if (!title || typeof title !== 'string' || title.trim().length === 0) {
+        return res.status(400).json({ error: "Title is required" });
+      }
+
+      if (title.length > 100) {
+        return res.status(400).json({ error: "Title must be 100 characters or less" });
+      }
+
+      if (description && typeof description === 'string' && description.length > 500) {
+        return res.status(400).json({ error: "Description must be 500 characters or less" });
+      }
+
+      // Check if video exists
+      const video = await dbStorage.getVideoById(videoId);
+      if (!video) {
+        return res.status(404).json({ error: "Video not found" });
+      }
+
+      // Check if the user is the owner of the video
+      if (video.userId && video.userId !== req.user.id) {
+        return res
+          .status(403)
+          .json({ error: "You don't have permission to edit this content" });
+      }
+
+      // Update video
+      const updatedVideo = await dbStorage.updateVideo(videoId, {
+        title: title.trim(),
+        description: description ? description.trim() : null,
+      });
+
+      res.status(200).json({ 
+        message: "Video updated successfully", 
+        video: updatedVideo 
+      });
+    } catch (error) {
+      console.error("Error updating video:", error);
+      res.status(500).json({ error: "Failed to update video" });
+    }
+  });
+
   // Wishlist endpoints
   app.get("/api/user/wishlist", isAuthenticated, async (req, res) => {
     try {

@@ -19,6 +19,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -34,6 +42,9 @@ import {
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Loader2, Trash2, Eye, MessageCircle, Edit, Upload, ExternalLink } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
 
@@ -51,6 +62,9 @@ export default function MyVideosPage() {
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
   const [videoToDelete, setVideoToDelete] = useState<number | null>(null);
+  const [videoToEdit, setVideoToEdit] = useState<VideoWithCategory | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
   
   const {
     data: videos,
@@ -84,6 +98,31 @@ export default function MyVideosPage() {
     },
   });
 
+  const editMutation = useMutation({
+    mutationFn: async ({ videoId, title, description }: { videoId: number; title: string; description: string }) => {
+      const response = await apiRequest("PUT", `/api/videos/${videoId}`, {
+        title,
+        description,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Video updated",
+        description: "Your video has been successfully updated",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/user/videos'] });
+      setVideoToEdit(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: `Failed to update video: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
   const confirmDelete = (videoId: number) => {
     setVideoToDelete(videoId);
   };
@@ -96,6 +135,28 @@ export default function MyVideosPage() {
   
   const closeDialog = () => {
     setVideoToDelete(null);
+  };
+
+  const openEditModal = (video: VideoWithCategory) => {
+    setVideoToEdit(video);
+    setEditTitle(video.title);
+    setEditDescription(video.description || '');
+  };
+
+  const handleEdit = () => {
+    if (videoToEdit) {
+      editMutation.mutate({
+        videoId: videoToEdit.id,
+        title: editTitle,
+        description: editDescription,
+      });
+    }
+  };
+
+  const closeEditModal = () => {
+    setVideoToEdit(null);
+    setEditTitle('');
+    setEditDescription('');
   };
 
   const getContentTypeIcon = (type: string) => {
@@ -219,6 +280,23 @@ export default function MyVideosPage() {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => openEditModal(video)}
+                          >
+                            <Edit className="h-5 w-5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Edit Video</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
                           <Link href={`/media/${video.id}`} className="inline-flex">
                             <Button variant="ghost" size="icon">
                               <MessageCircle className="h-5 w-5" />
@@ -269,6 +347,61 @@ export default function MyVideosPage() {
           </div>
         )}
       </div>
+      
+      {/* Edit Video Modal */}
+      <Dialog open={videoToEdit !== null} onOpenChange={closeEditModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Video</DialogTitle>
+            <DialogDescription>
+              Update the title and description for your video.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Enter video title"
+                maxLength={100}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Enter video description"
+                rows={4}
+                maxLength={500}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={closeEditModal}
+              disabled={editMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleEdit}
+              disabled={editMutation.isPending || !editTitle.trim()}
+            >
+              {editMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Edit className="h-4 w-4 mr-2" />
+              )}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       <AlertDialog open={videoToDelete !== null} onOpenChange={closeDialog}>
         <AlertDialogContent>
