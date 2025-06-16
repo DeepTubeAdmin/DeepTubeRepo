@@ -165,14 +165,12 @@ const multerStorage = multer.diskStorage({
 // Set up multer with the storage configuration
 const upload = multer({
   storage: multerStorage,
-  limits: {
-    fileSize: 750 * 1024 * 1024, // 750MB limit for videos
-  },
+  limits: { fileSize: 1 * 1024 * 1024 * 1024 }, // 1 GB
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Bot detection for SEO
-  function isBot(userAgent: string = ''): boolean {
+  function isBot(userAgent: string = ""): boolean {
     const botPatterns = [
       /bot/i,
       /crawler/i,
@@ -188,121 +186,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
       /yandex/i,
       /duckduckbot/i,
       /baiduspider/i,
-      /postman/i
+      /postman/i,
     ];
-    return botPatterns.some(pattern => pattern.test(userAgent));
+    return botPatterns.some((pattern) => pattern.test(userAgent));
   }
 
   // Handle /media/:id route for SEO
-  app.get('/media/:id', async (req: Request, res: Response, next: Function) => {
+  app.get("/media/:id", async (req: Request, res: Response, next: Function) => {
     try {
       const contentId = parseInt(req.params.id);
       if (isNaN(contentId)) {
-        return res.status(400).send('Invalid content ID');
+        return res.status(400).send("Invalid content ID");
       }
 
       const video = await dbStorage.getVideoById(contentId);
       if (!video) {
-        return res.status(404).send('Content not found');
+        return res.status(404).send("Content not found");
       }
 
-      const userAgent = req.get('user-agent') || '';
-      const baseUrl = process.env.NODE_ENV === 'development' 
-        ? 'http://127.0.0.1:5000' 
-        : 'https://www.deeptubeai.com';
+      const userAgent = req.get("user-agent") || "";
+      const baseUrl =
+        process.env.NODE_ENV === "development"
+          ? "http://127.0.0.1:5000"
+          : "https://www.deeptubeai.com";
 
       // For bots and crawlers, return pre-rendered HTML with comprehensive SEO meta tags
       if (isBot(userAgent)) {
-        const thumbnailUrl = video.thumbnail 
+        const thumbnailUrl = video.thumbnail
           ? `https://deeptubebucket.s3.us-east-2.amazonaws.com/thumbnails/${video.contentType}-${video.id}.jpg`
           : `${baseUrl}/logo.jpg`;
 
-        const videoUrl = video.videoUrl ? `${baseUrl}${video.videoUrl}` : '';
+        const videoUrl = video.videoUrl ? `${baseUrl}${video.videoUrl}` : "";
         const embedUrl = `${baseUrl}/media/${video.id}/embed`;
         const canonicalUrl = `${baseUrl}/media/${video.id}`;
-        
+
         // Enhanced description with metadata
-        const generatorInfo = video.aiGenerator ? ` | Created with ${video.aiGenerator}` : '';
-        const description = video.description || `Watch this AI-generated ${video.contentType} on DeepTube - the premier platform for ethical AI-generated content${generatorInfo}`;
+        const generatorInfo = video.aiGenerator
+          ? ` | Created with ${video.aiGenerator}`
+          : "";
+        const description =
+          video.description ||
+          `Watch this AI-generated ${video.contentType} on DeepTube - the premier platform for ethical AI-generated content${generatorInfo}`;
         const enhancedTitle = `${video.title}${generatorInfo} | DeepTube`;
-        
+
         // Generate keywords from content
         const keywords = [
           video.title,
           `AI ${video.contentType}`,
-          video.aiGenerator || 'AI generation',
-          video.resolution || 'HD',
-          'AI media', 'DeepTube', 'AI content', 'artificial intelligence',
-          ...(video.tags ? video.tags.split(',').map(tag => tag.trim()) : []),
-          ...(video.prompt ? video.prompt.split(' ').slice(0, 5) : [])
-        ].filter(Boolean).join(', ');
+          video.aiGenerator || "AI generation",
+          video.resolution || "HD",
+          "AI media",
+          "DeepTube",
+          "AI content",
+          "artificial intelligence",
+          ...(video.tags ? video.tags.split(",").map((tag) => tag.trim()) : []),
+          ...(video.prompt ? video.prompt.split(" ").slice(0, 5) : []),
+        ]
+          .filter(Boolean)
+          .join(", ");
 
         // Create structured data for VideoObject or ImageObject
-        const structuredData = video.contentType === 'video' ? {
-          "@context": "https://schema.org",
-          "@type": "VideoObject",
-          "name": video.title,
-          "description": description,
-          "thumbnailUrl": thumbnailUrl,
-          "uploadDate": video.createdAt || new Date().toISOString(),
-          "contentUrl": videoUrl,
-          "embedUrl": embedUrl,
-          "duration": video.duration || "PT30S",
-          "width": "1280",
-          "height": "720",
-          "interactionStatistic": {
-            "@type": "InteractionCounter",
-            "interactionType": { "@type": "WatchAction" },
-            "userInteractionCount": video.viewCount || 0
-          },
-          "author": {
-            "@type": "Organization",
-            "name": "DeepTube",
-            "url": baseUrl
-          },
-          "publisher": {
-            "@type": "Organization",
-            "name": "DeepTube",
-            "url": baseUrl,
-            "logo": {
-              "@type": "ImageObject",
-              "url": `${baseUrl}/logo.jpg`
-            }
-          },
-          "keywords": keywords.split(', '),
-          "genre": "AI Generated Content",
-          "encodingFormat": "video/mp4",
-          "inLanguage": "en-US",
-          "isAccessibleForFree": true
-        } : {
-          "@context": "https://schema.org",
-          "@type": "ImageObject",
-          "name": video.title,
-          "description": description,
-          "contentUrl": video.imageUrl || thumbnailUrl,
-          "thumbnailUrl": thumbnailUrl,
-          "uploadDate": video.createdAt || new Date().toISOString(),
-          "width": "1280",
-          "height": "720",
-          "author": {
-            "@type": "Organization",
-            "name": "DeepTube",
-            "url": baseUrl
-          },
-          "publisher": {
-            "@type": "Organization",
-            "name": "DeepTube",
-            "url": baseUrl,
-            "logo": {
-              "@type": "ImageObject",
-              "url": `${baseUrl}/logo.jpg`
-            }
-          },
-          "keywords": keywords.split(', '),
-          "encodingFormat": video.contentType === 'image' ? 'image/jpeg' : 'video/mp4',
-          "inLanguage": "en-US",
-          "isAccessibleForFree": true
-        };
+        const structuredData =
+          video.contentType === "video"
+            ? {
+                "@context": "https://schema.org",
+                "@type": "VideoObject",
+                name: video.title,
+                description: description,
+                thumbnailUrl: thumbnailUrl,
+                uploadDate: video.createdAt || new Date().toISOString(),
+                contentUrl: videoUrl,
+                embedUrl: embedUrl,
+                duration: video.duration || "PT30S",
+                width: "1280",
+                height: "720",
+                interactionStatistic: {
+                  "@type": "InteractionCounter",
+                  interactionType: { "@type": "WatchAction" },
+                  userInteractionCount: video.viewCount || 0,
+                },
+                author: {
+                  "@type": "Organization",
+                  name: "DeepTube",
+                  url: baseUrl,
+                },
+                publisher: {
+                  "@type": "Organization",
+                  name: "DeepTube",
+                  url: baseUrl,
+                  logo: {
+                    "@type": "ImageObject",
+                    url: `${baseUrl}/logo.jpg`,
+                  },
+                },
+                keywords: keywords.split(", "),
+                genre: "AI Generated Content",
+                encodingFormat: "video/mp4",
+                inLanguage: "en-US",
+                isAccessibleForFree: true,
+              }
+            : {
+                "@context": "https://schema.org",
+                "@type": "ImageObject",
+                name: video.title,
+                description: description,
+                contentUrl: video.imageUrl || thumbnailUrl,
+                thumbnailUrl: thumbnailUrl,
+                uploadDate: video.createdAt || new Date().toISOString(),
+                width: "1280",
+                height: "720",
+                author: {
+                  "@type": "Organization",
+                  name: "DeepTube",
+                  url: baseUrl,
+                },
+                publisher: {
+                  "@type": "Organization",
+                  name: "DeepTube",
+                  url: baseUrl,
+                  logo: {
+                    "@type": "ImageObject",
+                    url: `${baseUrl}/logo.jpg`,
+                  },
+                },
+                keywords: keywords.split(", "),
+                encodingFormat:
+                  video.contentType === "image" ? "image/jpeg" : "video/mp4",
+                inLanguage: "en-US",
+                isAccessibleForFree: true,
+              };
 
         const html = `
           <!DOCTYPE html>
@@ -324,7 +336,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               <!-- Open Graph / Facebook - Enhanced for Video Content -->
               <meta property="fb:app_id" content="2095992220812764">
-              <meta property="og:type" content="${video.contentType === 'video' ? 'video.other' : 'article'}">
+              <meta property="og:type" content="${
+                video.contentType === "video" ? "video.other" : "article"
+              }">
               <meta property="og:url" content="${canonicalUrl}">
               <meta property="og:site_name" content="DeepTube">
               <meta property="og:title" content="${enhancedTitle}">
@@ -334,45 +348,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
               <meta property="og:image:type" content="image/jpeg">
               <meta property="og:image:width" content="1280">
               <meta property="og:image:height" content="720">
-              <meta property="og:image:alt" content="${video.title} - AI generated ${video.contentType}">
+              <meta property="og:image:alt" content="${
+                video.title
+              } - AI generated ${video.contentType}">
               <meta property="og:locale" content="en_US">
-              <meta property="og:updated_time" content="${video.updatedAt || video.createdAt || new Date().toISOString()}">
-              ${video.contentType === 'video' ? `
+              <meta property="og:updated_time" content="${
+                video.updatedAt || video.createdAt || new Date().toISOString()
+              }">
+              ${
+                video.contentType === "video"
+                  ? `
               <meta property="og:video" content="${videoUrl}">
               <meta property="og:video:secure_url" content="${videoUrl}">
               <meta property="og:video:type" content="video/mp4">
               <meta property="og:video:width" content="1280">
               <meta property="og:video:height" content="720">
-              <meta property="og:video:duration" content="${video.duration || '30'}">
+              <meta property="og:video:duration" content="${
+                video.duration || "30"
+              }">
               <meta property="video:actor" content="AI Generated">
-              <meta property="video:director" content="${video.aiGenerator || 'AI'}">
-              <meta property="video:duration" content="${video.duration || '30'}">
-              <meta property="video:release_date" content="${video.createdAt || new Date().toISOString()}">
-              <meta property="video:tag" content="${keywords.split(', ').slice(0, 5).join('", "')}">
-              ` : ''}
+              <meta property="video:director" content="${
+                video.aiGenerator || "AI"
+              }">
+              <meta property="video:duration" content="${
+                video.duration || "30"
+              }">
+              <meta property="video:release_date" content="${
+                video.createdAt || new Date().toISOString()
+              }">
+              <meta property="video:tag" content="${keywords
+                .split(", ")
+                .slice(0, 5)
+                .join('", "')}">
+              `
+                  : ""
+              }
               
               <!-- Twitter Cards - Enhanced Player Card -->
-              <meta name="twitter:card" content="${video.contentType === 'video' ? 'player' : 'summary_large_image'}">
+              <meta name="twitter:card" content="${
+                video.contentType === "video" ? "player" : "summary_large_image"
+              }">
               <meta name="twitter:site" content="@DeepTube">
               <meta name="twitter:creator" content="@DeepTube">
               <meta name="twitter:title" content="${enhancedTitle}">
               <meta name="twitter:description" content="${description}">
               <meta name="twitter:image" content="${thumbnailUrl}">
-              <meta name="twitter:image:alt" content="${video.title} - AI generated ${video.contentType}">
-              ${video.contentType === 'video' ? `
+              <meta name="twitter:image:alt" content="${
+                video.title
+              } - AI generated ${video.contentType}">
+              ${
+                video.contentType === "video"
+                  ? `
               <meta name="twitter:player" content="${embedUrl}">
               <meta name="twitter:player:width" content="1280">
               <meta name="twitter:player:height" content="720">
               <meta name="twitter:player:stream" content="${videoUrl}">
               <meta name="twitter:player:stream:content_type" content="video/mp4">
-              ` : ''}
+              `
+                  : ""
+              }
               
               <!-- Additional Video Meta Tags -->
-              ${video.contentType === 'video' ? `
-              <meta name="video:duration" content="${video.duration || '30'}">
-              <meta name="video:release_date" content="${video.createdAt || new Date().toISOString()}">
+              ${
+                video.contentType === "video"
+                  ? `
+              <meta name="video:duration" content="${video.duration || "30"}">
+              <meta name="video:release_date" content="${
+                video.createdAt || new Date().toISOString()
+              }">
               <meta name="video:tag" content="${keywords}">
-              ` : ''}
+              `
+                  : ""
+              }
               
               <!-- Schema.org Structured Data -->
               <script type="application/ld+json">
@@ -401,17 +448,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // For regular users, serve the React app but let it handle the routing
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === "development") {
         // In development, we need to fall through to Vite's catch-all
         // Remove the exclusion for this specific route and let Vite handle it
         return next();
       } else {
         // In production, serve the built file
-        res.sendFile(path.resolve('./dist/public/index.html'));
+        res.sendFile(path.resolve("./dist/public/index.html"));
       }
     } catch (error) {
-      console.error('Error serving media page:', error);
-      res.status(500).send('Server error');
+      console.error("Error serving media page:", error);
+      res.status(500).send("Server error");
     }
   });
 
