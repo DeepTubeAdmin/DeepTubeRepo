@@ -9,7 +9,7 @@ import React, {
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import VideoCard from "./VideoCard";
-import ImageCard from "./ImageCard";
+import LazyImageCard from "./LazyImageCard";
 import AdvertisementCard from "./AdvertisementCard";
 import { Loader2, Filter, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -609,7 +609,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
                     ? insertAdvertisementInContent(chunk.images, "image").map(
                         (image, index) =>
                           image ? (
-                            <ImageCard
+                            <LazyImageCard
                               key={`content-image-${image.id}-${chunkIndex}-${index}`}
                               image={image}
                             />
@@ -621,7 +621,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
                           )
                       )
                     : chunk.images.map((image, index) => (
-                        <ImageCard
+                        <LazyImageCard
                           key={`content-image-${image.id}-${chunkIndex}-${index}`}
                           image={image}
                         />
