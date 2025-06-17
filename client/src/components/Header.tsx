@@ -140,7 +140,7 @@ export default function Header({ simple = false }: HeaderProps) {
 
   if (simple) {
     return (
-      <header className="bg-black py-2 px-4 sticky top-0 z-50">
+      <header className="bg-black py-2 px-2 sm:px-4 sticky top-0 z-50">
         <div className="container mx-auto">
           <div className="flex items-center justify-between">
             {/* Logo with tagline */}
@@ -149,11 +149,11 @@ export default function Header({ simple = false }: HeaderProps) {
                 className="flex items-center cursor-pointer group"
                 onClick={handleLogoClick}
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-4">
                   {/* Logo */}
                   <div className="flex items-baseline relative">
                     <span
-                      className="font-bold text-2xl tracking-tight"
+                      className="font-bold text-lg sm:text-2xl tracking-tight"
                       style={{
                         background:
                           "linear-gradient(135deg, #FF7D33 0%, #4C6EF5 50%, #B86BFF 100%)",
@@ -184,17 +184,17 @@ export default function Header({ simple = false }: HeaderProps) {
                   </div>
 
                   {/* Separator Line */}
-                  <div className="w-px h-6 bg-gradient-to-b from-transparent via-gray-400 to-transparent opacity-50 -ml-1" />
+                  <div className="w-px h-6 bg-gradient-to-b from-transparent via-gray-400 to-transparent opacity-50 -ml-1 hidden sm:block" />
 
                   {/* Tagline */}
-                  <span className="font-light text-sm tracking-wide text-gray-400 -ml-3 hidden md:inline">
+                  <span className="font-light text-xs sm:text-sm tracking-wide text-gray-400 -ml-3 hidden md:inline">
                     Imagination Made Digital
                   </span>
                 </div>
-                <Shuffle className="ml-2 h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Shuffle className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
 
                 {/* Custom CSS Animations */}
-                <style jsx>{`
+                <style>{`
                   @keyframes gradientShift {
                     0%,
                     100% {
@@ -208,13 +208,13 @@ export default function Header({ simple = false }: HeaderProps) {
               </div>
             </div>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 sm:space-x-3">
               {/* Create Button */}
               <Button
-                className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white font-medium py-1 px-3 rounded-full flex items-center hover:opacity-90 transition-all"
+                className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white font-medium w-7 h-7 sm:py-1 sm:px-3 sm:w-auto sm:h-auto rounded-full flex items-center justify-center hover:opacity-90 transition-all"
                 onClick={() => setIsAIGeneratorsModalOpen(true)}
               >
-                <WandSparkles className="h-4 w-4" />
+                <WandSparkles className="h-2.5 w-2.5 sm:h-4 sm:w-4" />
               </Button>
 
               {/* User Account */}
@@ -224,7 +224,7 @@ export default function Header({ simple = false }: HeaderProps) {
                 ref={userBtnRef}
               >
                 <div
-                  className="h-8 w-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white cursor-pointer"
+                  className="h-7 w-7 sm:h-8 sm:w-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white cursor-pointer text-xs sm:text-sm"
                   onClick={toggleUserDropdown}
                 >
                   <span>
@@ -233,7 +233,7 @@ export default function Header({ simple = false }: HeaderProps) {
                       : "A"}
                   </span>
                   {user && unreadMessageData?.count > 0 && (
-                    <div className="absolute -top-1 -right-1 h-4 w-4 bg-orange-500 rounded-full flex items-center justify-center text-[10px] font-bold border border-black">
+                    <div className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 bg-orange-500 rounded-full flex items-center justify-center text-[8px] sm:text-[10px] font-bold border border-black">
                       {unreadMessageData.count > 9
                         ? "9+"
                         : unreadMessageData.count}
@@ -349,11 +349,11 @@ export default function Header({ simple = false }: HeaderProps) {
               className="flex items-center cursor-pointer group"
               onClick={handleLogoClick}
             >
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2 sm:gap-6">
                 {/* Logo */}
                 <div className="flex items-baseline relative">
                   <span
-                    className="font-bold text-2xl tracking-tight"
+                    className="font-bold text-lg sm:text-2xl tracking-tight"
                     style={{
                       background:
                         "linear-gradient(135deg, #FF7D33 0%, #4C6EF5 50%, #B86BFF 100%)",
@@ -383,18 +383,18 @@ export default function Header({ simple = false }: HeaderProps) {
                   </span>
                 </div>
 
-                {/* Separator Line */}
-                <div className="w-px h-6 bg-gradient-to-b from-transparent via-gray-400 to-transparent opacity-50 -ml-1" />
+                {/* Separator Line - Hidden on very small screens */}
+                <div className="w-px h-6 bg-gradient-to-b from-transparent via-gray-400 to-transparent opacity-50 -ml-1 hidden xs:block" />
 
                 {/* Tagline */}
-                <span className="font-light text-sm tracking-wide text-gray-400 -ml-3 hidden sm:inline">
+                <span className="font-light text-xs sm:text-sm tracking-wide text-gray-400 -ml-3 hidden sm:inline">
                   Imagination Made Digital
                 </span>
               </div>
-              <Shuffle className="ml-2 h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <Shuffle className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
 
               {/* Custom CSS Animations */}
-              <style jsx>{`
+              <style>{`
                 @keyframes gradientShift {
                   0%,
                   100% {
@@ -409,13 +409,13 @@ export default function Header({ simple = false }: HeaderProps) {
           </div>
 
           {/* Search Bar */}
-          <div className="hidden md:flex flex-1 mx-8">
+          <div className="hidden md:flex flex-1 mx-4 lg:mx-8">
             <div className="w-full max-w-2xl relative">
               <form onSubmit={handleSearch}>
                 <input
                   type="text"
                   placeholder="Search AI-generated content..."
-                  className="w-full py-2 px-4 rounded-full bg-[#121212] border border-[#303030] text-white focus:border-[#1976D2] focus:outline-none"
+                  className="w-full py-2 px-4 rounded-full bg-[#121212] border border-[#303030] text-white focus:border-[#1976D2] focus:outline-none text-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -430,30 +430,30 @@ export default function Header({ simple = false }: HeaderProps) {
           </div>
 
           {/* User Controls */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
             {/* Upload Button */}
             <Button
-              className="bg-gradient-to-r from-orange-500 to-amber-600 text-white font-medium py-1 px-4 rounded-full flex items-center hover:opacity-90 hover:transform hover:translate-y-[-2px] transition-all"
+              className="bg-gradient-to-r from-orange-500 to-amber-600 text-white font-medium w-7 h-7 sm:w-auto sm:h-10 sm:py-1 sm:px-4 rounded-full flex items-center justify-center sm:justify-start hover:opacity-90 hover:transform hover:translate-y-[-2px] transition-all"
               onClick={handleUploadClick}
             >
-              <Upload className="mr-2 h-4 w-4" />
+              <Upload className="h-2.5 w-2.5 sm:h-4 sm:w-4 sm:mr-2" />
               <span className="hidden sm:inline">Upload</span>
             </Button>
 
             {/* Forum Button */}
             <Link href="/forum">
-              <Button className="bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium py-1 px-4 rounded-full flex items-center hover:opacity-90 hover:transform hover:translate-y-[-2px] transition-all">
-                <MessageSquare className="mr-2 h-4 w-4" />
+              <Button className="bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium w-7 h-7 sm:w-auto sm:h-10 sm:py-1 sm:px-4 rounded-full flex items-center justify-center sm:justify-start hover:opacity-90 hover:transform hover:translate-y-[-2px] transition-all">
+                <MessageSquare className="h-2.5 w-2.5 sm:h-4 sm:w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Forum</span>
               </Button>
             </Link>
 
             {/* Create Button */}
             <Button
-              className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white font-medium py-1 px-4 rounded-full flex items-center hover:opacity-90 hover:transform hover:translate-y-[-2px] transition-all"
+              className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white font-medium w-7 h-7 sm:w-auto sm:h-10 sm:py-1 sm:px-4 rounded-full flex items-center justify-center sm:justify-start hover:opacity-90 hover:transform hover:translate-y-[-2px] transition-all"
               onClick={() => setIsAIGeneratorsModalOpen(true)}
             >
-              <WandSparkles className="mr-2 h-4 w-4" />
+              <WandSparkles className="h-2.5 w-2.5 sm:h-4 sm:w-4 sm:mr-2" />
               <span className="hidden sm:inline">Create</span>
             </Button>
 
@@ -464,14 +464,14 @@ export default function Header({ simple = false }: HeaderProps) {
               ref={userBtnRef}
             >
               <div
-                className="h-8 w-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white cursor-pointer"
+                className="h-7 w-7 sm:h-8 sm:w-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white cursor-pointer text-xs sm:text-sm"
                 onClick={toggleUserDropdown}
               >
                 <span>
                   {user?.username ? user.username.charAt(0).toUpperCase() : "A"}
                 </span>
                 {user && unreadMessageData?.count > 0 && (
-                  <div className="absolute -top-1 -right-1 h-4 w-4 bg-orange-500 rounded-full flex items-center justify-center text-[10px] font-bold border border-black">
+                  <div className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 bg-orange-500 rounded-full flex items-center justify-center text-[8px] sm:text-[10px] font-bold border border-black">
                     {unreadMessageData.count > 9
                       ? "9+"
                       : unreadMessageData.count}
@@ -564,12 +564,12 @@ export default function Header({ simple = false }: HeaderProps) {
       </div>
 
       {/* Mobile Search Bar - Only on mobile */}
-      <div className="md:hidden mt-2">
+      <div className="md:hidden mt-2 px-2">
         <form onSubmit={handleSearch} className="relative w-full">
           <input
             type="text"
             placeholder="Search AI-generated content..."
-            className="w-full py-2 px-4 rounded-full bg-[#121212] border border-[#303030] text-white focus:border-[#1976D2] focus:outline-none"
+            className="w-full py-2 px-4 rounded-full bg-[#121212] border border-[#303030] text-white focus:border-[#1976D2] focus:outline-none text-sm"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -577,7 +577,7 @@ export default function Header({ simple = false }: HeaderProps) {
             type="submit"
             className="absolute right-0 top-0 h-full px-4 text-gray-400"
           >
-            <Search size={18} />
+            <Search size={16} />
           </button>
         </form>
       </div>
