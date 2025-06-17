@@ -1,4 +1,5 @@
 import { Category } from "@/types";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface CategoryNavigationProps {
   categories: Category[];
@@ -28,27 +29,18 @@ export default function CategoryNavigation({
 
   return (
     <div className="bg-[#0f0f0f] sticky top-14 z-40 shadow-md py-2">
-      <div className="container mx-auto relative">
+      <div className="container mx-auto flex items-center">
         {/* Left scroll button */}
         <button 
           onClick={scrollLeft}
-          className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-gradient-to-r from-[#0f0f0f] to-transparent h-full px-2 flex items-center"
+          className="flex-shrink-0 bg-black/50 hover:bg-black/70 rounded-full w-10 h-10 flex items-center justify-center transition-all shadow-lg backdrop-blur-sm mr-2"
           aria-label="Scroll left"
         >
-          <span className="text-white text-xl">◀</span>
-        </button>
-        
-        {/* Right scroll button */}
-        <button 
-          onClick={scrollRight}
-          className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-gradient-to-l from-[#0f0f0f] to-transparent h-full px-2 flex items-center"
-          aria-label="Scroll right"
-        >
-          <span className="text-white text-xl">▶</span>
+          <ChevronLeft className="text-white" size={20} strokeWidth={2.5} />
         </button>
         
         {/* Scrollable tabs */}
-        <div className="nav-tabs px-10 overflow-x-auto flex items-center space-x-2 py-1">
+        <div className="nav-tabs flex-1 overflow-x-auto flex items-center space-x-2 py-1">
           {/* All Categories option */}
           <div 
             className={`px-4 py-1.5 rounded-full cursor-pointer transition-all ${
@@ -76,6 +68,15 @@ export default function CategoryNavigation({
             </div>
           ))}
         </div>
+        
+        {/* Right scroll button */}
+        <button 
+          onClick={scrollRight}
+          className="flex-shrink-0 bg-black/50 hover:bg-black/70 rounded-full w-10 h-10 flex items-center justify-center transition-all shadow-lg backdrop-blur-sm ml-2"
+          aria-label="Scroll right"
+        >
+          <ChevronRight className="text-white" size={20} strokeWidth={2.5} />
+        </button>
       </div>
     </div>
   );
