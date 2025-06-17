@@ -303,25 +303,6 @@ export default function SearchResults() {
         keywords="AI media hosting, Responsible AI media, Video hosting platform, DeepTube, AI-powered video, Trusted video content, Creator media platform, AI content sharing"
       />
       <div className="container mx-auto py-6 px-4">
-        {/* Search form */}
-        <form onSubmit={handleSearch} className="mb-6">
-          <div className="flex flex-col md:flex-row gap-3">
-            <Input
-              type="text"
-              placeholder="Search videos, images, and embedded content..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-[#1a1a1a] border-[#333]"
-            />
-            <Button 
-              type="submit" 
-              className="bg-primary hover:bg-primary/90 text-black font-bold"
-            >
-              Search
-            </Button>
-          </div>
-        </form>
-        
         {/* Filters */}
         <div className="mb-6">
           {/* Content type tabs */}
