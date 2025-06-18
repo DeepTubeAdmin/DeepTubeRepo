@@ -24,6 +24,7 @@ export default function GoogleAdSense({
 }: GoogleAdSenseProps) {
   const clientId = adsenseConfig.clientId;
   const isConfigured = adsenseConfig.isConfigured();
+  const isTestMode = adsenseConfig.isTestMode();
   
   useEffect(() => {
     // Only run if AdSense is properly configured
@@ -40,11 +41,15 @@ export default function GoogleAdSense({
       // Push the ad to the queue for processing
       window.adsbygoogle.push({});
       
-      console.log(`AdSense ad pushed to queue with slot: ${slot}`);
+      if (isTestMode) {
+        console.log(`AdSense TEST ad pushed to queue with slot: ${slot} (Test Mode)`);
+      } else {
+        console.log(`AdSense ad pushed to queue with slot: ${slot}`);
+      }
     } catch (error) {
       console.error('Error initializing AdSense ad:', error);
     }
-  }, [slot, isConfigured]);
+  }, [slot, isConfigured, isTestMode]);
   
   // If client ID is not available, show a placeholder
   if (!isConfigured) {
@@ -59,7 +64,12 @@ export default function GoogleAdSense({
   }
   
   return (
-    <div className={className} style={style}>
+    <div className={`${className} relative`} style={style}>
+      {isTestMode && (
+        <div className="absolute top-1 left-1 bg-yellow-500 text-black text-xs px-2 py-1 rounded z-10 font-bold">
+          TEST AD
+        </div>
+      )}
       <ins
         className="adsbygoogle"
         style={{
@@ -71,6 +81,7 @@ export default function GoogleAdSense({
         data-ad-slot={slot}
         data-ad-format={format}
         data-full-width-responsive={responsive ? 'true' : 'false'}
+        data-ad-test={isTestMode ? 'on' : undefined}
       />
     </div>
   );
