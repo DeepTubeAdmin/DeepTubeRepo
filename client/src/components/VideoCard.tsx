@@ -510,15 +510,15 @@ export default function VideoCard({
             </span>
             •{" "}
             {video.aiGenerator || "AI Artist"}{" "}
-            {username && (
+            {(video.uploaderName || username) && (
               <>
                 •{" "}
                 <Link
-                  to={`/user/${username}`}
+                  to={`/user/${video.uploaderName || username}`}
                   onClick={(e) => e.stopPropagation()}
                   className="text-orange-500 hover:text-orange-400 hover:underline"
                 >
-                  {username}
+                  {video.uploaderName || username}
                 </Link>
               </>
             )}

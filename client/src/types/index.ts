@@ -39,6 +39,8 @@ export interface Video {
   uploaderName: string;             // Name of the uploader
   uploaderId: number | null;        // ID of the uploader
   adminNotice?: string;             // Admin-only notice about content status
+  categoryName?: string | null;     // Category name from API (for display)
+  categorySlug?: string | null;     // Category slug from API
 }
 
 export interface Category {

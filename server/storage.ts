@@ -36,7 +36,7 @@ import {
 } from "@shared/schema";
 import { count } from "drizzle-orm";
 import { db } from "./db";
-import { eq, and, desc, asc, sql, or, ilike, gt, like } from "drizzle-orm";
+import { eq, and, desc, asc, sql, or, ilike, gt, like, inArray } from "drizzle-orm";
 import session from "express-session";
 import type { Store as SessionStore } from "express-session";
 import connectPg from "connect-pg-simple";
@@ -1849,6 +1849,19 @@ export class DatabaseStorage implements IStorage {
 
   async deleteForumComment(id: number): Promise<void> {
     await db.delete(forumComments).where(eq(forumComments.id, id));
+  }
+
+  // Get users by IDs for search enhancement
+  async getUsersByIds(userIds: number[]): Promise<{ id: number; username: string }[]> {
+    if (userIds.length === 0) return [];
+    
+    return db
+      .select({
+        id: users.id,
+        username: users.username,
+      })
+      .from(users)
+      .where(inArray(users.id, userIds));
   }
 }
 

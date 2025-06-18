@@ -414,6 +414,10 @@ export default function SearchResults() {
                     rejectionReason: video.rejectionReason || null,
                     uploaderName: video.uploaderName || 'Anonymous',
                     uploaderId: video.uploaderId || null,
+                    // Add the new properties from the API
+                    categoryName: video.categoryName || null,
+                    categorySlug: video.categorySlug || null,
+                    tags: video.tags || null,
                   };
                   return (
                     <VideoCard
