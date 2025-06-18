@@ -32,8 +32,21 @@ export const adsenseConfig = {
   
   // Check if AdSense is properly configured
   isConfigured: () => {
-    const hasClientId = Boolean(import.meta.env.VITE_GOOGLE_ADSENSE_CLIENT_ID);
-    const hasSlotId = Boolean(import.meta.env.VITE_GOOGLE_ADSENSE_SLOT_ID);
+    const clientId = import.meta.env.VITE_GOOGLE_ADSENSE_CLIENT_ID;
+    const slotId = import.meta.env.VITE_GOOGLE_ADSENSE_SLOT_ID;
+    const hasClientId = Boolean(clientId);
+    const hasSlotId = Boolean(slotId);
+    
+    // Debug log to see what's happening
+    // console.log('🔍 AdSense Debug:', {
+    //   clientId,
+    //   slotId,
+    //   hasClientId,
+    //   hasSlotId,
+    //   configured: hasClientId && hasSlotId,
+    //   mode: import.meta.env.MODE,
+    //   dev: import.meta.env.DEV
+    // });
     
     return hasClientId && hasSlotId;
   },
