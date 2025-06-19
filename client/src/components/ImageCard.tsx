@@ -137,7 +137,7 @@ export default function ImageCard({ image, size = "default" }: ImageCardProps) {
               alt={image.title}
               className="h-full w-full object-contain bg-gray-900"
               style={{
-                transform: 'scaleX(1.4) scaleY(1.4)'
+                transform: "scaleX(1.4) scaleY(1.4)",
               }}
               loading="lazy"
               onError={(e) => {
@@ -145,13 +145,6 @@ export default function ImageCard({ image, size = "default" }: ImageCardProps) {
                 target.src = "/placeholder-image.svg";
               }}
             />
-
-            {/* Watermark for AI generated content */}
-            {image.aiGenerator && (
-              <div className="absolute bottom-2 right-2 px-2 py-1 text-xs font-medium text-orange-500 bg-black/40 rounded drop-shadow-lg">
-                {formatAIGenerator(image.aiGenerator)}
-              </div>
-            )}
 
             {/* Overlay */}
             <div
