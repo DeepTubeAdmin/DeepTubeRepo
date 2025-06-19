@@ -3,7 +3,7 @@ import Layout from "@/components/Layout";
 import SEO from "@/components/SEO";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation, Link } from "wouter";
-import { Video, User } from "@shared/schema";
+import { Video, User, Category } from "@shared/schema";
 import ThumbnailImage from "@/components/ThumbnailImage";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -48,6 +48,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
 // ---------------------------------------------------------------------------
@@ -94,6 +101,10 @@ export default function AdminPage() {
   const [videoToEdit, setVideoToEdit] = useState<Video | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [editCategoryId, setEditCategoryId] = useState<string>('');
+  const [editAiGenerator, setEditAiGenerator] = useState('');
+  const [editPrompt, setEditPrompt] = useState('');
+  const [editTags, setEditTags] = useState('');
 
   // -------------------------------------------------------------------------
   //  FEATURED (react‑query cache)
@@ -106,6 +117,14 @@ export default function AdminPage() {
     queryKey: ["/api/admin/content/featured"],
     queryFn: () =>
       apiRequest("GET", "/api/admin/content/featured").then((r) => r.json()),
+  });
+
+  // -------------------------------------------------------------------------
+  //  CATEGORIES QUERY
+  // -------------------------------------------------------------------------
+  const { data: categories } = useQuery<Category[]>({
+    queryKey: ["/api/categories"],
+    queryFn: () => apiRequest("GET", "/api/categories").then((r) => r.json()),
   });
 
   // -------------------------------------------------------------------------
@@ -210,7 +229,7 @@ export default function AdminPage() {
       }
 
       // re‑validate featured list and any others
-      queryClient.invalidateQueries(["/api/admin/content/featured"]);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/content/featured"] });
 
       notifySuccess(successMsg);
     } catch (e: any) {
@@ -220,10 +239,30 @@ export default function AdminPage() {
 
   // Edit functionality
   const editMutation = useMutation({
-    mutationFn: async ({ videoId, title, description }: { videoId: number; title: string; description: string }) => {
+    mutationFn: async ({ 
+      videoId, 
+      title, 
+      description, 
+      categoryId, 
+      aiGenerator, 
+      prompt, 
+      tags 
+    }: { 
+      videoId: number; 
+      title: string; 
+      description: string;
+      categoryId: string;
+      aiGenerator: string;
+      prompt: string;
+      tags: string;
+    }) => {
       const response = await apiRequest("PUT", `/api/videos/${videoId}`, {
         title,
         description,
+        categoryId: categoryId ? parseInt(categoryId) : null,
+        aiGenerator,
+        prompt,
+        tags,
       });
       return response.json();
     },
@@ -249,6 +288,10 @@ export default function AdminPage() {
     setVideoToEdit(video);
     setEditTitle(video.title);
     setEditDescription(video.description || '');
+    setEditCategoryId(video.categoryId ? String(video.categoryId) : '');
+    setEditAiGenerator(video.aiGenerator || '');
+    setEditPrompt(video.prompt || '');
+    setEditTags(video.tags || '');
   };
 
   const handleEdit = () => {
@@ -257,6 +300,10 @@ export default function AdminPage() {
         videoId: videoToEdit.id,
         title: editTitle,
         description: editDescription,
+        categoryId: editCategoryId,
+        aiGenerator: editAiGenerator,
+        prompt: editPrompt,
+        tags: editTags,
       });
     }
   };
@@ -265,6 +312,10 @@ export default function AdminPage() {
     setVideoToEdit(null);
     setEditTitle('');
     setEditDescription('');
+    setEditCategoryId('');
+    setEditAiGenerator('');
+    setEditPrompt('');
+    setEditTags('');
   };
 
   // -------------------------------------------------------------------------
@@ -723,14 +774,14 @@ export default function AdminPage() {
 
       {/* Edit Video Modal */}
       <Dialog open={videoToEdit !== null} onOpenChange={closeEditModal}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Edit Video</DialogTitle>
             <DialogDescription>
-              Update the title and description for this video.
+              Update the video information including title, description, category, AI generator, prompt, and tags.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
             <div className="grid gap-2">
               <Label htmlFor="title">Title</Label>
               <Input
@@ -750,6 +801,55 @@ export default function AdminPage() {
                 placeholder="Enter video description"
                 rows={4}
                 maxLength={500}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="category">Category</Label>
+              <Select
+                value={editCategoryId || undefined}
+                onValueChange={(value) => setEditCategoryId(value || '')}
+              >
+                <SelectTrigger id="category">
+                  <SelectValue placeholder="Select a category (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories?.map((category) => (
+                    <SelectItem key={category.id} value={String(category.id)}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="aiGenerator">AI Generator</Label>
+              <Input
+                id="aiGenerator"
+                value={editAiGenerator}
+                onChange={(e) => setEditAiGenerator(e.target.value)}
+                placeholder="e.g., Runway, Midjourney, Stable Diffusion"
+                maxLength={100}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="prompt">Prompt Used (Optional)</Label>
+              <Textarea
+                id="prompt"
+                value={editPrompt}
+                onChange={(e) => setEditPrompt(e.target.value)}
+                placeholder="Enter the prompt used to generate this content"
+                rows={3}
+                maxLength={1000}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="tags">Tags (Optional)</Label>
+              <Input
+                id="tags"
+                value={editTags}
+                onChange={(e) => setEditTags(e.target.value)}
+                placeholder="e.g., AI, creative, animation (comma separated)"
+                maxLength={200}
               />
             </div>
           </div>

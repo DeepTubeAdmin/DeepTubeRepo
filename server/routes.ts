@@ -2021,7 +2021,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       ensureUser(req);
       const videoId = parseInt(req.params.id);
-      const { title, description } = req.body;
+      const { title, description, categoryId, aiGenerator, prompt, tags } = req.body;
 
       // Validate input
       if (!title || typeof title !== "string" || title.trim().length === 0) {
@@ -2044,6 +2044,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ error: "Description must be 500 characters or less" });
       }
 
+      if (
+        aiGenerator &&
+        typeof aiGenerator === "string" &&
+        aiGenerator.length > 100
+      ) {
+        return res
+          .status(400)
+          .json({ error: "AI Generator must be 100 characters or less" });
+      }
+
+      if (
+        prompt &&
+        typeof prompt === "string" &&
+        prompt.length > 1000
+      ) {
+        return res
+          .status(400)
+          .json({ error: "Prompt must be 1000 characters or less" });
+      }
+
+      if (
+        tags &&
+        typeof tags === "string" &&
+        tags.length > 200
+      ) {
+        return res
+          .status(400)
+          .json({ error: "Tags must be 200 characters or less" });
+      }
+
       // Check if video exists
       const video = await dbStorage.getVideoById(videoId);
       if (!video) {
@@ -2063,6 +2093,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedVideo = await dbStorage.updateVideo(videoId, {
         title: title.trim(),
         description: description ? description.trim() : null,
+        categoryId: categoryId ? parseInt(categoryId) : null,
+        aiGenerator: aiGenerator ? aiGenerator.trim() : null,
+        prompt: prompt ? prompt.trim() : null,
+        tags: tags ? tags.trim() : null,
       });
 
       res.status(200).json({
