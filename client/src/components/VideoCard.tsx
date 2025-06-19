@@ -620,9 +620,17 @@ export default function VideoCard({
         {video.contentType === "video" && video.videoUrl && (
           <div className="absolute inset-0">
             {(() => {
-              const screenWidth = window.innerWidth;
-              const isDesktop = screenWidth > 1024;
-              const shouldShowVideo = isDesktop ? isHovered : (isHovered || isInCenter);
+              const { isMobile, isTablet, isDesktop } = deviceInfo;
+              
+              let shouldShowVideo = false;
+              if (isDesktop) {
+                // Desktop: show video when hovering
+                shouldShowVideo = isHovered;
+              } else if (isTablet || isMobile) {
+                // iPad/Mobile: show video when centered or hovering (for touch interactions)
+                shouldShowVideo = isInCenter || isHovered;
+              }
+              
               return shouldShowVideo;
             })() ? (
               <>
@@ -691,11 +699,20 @@ export default function VideoCard({
                     }
                   }}
                 />
-                {/* Show mute button when video is actually playing on all devices */}
+                {/* Show mute button based on device-specific play conditions */}
                 {(() => {
-                  const { isDesktop } = deviceInfo;
+                  const { isMobile, isTablet, isDesktop } = deviceInfo;
                   const isPlaying = !videoRef.current?.paused;
-                  const shouldShowButton = isPlaying && (isDesktop ? isHovered : isInCenter);
+                  
+                  let shouldShowButton = false;
+                  if (isDesktop) {
+                    // Desktop: show button when hovering and video is playing
+                    shouldShowButton = isHovered && isPlaying;
+                  } else if (isTablet || isMobile) {
+                    // iPad/Mobile: show button when video is centered and playing
+                    shouldShowButton = isInCenter && isPlaying;
+                  }
+                  
                   return shouldShowButton;
                 })() && (
                   <button
