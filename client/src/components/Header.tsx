@@ -54,7 +54,7 @@ export default function Header({ simple = false }: HeaderProps) {
       return response.json();
     },
     enabled: !!user,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 60000, // Refetch every 60 seconds
   });
 
   useEffect(() => {

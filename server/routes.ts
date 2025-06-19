@@ -199,7 +199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).send("Invalid content ID");
       }
 
-      const video = await dbStorage.getVideoById(contentId);
+      const video = await dbStorage.getVideoById(contentId, true);
       if (!video) {
         return res.status(404).send("Content not found");
       }
@@ -1083,22 +1083,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Fetch categories for mapping
       const categories = await dbStorage.getCategories();
-      
+
       // Get unique user IDs from results
-      const userIds = Array.from(new Set(results.map(video => video.userId).filter(Boolean)));
-      
+      const userIds = Array.from(
+        new Set(results.map((video) => video.userId).filter(Boolean))
+      );
+
       // Fetch user information
-      const users = userIds.length > 0 ? await dbStorage.getUsersByIds(userIds) : [];
-      
+      const users =
+        userIds.length > 0 ? await dbStorage.getUsersByIds(userIds) : [];
+
       // Enhance results with category and user information
-      const enhancedResults = results.map(video => {
-        const category = video.categoryId ? categories.find(c => c.id === video.categoryId) : null;
-        const user = video.userId ? users.find(u => u.id === video.userId) : null;
+      const enhancedResults = results.map((video) => {
+        const category = video.categoryId
+          ? categories.find((c) => c.id === video.categoryId)
+          : null;
+        const user = video.userId
+          ? users.find((u) => u.id === video.userId)
+          : null;
         return {
           ...video,
           categoryName: category?.name || null,
           categorySlug: category?.slug || null,
-          uploaderName: user?.username || 'Anonymous'
+          uploaderName: user?.username || "Anonymous",
         };
       });
 

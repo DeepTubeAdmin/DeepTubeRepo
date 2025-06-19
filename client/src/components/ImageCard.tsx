@@ -136,6 +136,9 @@ export default function ImageCard({ image, size = "default" }: ImageCardProps) {
               src={image.thumbnail || "/placeholder-image.svg"}
               alt={image.title}
               className="h-full w-full object-contain bg-gray-900"
+              style={{
+                transform: 'scaleX(1.4) scaleY(1.4)'
+              }}
               loading="lazy"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
