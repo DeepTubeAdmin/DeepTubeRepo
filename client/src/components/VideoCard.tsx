@@ -218,6 +218,38 @@ export default function VideoCard({
     };
   }, [setCurrentPlayingVideo]);
 
+  // Mobile-specific video initialization
+  useEffect(() => {
+    const screenWidth = window.innerWidth;
+    const isMobile = screenWidth <= 768;
+    
+    if (isMobile && videoRef.current) {
+      const video = videoRef.current;
+      
+      // Ensure mobile compatibility attributes are set
+      video.muted = true;
+      video.setAttribute('muted', 'true');
+      video.setAttribute('playsinline', 'true');
+      video.setAttribute('webkit-playsinline', 'true');
+      video.setAttribute('x5-playsinline', 'true');
+      video.setAttribute('x5-video-player-type', 'h5');
+      video.setAttribute('x5-video-player-fullscreen', 'true');
+      
+      // Add touch event listener to enable user interaction
+      const handleTouch = () => {
+        console.log(`VideoCard ${video.id}: Mobile touch interaction detected`);
+        // This helps with autoplay policy on mobile browsers
+        video.load();
+      };
+      
+      video.addEventListener('touchstart', handleTouch, { passive: true });
+      
+      return () => {
+        video.removeEventListener('touchstart', handleTouch);
+      };
+    }
+  }, [video.id]);
+
   // Handle orientation change and window resize for mobile devices
   useEffect(() => {
     const handleOrientationChange = () => {
@@ -361,7 +393,19 @@ export default function VideoCard({
       
       // Start this video
       videoRef.current.currentTime = 0;
-      videoRef.current.muted = isMuted;
+      
+      // Force muted state for mobile autoplay - crucial for iOS/Android
+      const isMobile = screenWidth <= 768;
+      if (isMobile) {
+        videoRef.current.muted = true;
+        // Ensure mobile attributes are properly set
+        videoRef.current.setAttribute('muted', 'true');
+        videoRef.current.setAttribute('playsinline', 'true');
+        videoRef.current.setAttribute('webkit-playsinline', 'true');
+        videoRef.current.setAttribute('x5-playsinline', 'true');
+      } else {
+        videoRef.current.muted = isMuted;
+      }
       
       console.log(`VideoCard ${video.id}: Starting video playback with ${playDelay}ms delay for ${deviceType} ${triggerType}`);
       
@@ -445,6 +489,15 @@ export default function VideoCard({
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (videoRef.current) {
+      const screenWidth = window.innerWidth;
+      const isMobile = screenWidth <= 768;
+      
+      // On mobile, videos must stay muted for autoplay to work
+      if (isMobile) {
+        console.log("Mute toggle disabled on mobile - videos must stay muted for autoplay");
+        return;
+      }
+      
       const newMutedState = !isMuted;
       videoRef.current.muted = newMutedState;
       setIsMuted(newMutedState);
@@ -552,12 +605,18 @@ export default function VideoCard({
                   className="w-full h-full object-cover"
                   src={video.videoUrl}
                   poster={checkThumbnail(video.thumbnail || "", video.id)}
-                  muted={isMuted}
+                  muted={true}
                   loop
                   playsInline
                   webkit-playsinline="true"
+                  x5-playsinline="true"
+                  x5-video-player-type="h5"
+                  x5-video-player-fullscreen="true"
+                  x-webkit-airplay="allow"
                   preload="metadata"
                   controls={false}
+                  disablePictureInPicture
+                  disableRemotePlayback
                   onLoadedData={() => {
                     // Responsive timing and trigger detection
                     const screenWidth = window.innerWidth;
@@ -565,6 +624,16 @@ export default function VideoCard({
                     const isMobile = screenWidth <= 768;
                     const loadDelay = isMobile ? 25 : 50;
                     const shouldPlay = isDesktop ? isHovered : isInCenter;
+                    
+                    // Ensure video is always muted for mobile autoplay
+                    if (videoRef.current) {
+                      videoRef.current.muted = true;
+                      // Force mobile-specific attributes
+                      videoRef.current.setAttribute('muted', 'true');
+                      videoRef.current.setAttribute('playsinline', 'true');
+                      videoRef.current.setAttribute('webkit-playsinline', 'true');
+                      videoRef.current.setAttribute('x5-playsinline', 'true');
+                    }
                     
                     // Ensure video plays when loaded and trigger is active
                     if (shouldPlay && videoRef.current && isVideoAllowedToPlay(videoRef.current)) {
@@ -598,11 +667,12 @@ export default function VideoCard({
                     }
                   }}
                 />
-                {/* Only show mute button when video is actually playing */}
+                {/* Only show mute button when video is actually playing and not on mobile */}
                 {(() => {
                   const screenWidth = window.innerWidth;
                   const isDesktop = screenWidth > 1024;
-                  const shouldShowButton = isDesktop ? isHovered : isInCenter;
+                  const isMobile = screenWidth <= 768;
+                  const shouldShowButton = !isMobile && (isDesktop ? isHovered : isInCenter);
                   return shouldShowButton;
                 })() && (
                   <button
