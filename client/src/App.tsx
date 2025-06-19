@@ -23,6 +23,7 @@ import AccessDenied from "@/pages/access-denied";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import { AuthProvider } from "@/hooks/use-auth";
+import { VideoPlaybackProvider } from "@/contexts/VideoPlaybackContext";
 import Layout from "@/components/Layout";
 import AgeVerificationModal from "@/components/AgeVerificationModal";
 import AdSenseInitializer from "@/components/AdSenseInitializer";
@@ -119,22 +120,24 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <ShuffleContext.Provider value={{ shuffleSeed, triggerShuffle }}>
-          <TooltipProvider>
-            <div className="bg-background">
-              {/* Initialize AdSense when the app loads */}
-              <AdSenseInitializer />
-              <Toaster />
-              <AgeVerificationModal
-                isOpen={showAgeVerification}
-                onVerify={handleAgeVerified}
-              />
-              <Router />
-              {/* Performance monitor for debugging API calls - commented out for now */}
-              {/* <PerformanceMonitor /> */}
-            </div>
-          </TooltipProvider>
-        </ShuffleContext.Provider>
+        <VideoPlaybackProvider>
+          <ShuffleContext.Provider value={{ shuffleSeed, triggerShuffle }}>
+            <TooltipProvider>
+              <div className="bg-background">
+                {/* Initialize AdSense when the app loads */}
+                <AdSenseInitializer />
+                <Toaster />
+                <AgeVerificationModal
+                  isOpen={showAgeVerification}
+                  onVerify={handleAgeVerified}
+                />
+                <Router />
+                {/* Performance monitor for debugging API calls - commented out for now */}
+                {/* <PerformanceMonitor /> */}
+              </div>
+            </TooltipProvider>
+          </ShuffleContext.Provider>
+        </VideoPlaybackProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

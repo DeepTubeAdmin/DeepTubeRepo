@@ -8,6 +8,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import VideoPreview from "./VideoPreview";
 import { createSeoFriendlySlug } from "@/lib/seoUrl";
+import { useVideoPlayback } from "@/contexts/VideoPlaybackContext";
 
 interface ThumbnailImageProps {
   videoId: number;
@@ -204,36 +205,98 @@ export default function VideoCard({
   const cardRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const { toast } = useToast();
+  const { setCurrentPlayingVideo, pauseAllVideos, isVideoAllowedToPlay } = useVideoPlayback();
+
+  // Effect to ensure clean state when component mounts
+  useEffect(() => {
+    // On mount, if this video becomes centered immediately, ensure no other videos are playing
+    return () => {
+      // On unmount, if this was the playing video, clear it
+      if (videoRef.current) {
+        setCurrentPlayingVideo(null);
+      }
+    };
+  }, [setCurrentPlayingVideo]);
+
+  // Handle orientation change and window resize for mobile devices
+  useEffect(() => {
+    const handleOrientationChange = () => {
+      // Small delay to allow screen dimensions to update
+      setTimeout(() => {
+        const newWidth = window.innerWidth;
+        const newHeight = window.innerHeight;
+        console.log(`VideoCard ${video.id}: Orientation/resize change - ${newWidth}x${newHeight}`);
+        
+        // Force re-evaluation of intersection observer settings
+        if (observerRef.current && cardRef.current) {
+          observerRef.current.disconnect();
+          // The intersection observer effect will re-run due to dependency changes
+        }
+      }, 100);
+    };
+
+    // Listen for both resize and orientation change events
+    window.addEventListener('resize', handleOrientationChange);
+    window.addEventListener('orientationchange', handleOrientationChange);
+
+    return () => {
+      window.removeEventListener('resize', handleOrientationChange);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+    };
+  }, [video.id]);
 
   // Set up intersection observer for center detection
   useEffect(() => {
-    // Only set up observer for video content on mobile
-    if (video.contentType !== "video" || !video.videoUrl || window.innerWidth >= 768) {
+    // Detect device capabilities and screen size
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    const isMobile = screenWidth <= 768; // Mobile breakpoint
+    const isTablet = screenWidth > 768 && screenWidth <= 1024; // Tablet breakpoint
+    const isDesktop = screenWidth > 1024; // Desktop breakpoint
+    
+    // Determine if scroll-based autoplay should be enabled (only mobile/tablet, NOT desktop)
+    const shouldEnableScrollAutoplay = (isTouchDevice || isMobile || isTablet) && !isDesktop;
+    
+    console.log(`VideoCard ${video.id}: Device detection - Touch: ${isTouchDevice}, Screen: ${screenWidth}x${screenHeight}, Mobile: ${isMobile}, Tablet: ${isTablet}, Desktop: ${isDesktop}, ScrollAutoplayEnabled: ${shouldEnableScrollAutoplay}`);
+    
+    // Only set up observer for video content when scroll autoplay is appropriate (mobile/tablet only)
+    if (video.contentType !== "video" || !video.videoUrl || !shouldEnableScrollAutoplay) {
+      console.log(`VideoCard ${video.id}: Skipping intersection observer setup - ${isDesktop ? 'Desktop uses hover instead' : 'Not applicable'}`);
       return;
+    }
+
+    console.log(`VideoCard ${video.id}: Setting up intersection observer for ${isMobile ? 'mobile' : 'tablet'} scroll autoplay`);
+
+    // Responsive intersection observer options based on screen size (only mobile/tablet)
+    let rootMargin, threshold;
+    
+    if (isMobile) {
+      // Mobile: Tighter detection for smaller screens
+      rootMargin = "-25% 0px -25% 0px"; // 50% center band
+      threshold = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
+    } else {
+      // Tablet (iPad): Balanced detection for medium screens
+      rootMargin = "-20% 0px -20% 0px"; // 60% center band
+      threshold = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
     }
 
     const options = {
       root: null,
-      rootMargin: "-40% 0px -40% 0px", // Creates a band in the middle 20% of the viewport
-      threshold: [0, 0.25, 0.5, 0.75, 1.0], // More granular thresholds
+      rootMargin,
+      threshold,
     };
 
     const handleIntersection = (entries: IntersectionObserverEntry[]) => {
       entries.forEach((entry) => {
-        // Consider a video centered when it's more than 50% visible in the center band
-        const isCentered = entry.isIntersecting && entry.intersectionRatio >= 0.5;
+        // Responsive intersection ratio thresholds
+        const requiredRatio = isMobile ? 0.5 : 0.4; // 50% on mobile, 40% on tablet
         
-        if (isCentered !== isInCenter) { // Only update state if it changed
-          setIsInCenter(isCentered);
-          if (videoRef.current) {
-            if (isCentered) {
-              videoRef.current.currentTime = 0; // Reset video to start
-              videoRef.current.muted = isMuted;
-            } else {
-              videoRef.current.pause();
-            }
-          }
-        }
+        const isCentered = entry.isIntersecting && entry.intersectionRatio >= requiredRatio;
+        
+        console.log(`VideoCard ${video.id}: Intersection - Device: ${isMobile ? 'mobile' : 'tablet'}, isIntersecting: ${entry.isIntersecting}, ratio: ${entry.intersectionRatio.toFixed(2)}, required: ${requiredRatio}, isCentered: ${isCentered}`);
+        
+        setIsInCenter(isCentered);
       });
     };
 
@@ -241,15 +304,84 @@ export default function VideoCard({
 
     if (cardRef.current) {
       observerRef.current.observe(cardRef.current);
+      console.log(`VideoCard ${video.id}: Observer attached to card element`);
     }
+
+    // Handle window resize to update observer settings
+    const handleResize = () => {
+      if (observerRef.current && cardRef.current) {
+        observerRef.current.disconnect();
+        // Re-run this effect with new screen dimensions
+        const newWidth = window.innerWidth;
+        console.log(`VideoCard ${video.id}: Screen resized to ${newWidth}px, updating observer`);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
 
     // Cleanup
     return () => {
       if (observerRef.current) {
         observerRef.current.disconnect();
+        console.log(`VideoCard ${video.id}: Observer disconnected`);
       }
+      window.removeEventListener('resize', handleResize);
     };
-  }, [video.contentType, video.videoUrl, isMuted, isInCenter]);
+  }, [video.contentType, video.videoUrl]);
+
+  // Separate effect to handle video playback based on center state OR hover state
+  useEffect(() => {
+    if (!videoRef.current || video.contentType !== "video") return;
+
+    // Get current screen size for device detection
+    const screenWidth = window.innerWidth;
+    const isMobile = screenWidth <= 768;
+    const isTablet = screenWidth > 768 && screenWidth <= 1024;
+    const isDesktop = screenWidth > 1024;
+    
+    // Determine playback trigger: scroll for mobile/tablet, hover for desktop
+    const shouldPlay = isDesktop ? isHovered : isInCenter;
+    const deviceType = isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop';
+    const triggerType = isDesktop ? 'hover' : 'scroll';
+    
+    // Responsive timing delays
+    const playDelay = isMobile ? 50 : isTablet ? 100 : 200; // Slightly slower for desktop hover
+
+    console.log(`VideoCard ${video.id}: Playback state change - shouldPlay: ${shouldPlay} (${triggerType}), device: ${deviceType}`);
+
+    if (shouldPlay) {
+      // Check if this video is allowed to play before starting
+      if (!isVideoAllowedToPlay(videoRef.current)) {
+        console.log(`VideoCard ${video.id}: Video not allowed to play, pausing all videos first`);
+        pauseAllVideos();
+      }
+      
+      // Set this as the current playing video (this will pause others)
+      setCurrentPlayingVideo(videoRef.current);
+      
+      // Start this video
+      videoRef.current.currentTime = 0;
+      videoRef.current.muted = isMuted;
+      
+      console.log(`VideoCard ${video.id}: Starting video playback with ${playDelay}ms delay for ${deviceType} ${triggerType}`);
+      
+      // Responsive delay based on device type and trigger
+      setTimeout(() => {
+        if (videoRef.current && shouldPlay && isVideoAllowedToPlay(videoRef.current)) {
+          videoRef.current.play().catch((error) => {
+            console.log("Autoplay failed for video", video.id, ":", error);
+          });
+        }
+      }, playDelay);
+    } else {
+      // Pause this video when trigger condition is no longer met
+      if (videoRef.current && !videoRef.current.paused) {
+        console.log(`VideoCard ${video.id}: Pausing video playback (${triggerType} ended)`);
+        videoRef.current.pause();
+        setCurrentPlayingVideo(null);
+      }
+    }
+  }, [isInCenter, isHovered, isMuted, setCurrentPlayingVideo, pauseAllVideos, isVideoAllowedToPlay, video.id, video.contentType]);
 
   // Format duration helper
   const formatDuration = (seconds: number | null): string => {
@@ -313,8 +445,16 @@ export default function VideoCard({
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (videoRef.current) {
-      videoRef.current.muted = !videoRef.current.muted;
-      setIsMuted(!isMuted);
+      const newMutedState = !isMuted;
+      videoRef.current.muted = newMutedState;
+      setIsMuted(newMutedState);
+      
+      // If the video is currently playing and we're unmuting, ensure it continues to play
+      if (!newMutedState && isInCenter && videoRef.current.paused) {
+        videoRef.current.play().catch((error) => {
+          console.log("Error playing video after unmute:", error);
+        });
+      }
     }
   };
 
@@ -378,16 +518,6 @@ export default function VideoCard({
     large: "w-full max-w-4xl mx-auto",
   }[size];
 
-  // Effects for video playback
-  useEffect(() => {
-    if (isInCenter && videoRef.current) {
-      videoRef.current.muted = isMuted;
-      videoRef.current.play().catch((error) => {
-        console.log("Autoplay failed:", error);
-      });
-    }
-  }, [isInCenter, isMuted]);
-
   console.log(`VideoCard: Rendering video ${video.id} ===> ${video}`);
 
   return (
@@ -407,32 +537,85 @@ export default function VideoCard({
           contentType={video.contentType}
         />
 
-        {/* Video Preview Layer - Updated for mobile autoplay */}
+        {/* Video Preview Layer - Responsive: hover for desktop, scroll for mobile/tablet */}
         {video.contentType === "video" && video.videoUrl && (
           <div className="absolute inset-0">
-            {(isHovered || isInCenter) ? (
+            {(() => {
+              const screenWidth = window.innerWidth;
+              const isDesktop = screenWidth > 1024;
+              const shouldShowVideo = isDesktop ? isHovered : (isHovered || isInCenter);
+              return shouldShowVideo;
+            })() ? (
               <>
                 <video
                   ref={videoRef}
-                  key={`video-${video.id}-${isHovered || isInCenter}`}
                   className="w-full h-full object-cover"
                   src={video.videoUrl}
                   poster={checkThumbnail(video.thumbnail || "", video.id)}
-                  autoPlay={isHovered || isInCenter}
                   muted={isMuted}
                   loop
                   playsInline
+                  webkit-playsinline="true"
+                  preload="metadata"
+                  controls={false}
+                  onLoadedData={() => {
+                    // Responsive timing and trigger detection
+                    const screenWidth = window.innerWidth;
+                    const isDesktop = screenWidth > 1024;
+                    const isMobile = screenWidth <= 768;
+                    const loadDelay = isMobile ? 25 : 50;
+                    const shouldPlay = isDesktop ? isHovered : isInCenter;
+                    
+                    // Ensure video plays when loaded and trigger is active
+                    if (shouldPlay && videoRef.current && isVideoAllowedToPlay(videoRef.current)) {
+                      setTimeout(() => {
+                        if (videoRef.current && shouldPlay && isVideoAllowedToPlay(videoRef.current)) {
+                          videoRef.current.play().catch((error) => {
+                            console.log("Autoplay failed on loadedData:", error);
+                          });
+                        }
+                      }, loadDelay);
+                    }
+                  }}
+                  onPlay={() => {
+                    // When this video starts playing, make sure it's registered as the current video
+                    // and that no other videos are playing
+                    if (videoRef.current) {
+                      if (!isVideoAllowedToPlay(videoRef.current)) {
+                        console.log(`VideoCard ${video.id}: Video started playing but not allowed, pausing immediately`);
+                        videoRef.current.pause();
+                        return;
+                      }
+                      setCurrentPlayingVideo(videoRef.current);
+                      console.log(`VideoCard ${video.id}: Video started playing successfully`);
+                    }
+                  }}
+                  onPause={() => {
+                    // When this video pauses, clear it from the context if it was the current one
+                    if (videoRef.current) {
+                      setCurrentPlayingVideo(null);
+                      console.log(`VideoCard ${video.id}: Video paused`);
+                    }
+                  }}
                 />
-                <button
-                  onClick={toggleMute}
-                  className="absolute top-2 right-2 p-2 bg-black/70 rounded-full text-white hover:bg-black/90 transition-colors z-20"
-                >
-                  {isMuted ? (
-                    <VolumeX className="h-4 w-4" />
-                  ) : (
-                    <Volume2 className="h-4 w-4" />
-                  )}
-                </button>
+                {/* Only show mute button when video is actually playing */}
+                {(() => {
+                  const screenWidth = window.innerWidth;
+                  const isDesktop = screenWidth > 1024;
+                  const shouldShowButton = isDesktop ? isHovered : isInCenter;
+                  return shouldShowButton;
+                })() && (
+                  <button
+                    onClick={toggleMute}
+                    className="absolute top-2 right-2 p-2 bg-black/70 rounded-full text-white hover:bg-black/90 transition-colors z-20"
+                  >
+                    {isMuted ? (
+                      <VolumeX className="h-4 w-4" />
+                    ) : (
+                      <Volume2 className="h-4 w-4" />
+                    )}
+                  </button>
+                )}
               </>
             ) : (
               <img
