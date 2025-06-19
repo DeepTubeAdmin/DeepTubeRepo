@@ -24,7 +24,7 @@ function ThumbnailImage({
   title,
   contentType,
 }: ThumbnailImageProps) {
-  // Extract YouTube ID for embeds
+  // Extract YouTube ID for embed content types
   const [youtubeId, setYoutubeId] = useState<string | null>(null);
   // Track loading and error states
   const [imgSrc, setImgSrc] = useState<string>("");
@@ -201,6 +201,16 @@ export default function VideoCard({
   const [username, setUsername] = useState<string>("");
   const [isMuted, setIsMuted] = useState(true);
   const [isInCenter, setIsInCenter] = useState(false);
+  // Device detection state for consistent mobile behavior
+  const [deviceInfo, setDeviceInfo] = useState(() => {
+    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+    return {
+      isMobile: screenWidth <= 768,
+      isTablet: screenWidth > 768 && screenWidth <= 1024,
+      isDesktop: screenWidth > 1024,
+      screenWidth
+    };
+  });
   const videoRef = useRef<HTMLVideoElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -250,6 +260,38 @@ export default function VideoCard({
     }
   }, [video.id]);
 
+  // Mobile-specific initialization effect
+  useEffect(() => {
+    // Only run for video content
+    if (video.contentType !== "video" || !videoRef.current) return;
+
+    const { isMobile } = deviceInfo;
+    
+    if (isMobile) {
+      console.log(`VideoCard ${video.id}: Initializing mobile video attributes`);
+      
+      // Set mobile attributes for autoplay compatibility (but don't force muted state)
+      const videoElement = videoRef.current;
+      videoElement.setAttribute('playsinline', 'true');
+      videoElement.setAttribute('webkit-playsinline', 'true');
+      videoElement.setAttribute('x5-playsinline', 'true');
+      videoElement.setAttribute('x5-video-player-type', 'h5');
+      videoElement.setAttribute('x5-video-player-fullscreen', 'true');
+      
+      // Add touchstart event listener for user interaction requirement
+      const handleTouchStart = () => {
+        console.log(`VideoCard ${video.id}: Touch interaction detected on mobile`);
+        videoElement.setAttribute('data-user-interacted', 'true');
+      };
+      
+      videoElement.addEventListener('touchstart', handleTouchStart, { passive: true });
+      
+      return () => {
+        videoElement.removeEventListener('touchstart', handleTouchStart);
+      };
+    }
+  }, [video.contentType, video.id, deviceInfo]);
+
   // Handle orientation change and window resize for mobile devices
   useEffect(() => {
     const handleOrientationChange = () => {
@@ -279,18 +321,14 @@ export default function VideoCard({
 
   // Set up intersection observer for center detection
   useEffect(() => {
-    // Detect device capabilities and screen size
+    // Use state-based device detection for consistency
+    const { isMobile, isTablet, isDesktop } = deviceInfo;
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-    const isMobile = screenWidth <= 768; // Mobile breakpoint
-    const isTablet = screenWidth > 768 && screenWidth <= 1024; // Tablet breakpoint
-    const isDesktop = screenWidth > 1024; // Desktop breakpoint
     
     // Determine if scroll-based autoplay should be enabled (only mobile/tablet, NOT desktop)
     const shouldEnableScrollAutoplay = (isTouchDevice || isMobile || isTablet) && !isDesktop;
     
-    console.log(`VideoCard ${video.id}: Device detection - Touch: ${isTouchDevice}, Screen: ${screenWidth}x${screenHeight}, Mobile: ${isMobile}, Tablet: ${isTablet}, Desktop: ${isDesktop}, ScrollAutoplayEnabled: ${shouldEnableScrollAutoplay}`);
+    console.log(`VideoCard ${video.id}: Device detection - Touch: ${isTouchDevice}, Screen: ${deviceInfo.screenWidth}, Mobile: ${isMobile}, Tablet: ${isTablet}, Desktop: ${isDesktop}, ScrollAutoplayEnabled: ${shouldEnableScrollAutoplay}`);
     
     // Only set up observer for video content when scroll autoplay is appropriate (mobile/tablet only)
     if (video.contentType !== "video" || !video.videoUrl || !shouldEnableScrollAutoplay) {
@@ -359,17 +397,14 @@ export default function VideoCard({
       }
       window.removeEventListener('resize', handleResize);
     };
-  }, [video.contentType, video.videoUrl]);
+  }, [video.contentType, video.videoUrl, deviceInfo]);
 
   // Separate effect to handle video playback based on center state OR hover state
   useEffect(() => {
     if (!videoRef.current || video.contentType !== "video") return;
 
-    // Get current screen size for device detection
-    const screenWidth = window.innerWidth;
-    const isMobile = screenWidth <= 768;
-    const isTablet = screenWidth > 768 && screenWidth <= 1024;
-    const isDesktop = screenWidth > 1024;
+    // Use state-based device detection for consistency
+    const { isMobile, isTablet, isDesktop } = deviceInfo;
     
     // Determine playback trigger: scroll for mobile/tablet, hover for desktop
     const shouldPlay = isDesktop ? isHovered : isInCenter;
@@ -386,25 +421,25 @@ export default function VideoCard({
       if (!isVideoAllowedToPlay(videoRef.current)) {
         console.log(`VideoCard ${video.id}: Video not allowed to play, pausing all videos first`);
         pauseAllVideos();
+        // Small delay to ensure previous video is paused before starting new one
+        setTimeout(() => {
+          setCurrentPlayingVideo(videoRef.current);
+        }, 50);
+      } else {
+        // Set this as the current playing video (this will pause others)
+        setCurrentPlayingVideo(videoRef.current);
       }
-      
-      // Set this as the current playing video (this will pause others)
-      setCurrentPlayingVideo(videoRef.current);
       
       // Start this video
       videoRef.current.currentTime = 0;
       
-      // Force muted state for mobile autoplay - crucial for iOS/Android
-      const isMobile = screenWidth <= 768;
+      // Set muted state based on current preference - mobile still needs to start muted for autoplay
+      videoRef.current.muted = isMuted;
       if (isMobile) {
-        videoRef.current.muted = true;
-        // Ensure mobile attributes are properly set
-        videoRef.current.setAttribute('muted', 'true');
+        // Ensure mobile attributes are properly set for autoplay compatibility
         videoRef.current.setAttribute('playsinline', 'true');
         videoRef.current.setAttribute('webkit-playsinline', 'true');
         videoRef.current.setAttribute('x5-playsinline', 'true');
-      } else {
-        videoRef.current.muted = isMuted;
       }
       
       console.log(`VideoCard ${video.id}: Starting video playback with ${playDelay}ms delay for ${deviceType} ${triggerType}`);
@@ -425,7 +460,7 @@ export default function VideoCard({
         setCurrentPlayingVideo(null);
       }
     }
-  }, [isInCenter, isHovered, isMuted, setCurrentPlayingVideo, pauseAllVideos, isVideoAllowedToPlay, video.id, video.contentType]);
+  }, [isInCenter, isHovered, isMuted, setCurrentPlayingVideo, pauseAllVideos, isVideoAllowedToPlay, video.id, video.contentType, deviceInfo]);
 
   // Format duration helper
   const formatDuration = (seconds: number | null): string => {
@@ -489,15 +524,6 @@ export default function VideoCard({
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (videoRef.current) {
-      const screenWidth = window.innerWidth;
-      const isMobile = screenWidth <= 768;
-      
-      // On mobile, videos must stay muted for autoplay to work
-      if (isMobile) {
-        console.log("Mute toggle disabled on mobile - videos must stay muted for autoplay");
-        return;
-      }
-      
       const newMutedState = !isMuted;
       videoRef.current.muted = newMutedState;
       setIsMuted(newMutedState);
@@ -625,11 +651,9 @@ export default function VideoCard({
                     const loadDelay = isMobile ? 25 : 50;
                     const shouldPlay = isDesktop ? isHovered : isInCenter;
                     
-                    // Ensure video is always muted for mobile autoplay
+                    // Ensure mobile attributes are set for autoplay compatibility
                     if (videoRef.current) {
-                      videoRef.current.muted = true;
-                      // Force mobile-specific attributes
-                      videoRef.current.setAttribute('muted', 'true');
+                      // Set mobile-specific attributes but respect current muted state
                       videoRef.current.setAttribute('playsinline', 'true');
                       videoRef.current.setAttribute('webkit-playsinline', 'true');
                       videoRef.current.setAttribute('x5-playsinline', 'true');
@@ -667,12 +691,11 @@ export default function VideoCard({
                     }
                   }}
                 />
-                {/* Only show mute button when video is actually playing and not on mobile */}
+                {/* Show mute button when video is actually playing on all devices */}
                 {(() => {
-                  const screenWidth = window.innerWidth;
-                  const isDesktop = screenWidth > 1024;
-                  const isMobile = screenWidth <= 768;
-                  const shouldShowButton = !isMobile && (isDesktop ? isHovered : isInCenter);
+                  const { isDesktop } = deviceInfo;
+                  const isPlaying = !videoRef.current?.paused;
+                  const shouldShowButton = isPlaying && (isDesktop ? isHovered : isInCenter);
                   return shouldShowButton;
                 })() && (
                   <button
