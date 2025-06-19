@@ -528,6 +528,9 @@ export class DatabaseStorage implements IStorage {
       )
     );
 
+    // Exclude featured videos from regular content feeds
+    conditions.push(eq(videos.featured, false));
+
     // Apply all conditions with AND
     if (conditions.length > 0) {
       builder = builder.where(and(...conditions));
@@ -972,6 +975,9 @@ export class DatabaseStorage implements IStorage {
       )
     );
 
+    // Exclude featured videos from search results - they should only appear in featured sections
+    allFilters.push(eq(videos.featured, false));
+
     // Apply the filters in a type-safe way
     const filteredQuery = queryBuilder.where(and(...allFilters));
 
@@ -1233,6 +1239,9 @@ export class DatabaseStorage implements IStorage {
         )
       );
 
+      // Exclude featured videos from regular content feed
+      conditions.push(eq(videos.featured, false));
+
       let query = db
         .select({
           ...videos,
@@ -1252,10 +1261,7 @@ export class DatabaseStorage implements IStorage {
           shuffleSeed.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 991;
 
         query = query.orderBy(
-          sql`
-            CASE WHEN ${videos.featured} THEN 0 ELSE 1 END ASC,
-            (${videos.id} * ${seedValue}) % 991
-          `
+          sql`(${videos.id} * ${seedValue}) % 991`
         );
       } else {
         // Apply normal sorting
@@ -1278,7 +1284,6 @@ export class DatabaseStorage implements IStorage {
           case "trending":
           default:
             query = query.orderBy(sql`
-            CASE WHEN ${videos.featured} THEN 0 ELSE 1 END ASC,
             CASE
               WHEN EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) - EXTRACT(EPOCH FROM ${videos.createdAt}) < 2592000 THEN 
                 (${videos.views} * 0.6) + ((SELECT COUNT(*) FROM ${likes} WHERE ${likes.videoId} = ${videos.id}) * 0.4) + 1000
