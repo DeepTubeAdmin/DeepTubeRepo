@@ -11,9 +11,26 @@ type Generator = {
   name: string;
   description: string;
   url: string;
+  featured?: boolean;
 };
 
 const generators: Generator[] = [
+  {
+    name: "Pollo AI",
+    description: "Your all-in-one platform for accessing multiple state-of-the-art AI generation models.",
+    url: "https://pollo.ai?ref=m2m5ztk",
+    featured: true
+  },
+  {
+    name: "Seedance",
+    description: "AI-powered dance video generation with realistic human movement and choreography.",
+    url: "https://seed.bytedance.com/en/"
+  },
+  {
+    name: "Synthesia",
+    description: "Professional AI video platform for creating personalized video content with virtual presenters.",
+    url: "https://www.synthesia.io?via=cfbe8e"
+  },
   {
     name: "Runway",
     description: "Professional-grade video editing with advanced VFX and cinematic quality.",
@@ -79,36 +96,70 @@ export default function AIGeneratorsModal({ isOpen, onClose }: AIGeneratorsModal
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          {generators.map((generator) => (
+        <div className="mt-4 space-y-4">
+          {/* Featured Generator - Full Width */}
+          {generators.filter(g => g.featured).map((generator) => (
             <div 
               key={generator.name} 
-              className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 hover:border-gray-600 transition-all hover:shadow-lg group"
+              className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 p-6 rounded-lg border-2 border-purple-500/50 hover:border-purple-400/70 transition-all hover:shadow-lg group"
             >
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="font-bold text-lg text-blue-400">{generator.name}</h3>
+              <div className="flex justify-between items-start mb-3">
+                <h3 className="font-bold text-xl text-purple-400">{generator.name}</h3>
                 <a 
                   href={generator.url} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-gray-500 hover:text-white transition-colors"
                 >
-                  <ExternalLink size={16} />
+                  <ExternalLink size={18} />
                 </a>
               </div>
-              <p className="text-gray-300 text-sm">{generator.description}</p>
-              <div className="mt-3 flex justify-end">
+              <p className="text-gray-300 text-base">{generator.description}</p>
+              <div className="mt-4 flex justify-end">
                 <a 
                   href={generator.url} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-xs text-gray-400 hover:text-white transition-colors"
+                  className="text-sm text-gray-400 hover:text-white transition-colors"
                 >
                   {generator.url.replace(/https?:\/\//, '').replace(/\/$/, '')}
                 </a>
               </div>
             </div>
           ))}
+
+          {/* Regular Generators - 2 Column Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {generators.filter(g => !g.featured).map((generator) => (
+              <div 
+                key={generator.name} 
+                className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 hover:border-gray-600 transition-all hover:shadow-lg group"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-bold text-lg text-blue-400">{generator.name}</h3>
+                  <a 
+                    href={generator.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-gray-500 hover:text-white transition-colors"
+                  >
+                    <ExternalLink size={16} />
+                  </a>
+                </div>
+                <p className="text-gray-300 text-sm">{generator.description}</p>
+                <div className="mt-3 flex justify-end">
+                  <a 
+                    href={generator.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs text-gray-400 hover:text-white transition-colors"
+                  >
+                    {generator.url.replace(/https?:\/\//, '').replace(/\/$/, '')}
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <DialogFooter className="mt-6">
