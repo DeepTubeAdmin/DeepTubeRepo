@@ -2021,7 +2021,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       ensureUser(req);
       const videoId = parseInt(req.params.id);
-      const { title, description, categoryId, aiGenerator, prompt, tags } = req.body;
+      const { title, description, categoryId, aiGenerator, prompt, tags } =
+        req.body;
 
       // Validate input
       if (!title || typeof title !== "string" || title.trim().length === 0) {
@@ -2054,21 +2055,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ error: "AI Generator must be 100 characters or less" });
       }
 
-      if (
-        prompt &&
-        typeof prompt === "string" &&
-        prompt.length > 1000
-      ) {
+      if (prompt && typeof prompt === "string" && prompt.length > 1000) {
         return res
           .status(400)
           .json({ error: "Prompt must be 1000 characters or less" });
       }
 
-      if (
-        tags &&
-        typeof tags === "string" &&
-        tags.length > 200
-      ) {
+      if (tags && typeof tags === "string" && tags.length > 200) {
         return res
           .status(400)
           .json({ error: "Tags must be 200 characters or less" });
@@ -3770,6 +3763,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error adding comment:", error);
       res.status(500).json({ error: "Failed to add comment" });
+    }
+  });
+
+  // n8n endpoint: returns latest 10 trending videos
+  app.get("/api/n8n", async (req, res) => {
+    try {
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const videos = await dbStorage.getTrendingVideos(10);
+      const formatted = videos.map((video) => ({
+        id: video.id,
+        title: video.title,
+        description: video.description,
+        thumbnailUrl: video.thumbnailUrl
+          ? video.thumbnailUrl.startsWith("http")
+            ? video.thumbnailUrl
+            : baseUrl + video.thumbnailUrl
+          : video.thumbnail
+          ? video.thumbnail.startsWith("http")
+            ? video.thumbnail
+            : baseUrl + video.thumbnail
+          : null,
+        videoUrl: video.videoUrl
+          ? video.videoUrl.startsWith("http")
+            ? video.videoUrl
+            : baseUrl + video.videoUrl
+          : null,
+        views: video.views,
+        likes: video.likesCount || 0,
+        contentType: video.contentType,
+        categoryName: video.categoryName,
+        createdAt: video.createdAt,
+        updatedAt: video.updatedAt,
+        duration: video.duration,
+        featured: video.featured,
+      }));
+      res.json({
+        success: true,
+        data: formatted,
+        total: formatted.length,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error fetching trending videos for n8n:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch trending videos",
+        timestamp: new Date().toISOString(),
+      });
     }
   });
 
