@@ -227,7 +227,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.warn(`Could not pre-generate thumbnail for ${video.id}:`, error);
         }
 
-        const videoUrl = video.videoUrl ? `${baseUrl}${video.videoUrl}` : "";
+        const videoUrl = video.videoUrl 
+          ? video.videoUrl.startsWith("http") 
+            ? video.videoUrl 
+            : `${baseUrl}${video.videoUrl}`
+          : "";
         const embedUrl = `${baseUrl}/media/${video.id}/embed`;
         const canonicalUrl = `${baseUrl}/media/${video.id}`;
 
@@ -274,7 +278,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 interactionStatistic: {
                   "@type": "InteractionCounter",
                   interactionType: { "@type": "WatchAction" },
-                  userInteractionCount: video.viewCount || 0,
+                  userInteractionCount: video.views || 0,
                 },
                 author: {
                   "@type": "Organization",
@@ -364,7 +368,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               } - AI generated ${video.contentType}">
               <meta property="og:locale" content="en_US">
               <meta property="og:updated_time" content="${
-                video.updatedAt || video.createdAt || new Date().toISOString()
+                video.createdAt || new Date().toISOString()
               }">
               ${
                 video.contentType === "video"
@@ -3412,7 +3416,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // If the content is pending review, add a notice for the admin
-      if (isAdmin && video.reviewStatus === "pending") {
+      const userIsAdmin = req.user && (req.user.isAdmin || req.user.id === 1 || req.user.id === 2);
+      if (userIsAdmin && video.reviewStatus === "pending") {
         video.adminNotice =
           "This content is pending review and not visible to regular users";
       }
@@ -3782,15 +3787,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const baseUrl = `${req.protocol}://${req.get("host")}`;
       const videos = await dbStorage.getTrendingVideos(10);
+      
+      // Get likes counts for all videos in one query
+      const videoIds = videos.map(v => v.id);
+      const likesQuery = await pool.query(
+        `SELECT video_id, COUNT(*) as like_count FROM likes WHERE video_id = ANY($1) GROUP BY video_id`,
+        [videoIds]
+      );
+      const likesMap = new Map(likesQuery.rows.map(row => [row.video_id, parseInt(row.like_count)]));
+      
       const formatted = videos.map((video) => ({
         id: video.id,
         title: video.title,
         description: video.description,
-        thumbnailUrl: video.thumbnailUrl
-          ? video.thumbnailUrl.startsWith("http")
-            ? video.thumbnailUrl
-            : baseUrl + video.thumbnailUrl
-          : video.thumbnail
+        thumbnailUrl: video.thumbnail
           ? video.thumbnail.startsWith("http")
             ? video.thumbnail
             : baseUrl + video.thumbnail
@@ -3801,11 +3811,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             : baseUrl + video.videoUrl
           : null,
         views: video.views,
-        likes: video.likesCount || 0,
+        likes: likesMap.get(video.id) || 0,
         contentType: video.contentType,
-        categoryName: video.categoryName,
+        categoryName: (video as any).categoryName,
         createdAt: video.createdAt,
-        updatedAt: video.updatedAt,
         duration: video.duration,
         featured: video.featured,
       }));
