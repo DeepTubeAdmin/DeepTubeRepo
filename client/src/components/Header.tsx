@@ -57,6 +57,54 @@ export default function Header({ simple = false }: HeaderProps) {
     refetchInterval: 60000, // Refetch every 60 seconds
   });
 
+  // Fetch admin notification count for pending and reported content
+  const { data: adminNotificationData } = useQuery({
+    queryKey: ["/api/admin/notifications/count"],
+    queryFn: async () => {
+      if (!user || (!user.isAdmin && user.id !== 1 && user.id !== 2)) {
+        return { pendingCount: 0, reportedCount: 0, totalCount: 0 };
+      }
+
+      try {
+        // Fetch pending content count
+        const pendingResponse = await apiRequest(
+          "GET",
+          "/api/admin/content/pending"
+        );
+        const pendingData = pendingResponse.ok
+          ? await pendingResponse.json()
+          : [];
+
+        // Fetch reported content count
+        const reportedResponse = await apiRequest(
+          "GET",
+          "/api/admin/content/reported"
+        );
+        const reportedData = reportedResponse.ok
+          ? await reportedResponse.json()
+          : [];
+
+        const pendingCount = Array.isArray(pendingData)
+          ? pendingData.length
+          : 0;
+        const reportedCount = Array.isArray(reportedData)
+          ? reportedData.length
+          : 0;
+
+        return {
+          pendingCount,
+          reportedCount,
+          totalCount: pendingCount + reportedCount,
+        };
+      } catch (error) {
+        console.error("Failed to fetch admin notification count:", error);
+        return { pendingCount: 0, reportedCount: 0, totalCount: 0 };
+      }
+    },
+    enabled: !!user && (user.isAdmin || user.id === 1 || user.id === 2),
+    refetchInterval: 30000, // Refetch every 30 seconds for admin notifications
+  });
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -232,13 +280,22 @@ export default function Header({ simple = false }: HeaderProps) {
                       ? user.username.charAt(0).toUpperCase()
                       : "A"}
                   </span>
-                  {user && unreadMessageData?.count > 0 && (
-                    <div className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 bg-orange-500 rounded-full flex items-center justify-center text-[8px] sm:text-[10px] font-bold border border-black">
-                      {unreadMessageData.count > 9
-                        ? "9+"
-                        : unreadMessageData.count}
-                    </div>
-                  )}
+                  {user &&
+                    (unreadMessageData?.count > 0 ||
+                      ((adminNotificationData?.totalCount || 0) > 0 &&
+                        (user.isAdmin || user.id === 1 || user.id === 2))) && (
+                      <div className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 bg-orange-500 rounded-full flex items-center justify-center text-[8px] sm:text-[10px] font-bold border border-black">
+                        {(() => {
+                          const messageCount = unreadMessageData?.count || 0;
+                          const adminCount =
+                            user.isAdmin || user.id === 1 || user.id === 2
+                              ? adminNotificationData?.totalCount || 0
+                              : 0;
+                          const totalCount = messageCount + adminCount;
+                          return totalCount > 9 ? "9+" : totalCount;
+                        })()}
+                      </div>
+                    )}
                 </div>
 
                 {showUserDropdown && (
@@ -470,13 +527,22 @@ export default function Header({ simple = false }: HeaderProps) {
                 <span>
                   {user?.username ? user.username.charAt(0).toUpperCase() : "A"}
                 </span>
-                {user && unreadMessageData?.count > 0 && (
-                  <div className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 bg-orange-500 rounded-full flex items-center justify-center text-[8px] sm:text-[10px] font-bold border border-black">
-                    {unreadMessageData.count > 9
-                      ? "9+"
-                      : unreadMessageData.count}
-                  </div>
-                )}
+                {user &&
+                  (unreadMessageData?.count > 0 ||
+                    ((adminNotificationData?.totalCount || 0) > 0 &&
+                      (user.isAdmin || user.id === 1 || user.id === 2))) && (
+                    <div className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 bg-orange-500 rounded-full flex items-center justify-center text-[8px] sm:text-[10px] font-bold border border-black">
+                      {(() => {
+                        const messageCount = unreadMessageData?.count || 0;
+                        const adminCount =
+                          user.isAdmin || user.id === 1 || user.id === 2
+                            ? adminNotificationData?.totalCount || 0
+                            : 0;
+                        const totalCount = messageCount + adminCount;
+                        return totalCount > 9 ? "9+" : totalCount;
+                      })()}
+                    </div>
+                  )}
               </div>
 
               {showUserDropdown && (
@@ -546,6 +612,12 @@ export default function Header({ simple = false }: HeaderProps) {
                             className="block px-4 py-2 text-sm text-red-300 hover:bg-gray-800 cursor-pointer"
                           >
                             Admin Dashboard
+                            {adminNotificationData &&
+                              adminNotificationData.totalCount > 0 && (
+                                <span className="ml-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
+                                  {adminNotificationData.totalCount}
+                                </span>
+                              )}
                           </a>
                         )}
                       <a
