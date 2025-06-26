@@ -97,6 +97,11 @@ export async function generateVideoSitemap(): Promise<string> {
         console.error('Error generating signed URL for thumbnail:', error);
       }
     }
+    
+    // Ensure thumbnail URL is absolute
+    if (thumbnailUrl && !thumbnailUrl.startsWith('http')) {
+      thumbnailUrl = `${BASE_URL}${thumbnailUrl}`;
+    }
 
     let videoUrl = video.videoUrl;
     if (videoUrl && videoUrl.includes('s3.amazonaws.com')) {
@@ -109,6 +114,11 @@ export async function generateVideoSitemap(): Promise<string> {
       } catch (error) {
         console.error('Error generating signed URL for video:', error);
       }
+    }
+    
+    // Ensure video URL is absolute
+    if (videoUrl && !videoUrl.startsWith('http')) {
+      videoUrl = `${BASE_URL}${videoUrl}`;
     }
     
     // Generate ISO date format for publication date
@@ -196,6 +206,11 @@ export async function generateImageSitemap(): Promise<string> {
       } catch (error) {
         console.error('Error generating signed URL for image:', error);
       }
+    }
+    
+    // Ensure image URL is absolute
+    if (imageUrl && !imageUrl.startsWith('http')) {
+      imageUrl = `${BASE_URL}${imageUrl}`;
     }
     
     // Add the image entry

@@ -210,14 +210,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ? "http://127.0.0.1:5000"
           : "https://www.deeptubeai.com";
 
+      // For social media meta tags, always use HTTPS URLs (even in development)
+      // since external crawlers need to access these URLs
+      const socialMediaBaseUrl = "https://www.deeptubeai.com";
+
       // For bots and crawlers, return pre-rendered HTML with comprehensive SEO meta tags
       if (isBot(userAgent)) {
         const thumbnailUrl = video.thumbnail
           ? `https://deeptubebucket.s3.us-east-2.amazonaws.com/thumbnails/${video.contentType}-${video.id}.jpg`
-          : `${baseUrl}/logo.jpg`;
+          : `${socialMediaBaseUrl}/logo.jpg`;
 
-        const videoUrl = video.videoUrl ? `${baseUrl}${video.videoUrl}` : "";
-        const embedUrl = `${baseUrl}/media/${video.id}/embed`;
+        const videoUrl = video.videoUrl ? `${socialMediaBaseUrl}${video.videoUrl}` : "";
+        const embedUrl = `${socialMediaBaseUrl}/media/${video.id}/embed`;
         const canonicalUrl = `${baseUrl}/media/${video.id}`;
 
         // Enhanced description with metadata
@@ -272,15 +276,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 author: {
                   "@type": "Organization",
                   name: "DeepTubeAI",
-                  url: baseUrl,
+                  url: socialMediaBaseUrl,
                 },
                 publisher: {
                   "@type": "Organization",
                   name: "DeepTubeAI",
-                  url: baseUrl,
+                  url: socialMediaBaseUrl,
                   logo: {
                     "@type": "ImageObject",
-                    url: `${baseUrl}/logo.jpg`,
+                    url: `${socialMediaBaseUrl}/logo.jpg`,
                   },
                 },
                 keywords: keywords.split(", "),
@@ -302,15 +306,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 author: {
                   "@type": "Organization",
                   name: "DeepTubeAI",
-                  url: baseUrl,
+                  url: socialMediaBaseUrl,
                 },
                 publisher: {
                   "@type": "Organization",
                   name: "DeepTubeAI",
-                  url: baseUrl,
+                  url: socialMediaBaseUrl,
                   logo: {
                     "@type": "ImageObject",
-                    url: `${baseUrl}/logo.jpg`,
+                    url: `${socialMediaBaseUrl}/logo.jpg`,
                   },
                 },
                 keywords: keywords.split(", "),
@@ -357,7 +361,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               } - AI generated ${video.contentType}">
               <meta property="og:locale" content="en_US">
               <meta property="og:updated_time" content="${
-                video.updatedAt || video.createdAt || new Date().toISOString()
+                video.createdAt || new Date().toISOString()
               }">
               ${
                 video.contentType === "video"
