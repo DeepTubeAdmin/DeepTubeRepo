@@ -212,50 +212,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // For bots and crawlers, return pre-rendered HTML with comprehensive SEO meta tags
       if (isBot(userAgent)) {
-        // For SEO/social sharing, use direct public S3 URLs for better crawler reliability
-        // This avoids redirects and provides stable, non-expiring URLs for social media
-        let thumbnailUrl: string;
-        
-        try {
-          // Check if thumbnail exists and get direct S3 URL
-          const thumbnailExists = await thumbnailService.thumbnailExists(video.id, video.contentType);
-          
-          if (thumbnailExists) {
-            // Use direct public S3 URL for maximum compatibility with social crawlers
-            thumbnailUrl = thumbnailService.getPublicThumbnailUrl(video.id, video.contentType);
-            console.log(`Using direct S3 URL for social sharing: ${thumbnailUrl}`);
-          } else {
-            // Trigger thumbnail generation for future requests
-            console.log(`Thumbnail not found for ${video.id}, triggering generation`);
-            const generateUrl = `${baseUrl}/api/content/${video.id}/thumbnail`;
-            try {
-              const thumbnailResponse = await fetch(generateUrl);
-              console.log(`Generated thumbnail for bot crawler, status: ${thumbnailResponse.status}`);
-              
-              // If generation succeeded, use the direct S3 URL
-              if (thumbnailResponse.ok) {
-                thumbnailUrl = thumbnailService.getPublicThumbnailUrl(video.id, video.contentType);
-              } else {
-                // Fallback to redirect endpoint
-                thumbnailUrl = generateUrl;
-              }
-            } catch (error) {
-              console.warn(`Could not generate thumbnail for ${video.id}:`, error);
-              // Fallback to logo
-              thumbnailUrl = `${baseUrl}/logo.jpg`;
-            }
-          }
-        } catch (error) {
-          console.error(`Error checking thumbnail for ${video.id}:`, error);
-          // Fallback to redirect endpoint
-          thumbnailUrl = `${baseUrl}/api/content/${video.id}/thumbnail`;
-        }
+        const thumbnailUrl = video.thumbnail
+          ? `https://deeptubebucket.s3.us-east-2.amazonaws.com/thumbnails/${video.contentType}-${video.id}.jpg`
+          : `${baseUrl}/logo.jpg`;
 
-        const videoUrl = video.videoUrl 
-          ? video.videoUrl.startsWith("http") 
-            ? video.videoUrl 
-            : `${baseUrl}${video.videoUrl}`
-          : "";
+        const videoUrl = video.videoUrl ? `${baseUrl}${video.videoUrl}` : "";
         const embedUrl = `${baseUrl}/media/${video.id}/embed`;
         const canonicalUrl = `${baseUrl}/media/${video.id}`;
 
@@ -396,7 +357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               } - AI generated ${video.contentType}">
               <meta property="og:locale" content="en_US">
               <meta property="og:updated_time" content="${
-                video.createdAt || new Date().toISOString()
+                video.updatedAt || video.createdAt || new Date().toISOString()
               }">
               ${
                 video.contentType === "video"
@@ -472,8 +433,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               <!-- Additional SEO Meta Tags -->
               <meta name="theme-color" content="#f59e0b">
               <meta name="msapplication-TileColor" content="#f59e0b">
-              <meta name="application-name" content="DeepTubeAI">
-              <meta name="apple-mobile-web-app-title" content="DeepTubeAI">
+              <meta name="application-name" content="DeepTube">
+              <meta name="apple-mobile-web-app-title" content="DeepTube">
               <meta name="apple-mobile-web-app-capable" content="yes">
               <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
               
@@ -2586,7 +2547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
         <rect width="100%" height="100%" fill="#0f172a"/>
         <text x="50%" y="50%" font-family="Arial" font-size="24" fill="#f59e0b" text-anchor="middle">
-          DeepTubeAI ${contentType.charAt(0).toUpperCase() + contentType.slice(1)}
+          DeepTube ${contentType.charAt(0).toUpperCase() + contentType.slice(1)}
         </text>
       </svg>`;
 
