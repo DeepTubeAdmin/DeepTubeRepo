@@ -215,8 +215,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // const thumbnailUrl = video.thumbnail
         //   ? `https://deeptubebucket.s3.us-east-2.amazonaws.com/thumbnails/${video.contentType}-${video.id}.jpg`
         //   : `${baseUrl}/logo.jpg`;
-        // Use the unified thumbnail endpoint instead of hardcoded S3 URL
+        // Use the unified thumbnail endpoint and ensure it's accessible
         const thumbnailUrl = `${baseUrl}/api/content/${video.id}/thumbnail`;
+        
+        // For new content, trigger thumbnail generation to ensure it exists when crawlers visit
+        try {
+          // Pre-generate thumbnail for bots to ensure it's ready
+          const thumbnailResponse = await fetch(thumbnailUrl);
+          console.log(`Pre-generated thumbnail for bot crawler, status: ${thumbnailResponse.status}`);
+        } catch (error) {
+          console.warn(`Could not pre-generate thumbnail for ${video.id}:`, error);
+        }
 
         const videoUrl = video.videoUrl ? `${baseUrl}${video.videoUrl}` : "";
         const embedUrl = `${baseUrl}/media/${video.id}/embed`;
