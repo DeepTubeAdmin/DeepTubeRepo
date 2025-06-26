@@ -666,6 +666,7 @@ export default function AdminPage() {
                           <TableHead>Preview</TableHead>
                           <TableHead>Title</TableHead>
                           <TableHead>Type</TableHead>
+                          <TableHead>Views</TableHead>
                           <TableHead>Date</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -679,6 +680,7 @@ export default function AdminPage() {
                             <TableCell className="capitalize">
                               {a.contentType}
                             </TableCell>
+                            <TableCell>{a.views || 0}</TableCell>
                             <TableCell>
                               {new Date(a.createdAt).toLocaleDateString()}
                             </TableCell>
