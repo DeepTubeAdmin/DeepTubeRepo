@@ -212,9 +212,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // For bots and crawlers, return pre-rendered HTML with comprehensive SEO meta tags
       if (isBot(userAgent)) {
-        const thumbnailUrl = video.thumbnail
-          ? `https://deeptubebucket.s3.us-east-2.amazonaws.com/thumbnails/${video.contentType}-${video.id}.jpg`
-          : `${baseUrl}/logo.jpg`;
+        // const thumbnailUrl = video.thumbnail
+        //   ? `https://deeptubebucket.s3.us-east-2.amazonaws.com/thumbnails/${video.contentType}-${video.id}.jpg`
+        //   : `${baseUrl}/logo.jpg`;
+        // Use the unified thumbnail endpoint instead of hardcoded S3 URL
+        const thumbnailUrl = `${baseUrl}/api/content/${video.id}/thumbnail`;
 
         const videoUrl = video.videoUrl ? `${baseUrl}${video.videoUrl}` : "";
         const embedUrl = `${baseUrl}/media/${video.id}/embed`;
