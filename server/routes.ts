@@ -212,19 +212,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // For bots and crawlers, return pre-rendered HTML with comprehensive SEO meta tags
       if (isBot(userAgent)) {
-        // const thumbnailUrl = video.thumbnail
-        //   ? `https://deeptubebucket.s3.us-east-2.amazonaws.com/thumbnails/${video.contentType}-${video.id}.jpg`
-        //   : `${baseUrl}/logo.jpg`;
-        // Use the unified thumbnail endpoint and ensure it's accessible
-        const thumbnailUrl = `${baseUrl}/api/content/${video.id}/thumbnail`;
+        // For SEO/social sharing, use direct public S3 URLs for better crawler reliability
+        // This avoids redirects and provides stable, non-expiring URLs for social media
+        let thumbnailUrl: string;
         
-        // For new content, trigger thumbnail generation to ensure it exists when crawlers visit
         try {
-          // Pre-generate thumbnail for bots to ensure it's ready
-          const thumbnailResponse = await fetch(thumbnailUrl);
-          console.log(`Pre-generated thumbnail for bot crawler, status: ${thumbnailResponse.status}`);
+          // Check if thumbnail exists and get direct S3 URL
+          const thumbnailExists = await thumbnailService.thumbnailExists(video.id, video.contentType);
+          
+          if (thumbnailExists) {
+            // Use direct public S3 URL for maximum compatibility with social crawlers
+            thumbnailUrl = thumbnailService.getPublicThumbnailUrl(video.id, video.contentType);
+            console.log(`Using direct S3 URL for social sharing: ${thumbnailUrl}`);
+          } else {
+            // Trigger thumbnail generation for future requests
+            console.log(`Thumbnail not found for ${video.id}, triggering generation`);
+            const generateUrl = `${baseUrl}/api/content/${video.id}/thumbnail`;
+            try {
+              const thumbnailResponse = await fetch(generateUrl);
+              console.log(`Generated thumbnail for bot crawler, status: ${thumbnailResponse.status}`);
+              
+              // If generation succeeded, use the direct S3 URL
+              if (thumbnailResponse.ok) {
+                thumbnailUrl = thumbnailService.getPublicThumbnailUrl(video.id, video.contentType);
+              } else {
+                // Fallback to redirect endpoint
+                thumbnailUrl = generateUrl;
+              }
+            } catch (error) {
+              console.warn(`Could not generate thumbnail for ${video.id}:`, error);
+              // Fallback to logo
+              thumbnailUrl = `${baseUrl}/logo.jpg`;
+            }
+          }
         } catch (error) {
-          console.warn(`Could not pre-generate thumbnail for ${video.id}:`, error);
+          console.error(`Error checking thumbnail for ${video.id}:`, error);
+          // Fallback to redirect endpoint
+          thumbnailUrl = `${baseUrl}/api/content/${video.id}/thumbnail`;
         }
 
         const videoUrl = video.videoUrl 

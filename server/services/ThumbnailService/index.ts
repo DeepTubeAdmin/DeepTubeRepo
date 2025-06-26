@@ -62,11 +62,11 @@ export async function generateThumbnail(options: ThumbnailOptions): Promise<Thum
 }
 
 /**
- * Get a signed URL for a thumbnail
+ * Get a thumbnail URL for a content item using signed S3 URLs
  * @param contentId Content ID
  * @param contentType Content type (optional)
  * @param expiresIn Expiration time in seconds (default: 1 hour)
- * @returns Signed URL for the thumbnail
+ * @returns Signed S3 URL for the thumbnail
  */
 export async function getThumbnailUrl(contentId: number, contentType?: string, expiresIn: number = 3600): Promise<string> {
   try {
@@ -76,6 +76,20 @@ export async function getThumbnailUrl(contentId: number, contentType?: string, e
     console.error(`Error getting thumbnail URL for content ${contentId}:`, error);
     throw error;
   }
+}
+
+/**
+ * Get a public thumbnail URL for a content item (ideal for social media sharing)
+ * This returns a direct S3 URL that doesn't require authentication and doesn't expire,
+ * making it more reliable for social media crawlers and previews.
+ * 
+ * @param contentId Content ID
+ * @param contentType Content type (optional)
+ * @returns Direct public S3 URL for the thumbnail
+ */
+export function getPublicThumbnailUrl(contentId: number, contentType?: string): string {
+  const s3Key = storage.getThumbnailS3Key(contentId, contentType);
+  return storage.getPublicS3Url(s3Key);
 }
 
 /**
@@ -173,6 +187,7 @@ export {
 export default {
   generateThumbnail,
   getThumbnailUrl,
+  getPublicThumbnailUrl,
   thumbnailExists,
   testService,
   testFFmpegAvailability,

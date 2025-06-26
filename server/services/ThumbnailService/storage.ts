@@ -97,6 +97,22 @@ export async function getSignedS3Url(
 }
 
 /**
+ * Generate a direct public S3 URL for publicly accessible objects
+ * This is ideal for social media sharing as it doesn't require authentication
+ * and doesn't expire, making it more reliable for crawlers.
+ *
+ * Note: This assumes the S3 bucket is configured for public read access
+ * for thumbnail objects, or that the objects have public ACL.
+ *
+ * @param s3Key S3 key
+ * @returns Direct public S3 URL
+ */
+export function getPublicS3Url(s3Key: string): string {
+  const region = process.env.AWS_REGION || "us-east-1";
+  return `https://${BUCKET_NAME}.s3.${region}.amazonaws.com/${s3Key}`;
+}
+
+/**
  * Delete a file from S3
  * @param s3Key S3 key
  */
