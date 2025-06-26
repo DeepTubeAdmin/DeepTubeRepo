@@ -265,8 +265,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           : "";
         const description =
           video.description ||
-          `Watch this AI-generated ${video.contentType} on DeepTube - the premier platform for ethical AI-generated content${generatorInfo}`;
-        const enhancedTitle = `${video.title}${generatorInfo} | DeepTube`;
+          `Watch this AI-generated ${video.contentType} on DeepTubeAI - the premier platform for ethical AI-generated content${generatorInfo}`;
+        const enhancedTitle = `${video.title}${generatorInfo} | DeepTubeAI`;
 
         // Generate keywords from content
         const keywords = [
@@ -275,6 +275,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           video.aiGenerator || "AI generation",
           video.resolution || "HD",
           "AI media",
+          "DeepTubeAI",
+          "deep tube",
+          "deep tube ai",
+          "deeptubeai",
           "DeepTube",
           "AI content",
           "artificial intelligence",
@@ -306,12 +310,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 },
                 author: {
                   "@type": "Organization",
-                  name: "DeepTube",
+                  name: "DeepTubeAI",
                   url: baseUrl,
                 },
                 publisher: {
                   "@type": "Organization",
-                  name: "DeepTube",
+                  name: "DeepTubeAI",
                   url: baseUrl,
                   logo: {
                     "@type": "ImageObject",
@@ -336,12 +340,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 height: "720",
                 author: {
                   "@type": "Organization",
-                  name: "DeepTube",
+                  name: "DeepTubeAI",
                   url: baseUrl,
                 },
                 publisher: {
                   "@type": "Organization",
-                  name: "DeepTube",
+                  name: "DeepTubeAI",
                   url: baseUrl,
                   logo: {
                     "@type": "ImageObject",
@@ -367,7 +371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               <meta name="title" content="${enhancedTitle}">
               <meta name="description" content="${description}">
               <meta name="keywords" content="${keywords}">
-              <meta name="author" content="DeepTube">
+              <meta name="author" content="DeepTubeAI">
               <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
               <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
               <meta name="bingbot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
@@ -379,7 +383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 video.contentType === "video" ? "video.other" : "article"
               }">
               <meta property="og:url" content="${canonicalUrl}">
-              <meta property="og:site_name" content="DeepTube">
+              <meta property="og:site_name" content="DeepTubeAI">
               <meta property="og:title" content="${enhancedTitle}">
               <meta property="og:description" content="${description}">
               <meta property="og:image" content="${thumbnailUrl}">
@@ -427,8 +431,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               <meta name="twitter:card" content="${
                 video.contentType === "video" ? "player" : "summary_large_image"
               }">
-              <meta name="twitter:site" content="@DeepTube">
-              <meta name="twitter:creator" content="@DeepTube">
+              <meta name="twitter:site" content="@DeepTubeAI">
+              <meta name="twitter:creator" content="@DeepTubeAI">
               <meta name="twitter:title" content="${enhancedTitle}">
               <meta name="twitter:description" content="${description}">
               <meta name="twitter:image" content="${thumbnailUrl}">
@@ -468,8 +472,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               <!-- Additional SEO Meta Tags -->
               <meta name="theme-color" content="#f59e0b">
               <meta name="msapplication-TileColor" content="#f59e0b">
-              <meta name="application-name" content="DeepTube">
-              <meta name="apple-mobile-web-app-title" content="DeepTube">
+              <meta name="application-name" content="DeepTubeAI">
+              <meta name="apple-mobile-web-app-title" content="DeepTubeAI">
               <meta name="apple-mobile-web-app-capable" content="yes">
               <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
               
@@ -2582,7 +2586,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
         <rect width="100%" height="100%" fill="#0f172a"/>
         <text x="50%" y="50%" font-family="Arial" font-size="24" fill="#f59e0b" text-anchor="middle">
-          DeepTube ${contentType.charAt(0).toUpperCase() + contentType.slice(1)}
+          DeepTubeAI ${contentType.charAt(0).toUpperCase() + contentType.slice(1)}
         </text>
       </svg>`;
 
@@ -2594,7 +2598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
         <rect width="100%" height="100%" fill="#0f172a"/>
         <text x="50%" y="50%" font-family="Arial" font-size="24" fill="#f59e0b" text-anchor="middle">
-          DeepTube Thumbnail
+          DeepTubeAI Thumbnail
         </text>
       </svg>`;
       res.setHeader("Content-Type", "image/svg+xml");
