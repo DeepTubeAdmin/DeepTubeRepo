@@ -60,7 +60,9 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
 
   // State to track if we should show featured video section
   const [shouldShowFeatured, setShouldShowFeatured] = useState(true);
-  const [lastFeaturedVideo, setLastFeaturedVideo] = useState<Video | null>(null);
+  const [lastFeaturedVideo, setLastFeaturedVideo] = useState<Video | null>(
+    null
+  );
 
   // Ref hooks
   const previousDataRef = useRef<ContentFeedResponse | undefined>(undefined);
@@ -108,7 +110,9 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   const { data, isLoading, isError } = useQuery<ContentFeedResponse>({
     queryKey,
     // Only use placeholder data if we have valid previous data with a featured video
-    placeholderData: previousDataRef.current?.featured?.video ? previousDataRef.current : undefined,
+    placeholderData: previousDataRef.current?.featured?.video
+      ? previousDataRef.current
+      : undefined,
   });
 
   // Clean up URL parameters after data has been loaded
@@ -178,13 +182,13 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     setLoadedVideos([]);
     setLoadedImages([]);
     setAdPositions([]);
-    
+
     // Clear previous data to ensure fresh fetch
     previousDataRef.current = undefined;
-    
+
     // Don't immediately clear lastFeaturedVideo to prevent flicker
     // It will be updated when new data arrives
-    
+
     // Immediately invalidate queries to force refresh
     queryClient.invalidateQueries({
       queryKey: ["/api/content/feed"],
@@ -258,7 +262,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   useEffect(() => {
     if (data) {
       previousDataRef.current = data;
-      
+
       // Track featured video to maintain continuity
       if (data.featured.video) {
         setLastFeaturedVideo(data.featured.video);
@@ -464,7 +468,9 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
       <div className="flex justify-between items-center mb-6">
         {/* Section title */}
         <h2 className="text-xl font-bold text-white">
-          {(data?.featured?.video || lastFeaturedVideo) ? "Featured Video" : "Content Feed"}
+          {data?.featured?.video || lastFeaturedVideo
+            ? "Featured Video"
+            : "Content Feed"}
         </h2>
 
         {/* Controls: Sort Button */}
@@ -554,16 +560,17 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
       {(data?.featured?.video || lastFeaturedVideo) && (
         <section className="mb-12">
           <div className="max-w-4xl mx-auto">
-            <VideoCard 
-              video={data?.featured?.video || lastFeaturedVideo!} 
-              size="large" 
+            <VideoCard
+              video={data?.featured?.video || lastFeaturedVideo!}
+              size="large"
             />
           </div>
         </section>
       )}
-
+      
       {/* Endless Content Section - No section title as requested */}
       <section>
+        <div id="container-23f25202a92b07df5c684ed33d32c843"></div>
         {/* Render content chunks (4 rows video + 2 rows images, repeating) */}
         {renderContent.map((chunk, chunkIndex) => {
           // Ad display is now controlled by hasAdInVideo and hasAdInImage properties
