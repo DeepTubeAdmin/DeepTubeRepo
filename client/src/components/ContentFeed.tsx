@@ -583,38 +583,31 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
                 <div className="mb-8">
                   <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mb-4">
                     {/* Insert ad in video section only if randomly selected for this section */}
-                    {chunk.hasAdInVideo ? (
-                      <>
-                        <div id="container-23f25202a92b07df5c684ed33d32c843"></div>
-                        {/* {insertAdvertisementInContent(
-                          chunk.videos,
-                          "video"
-                        ).map((video, index) =>
-                          video ? (
-                            <VideoCard
-                              key={`content-video-${video.id}-${chunkIndex}-${index}`}
-                              video={video}
-                            />
-                          ) : (
-                            <AdvertisementCard
-                              key={`content-ad-${chunkIndex}-${index}`}
-                              type="video"
-                            />
-                          )
-                        )} */}
-                      </>
-                    ) : (
-                      chunk.videos.map((video, index) => (
-                        <VideoCard
-                          key={`content-video-${video.id}-${chunkIndex}-${index}`}
-                          video={video}
-                        />
-                      ))
-                    )}
+                    {chunk.hasAdInVideo
+                      ? insertAdvertisementInContent(chunk.videos, "video").map(
+                          (video, index) =>
+                            video ? (
+                              <VideoCard
+                                key={`content-video-${video.id}-${chunkIndex}-${index}`}
+                                video={video}
+                              />
+                            ) : (
+                              <AdvertisementCard
+                                key={`content-ad-${chunkIndex}-${index}`}
+                                type="video"
+                              />
+                            )
+                        )
+                      : chunk.videos.map((video, index) => (
+                          <VideoCard
+                            key={`content-video-${video.id}-${chunkIndex}-${index}`}
+                            video={video}
+                          />
+                        ))}
                   </div>
                 </div>
               )}
-
+              <div id="container-23f25202a92b07df5c684ed33d32c843"></div>
               {/* Image Grid (2 rows of images) */}
               {chunk.images.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
