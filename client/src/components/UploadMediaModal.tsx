@@ -13,18 +13,6 @@ import {
 } from "lucide-react";
 import { SimpleDialog } from "@/components/ui/simple-dialog";
 import {
-  isRedditEmbed,
-  extractRedditInfo,
-  getRedditThumbnailUrl,
-  redditUrlToEmbedCode,
-} from "@/lib/utils";
-
-import {
-  youtubeUrlToEmbedCode,
-  extractYoutubeVideoId,
-  getYoutubeThumbnailUrl,
-} from "@/lib/youtubeUtils";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -66,82 +54,12 @@ export default function UploadMediaModal({
   const [prompt, setPrompt] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState<string>("");
-  const [contentType, setContentType] = useState<"video" | "image" | "embed">(
+  const [contentType, setContentType] = useState<"video" | "image">(
     "video"
   );
-  const [embedCode, setEmbedCode] = useState<string>("");
   const [thumbnailUrl, setThumbnailUrl] = useState<string>("");
   const [tags, setTags] = useState<string>("");
   const [duration, setDuration] = useState<number>(0);
-
-  // Store original URLs to allow toggling between URL and embed code
-  const [originalYoutubeUrl, setOriginalYoutubeUrl] = useState<string>("");
-  const [originalRedditUrl, setOriginalRedditUrl] = useState<string>("");
-
-  // Handle embed code changes - detect platform and store URLs
-  const handleEmbedCodeChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const value = e.target.value;
-      setEmbedCode(value);
-
-      // Check for YouTube URL
-      if (
-        (value.includes("youtube.com") || value.includes("youtu.be")) &&
-        !value.includes("<iframe")
-      ) {
-        console.log("YouTube URL detected:", value);
-        setOriginalYoutubeUrl(value);
-        setOriginalRedditUrl("");
-
-        // Auto-convert YouTube URLs to embedded format for better UX
-        const videoId = extractYoutubeVideoId(value);
-        console.log("Extracted YouTube ID:", videoId);
-
-        if (videoId) {
-          const youtubeEmbed = youtubeUrlToEmbedCode(value);
-          console.log("Generated YouTube embed code:", youtubeEmbed);
-
-          if (youtubeEmbed) {
-            setEmbedCode(youtubeEmbed);
-
-            // Also set thumbnail URL
-            const thumbnailUrl = getYoutubeThumbnailUrl(videoId);
-            console.log("Setting YouTube thumbnail URL:", thumbnailUrl);
-            setThumbnailUrl(thumbnailUrl);
-
-            // Show success toast
-            toast({
-              title: "YouTube URL detected",
-              description:
-                "URL has been automatically converted to embed format",
-            });
-          }
-        }
-      }
-      // Check for Reddit URL - reject it
-      else if (
-        value.includes("reddit.com/r/") ||
-        value.includes("reddit-embed-bq") ||
-        value.includes("embed.reddit.com")
-      ) {
-        console.log("Reddit URL detected - rejecting:", value);
-
-        // Clear the embed code to prevent submission
-        e.target.value = "";
-        setEmbedCode("");
-        setOriginalRedditUrl("");
-
-        // Show error toast
-        toast({
-          title: "Reddit content not supported",
-          description:
-            "Reddit embeds are not supported. Please use YouTube or Vimeo links instead.",
-          variant: "destructive",
-        });
-      }
-    },
-    []
-  );
 
   // Fetch categories for the dropdown
   const { data: categories, isLoading: categoriesLoading } = useQuery<
@@ -162,10 +80,9 @@ export default function UploadMediaModal({
       setShowCustomAiGenerator(false);
       setPrompt("");
       setDescription("");
-      setEmbedCode("");
+      setTags("");
       setThumbnailUrl("");
-      setOriginalYoutubeUrl("");
-      setOriginalRedditUrl("");
+      setDuration(0);
     }
   }, [isOpen]);
 
@@ -236,10 +153,8 @@ export default function UploadMediaModal({
           "AI Generator required",
           "Please select or specify an AI tool"
         );
-      if (contentType !== "embed" && !selectedFile)
+      if (!selectedFile)
         return showToast("No file", `Please select a ${contentType} file`);
-      if (contentType === "embed" && !embedCode)
-        return showToast("No embed code", "Embed code is required");
       return true;
     };
     if (validateForm() !== true) return setIsUploading(false);
@@ -291,7 +206,7 @@ export default function UploadMediaModal({
     };
 
     try {
-      if (contentType !== "embed" && selectedFile) {
+      if (selectedFile) {
         const fileData = await uploadFile();
         if (contentType === "video") {
           videoUrl = fileData.url;
@@ -306,9 +221,6 @@ export default function UploadMediaModal({
             reader.readAsDataURL(selectedFile!);
           });
         }
-      } else if (contentType === "embed") {
-        const videoId = extractYoutubeVideoId(originalYoutubeUrl || embedCode);
-        if (videoId) finalThumbnail = getYoutubeThumbnailUrl(videoId);
       }
 
       const userRes = await fetch("/api/user", { credentials: "include" });
@@ -327,7 +239,6 @@ export default function UploadMediaModal({
         thumbnail: finalThumbnail,
         videoUrl,
         imageUrl,
-        embedCode: contentType === "embed" ? embedCode : null,
         resolution: "HD",
         duration,
         credits: 0,
@@ -417,10 +328,10 @@ export default function UploadMediaModal({
         <Tabs
           defaultValue="video"
           onValueChange={(value) =>
-            setContentType(value as "video" | "image" | "embed")
+            setContentType(value as "video" | "image")
           }
         >
-          <TabsList className="grid w-full grid-cols-3 mb-4 bg-[#272727] p-1 rounded-lg">
+          <TabsList className="grid w-full grid-cols-2 mb-4 bg-[#272727] p-1 rounded-lg">
             <TabsTrigger
               value="video"
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:font-bold uppercase font-semibold rounded"
@@ -434,13 +345,6 @@ export default function UploadMediaModal({
             >
               <i className="fas fa-image"></i>
               Image
-            </TabsTrigger>
-            <TabsTrigger
-              value="embed"
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:font-bold uppercase font-semibold rounded"
-            >
-              <i className="fas fa-link"></i>
-              Embed
             </TabsTrigger>
           </TabsList>
 
@@ -830,247 +734,6 @@ export default function UploadMediaModal({
             </form>
           </TabsContent>
 
-          <TabsContent value="embed" className="mt-0">
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <div className="space-y-2">
-                <label htmlFor="embed-code" className="text-sm font-medium">
-                  Embed Code <span className="text-destructive">*</span>
-                </label>
-                <Textarea
-                  id="embed-code"
-                  value={embedCode}
-                  onChange={handleEmbedCodeChange}
-                  placeholder="Paste embed code from YouTube or Vimeo only"
-                  className="resize-none min-h-[60px] font-mono text-sm"
-                />
-                <div className="flex justify-between items-center mt-1">
-                  <p className="text-xs text-muted-foreground">
-                    Only YouTube and Vimeo embed links are supported. Reddit
-                    embeds are not supported.
-                  </p>
-                  <div className="flex space-x-2">
-                    {/* Always show YouTube conversion button if embed code has youtube.com */}
-                    {(originalYoutubeUrl ||
-                      embedCode.includes("youtube.com") ||
-                      embedCode.includes("youtu.be")) && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="text-xs"
-                        onClick={() => {
-                          // Use either the stored original URL or the current embed code
-                          const url = originalYoutubeUrl || embedCode;
-                          console.log("Converting YouTube URL:", url);
-
-                          // First try to extract video ID
-                          const videoId = extractYoutubeVideoId(url);
-                          console.log("Extracted YouTube video ID:", videoId);
-
-                          if (videoId) {
-                            // Generate the proper embed code
-                            const newEmbedCode = youtubeUrlToEmbedCode(url);
-                            if (newEmbedCode) {
-                              console.log(
-                                "Generated embed code:",
-                                newEmbedCode
-                              );
-                              setEmbedCode(newEmbedCode);
-                              // Update thumbnail
-                              const thumbnailUrl =
-                                getYoutubeThumbnailUrl(videoId);
-                              console.log(
-                                "Setting thumbnail URL:",
-                                thumbnailUrl
-                              );
-                              setThumbnailUrl(thumbnailUrl);
-
-                              // Toast success notification
-                              toast({
-                                title: "YouTube URL converted",
-                                description:
-                                  "URL has been converted to embed format",
-                              });
-                            }
-                          } else {
-                            toast({
-                              title: "Invalid YouTube URL",
-                              description:
-                                "Could not extract video ID from the provided URL",
-                              variant: "destructive",
-                            });
-                          }
-                        }}
-                      >
-                        Convert YouTube URL
-                      </Button>
-                    )}
-                    {/* Reddit embeds are no longer supported */}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="embed-title" className="text-sm font-medium">
-                  Media Title <span className="text-destructive">*</span>
-                </label>
-                <Input
-                  id="embed-title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Enter a title for your embedded media"
-                  required
-                  minLength={3}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="embed-category" className="text-sm font-medium">
-                  Category <span className="text-destructive">*</span>
-                </label>
-                <Select
-                  value={categoryId}
-                  onValueChange={setCategoryId}
-                  required
-                >
-                  <SelectTrigger id="embed-category">
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categoriesLoading ? (
-                      <div className="flex items-center justify-center p-2">
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Loading categories...
-                      </div>
-                    ) : categories && categories.length > 0 ? (
-                      categories.map((category) => (
-                        <SelectItem
-                          key={category.id}
-                          value={String(category.id)}
-                        >
-                          {category.name}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <div className="p-2 text-sm text-muted-foreground">
-                        No categories found
-                      </div>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="embed-aiGenerator"
-                  className="text-sm font-medium"
-                >
-                  AI Generator <span className="text-destructive">*</span>
-                </label>
-                <Select
-                  value={aiGenerator}
-                  onValueChange={(value) => {
-                    setAiGenerator(value);
-                    setShowCustomAiGenerator(value === "Other");
-                  }}
-                  required
-                >
-                  <SelectTrigger id="embed-aiGenerator">
-                    <SelectValue placeholder="Select AI Generator" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {aiGeneratorOptions.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {showCustomAiGenerator && (
-                  <div className="mt-2">
-                    <Input
-                      id="embed-customAiGenerator"
-                      value={customAiGenerator}
-                      onChange={(e) => setCustomAiGenerator(e.target.value)}
-                      placeholder="Specify the AI tool used"
-                      required
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="embed-prompt" className="text-sm font-medium">
-                  Prompt Used (Optional)
-                </label>
-                <Textarea
-                  id="embed-prompt"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Enter the prompt you used to generate this content"
-                  className="resize-none min-h-[60px]"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="embed-description"
-                  className="text-sm font-medium"
-                >
-                  Description (Optional)
-                </label>
-                <Textarea
-                  id="embed-description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Add a description for your embedded media"
-                  className="resize-none min-h-[60px]"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="embed-tags" className="text-sm font-medium">
-                  Tags (Optional)
-                </label>
-                <Input
-                  id="embed-tags"
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
-                  placeholder="Enter comma-separated tags (e.g. tutorial, gameplay, documentary)"
-                />
-                <p className="text-xs text-gray-400">
-                  Helps others discover your content
-                </p>
-              </div>
-
-              <div className="flex justify-end pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose}
-                  className="mr-2 border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
-                  disabled={isUploading}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isUploading}
-                  className="bg-primary text-black hover:bg-primary/90 font-bold uppercase"
-                >
-                  {isUploading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Uploading...
-                    </>
-                  ) : (
-                    "Upload Embed"
-                  )}
-                </Button>
-              </div>
-            </form>
-          </TabsContent>
         </Tabs>
       </div>
     </SimpleDialog>
