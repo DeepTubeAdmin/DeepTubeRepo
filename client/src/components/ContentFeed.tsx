@@ -570,7 +570,6 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
 
       {/* Endless Content Section - No section title as requested */}
       <section>
-        <div id="container-23f25202a92b07df5c684ed33d32c843"></div>
         {/* Render content chunks (4 rows video + 2 rows images, repeating) */}
         {renderContent.map((chunk, chunkIndex) => {
           // Ad display is now controlled by hasAdInVideo and hasAdInImage properties

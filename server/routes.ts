@@ -187,6 +187,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       /duckduckbot/i,
       /baiduspider/i,
       /postman/i,
+      // Mobile social media apps that need proper meta tags
+      /Twitter for iPhone/i,
+      /Twitter for Android/i,
+      /FBAN/i, // Facebook mobile app
+      /FBAV/i, // Facebook mobile app
+      /Instagram/i,
+      /LinkedIn/i,
+      /Discord/i,
+      /TikTok/i,
+      // Generic social media preview patterns
+      /preview/i,
+      /link.*preview/i,
+      /social.*media/i,
     ];
     return botPatterns.some((pattern) => pattern.test(userAgent));
   }
