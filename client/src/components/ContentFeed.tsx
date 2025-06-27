@@ -607,7 +607,6 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
                   </div>
                 </div>
               )}
-              <div id="container-23f25202a92b07df5c684ed33d32c843"></div>
               {/* Image Grid (2 rows of images) */}
               {chunk.images.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
