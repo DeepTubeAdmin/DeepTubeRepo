@@ -25,7 +25,6 @@ import ResetPassword from "@/pages/reset-password";
 import { AuthProvider } from "@/hooks/use-auth";
 import { VideoPlaybackProvider } from "@/contexts/VideoPlaybackContext";
 import Layout from "@/components/Layout";
-import AgeVerificationModal from "@/components/AgeVerificationModal";
 import AdSenseInitializer from "@/components/AdSenseInitializer";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import FAQ from "./pages/faq";
@@ -70,7 +69,6 @@ function Router() {
 
 function App() {
   const [location] = useLocation();
-  const [showAgeVerification, setShowAgeVerification] = useState(false);
 
   // Create a state for the shuffle seed
   const [shuffleSeed, setShuffleSeed] = useState(() => {
@@ -98,25 +96,6 @@ function App() {
     // The Header component now handles that directly with its handleLogoClick function
   };
 
-  useEffect(() => {
-    // Check if user has already verified their age
-    const isVerified = localStorage.getItem("ageVerified") === "true";
-
-    // Skip age verification if on the access-denied page
-    if (location === "/access-denied") {
-      return;
-    }
-
-    // Show age verification if not already verified
-    if (!isVerified) {
-      setShowAgeVerification(true);
-    }
-  }, [location]);
-
-  const handleAgeVerified = () => {
-    setShowAgeVerification(false);
-  };
-
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -127,10 +106,6 @@ function App() {
                 {/* Initialize AdSense when the app loads */}
                 <AdSenseInitializer />
                 <Toaster />
-                <AgeVerificationModal
-                  isOpen={showAgeVerification}
-                  onVerify={handleAgeVerified}
-                />
                 <Router />
                 {/* Performance monitor for debugging API calls - commented out for now */}
                 {/* <PerformanceMonitor /> */}
