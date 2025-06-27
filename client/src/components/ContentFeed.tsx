@@ -567,7 +567,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
           </div>
         </section>
       )}
-      
+
       {/* Endless Content Section - No section title as requested */}
       <section>
         <div id="container-23f25202a92b07df5c684ed33d32c843"></div>
@@ -592,10 +592,13 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
                                 video={video}
                               />
                             ) : (
-                              <AdvertisementCard
-                                key={`content-ad-${chunkIndex}-${index}`}
-                                type="video"
-                              />
+                              <>
+                                <div id="container-23f25202a92b07df5c684ed33d32c843"></div>{" "}
+                                {/* <AdvertisementCard
+                                  key={`content-ad-${chunkIndex}-${index}`}
+                                  type="video"
+                                /> */}
+                              </>
                             )
                         )
                       : chunk.videos.map((video, index) => (
