@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import CategoryNavigation from "@/components/CategoryNavigation";
 import VideoPlayer from "@/components/VideoPlayer";
 import ContentFeed from "@/components/ContentFeed";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Category } from "@shared/schema";
@@ -99,7 +100,24 @@ export default function Home() {
         {/* Added padding to bottom (pb-12) to make room for the fixed mini footer */}
           
           {/* Content Feed with three sections - now the first element */}
-          <ContentFeed categorySlug={activeCategory} />
+          <ErrorBoundary 
+            fallback={
+              <div className="flex items-center justify-center min-h-screen">
+                <div className="text-white text-center">
+                  <h2 className="text-2xl mb-4">Something went wrong</h2>
+                  <p className="text-gray-400 mb-4">Failed to load content feed</p>
+                  <button 
+                    onClick={() => window.location.reload()}
+                    className="px-4 py-2 bg-orange-500 text-black rounded hover:bg-orange-600"
+                  >
+                    Reload Page
+                  </button>
+                </div>
+              </div>
+            }
+          >
+            <ContentFeed categorySlug={activeCategory} />
+          </ErrorBoundary>
         </main>
       </div>
       

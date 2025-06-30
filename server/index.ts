@@ -103,8 +103,9 @@ app.use((req, res, next) => {
       reusePort: true,
     },
     () => {
+      log(`serving on host ${process.env.HOST}`);
       log(`serving on port ${port}`);
-      log(`Click http://${process.env.HOST}:${port}`);
+      log(`base url http://${process.env.HOST}:${port}`);
     }
   );
 })();

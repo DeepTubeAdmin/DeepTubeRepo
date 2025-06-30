@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Heart, ExternalLink, AlertTriangle } from "lucide-react";
-import { Video } from "@shared/schema";
+import { Video } from "@/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";

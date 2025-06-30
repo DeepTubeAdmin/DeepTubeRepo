@@ -38,20 +38,24 @@ export async function handleContentFeed(req: Request, res: Response) {
         | "trending"
         | "popular") || "trending";
 
+    // Handle shuffle seed - only use for page 1, not for pagination
     const isChronologicalSort = sortBy === "newest" || sortBy === "oldest";
     const hasShuffleParam = req.query.shuffle !== undefined;
     const hasShuffleSeedParam = req.query.shuffleSeed !== undefined;
 
+    // Only apply shuffle to page 1 to maintain content order for pagination
     const shuffle =
-      (hasShuffleParam || hasShuffleSeedParam) && !isChronologicalSort;
+      page === 1 && (hasShuffleParam || hasShuffleSeedParam) && !isChronologicalSort;
 
     let shuffleSeed = "";
-    if (hasShuffleSeedParam) {
-      shuffleSeed = req.query.shuffleSeed as string;
-    } else if (hasShuffleParam) {
-      shuffleSeed = req.query.shuffle as string;
-    } else if (shuffle) {
-      shuffleSeed = generateShuffleSeed();
+    if (page === 1) {
+      if (hasShuffleSeedParam) {
+        shuffleSeed = req.query.shuffleSeed as string;
+      } else if (hasShuffleParam) {
+        shuffleSeed = req.query.shuffle as string;
+      } else if (shuffle) {
+        shuffleSeed = generateShuffleSeed();
+      }
     }
 
     if (isChronologicalSort) {
@@ -70,6 +74,7 @@ export async function handleContentFeed(req: Request, res: Response) {
       },
     };
 
+    // Only show featured video on page 1
     if (page === 1) {
       const featuredVideos = await dbStorage.getFeaturedVideos(6);
       if (featuredVideos.length > 0) {
@@ -85,13 +90,19 @@ export async function handleContentFeed(req: Request, res: Response) {
       }
     }
 
-    const videoLimit = page === 1 ? 15 : 12;  // More videos for first page to fill 4 rows
-    const imageLimit = page === 1 ? 8 : 6;   // More images for first page to fill 2 rows
+    // Simplified pagination: 12 videos and 6 images per page consistently
+    const videosPerPage = 12;
+    const imagesPerPage = 6;
+    
+    // Calculate offset based on page number
+    const videoOffset = (page - 1) * videosPerPage;
+    const imageOffset = (page - 1) * imagesPerPage;
 
     let videos: Video[] = [];
     let images: Video[] = [];
     const uniqueContentIds = new Set<number>();
 
+    // Add featured video to unique IDs to avoid duplicates
     if (response.featured.video) {
       uniqueContentIds.add(response.featured.video.id);
     }
@@ -100,115 +111,59 @@ export async function handleContentFeed(req: Request, res: Response) {
       ? await getCategoryId(categorySlug)
       : undefined;
 
-    if (page === 1) {
-      if (sortBy === "trending") {
-        const trendingVideos = await dbStorage.getTrendingVideos(
-          Math.ceil(videoLimit * 0.6), // 60% from trending
-          "video",
-          shuffle ? shuffleSeed : undefined,
-          categoryId
-        );
-
-        const newVideos = await dbStorage.getVideos(
-          Math.ceil(videoLimit * 0.3), // 30% from newest
-          "video",
-          categoryId,
-          "newest",
-          undefined,
-          0
-        );
-
-        const popularVideos = await dbStorage.getVideos(
-          Math.ceil(videoLimit * 0.1), // 10% from popular
-          "video",
-          categoryId,
-          "most-viewed",
-          undefined,
-          0
-        );
-
-        const trendingImages = await dbStorage.getTrendingVideos(
-          Math.ceil(imageLimit * 0.7), // 70% from trending
-          "image",
-          shuffle ? shuffleSeed : undefined,
-          categoryId
-        );
-
-        const newImages = await dbStorage.getVideos(
-          Math.ceil(imageLimit * 0.3), // 30% from newest
-          "image",
-          categoryId,
-          "newest",
-          undefined,
-          0
-        );
-
-        videos = mergeAndDeduplicate(
-          [...trendingVideos, ...newVideos, ...popularVideos],
-          uniqueContentIds
-        ).slice(0, videoLimit); // Enforce final limit
-        images = mergeAndDeduplicate(
-          [...trendingImages, ...newImages],
-          uniqueContentIds
-        ).slice(0, imageLimit); // Enforce final limit
-      } else {
-        const sortedVideos = await dbStorage.getVideos(
-          videoLimit,
-          "video",
-          categoryId,
-          sortBy,
-          shuffle ? shuffleSeed : undefined,
-          0
-        );
-        const sortedImages = await dbStorage.getVideos(
-          imageLimit,
-          "image",
-          categoryId,
-          sortBy,
-          shuffle ? shuffleSeed : undefined,
-          0
-        );
-
-        videos = mergeAndDeduplicate(sortedVideos, uniqueContentIds);
-        images = mergeAndDeduplicate(sortedImages, uniqueContentIds);
-      }
-    } else {
-      // For subsequent pages, calculate offset
-      const videoOffset = (page - 1) * videoLimit;
-      const imageOffset = (page - 1) * imageLimit;
+    // Get videos and images with proper offset
+    if (sortBy === "trending") {
+      // For trending, we need to get a larger set and then slice to avoid duplicates
+      const allTrendingVideos = await dbStorage.getTrendingVideos(
+        1000, // Get a large set
+        "video",
+        shuffle ? shuffleSeed : undefined,
+        categoryId
+      );
+      const allTrendingImages = await dbStorage.getTrendingVideos(
+        1000, // Get a large set
+        "image",
+        shuffle ? shuffleSeed : undefined,
+        categoryId
+      );
       
-      const seedForPage =
-        shuffle && !isChronologicalSort
-          ? `${shuffleSeed}-page${page}`
-          : undefined;
-      const moreVideos = await dbStorage.getVideos(
-        videoLimit,
+      // Filter out featured video and slice for pagination
+      const filteredVideos = allTrendingVideos.filter(v => !uniqueContentIds.has(v.id));
+      const filteredImages = allTrendingImages.filter(i => !uniqueContentIds.has(i.id));
+      
+      videos = filteredVideos.slice(videoOffset, videoOffset + videosPerPage);
+      images = filteredImages.slice(imageOffset, imageOffset + imagesPerPage);
+    } else {
+      // For other sorts, use offset-based pagination
+      const allVideos = await dbStorage.getVideos(
+        videosPerPage,
         "video",
         categoryId,
         sortBy,
-        seedForPage,
+        shuffle ? shuffleSeed : undefined,
         videoOffset
       );
-      const moreImages = await dbStorage.getVideos(
-        imageLimit,
+      const allImages = await dbStorage.getVideos(
+        imagesPerPage,
         "image",
         categoryId,
         sortBy,
-        seedForPage,
+        shuffle ? shuffleSeed : undefined,
         imageOffset
       );
-
-      videos = mergeAndDeduplicate(moreVideos, uniqueContentIds);
-      images = mergeAndDeduplicate(moreImages, uniqueContentIds);
+      
+      // Filter out featured video
+      videos = allVideos.filter(v => !uniqueContentIds.has(v.id));
+      images = allImages.filter(i => !uniqueContentIds.has(i.id));
     }
 
-    const numChunks = Math.max(
-      Math.ceil(videos.length / (4 * 3)), // 4 video rows (3 columns = 12 videos per chunk)
-      Math.ceil(images.length / (2 * 3))  // 2 image rows (3 columns = 6 images per chunk)
-    );
-
+    // Generate ad positions (every chunk gets an ad position)
+    const videoChunks = Math.ceil(videos.length / 12); // 4 rows × 3 columns = 12 videos per chunk
+    const imageChunks = Math.ceil(images.length / 6);  // 2 rows × 3 columns = 6 images per chunk
+    const totalChunks = Math.max(videoChunks, imageChunks);
+    
     const adPositions = [];
-    for (let i = 0; i < numChunks; i++) {
+    for (let i = 0; i < totalChunks; i++) {
       adPositions.push(i);
     }
 
@@ -216,81 +171,60 @@ export async function handleContentFeed(req: Request, res: Response) {
     response.content.images = images;
     response.content.adPositions = adPositions;
     
-    // Check if there's more content by requesting one extra item for the next page
-    const nextVideoLimit = 1;
-    const nextImageLimit = 1;
-    const nextPage = page + 1;
-    
+    // Simple hasMore logic: if we got the full requested amount, there might be more
     let hasMoreVideos = false;
     let hasMoreImages = false;
     
-    // Simple fallback: if we got less than requested, there's likely no more
-    if (videos.length < videoLimit && images.length < imageLimit) {
+    try {
+      // Check if there's content for the next page
+      const nextVideoOffset = page * videosPerPage;
+      const nextImageOffset = page * imagesPerPage;
+      
+      if (sortBy === "trending") {
+        // For trending, check if we have more content beyond current page
+        const allTrendingVideos = await dbStorage.getTrendingVideos(
+          1000,
+          "video",
+          undefined, // Don't use shuffle for checking more content
+          categoryId
+        );
+        const allTrendingImages = await dbStorage.getTrendingVideos(
+          1000,
+          "image", 
+          undefined, // Don't use shuffle for checking more content
+          categoryId
+        );
+        
+        hasMoreVideos = allTrendingVideos.length > nextVideoOffset;
+        hasMoreImages = allTrendingImages.length > nextImageOffset;
+      } else {
+        const nextVideos = await dbStorage.getVideos(
+          1,
+          "video",
+          categoryId,
+          sortBy,
+          undefined,
+          nextVideoOffset
+        );
+        const nextImages = await dbStorage.getVideos(
+          1,
+          "image",
+          categoryId,
+          sortBy,
+          undefined,
+          nextImageOffset
+        );
+        
+        hasMoreVideos = nextVideos.length > 0;
+        hasMoreImages = nextImages.length > 0;
+      }
+    } catch (error) {
+      console.error("Error checking for more content:", error);
       hasMoreVideos = false;
       hasMoreImages = false;
-    } else {
-      // Calculate theoretical maximum items we could have seen so far
-      const expectedVideosSoFar = (page - 1) * videoLimit + videos.length;
-      const expectedImagesSoFar = (page - 1) * imageLimit + images.length;
-      
-      // For chronological sorts, we can be more precise about running out
-      if (isChronologicalSort) {
-        // For chronological sorts, check if we're approaching database limits
-        // This is a rough estimate - you'd want to replace with actual DB counts
-        hasMoreVideos = expectedVideosSoFar < 45; // Assume ~45 videos max
-        hasMoreImages = expectedImagesSoFar < 25; // Assume ~25 images max
-      } else {
-        try {
-          const nextVideoOffset = page * videoLimit;
-          const nextImageOffset = page * imageLimit;
-          
-          if (sortBy === "trending") {
-            const nextVideos = await dbStorage.getTrendingVideos(
-              nextVideoLimit,
-              "video",
-              shuffle ? `${shuffleSeed}-page${nextPage}` : undefined,
-              categoryId
-            );
-            const nextImages = await dbStorage.getTrendingVideos(
-              nextImageLimit,
-              "image",
-              shuffle ? `${shuffleSeed}-page${nextPage}` : undefined,
-              categoryId
-            );
-            hasMoreVideos = nextVideos.length > 0;
-            hasMoreImages = nextImages.length > 0;
-          } else {
-            const seedForNextPage = shuffle && !isChronologicalSort 
-              ? `${shuffleSeed}-page${nextPage}` 
-              : undefined;
-            const nextVideos = await dbStorage.getVideos(
-              nextVideoLimit,
-              "video",
-              categoryId,
-              sortBy,
-              seedForNextPage,
-              nextVideoOffset
-            );
-            const nextImages = await dbStorage.getVideos(
-              nextImageLimit,
-              "image",
-              categoryId,
-              sortBy,
-              seedForNextPage,
-              nextImageOffset
-            );
-            hasMoreVideos = nextVideos.length > 0;
-            hasMoreImages = nextImages.length > 0;
-          }
-        } catch (error) {
-          console.error("Error checking for more content:", error);
-          // Default to false if we can't check and got partial results
-          hasMoreVideos = videos.length >= videoLimit;
-          hasMoreImages = images.length >= imageLimit;
-        }
-      }
     }
     
+    // If neither videos nor images have more content, set hasMore to false
     response.content.hasMore = hasMoreVideos || hasMoreImages;
 
     return res.json(response);

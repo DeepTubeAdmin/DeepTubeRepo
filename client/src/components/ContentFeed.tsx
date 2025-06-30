@@ -10,11 +10,59 @@ import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import VideoCard from "./VideoCard";
 import LazyImageCard from "./LazyImageCard";
-import AdvertisementCard from "./AdvertisementCard";
+
 import { Loader2, Filter, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ShuffleContext } from "@/App";
-import { Video } from "@shared/schema";
+import { Video as SharedVideo } from "@shared/schema";
+import { Video as ClientVideo } from "@/types";
+
+// Helper function to transform shared schema Video to client Video type
+const transformVideoForClient = (video: SharedVideo): ClientVideo => {
+  // Add defensive check
+  if (!video) {
+    console.error("transformVideoForClient: Video object is null or undefined");
+    throw new Error("Video object is null or undefined");
+  }
+
+  try {
+    console.log(
+      "transformVideoForClient: Transforming video:",
+      video.id,
+      video.title
+    );
+
+    const transformed = {
+      ...video,
+      // Add missing properties with default values
+      likes: 0, // Will be fetched separately by VideoCard
+      uploaderId: video.userId, // Map userId to uploaderId
+      uploaderName: video.uploaderName || "", // Default to empty string
+      categoryName: null, // Will be populated if needed
+      categorySlug: null, // Will be populated if needed
+      createdAt:
+        typeof video.createdAt === "string"
+          ? video.createdAt
+          : video.createdAt?.toISOString() || new Date().toISOString(), // Handle both Date and string safely
+      // Ensure all required properties exist
+      preview: false,
+      adminNotice: video.adminNotice,
+    } as ClientVideo;
+
+    console.log(
+      "transformVideoForClient: Successfully transformed video:",
+      transformed.id
+    );
+    return transformed;
+  } catch (error) {
+    console.error(
+      "transformVideoForClient: Error transforming video:",
+      error,
+      video
+    );
+    throw error;
+  }
+};
 
 interface ContentFeedProps {
   categorySlug?: string;
@@ -25,11 +73,11 @@ type SortOption = "newest" | "oldest" | "most-viewed" | "trending" | "popular";
 // Updated response interface for new content feed structure
 interface ContentFeedResponse {
   featured: {
-    video: Video | null;
+    video: SharedVideo | null;
   };
   content: {
-    videos: Video[];
-    images: Video[];
+    videos: SharedVideo[];
+    images: SharedVideo[];
     adPositions: number[];
     hasMore: boolean;
   };
@@ -37,11 +85,8 @@ interface ContentFeedResponse {
 
 // Chunk interface for rendering
 interface ContentChunk {
-  videos: Video[];
-  images: Video[];
-  hasAdInVideo: boolean;
-  hasAdInImage: boolean;
-  adPosition: number;
+  videos: ClientVideo[];
+  images: ClientVideo[];
 }
 
 export default function ContentFeed({ categorySlug }: ContentFeedProps) {
@@ -54,21 +99,21 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   const [sortBy, setSortBy] = useState<SortOption>("trending");
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [columnCount, setColumnCount] = useState(3); // Default to 3 columns for large screens
-  const [loadedVideos, setLoadedVideos] = useState<Video[]>([]);
-  const [loadedImages, setLoadedImages] = useState<Video[]>([]);
+  const [loadedVideos, setLoadedVideos] = useState<ClientVideo[]>([]);
+  const [loadedImages, setLoadedImages] = useState<ClientVideo[]>([]);
   const [adPositions, setAdPositions] = useState<number[]>([]);
 
   // State to track if we should show featured video section
   const [shouldShowFeatured, setShouldShowFeatured] = useState(true);
-  const [lastFeaturedVideo, setLastFeaturedVideo] = useState<Video | null>(
-    null
-  );
+  const [lastFeaturedVideo, setLastFeaturedVideo] =
+    useState<ClientVideo | null>(null);
 
   // Ref hooks
   const previousDataRef = useRef<ContentFeedResponse | undefined>(undefined);
   const sortMenuRef = useRef<HTMLDivElement>(null);
   const sortButtonRef = useRef<HTMLButtonElement>(null);
   const isInitialMount = useRef(true);
+  const currentPageRef = useRef(page);
 
   // Generate a new shuffle seed on every mount (page refresh) or use URL parameter if available
   const [localShuffleSeed, setLocalShuffleSeed] = useState(() => {
@@ -92,16 +137,16 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
     }
   });
 
-  // Always use shuffleSeed in the query key, regardless of URL parameters
+  // Use shuffleSeed only for page 1, not for pagination
   const queryKey = useMemo(() => {
     return [
       "/api/content/feed",
       {
         page,
         category: categorySlug || "",
-        shuffleSeed: localShuffleSeed,
+        shuffleSeed: page === 1 ? localShuffleSeed : undefined,
         sortBy,
-        timestamp: Date.now(), // prevents cache reuse
+        timestamp: page === 1 ? Date.now() : undefined, // prevents cache reuse only for first page
       },
     ];
   }, [page, categorySlug, localShuffleSeed, sortBy]);
@@ -114,6 +159,11 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
       ? previousDataRef.current
       : undefined,
   });
+
+  // Keep page ref updated
+  useEffect(() => {
+    currentPageRef.current = page;
+  }, [page]);
 
   // Clean up URL parameters after data has been loaded
   useEffect(() => {
@@ -141,32 +191,11 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
 
   // Memoized helper functions
   const getItemsBasedOnColumns = useCallback(
-    (items: Video[] = [], rows: number) => {
+    (items: ClientVideo[] = [], rows: number) => {
       const totalItems = columnCount * rows;
       return items?.slice(0, totalItems) || [];
     },
     [columnCount]
-  );
-
-  // Function to randomly place an ad in content
-  const insertAdvertisementInContent = useCallback(
-    (contentItems: Video[], adType: "video" | "image"): (Video | null)[] => {
-      if (!contentItems || contentItems.length === 0) return [];
-
-      // Create a copy of the content array
-      const result = [...contentItems];
-
-      // Randomly select a position for the ad (avoiding the first 2 items)
-      const minPosition = Math.min(2, result.length - 1);
-      const adPosition =
-        Math.floor(Math.random() * (result.length - minPosition)) + minPosition;
-
-      // Replace the item at that position with null (to be rendered as an ad)
-      result[adPosition] = null as unknown as Video;
-
-      return result;
-    },
-    []
   );
 
   // Event handler callbacks
@@ -196,15 +225,15 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   }, []);
 
   // Process data for rendering - dynamic column/row adjustments
-  const renderContent = useMemo<ContentChunk[]>(() => {
+  const getRenderContent = (): ContentChunk[] => {
     if (!loadedVideos.length && !loadedImages.length) return [];
 
-    // Create chunks of content that alternate between 4 video rows and 2 image rows
+    // Create chunks of content that handle both videos and images flexibly
     const videoChunkSize = 4 * columnCount; // 4 rows of videos
     const imageChunkSize = 2 * columnCount; // 2 rows of images
 
-    const videoChunks: Video[][] = [];
-    const imageChunks: Video[][] = [];
+    const videoChunks: ClientVideo[][] = [];
+    const imageChunks: ClientVideo[][] = [];
 
     // Split videos into chunks of 4 rows
     for (let i = 0; i < loadedVideos.length; i += videoChunkSize) {
@@ -216,27 +245,21 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
       imageChunks.push(loadedImages.slice(i, i + imageChunkSize));
     }
 
-    // Combine into merged chunks where each chunk has 4 rows of videos and 2 rows of images
+    // Combine into merged chunks - no ads, just content
     const contentChunks: ContentChunk[] = [];
     const maxChunks = Math.max(videoChunks.length, imageChunks.length);
 
     for (let i = 0; i < maxChunks; i++) {
-      // For each chunk that needs an ad, randomly decide if it goes in video or image section
-      const hasAd = adPositions.includes(i);
-      const adInVideoSection = hasAd ? Math.random() > 0.5 : false;
-      const adInImageSection = hasAd ? !adInVideoSection : false;
-
       contentChunks.push({
         videos: videoChunks[i] || [],
         images: imageChunks[i] || [],
-        hasAdInVideo: adInVideoSection,
-        hasAdInImage: adInImageSection,
-        adPosition: i,
       });
     }
 
     return contentChunks;
-  }, [loadedVideos, loadedImages, adPositions, columnCount]);
+  };
+
+  const renderContent = getRenderContent();
 
   // Effect for handling clicks outside the sort menu
   useEffect(() => {
@@ -261,19 +284,32 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   // Effect for updating previous data ref and tracking featured video
   useEffect(() => {
     if (data) {
+      console.log("Data received, updating refs:", {
+        hasContent: !!data.content,
+        hasFeatured: !!data.featured?.video,
+        videosLength: data.content?.videos?.length || 0,
+        imagesLength: data.content?.images?.length || 0,
+      });
+
       previousDataRef.current = data;
 
       // Track featured video to maintain continuity
-      if (data.featured.video) {
-        setLastFeaturedVideo(data.featured.video);
+      if (data.featured?.video) {
+        try {
+          const transformed = transformVideoForClient(data.featured.video);
+          setLastFeaturedVideo(transformed);
+          console.log("Updated featured video:", transformed.id);
+        } catch (error) {
+          console.error("Error transforming featured video:", error);
+        }
       }
     }
   }, [data]);
 
-  // Effect to reset content when category changes
+  // Effect to reset content when category or sort changes
   useEffect(() => {
+    // Skip the initial mount
     if (isInitialMount.current) {
-      isInitialMount.current = false;
       return;
     }
 
@@ -281,11 +317,16 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
       `Category or sort changed to: ${categorySlug || "all"} | Sort: ${sortBy}`
     );
 
+    // Reset state for new category/sort
     setPage(1);
     setLoadedVideos([]);
     setLoadedImages([]);
     setAdPositions([]);
 
+    // Clear previous data reference
+    previousDataRef.current = undefined;
+
+    // Invalidate queries to force fresh fetch
     queryClient.invalidateQueries({
       queryKey: ["/api/content/feed"],
     });
@@ -294,88 +335,158 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   // Effect for handling content updates
   useEffect(() => {
     if (data?.content) {
-      if (page === 1) {
-        // Reset content on first page
-        setLoadedVideos(data.content.videos);
-        setLoadedImages(data.content.images);
-        setAdPositions(data.content.adPositions);
-      } else {
-        // Append new content for subsequent pages
-        setLoadedVideos((prev) => [...prev, ...data.content.videos]);
-        setLoadedImages((prev) => [...prev, ...data.content.images]);
-        setAdPositions((prev) => [...prev, ...data.content.adPositions]);
+      console.log(`Processing content for page ${page}:`, {
+        videos: data.content.videos.length,
+        images: data.content.images.length,
+        hasMore: data.content.hasMore,
+      });
+
+      try {
+        if (page === 1) {
+          // Reset content on first page
+          console.log("Resetting content for page 1");
+          const transformedVideos = data.content.videos
+            .filter((video) => video != null)
+            .map((video) => {
+              try {
+                return transformVideoForClient(video);
+              } catch (error) {
+                console.error("Failed to transform video:", error, video);
+                return null;
+              }
+            })
+            .filter((video) => video != null) as ClientVideo[];
+
+          const transformedImages = data.content.images
+            .filter((image) => image != null)
+            .map((image) => {
+              try {
+                return transformVideoForClient(image);
+              } catch (error) {
+                console.error("Failed to transform image:", error, image);
+                return null;
+              }
+            })
+            .filter((image) => image != null) as ClientVideo[];
+
+          console.log("Successfully transformed content:", {
+            videos: transformedVideos.length,
+            images: transformedImages.length,
+          });
+
+          setLoadedVideos(transformedVideos);
+          setLoadedImages(transformedImages);
+          setAdPositions(data.content.adPositions);
+        } else {
+          // Append new content for subsequent pages (infinite scroll)
+          const newVideos = data.content.videos
+            .filter((video) => video != null)
+            .map((video) => {
+              try {
+                return transformVideoForClient(video);
+              } catch (error) {
+                console.error(
+                  "Failed to transform video for page:",
+                  page,
+                  error,
+                  video
+                );
+                return null;
+              }
+            })
+            .filter((video) => video != null) as ClientVideo[];
+
+          const newImages = data.content.images
+            .filter((image) => image != null)
+            .map((image) => {
+              try {
+                return transformVideoForClient(image);
+              } catch (error) {
+                console.error(
+                  "Failed to transform image for page:",
+                  page,
+                  error,
+                  image
+                );
+                return null;
+              }
+            })
+            .filter((image) => image != null) as ClientVideo[];
+
+          console.log(`Appending content for page ${page}:`, {
+            newVideos: newVideos.length,
+            newImages: newImages.length,
+          });
+
+          if (newVideos.length > 0) {
+            setLoadedVideos((prev) => {
+              // Check if any of the new videos already exist to prevent duplicates
+              const existingIds = new Set(prev.map((v) => v.id));
+              const uniqueNewVideos = newVideos.filter(
+                (v) => !existingIds.has(v.id)
+              );
+              console.log(
+                `Adding ${uniqueNewVideos.length} unique videos out of ${newVideos.length} new videos`
+              );
+              return [...prev, ...uniqueNewVideos];
+            });
+          }
+
+          if (newImages.length > 0) {
+            setLoadedImages((prev) => {
+              // Check if any of the new images already exist to prevent duplicates
+              const existingIds = new Set(prev.map((i) => i.id));
+              const uniqueNewImages = newImages.filter(
+                (i) => !existingIds.has(i.id)
+              );
+              console.log(
+                `Adding ${uniqueNewImages.length} unique images out of ${newImages.length} new images`
+              );
+              return [...prev, ...uniqueNewImages];
+            });
+          }
+
+          setAdPositions((prev) => [...prev, ...data.content.adPositions]);
+        }
+      } catch (error) {
+        console.error("Error processing content data:", error, data);
+        // Don't update state if there's an error processing data
       }
     }
-  }, [data, page]);
+  }, [data]);
 
-  // This effect handles both URL parameters and automatic shuffling on page refresh
+  // This effect handles URL parameters for shuffle
   useEffect(() => {
-    function handleShuffleProcess() {
-      // Check URL parameters first
-      const urlParams = new URLSearchParams(window.location.search);
-      const hasShuffleSeedParam = urlParams.has("shuffleSeed");
-      const shuffleSeedValue = urlParams.get("shuffleSeed");
-      const hasShuffleParam = !hasShuffleSeedParam && urlParams.has("shuffle");
-      const shuffleValue = hasShuffleParam ? urlParams.get("shuffle") : null;
+    // Only run once on mount
+    if (!isInitialMount.current) return;
 
-      // If the shuffle is coming from URL parameters
-      if (
-        (hasShuffleSeedParam || hasShuffleParam) &&
-        (shuffleSeedValue || shuffleValue)
-      ) {
-        const finalShuffleValue = shuffleSeedValue || shuffleValue || "";
-        console.log(
-          "ContentFeed: Processing explicit shuffle from URL with seed:",
-          finalShuffleValue
-        );
+    isInitialMount.current = false;
 
-        // Update local shuffle seed to match URL parameter
-        setLocalShuffleSeed(finalShuffleValue);
+    // Check URL parameters first
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasShuffleSeedParam = urlParams.has("shuffleSeed");
+    const shuffleSeedValue = urlParams.get("shuffleSeed");
+    const hasShuffleParam = !hasShuffleSeedParam && urlParams.has("shuffle");
+    const shuffleValue = hasShuffleParam ? urlParams.get("shuffle") : null;
 
-        // Reset UI state but preserve sort selection
-        setPage(1);
-        setLoadedVideos([]);
-        setLoadedImages([]);
-        setAdPositions([]);
-
-        // Force data refresh
-        queryClient.invalidateQueries({ queryKey: ["/api/content/feed"] });
-      }
-      // If we're on mount (first page load)
-      else if (isInitialMount.current) {
-        isInitialMount.current = false;
-
-        // If no URL parameter, we've already created a new random seed in the useState initializer
-        console.log(
-          "ContentFeed: Using initial page load shuffle with seed:",
-          localShuffleSeed
-        );
-
-        // Reset UI state but preserve sort selection
-        setPage(1);
-        setLoadedVideos([]);
-        setLoadedImages([]);
-        setAdPositions([]);
-
-        // Force data refresh on initial mount
-        queryClient.invalidateQueries({ queryKey: ["/api/content/feed"] });
-      }
+    // If the shuffle is coming from URL parameters, update the seed
+    if (
+      (hasShuffleSeedParam || hasShuffleParam) &&
+      (shuffleSeedValue || shuffleValue)
+    ) {
+      const finalShuffleValue = shuffleSeedValue || shuffleValue || "";
+      console.log(
+        "ContentFeed: Processing explicit shuffle from URL with seed:",
+        finalShuffleValue
+      );
+      setLocalShuffleSeed(finalShuffleValue);
     }
 
-    // Run the handling on mount
-    handleShuffleProcess();
-
-    // Also set up a listener for URL changes (back/forward navigation)
-    const handleUrlChange = () => {
-      handleShuffleProcess();
-    };
-
-    window.addEventListener("popstate", handleUrlChange);
-
-    return () => {
-      window.removeEventListener("popstate", handleUrlChange);
-    };
-  }, [localShuffleSeed]);
+    console.log(
+      "ContentFeed: Initial mount completed with seed:",
+      localShuffleSeed
+    );
+  }, []);
 
   // Effect for detecting screen size and updating column count
   useEffect(() => {
@@ -407,11 +518,18 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
 
   // Effect for infinite scrolling with intersection observer
   useEffect(() => {
+    // Only set up observer if there's more content to load
+    if (!data?.content?.hasMore || isLoading) {
+      return;
+    }
+
     // Create an observer for the loading indicator
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && data?.content?.hasMore) {
-          setPage((prevPage) => prevPage + 1);
+        if (entries[0].isIntersecting && data?.content?.hasMore && !isLoading) {
+          const nextPage = currentPageRef.current + 1;
+          console.log("Loading next page:", nextPage);
+          setPage(nextPage);
         }
       },
       { threshold: 0.1 }
@@ -427,11 +545,13 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
       if (loadingElement) {
         observer.unobserve(loadingElement);
       }
+      observer.disconnect();
     };
-  }, [data]);
+  }, [data?.content?.hasMore, isLoading]);
 
   // Loading state
   if (isLoading && page === 1) {
+    console.log("ContentFeed: Showing loading state for page 1");
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
@@ -441,6 +561,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
 
   // Error state
   if (isError) {
+    console.error("ContentFeed: Error state triggered");
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-white text-center">
@@ -454,11 +575,6 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
         </div>
       </div>
     );
-  }
-
-  // No data state
-  if (!data) {
-    return null;
   }
 
   // Render the content feed
@@ -560,10 +676,23 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
       {(data?.featured?.video || lastFeaturedVideo) && (
         <section className="mb-12">
           <div className="max-w-4xl mx-auto">
-            <VideoCard
-              video={data?.featured?.video || lastFeaturedVideo!}
-              size="large"
-            />
+            {(() => {
+              try {
+                const featuredVideo = data?.featured?.video
+                  ? transformVideoForClient(data.featured.video)
+                  : lastFeaturedVideo!;
+
+                return <VideoCard video={featuredVideo} size="large" />;
+              } catch (error) {
+                return (
+                  <div className="text-center py-8">
+                    <p className="text-gray-400">
+                      Failed to load featured video
+                    </p>
+                  </div>
+                );
+              }
+            })()}
           </div>
         </section>
       )}
@@ -571,76 +700,97 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
       {/* Endless Content Section - No section title as requested */}
       <section>
         {/* Render content chunks (4 rows video + 2 rows images, repeating) */}
-        {renderContent.map((chunk, chunkIndex) => {
-          // Ad display is now controlled by hasAdInVideo and hasAdInImage properties
-
-          // For every chunk, render videos first then images
-          return (
-            <div key={`content-chunk-${chunkIndex}`} className="mb-12">
-              {/* Video Grid (4 rows of videos) */}
-              {chunk.videos.length > 0 && (
-                <div className="mb-8">
-                  <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mb-4">
-                    {/* Insert ad in video section only if randomly selected for this section */}
-                    {chunk.hasAdInVideo
-                      ? insertAdvertisementInContent(chunk.videos, "video").map(
-                          (video, index) =>
-                            video ? (
-                              <VideoCard
-                                key={`content-video-${video.id}-${chunkIndex}-${index}`}
-                                video={video}
-                              />
-                            ) : (
-                              <AdvertisementCard
-                                key={`content-ad-${chunkIndex}-${index}`}
-                                type="video"
-                              />
-                            )
-                        )
-                      : chunk.videos.map((video, index) => (
-                          <VideoCard
-                            key={`content-video-${video.id}-${chunkIndex}-${index}`}
-                            video={video}
-                          />
-                        ))}
+        {renderContent && renderContent.length > 0 ? (
+          renderContent.map((chunk, chunkIndex) => {
+            // For every chunk, render videos first then images
+            return (
+              <div key={`content-chunk-${chunkIndex}`} className="mb-12">
+                {/* Video Grid (4 rows of videos) */}
+                {chunk.videos && chunk.videos.length > 0 && (
+                  <div className="mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mb-4">
+                      {chunk.videos.map((video, index) => {
+                        try {
+                          return (
+                            <VideoCard
+                              key={`content-video-${video.id}-${chunkIndex}-${index}`}
+                              video={video}
+                            />
+                          );
+                        } catch (error) {
+                          console.error(
+                            "Error rendering VideoCard:",
+                            error,
+                            video
+                          );
+                          return null;
+                        }
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
-              {/* Image Grid (2 rows of images) */}
-              {chunk.images.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
-                  {/* Insert ad in image section only if randomly selected for this section */}
-                  {chunk.hasAdInImage
-                    ? insertAdvertisementInContent(chunk.images, "image").map(
-                        (image, index) =>
-                          image ? (
-                            <LazyImageCard
-                              key={`content-image-${image.id}-${chunkIndex}-${index}`}
-                              image={image}
-                            />
-                          ) : (
-                            <AdvertisementCard
-                              key={`content-ad-${chunkIndex}-${index}`}
-                              type="image"
-                            />
-                          )
-                      )
-                    : chunk.images.map((image, index) => (
-                        <LazyImageCard
-                          key={`content-image-${image.id}-${chunkIndex}-${index}`}
-                          image={image}
-                        />
-                      ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
+                )}
+                {/* Image Grid (2 rows of images) */}
+                {chunk.images && chunk.images.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
+                    {chunk.images.map((image, index) => {
+                      try {
+                        return (
+                          <LazyImageCard
+                            key={`content-image-${image.id}-${chunkIndex}-${index}`}
+                            image={image}
+                          />
+                        );
+                      } catch (error) {
+                        console.error(
+                          "Error rendering LazyImageCard:",
+                          error,
+                          image
+                        );
+                        return null;
+                      }
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-400">No content available</p>
+          </div>
+        )}
 
-        {/* Loading indicator for infinite scroll */}
+        {/* Loading indicator for infinite scroll or end of content message */}
         <div id="loading-indicator" className="flex justify-center p-8">
-          {data?.content?.hasMore && (
-            <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+          {(isLoading || data?.content?.hasMore) && (
+            <div className="flex items-center gap-2 text-orange-500">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span className="text-sm">Loading more content...</span>
+            </div>
+          )}
+
+          {!isLoading && !data?.content?.hasMore && (
+            <div className="text-center py-8 px-4">
+              <div className="max-w-md mx-auto">
+                <div className="text-gray-400 text-lg mb-2">
+                  🎬 You've reached the end!
+                </div>
+                <p className="text-gray-500 text-sm">
+                  You've seen all the content in this category. Try exploring
+                  other categories or check back later for new uploads.
+                </p>
+                <Button
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="mt-4 text-orange-500 border-orange-500 hover:bg-orange-500 hover:text-black"
+                >
+                  Back to Top
+                </Button>
+              </div>
+            </div>
           )}
         </div>
       </section>

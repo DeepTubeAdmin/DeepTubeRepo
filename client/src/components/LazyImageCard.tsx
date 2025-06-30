@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ImageCard from './ImageCard';
-import { Video } from '@shared/schema';
+import { Video } from '@/types';
 
 interface LazyImageCardProps {
   image: Video;
