@@ -38,6 +38,9 @@ export async function handleContentFeed(req: Request, res: Response) {
         | "trending"
         | "popular") || "trending";
 
+    // Get column count from query parameter (sent from frontend based on screen size)
+    const columnCount = parseInt(req.query.columnCount as string) || 3;
+
     // Handle shuffle seed - only use for page 1, not for pagination
     const isChronologicalSort = sortBy === "newest" || sortBy === "oldest";
     const hasShuffleParam = req.query.shuffle !== undefined;
@@ -90,9 +93,11 @@ export async function handleContentFeed(req: Request, res: Response) {
       }
     }
 
-    // Simplified pagination: 12 videos and 6 images per page consistently
-    const videosPerPage = 12;
-    const imagesPerPage = 6;
+    // Dynamic pagination based on screen size:
+    // 4 rows of videos = 4 × columnCount videos per page
+    // 2 rows of images = 2 × columnCount images per page
+    const videosPerPage = 4 * columnCount;
+    const imagesPerPage = 2 * columnCount;
     
     // Calculate offset based on page number
     const videoOffset = (page - 1) * videosPerPage;
@@ -158,8 +163,8 @@ export async function handleContentFeed(req: Request, res: Response) {
     }
 
     // Generate ad positions (every chunk gets an ad position)
-    const videoChunks = Math.ceil(videos.length / 12); // 4 rows × 3 columns = 12 videos per chunk
-    const imageChunks = Math.ceil(images.length / 6);  // 2 rows × 3 columns = 6 images per chunk
+    const videoChunks = Math.ceil(videos.length / videosPerPage);
+    const imageChunks = Math.ceil(images.length / imagesPerPage);
     const totalChunks = Math.max(videoChunks, imageChunks);
     
     const adPositions = [];
@@ -171,7 +176,7 @@ export async function handleContentFeed(req: Request, res: Response) {
     response.content.images = images;
     response.content.adPositions = adPositions;
     
-    // Simple hasMore logic: if we got the full requested amount, there might be more
+    // Dynamic hasMore logic: check if either content type has more content available
     let hasMoreVideos = false;
     let hasMoreImages = false;
     
@@ -224,8 +229,10 @@ export async function handleContentFeed(req: Request, res: Response) {
       hasMoreImages = false;
     }
     
-    // If neither videos nor images have more content, set hasMore to false
+    // Continue loading until both videos AND images are exhausted
     response.content.hasMore = hasMoreVideos || hasMoreImages;
+
+    console.log(`Content feed page ${page} (${columnCount} cols): ${videos.length} videos, ${images.length} images, hasMore: ${response.content.hasMore}`);
 
     return res.json(response);
   } catch (error) {

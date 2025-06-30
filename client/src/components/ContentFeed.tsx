@@ -146,10 +146,11 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
         category: categorySlug || "",
         shuffleSeed: page === 1 ? localShuffleSeed : undefined,
         sortBy,
+        columnCount, // Send column count to backend for dynamic pagination
         timestamp: page === 1 ? Date.now() : undefined, // prevents cache reuse only for first page
       },
     ];
-  }, [page, categorySlug, localShuffleSeed, sortBy]);
+  }, [page, categorySlug, localShuffleSeed, sortBy, columnCount]);
 
   // Data fetching with TanStack Query
   const { data, isLoading, isError } = useQuery<ContentFeedResponse>({
