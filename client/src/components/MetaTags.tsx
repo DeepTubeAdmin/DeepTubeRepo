@@ -40,33 +40,20 @@ export default function MetaTags({
       <meta property="og:url" content={window.location.href} />
       <meta property="og:site_name" content="DeepTubeAI.com" />
       
-      {/* Video-specific tags */}
-      {contentType === 'video' && (
+      {/* Content-specific tags - Use images for both video and image content */}
+      {(contentType === 'video' || contentType === 'image') && (
         <>
-          <meta property="og:type" content="video.other" />
-          <meta property="og:video" content={fullVideoUrl} />
-          <meta property="og:video:url" content={fullVideoUrl} />
-          <meta property="og:video:secure_url" content={fullVideoUrl} />
-          <meta property="og:video:type" content="video/mp4" />
-          <meta property="og:video:width" content="1280" />
-          <meta property="og:video:height" content="720" />
-          {duration && <meta property="og:video:duration" content={String(duration)} />}
-          {publishedAt && <meta property="article:published_time" content={publishedAt} />}
+          <meta property="og:type" content="article" />
           <meta property="og:image" content={fullImageUrl} />
+          <meta property="og:image:secure_url" content={fullImageUrl} />
+          <meta property="og:image:width" content="1280" />
+          <meta property="og:image:height" content="720" />
+          {publishedAt && <meta property="article:published_time" content={publishedAt} />}
         </>
       )}
       
-      {/* Twitter Card Tags */}
-      {contentType === 'video' ? (
-        <>
-          <meta name="twitter:card" content="player" />
-          <meta name="twitter:player" content={`${baseUrl}/embed/${contentId}`} />
-          <meta name="twitter:player:width" content="1280" />
-          <meta name="twitter:player:height" content="720" />
-        </>
-      ) : (
-        <meta name="twitter:card" content="summary_large_image" />
-      )}
+      {/* Twitter Card Tags - Always use image thumbnails */}
+      <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:site" content="@DeepTube_Co" />
       <meta name="twitter:creator" content="@DeepTube_Co" />
       <meta name="twitter:title" content={title} />

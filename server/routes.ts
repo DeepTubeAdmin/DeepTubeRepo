@@ -405,10 +405,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   : ""
               }
               
-              <!-- Twitter Cards - Enhanced Player Card -->
-              <meta name="twitter:card" content="${
-                video.contentType === "video" ? "player" : "summary_large_image"
-              }">
+              <!-- Twitter Cards - Always use image thumbnails -->
+              <meta name="twitter:card" content="summary_large_image">
               <meta name="twitter:site" content="@DeepTubeAI">
               <meta name="twitter:creator" content="@DeepTubeAI">
               <meta name="twitter:title" content="${enhancedTitle}">
@@ -417,17 +415,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
               <meta name="twitter:image:alt" content="${
                 video.title
               } - AI generated ${video.contentType}">
-              ${
-                video.contentType === "video"
-                  ? `
-              <meta name="twitter:player" content="${embedUrl}">
-              <meta name="twitter:player:width" content="1280">
-              <meta name="twitter:player:height" content="720">
-              <meta name="twitter:player:stream" content="${videoUrl}">
-              <meta name="twitter:player:stream:content_type" content="video/mp4">
-              `
-                  : ""
-              }
               
               <!-- Additional Video Meta Tags -->
               ${

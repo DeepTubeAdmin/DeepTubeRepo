@@ -49,7 +49,7 @@ export function generateEmbedHtml(content: Video, baseUrl: string): string {
         <meta property="fb:app_id" content="${
           process.env.FACEBOOK_APP_ID || ""
         }">
-        <meta property="og:type" content="video.other">
+        <meta property="og:type" content="article">
         <meta property="og:url" content="${baseUrl}/media/${content.id}">
         <meta property="og:site_name" content="DeepTube">
         <meta property="og:title" content="${content.title}">
@@ -58,39 +58,37 @@ export function generateEmbedHtml(content: Video, baseUrl: string): string {
         }">
         <meta property="og:image" content="${thumbnail}">
         <meta property="og:image:secure_url" content="${thumbnail}">
-        <meta property="og:video:url" content="${videoUrl}">
-        <meta property="og:video:secure_url" content="${videoUrl}">
-        <meta property="og:video:type" content="video/mp4">
-        <meta property="og:video:width" content="1280">
-        <meta property="og:video:height" content="720">
+        <meta property="og:image:width" content="1280">
+        <meta property="og:image:height" content="720">
         <meta property="og:locale" content="en_US">
         
         <!-- Twitter -->
-        <meta name="twitter:card" content="player">
+        <meta name="twitter:card" content="summary_large_image">
         <meta name="twitter:title" content="${content.title}">
         <meta name="twitter:description" content="${
           content.description || `AI-generated content shared on DeepTube`
         }">
         <meta name="twitter:image" content="${thumbnail}">
         <meta name="twitter:site" content="@DeepTube">
-        <meta name="twitter:player" content="${baseUrl}/media/${content.id}">
-        <meta name="twitter:player:width" content="1280">
-        <meta name="twitter:player:height" content="720">
-        <meta name="twitter:player:stream" content="${videoUrl}">
-        <meta name="twitter:player:stream:content_type" content="video/mp4">
 
         <style>
           body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; }
-          .video-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-          video { max-width: 100%; max-height: 100%; }
+          .content-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; }
+          .thumbnail { max-width: 100%; max-height: 100%; object-fit: contain; }
+          .play-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); border-radius: 50%; padding: 20px; transition: all 0.3s ease; }
+          .play-overlay:hover { background: rgba(0,0,0,0.9); transform: translate(-50%, -50%) scale(1.1); }
+          .play-button { width: 0; height: 0; border-left: 30px solid #f97316; border-top: 20px solid transparent; border-bottom: 20px solid transparent; margin-left: 10px; }
           .watermark { position: absolute; bottom: 10px; right: 10px; color: rgba(255,255,255,0.7); font-family: Arial, sans-serif; font-size: 14px; }
           a { color: #f97316; text-decoration: none; }
         </style>
       </head>
       <body>
-        <div class="video-container">
-          <video src="${videoUrl}" controls autoplay playsinline></video>
-          <div class="watermark">Hosted on <a href="${baseUrl}/media/${
+        <div class="content-container" onclick="window.open('${baseUrl}/media/${content.id}', '_blank')">
+          <img src="${thumbnail}" alt="${content.title}" class="thumbnail">
+          <div class="play-overlay">
+            <div class="play-button"></div>
+          </div>
+          <div class="watermark">Watch on <a href="${baseUrl}/media/${
       content.id
     }" target="_blank">DeepTube</a></div>
         </div>
@@ -110,24 +108,35 @@ export function generateEmbedHtml(content: Video, baseUrl: string): string {
         }">
         <meta name="generator" content="${content.aiGenerator || "DeepTube"}">
         <meta property="og:title" content="${content.title}">
-        <meta property="og:type" content="image">
-        <meta property="og:image" content="${
-          content.thumbnail || content.imageUrl || ""
-        }">
+        <meta property="og:type" content="article">
+        <meta property="og:image" content="${thumbnail}">
+        <meta property="og:image:secure_url" content="${thumbnail}">
+        <meta property="og:image:width" content="1280">
+        <meta property="og:image:height" content="720">
         <meta property="og:url" content="${baseUrl}/media/${content.id}">
+        
+        <!-- Twitter -->
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="${content.title}">
+        <meta name="twitter:description" content="${
+          content.description || `AI-generated image shared on DeepTube`
+        }">
+        <meta name="twitter:image" content="${thumbnail}">
+        <meta name="twitter:site" content="@DeepTube">
+        
         <title>${content.title} - DeepTube</title>
         <style>
           body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; }
-          .image-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-          img { max-width: 100%; max-height: 100%; object-fit: contain; }
+          .content-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; }
+          .thumbnail { max-width: 100%; max-height: 100%; object-fit: contain; }
           .watermark { position: absolute; bottom: 10px; right: 10px; color: rgba(255,255,255,0.7); font-family: Arial, sans-serif; font-size: 14px; }
           a { color: #f97316; text-decoration: none; }
         </style>
       </head>
       <body>
-        <div class="image-container">
-          <img src="${content.imageUrl}" alt="${content.title}">
-          <div class="watermark">Hosted on <a href="${baseUrl}/media/${
+        <div class="content-container" onclick="window.open('${baseUrl}/media/${content.id}', '_blank')">
+          <img src="${content.imageUrl}" alt="${content.title}" class="thumbnail">
+          <div class="watermark">View on <a href="${baseUrl}/media/${
       content.id
     }" target="_blank">DeepTube</a></div>
         </div>
