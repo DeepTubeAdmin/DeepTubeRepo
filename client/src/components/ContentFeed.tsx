@@ -38,8 +38,8 @@ const transformVideoForClient = (video: SharedVideo): ClientVideo => {
       likes: 0, // Will be fetched separately by VideoCard
       uploaderId: video.userId, // Map userId to uploaderId
       uploaderName: video.uploaderName || "", // Default to empty string
-      categoryName: null, // Will be populated if needed
-      categorySlug: null, // Will be populated if needed
+      categoryName: video.categoryName || null, // Use category name from backend if available
+      categorySlug: video.categorySlug || null, // Use category slug from backend if available
       createdAt:
         typeof video.createdAt === "string"
           ? video.createdAt
@@ -51,7 +51,9 @@ const transformVideoForClient = (video: SharedVideo): ClientVideo => {
 
     console.log(
       "transformVideoForClient: Successfully transformed video:",
-      transformed.id
+      transformed.id,
+      "Category:",
+      transformed.categoryName
     );
     return transformed;
   } catch (error) {
