@@ -909,19 +909,22 @@ export default function ForumPage() {
                         </div>
                         {/* Removed redundant like/comment indicators */}
                       </div>
-                      {thread.tags && thread.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {thread.tags.map((tag, i) => (
-                            <Badge
-                              key={i}
-                              variant="secondary"
-                              className="text-xs"
-                            >
-                              #{tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
+                      {thread &&
+                        thread?.tags &&
+                        thread?.tags?.length > 0 &&
+                        Array.isArray(thread?.tags) && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {thread?.tags?.map((tag, i) => (
+                              <Badge
+                                key={i}
+                                variant="secondary"
+                                className="text-xs"
+                              >
+                                #{tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                     </CardHeader>
                     <CardContent className="p-4 pt-2">
                       <div className="prose prose-sm dark:prose-invert max-w-none bg-transparent p-4 rounded-md border border-border/30">
