@@ -333,21 +333,25 @@ export default function VideoCard({
     // Only set up observer for video content when scroll autoplay is appropriate (mobile/tablet only)
     if (video.contentType !== "video" || !video.videoUrl || !shouldEnableScrollAutoplay) {
       console.log(`VideoCard ${video.id}: Skipping intersection observer setup - ${isDesktop ? 'Desktop uses hover instead' : 'Not applicable'}`);
+      // Ensure isInCenter is false for desktop since it shouldn't use scroll-based playback
+      if (isDesktop) {
+        setIsInCenter(false);
+      }
       return;
     }
 
     console.log(`VideoCard ${video.id}: Setting up intersection observer for ${isMobile ? 'mobile' : 'tablet'} scroll autoplay`);
 
-    // Responsive intersection observer options based on screen size (only mobile/tablet)
+    // More aggressive intersection observer options for iOS to ensure proper pause behavior
     let rootMargin, threshold;
     
     if (isMobile) {
-      // Mobile: Tighter detection for smaller screens
-      rootMargin = "-25% 0px -25% 0px"; // 50% center band
-      threshold = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
+      // Mobile: Very tight detection for smaller screens - only play when clearly centered
+      rootMargin = "-30% 0px -30% 0px"; // 40% center band (tighter)
+      threshold = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
     } else {
-      // Tablet (iPad): Balanced detection for medium screens
-      rootMargin = "-20% 0px -20% 0px"; // 60% center band
+      // Tablet (iPad): Slightly less tight but still conservative
+      rootMargin = "-25% 0px -25% 0px"; // 50% center band
       threshold = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
     }
 
@@ -359,12 +363,19 @@ export default function VideoCard({
 
     const handleIntersection = (entries: IntersectionObserverEntry[]) => {
       entries.forEach((entry) => {
-        // Responsive intersection ratio thresholds
-        const requiredRatio = isMobile ? 0.5 : 0.4; // 50% on mobile, 40% on tablet
+        // More conservative intersection ratio thresholds to ensure videos pause when scrolled out
+        const requiredRatio = isMobile ? 0.6 : 0.5; // 60% on mobile, 50% on tablet (higher thresholds)
         
         const isCentered = entry.isIntersecting && entry.intersectionRatio >= requiredRatio;
         
-        console.log(`VideoCard ${video.id}: Intersection - Device: ${isMobile ? 'mobile' : 'tablet'}, isIntersecting: ${entry.isIntersecting}, ratio: ${entry.intersectionRatio.toFixed(2)}, required: ${requiredRatio}, isCentered: ${isCentered}`);
+        console.log(`VideoCard ${video.id}: Intersection - Device: ${isMobile ? 'mobile' : 'tablet'}, isIntersecting: ${entry.isIntersecting}, ratio: ${entry.intersectionRatio.toFixed(2)}, required: ${requiredRatio}, isCentered: ${isCentered}, wasInCenter: ${isInCenter}`);
+        
+        // Additional iOS-specific logic to ensure videos pause properly
+        if (!isCentered && isInCenter && videoRef.current && !videoRef.current.paused) {
+          console.log(`VideoCard ${video.id}: Forcing immediate pause as video left center on iOS`);
+          videoRef.current.pause();
+          setCurrentPlayingVideo(null);
+        }
         
         setIsInCenter(isCentered);
       });
@@ -374,7 +385,7 @@ export default function VideoCard({
 
     if (cardRef.current) {
       observerRef.current.observe(cardRef.current);
-      console.log(`VideoCard ${video.id}: Observer attached to card element`);
+      console.log(`VideoCard ${video.id}: Observer attached to card element with rootMargin: ${rootMargin}`);
     }
 
     // Handle window resize to update observer settings
@@ -389,6 +400,32 @@ export default function VideoCard({
 
     window.addEventListener('resize', handleResize);
 
+    // iOS-specific scroll listener as a backup to ensure videos pause when scrolled out
+    const handleScroll = () => {
+      if (!cardRef.current || !videoRef.current) return;
+      
+      const rect = cardRef.current.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      
+      // Calculate if video is significantly out of view (backup check for iOS)
+      const isCompletelyOutOfView = rect.bottom < 0 || rect.top > windowHeight;
+      const isMostlyOutOfView = rect.bottom < windowHeight * 0.2 || rect.top > windowHeight * 0.8;
+      
+      if ((isCompletelyOutOfView || isMostlyOutOfView) && !videoRef.current.paused) {
+        console.log(`VideoCard ${video.id}: iOS backup scroll check - forcing pause as video is out of view`);
+        videoRef.current.pause();
+        setCurrentPlayingVideo(null);
+        setIsInCenter(false);
+      }
+    };
+
+    // Only add scroll listener for iOS devices
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+      console.log(`VideoCard ${video.id}: Adding iOS-specific scroll listener as backup`);
+      window.addEventListener('scroll', handleScroll, { passive: true });
+    }
+
     // Cleanup
     return () => {
       if (observerRef.current) {
@@ -396,8 +433,11 @@ export default function VideoCard({
         console.log(`VideoCard ${video.id}: Observer disconnected`);
       }
       window.removeEventListener('resize', handleResize);
+      if (isIOS) {
+        window.removeEventListener('scroll', handleScroll);
+      }
     };
-  }, [video.contentType, video.videoUrl, deviceInfo]);
+  }, [video.contentType, video.videoUrl, deviceInfo, isInCenter, setCurrentPlayingVideo]);
 
   // Separate effect to handle video playback based on center state OR hover state
   useEffect(() => {
@@ -414,7 +454,7 @@ export default function VideoCard({
     // Responsive timing delays
     const playDelay = isMobile ? 50 : isTablet ? 100 : 200; // Slightly slower for desktop hover
 
-    console.log(`VideoCard ${video.id}: Playback state change - shouldPlay: ${shouldPlay} (${triggerType}), device: ${deviceType}`);
+    console.log(`VideoCard ${video.id}: Playback state change - shouldPlay: ${shouldPlay} (${triggerType}), device: ${deviceType}, isInCenter: ${isInCenter}, isHovered: ${isHovered}`);
 
     if (shouldPlay) {
       // Check if this video is allowed to play before starting
@@ -423,7 +463,9 @@ export default function VideoCard({
         pauseAllVideos();
         // Small delay to ensure previous video is paused before starting new one
         setTimeout(() => {
-          setCurrentPlayingVideo(videoRef.current);
+          if (videoRef.current) {
+            setCurrentPlayingVideo(videoRef.current);
+          }
         }, 50);
       } else {
         // Set this as the current playing video (this will pause others)
@@ -453,11 +495,23 @@ export default function VideoCard({
         }
       }, playDelay);
     } else {
-      // Pause this video when trigger condition is no longer met
+      // IMMEDIATELY pause this video when trigger condition is no longer met
+      // This is especially important for iOS where intersection observer might be delayed
       if (videoRef.current && !videoRef.current.paused) {
-        console.log(`VideoCard ${video.id}: Pausing video playback (${triggerType} ended)`);
+        console.log(`VideoCard ${video.id}: IMMEDIATELY pausing video playback (${triggerType} ended)`);
+        
+        // Force immediate pause without delay
         videoRef.current.pause();
         setCurrentPlayingVideo(null);
+        
+        // Double-check after a small delay to ensure it stayed paused (iOS fix)
+        setTimeout(() => {
+          if (videoRef.current && !videoRef.current.paused && !shouldPlay) {
+            console.log(`VideoCard ${video.id}: Double-checking pause - forcing pause again (iOS fix)`);
+            videoRef.current.pause();
+            setCurrentPlayingVideo(null);
+          }
+        }, 100);
       }
     }
   }, [isInCenter, isHovered, isMuted, setCurrentPlayingVideo, pauseAllVideos, isVideoAllowedToPlay, video.id, video.contentType, deviceInfo]);

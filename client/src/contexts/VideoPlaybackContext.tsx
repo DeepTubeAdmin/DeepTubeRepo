@@ -49,11 +49,24 @@ export const VideoPlaybackProvider: React.FC<{ children: React.ReactNode }> = ({
   const pauseAllVideos = useCallback(() => {
     console.log("VideoPlaybackContext: Pausing all videos");
     
-    // Find and pause ALL video elements
+    // Find and pause ALL video elements with more aggressive approach
     document.querySelectorAll('video').forEach(video => {
       if (!video.paused) {
         try {
           video.pause();
+          
+          // For iOS devices, also force the video to pause by setting current time
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+          if (isIOS) {
+            // Small delay to ensure pause takes effect on iOS
+            setTimeout(() => {
+              if (!video.paused) {
+                video.pause();
+                console.log("VideoPlaybackContext: Force paused video on iOS");
+              }
+            }, 50);
+          }
+          
           console.log("VideoPlaybackContext: Paused video element");
         } catch (error) {
           console.log("Error pausing video element:", error);
@@ -68,13 +81,26 @@ export const VideoPlaybackProvider: React.FC<{ children: React.ReactNode }> = ({
   const setCurrentPlayingVideo = useCallback((video: HTMLVideoElement | null) => {
     console.log("VideoPlaybackContext: Setting current playing video", video ? "new video" : "null");
     
-    // ALWAYS pause all other videos first
+    // ALWAYS pause all other videos first with more aggressive approach
     if (video !== null) {
       // Pause ALL videos except the new one
       document.querySelectorAll('video').forEach(videoElement => {
         if (videoElement !== video && !videoElement.paused) {
           try {
             videoElement.pause();
+            
+            // Additional iOS-specific pause enforcement
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            if (isIOS) {
+              // Force pause on iOS with a small delay
+              setTimeout(() => {
+                if (videoElement !== video && !videoElement.paused) {
+                  videoElement.pause();
+                  console.log("VideoPlaybackContext: Force paused other video on iOS during switch");
+                }
+              }, 50);
+            }
+            
             console.log("VideoPlaybackContext: Paused other video during switch");
           } catch (error) {
             console.log("Error pausing other video:", error);
