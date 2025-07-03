@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { extractYoutubeVideoId } from "@/lib/youtubeUtils";
 
 interface Props {
@@ -67,6 +67,7 @@ export default function GenericVideoEmbed({
   const [resolved, setResolved] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [ytId, setYtId] = useState<string>("");
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Determine base embed URL on inputs
   useEffect(() => {
@@ -106,6 +107,28 @@ export default function GenericVideoEmbed({
       .then(setResolved)
       .catch((e) => setError(e.message));
   }, [embedUrl]);
+
+  // Ensure autoplay works after video loads
+  useEffect(() => {
+    if (!videoRef.current || !autoplay) return;
+    
+    const video = videoRef.current;
+    
+    const handleLoadedData = () => {
+      // Ensure video is muted for autoplay
+      video.muted = true;
+      // Try to play if autoplay is enabled
+      video.play().catch(error => {
+        console.warn('Autoplay prevented:', error);
+      });
+    };
+
+    video.addEventListener('loadeddata', handleLoadedData);
+    
+    return () => {
+      video.removeEventListener('loadeddata', handleLoadedData);
+    };
+  }, [autoplay, resolved]);
 
   if (error) {
     return (
@@ -157,12 +180,18 @@ export default function GenericVideoEmbed({
           style={responsive ? { paddingBottom: `${ratioPct}%` } : {}}
         >
           <video
+            ref={videoRef}
             src={src}
             controls
             autoPlay={autoplay}
             loop={loop}
-            muted={!autoplay}
+            muted={autoplay}
             playsInline
+            webkit-playsinline="true"
+            x5-playsinline="true"
+            x5-video-player-type="h5"
+            disablePictureInPicture
+            disableRemotePlayback
             className={responsive ? "absolute inset-0 w-full h-full" : ""}
             width={responsive ? undefined : width}
             height={responsive ? undefined : height}

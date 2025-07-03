@@ -146,6 +146,8 @@ export default function VideoPlayer({
                     videoUrl={video.videoUrl}
                     title={video.title}
                     className="h-full"
+                    autoPlay={true}
+                    muted={true}
                   />
                 )}
 

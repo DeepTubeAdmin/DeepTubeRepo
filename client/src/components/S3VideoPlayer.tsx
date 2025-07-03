@@ -91,6 +91,28 @@ export default function S3VideoPlayer({
     };
   }, [videoUrl, onError]);
 
+  // Ensure autoplay works after video loads
+  useEffect(() => {
+    if (!videoRef.current || !autoPlay) return;
+    
+    const video = videoRef.current;
+    
+    const handleLoadedData = () => {
+      // Ensure video is muted for autoplay
+      video.muted = true;
+      // Try to play if autoplay is enabled
+      video.play().catch(error => {
+        console.warn('S3VideoPlayer autoplay prevented:', error);
+      });
+    };
+
+    video.addEventListener('loadeddata', handleLoadedData);
+    
+    return () => {
+      video.removeEventListener('loadeddata', handleLoadedData);
+    };
+  }, [autoPlay, resolvedUrl]);
+
   // Show loading state
   if (loading) {
     return <div className="animate-pulse bg-gray-800 w-full h-full rounded"></div>;
@@ -113,9 +135,14 @@ export default function S3VideoPlayer({
       className={`w-full h-full ${className}`}
       controls
       autoPlay={autoPlay}
-      muted={muted}
+      muted={autoPlay ? true : muted}
       loop={loop}
       playsInline={playsInline}
+      webkit-playsinline="true"
+      x5-playsinline="true"
+      x5-video-player-type="h5"
+      disablePictureInPicture
+      disableRemotePlayback
       onLoadedData={() => {
         if (onLoad) onLoad();
       }}
