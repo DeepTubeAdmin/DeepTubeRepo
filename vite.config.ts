@@ -16,6 +16,11 @@ export default defineConfig({
         ]
       : []),
   ],
+  server: {
+    host: "0.0.0.0", // Allow access from any IP (localhost, 127.0.0.1, and local network IP)
+    port: 5173, // Default Vite port
+    strictPort: false, // Allow fallback to other ports if 5173 is taken
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
