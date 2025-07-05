@@ -186,11 +186,7 @@ interface VideoCardProps {
   redZoneRef?: RefObject<HTMLDivElement>;
 }
 
-export default function VideoCard({
-  video,
-  size,
-  redZoneRef,
-}: VideoCardProps) {
+export default function VideoCard({ video, size, redZoneRef }: VideoCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -199,19 +195,21 @@ export default function VideoCard({
   const [isMuted, setIsMuted] = useState(true);
   // Device detection state for consistent mobile behavior
   const [deviceInfo, setDeviceInfo] = useState(() => {
-    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+    const screenWidth =
+      typeof window !== "undefined" ? window.innerWidth : 1024;
     return {
       isMobile: screenWidth <= 768,
       isTablet: screenWidth > 768 && screenWidth <= 1024,
       isDesktop: screenWidth > 1024,
-      screenWidth
+      screenWidth,
     };
   });
   const videoRef = useRef<HTMLVideoElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const { toast } = useToast();
-  const { setCurrentPlayingVideo, pauseAllVideos, isVideoAllowedToPlay } = useVideoPlayback();
+  const { setCurrentPlayingVideo, pauseAllVideos, isVideoAllowedToPlay } =
+    useVideoPlayback();
   const { activeIds, reportOverlap } = useContext(RedZoneContext);
   const cardId = String(video.id);
 
@@ -221,17 +219,25 @@ export default function VideoCard({
     const handle = () => {
       const cardRect = cardRef.current!.getBoundingClientRect();
       const redRect = redZoneRef.current!.getBoundingClientRect();
-      const x_overlap = Math.max(0, Math.min(cardRect.right, redRect.right) - Math.max(cardRect.left, redRect.left));
-      const y_overlap = Math.max(0, Math.min(cardRect.bottom, redRect.bottom) - Math.max(cardRect.top, redRect.top));
+      const x_overlap = Math.max(
+        0,
+        Math.min(cardRect.right, redRect.right) -
+          Math.max(cardRect.left, redRect.left)
+      );
+      const y_overlap = Math.max(
+        0,
+        Math.min(cardRect.bottom, redRect.bottom) -
+          Math.max(cardRect.top, redRect.top)
+      );
       const overlapArea = x_overlap * y_overlap;
       reportOverlap(cardId, overlapArea);
     };
     handle();
-    window.addEventListener('scroll', handle, { passive: true });
-    window.addEventListener('resize', handle);
+    window.addEventListener("scroll", handle, { passive: true });
+    window.addEventListener("resize", handle);
     return () => {
-      window.removeEventListener('scroll', handle);
-      window.removeEventListener('resize', handle);
+      window.removeEventListener("scroll", handle);
+      window.removeEventListener("resize", handle);
     };
   }, [redZoneRef, cardId, reportOverlap]);
 
@@ -245,14 +251,16 @@ export default function VideoCard({
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
     }
-    
+
     return () => {
       // On unmount, ensure this video is properly cleaned up
       if (videoRef.current) {
-        console.log(`VideoCard ${video.id}: Component unmounting, cleaning up video`);
+        console.log(
+          `VideoCard ${video.id}: Component unmounting, cleaning up video`
+        );
         videoRef.current.pause();
         setCurrentPlayingVideo(null);
-        
+
         // Extra cleanup for mobile devices
         const isMobileDevice = window.innerWidth <= 1024;
         if (isMobileDevice) {
@@ -270,30 +278,30 @@ export default function VideoCard({
   useEffect(() => {
     const screenWidth = window.innerWidth;
     const isMobile = screenWidth <= 768;
-    
+
     if (isMobile && videoRef.current) {
       const video = videoRef.current;
-      
+
       // Ensure mobile compatibility attributes are set
       video.muted = true;
-      video.setAttribute('muted', 'true');
-      video.setAttribute('playsinline', 'true');
-      video.setAttribute('webkit-playsinline', 'true');
-      video.setAttribute('x5-playsinline', 'true');
-      video.setAttribute('x5-video-player-type', 'h5');
-      video.setAttribute('x5-video-player-fullscreen', 'true');
-      
+      video.setAttribute("muted", "true");
+      video.setAttribute("playsinline", "true");
+      video.setAttribute("webkit-playsinline", "true");
+      video.setAttribute("x5-playsinline", "true");
+      video.setAttribute("x5-video-player-type", "h5");
+      video.setAttribute("x5-video-player-fullscreen", "true");
+
       // Add touch event listener to enable user interaction
       const handleTouch = () => {
         console.log(`VideoCard ${video.id}: Mobile touch interaction detected`);
         // This helps with autoplay policy on mobile browsers
         video.load();
       };
-      
-      video.addEventListener('touchstart', handleTouch, { passive: true });
-      
+
+      video.addEventListener("touchstart", handleTouch, { passive: true });
+
       return () => {
-        video.removeEventListener('touchstart', handleTouch);
+        video.removeEventListener("touchstart", handleTouch);
       };
     }
   }, [video.id]);
@@ -304,28 +312,34 @@ export default function VideoCard({
     if (video.contentType !== "video" || !videoRef.current) return;
 
     const { isMobile } = deviceInfo;
-    
+
     if (isMobile) {
-      console.log(`VideoCard ${video.id}: Initializing mobile video attributes`);
-      
+      console.log(
+        `VideoCard ${video.id}: Initializing mobile video attributes`
+      );
+
       // Set mobile attributes for autoplay compatibility (but don't force muted state)
       const videoElement = videoRef.current;
-      videoElement.setAttribute('playsinline', 'true');
-      videoElement.setAttribute('webkit-playsinline', 'true');
-      videoElement.setAttribute('x5-playsinline', 'true');
-      videoElement.setAttribute('x5-video-player-type', 'h5');
-      videoElement.setAttribute('x5-video-player-fullscreen', 'true');
-      
+      videoElement.setAttribute("playsinline", "true");
+      videoElement.setAttribute("webkit-playsinline", "true");
+      videoElement.setAttribute("x5-playsinline", "true");
+      videoElement.setAttribute("x5-video-player-type", "h5");
+      videoElement.setAttribute("x5-video-player-fullscreen", "true");
+
       // Add touchstart event listener for user interaction requirement
       const handleTouchStart = () => {
-        console.log(`VideoCard ${video.id}: Touch interaction detected on mobile`);
-        videoElement.setAttribute('data-user-interacted', 'true');
+        console.log(
+          `VideoCard ${video.id}: Touch interaction detected on mobile`
+        );
+        videoElement.setAttribute("data-user-interacted", "true");
       };
-      
-      videoElement.addEventListener('touchstart', handleTouchStart, { passive: true });
-      
+
+      videoElement.addEventListener("touchstart", handleTouchStart, {
+        passive: true,
+      });
+
       return () => {
-        videoElement.removeEventListener('touchstart', handleTouchStart);
+        videoElement.removeEventListener("touchstart", handleTouchStart);
       };
     }
   }, [video.contentType, video.id, deviceInfo]);
@@ -337,8 +351,10 @@ export default function VideoCard({
       setTimeout(() => {
         const newWidth = window.innerWidth;
         const newHeight = window.innerHeight;
-        console.log(`VideoCard ${video.id}: Orientation/resize change - ${newWidth}x${newHeight}`);
-        
+        console.log(
+          `VideoCard ${video.id}: Orientation/resize change - ${newWidth}x${newHeight}`
+        );
+
         // Force re-evaluation of intersection observer settings
         if (observerRef.current && cardRef.current) {
           observerRef.current.disconnect();
@@ -348,12 +364,12 @@ export default function VideoCard({
     };
 
     // Listen for both resize and orientation change events
-    window.addEventListener('resize', handleOrientationChange);
-    window.addEventListener('orientationchange', handleOrientationChange);
+    window.addEventListener("resize", handleOrientationChange);
+    window.addEventListener("orientationchange", handleOrientationChange);
 
     return () => {
-      window.removeEventListener('resize', handleOrientationChange);
-      window.removeEventListener('orientationchange', handleOrientationChange);
+      window.removeEventListener("resize", handleOrientationChange);
+      window.removeEventListener("orientationchange", handleOrientationChange);
     };
   }, [video.id]);
 
@@ -361,16 +377,28 @@ export default function VideoCard({
   useEffect(() => {
     // Use state-based device detection for consistency
     const { isMobile, isTablet, isDesktop } = deviceInfo;
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    
+    const isTouchDevice =
+      "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
     // Determine if scroll-based autoplay should be enabled (only mobile/tablet, NOT desktop)
-    const shouldEnableScrollAutoplay = (isTouchDevice || isMobile || isTablet) && !isDesktop;
-    
-    console.log(`VideoCard ${video.id}: Device detection - Touch: ${isTouchDevice}, Screen: ${deviceInfo.screenWidth}, Mobile: ${isMobile}, Tablet: ${isTablet}, Desktop: ${isDesktop}, ScrollAutoplayEnabled: ${shouldEnableScrollAutoplay}`);
-    
+    const shouldEnableScrollAutoplay =
+      (isTouchDevice || isMobile || isTablet) && !isDesktop;
+
+    console.log(
+      `VideoCard ${video.id}: Device detection - Touch: ${isTouchDevice}, Screen: ${deviceInfo.screenWidth}, Mobile: ${isMobile}, Tablet: ${isTablet}, Desktop: ${isDesktop}, ScrollAutoplayEnabled: ${shouldEnableScrollAutoplay}`
+    );
+
     // Only set up observer for video content when scroll autoplay is appropriate (mobile/tablet only)
-    if (video.contentType !== "video" || !video.videoUrl || !shouldEnableScrollAutoplay) {
-      console.log(`VideoCard ${video.id}: Skipping intersection observer setup - ${isDesktop ? 'Desktop uses hover instead' : 'Not applicable'}`);
+    if (
+      video.contentType !== "video" ||
+      !video.videoUrl ||
+      !shouldEnableScrollAutoplay
+    ) {
+      console.log(
+        `VideoCard ${video.id}: Skipping intersection observer setup - ${
+          isDesktop ? "Desktop uses hover instead" : "Not applicable"
+        }`
+      );
       // Ensure isInCenter is false for desktop since it shouldn't use scroll-based playback
       if (isDesktop) {
         // removed setShouldPlay
@@ -378,11 +406,15 @@ export default function VideoCard({
       return;
     }
 
-    console.log(`VideoCard ${video.id}: Setting up intersection observer for ${isMobile ? 'mobile' : 'tablet'} scroll autoplay`);
+    console.log(
+      `VideoCard ${video.id}: Setting up intersection observer for ${
+        isMobile ? "mobile" : "tablet"
+      } scroll autoplay`
+    );
 
     // More aggressive intersection observer options for iOS to ensure proper pause behavior
     let rootMargin, threshold;
-    
+
     if (isMobile) {
       // Mobile: Very tight detection for smaller screens - only play when clearly centered
       rootMargin = "-30% 0px -30% 0px"; // 40% center band (tighter)
@@ -403,18 +435,21 @@ export default function VideoCard({
       entries.forEach((entry) => {
         // More conservative intersection ratio thresholds to ensure videos pause when scrolled out
         const requiredRatio = isMobile ? 0.6 : 0.5; // 60% on mobile, 50% on tablet (higher thresholds)
-        
-        const isCentered = entry.isIntersecting && entry.intersectionRatio >= requiredRatio;
-        
+
+        const isCentered =
+          entry.isIntersecting && entry.intersectionRatio >= requiredRatio;
+
         // removed reference to shouldPlay
-        
+
         // Additional iOS-specific logic to ensure videos pause properly
         if (!isCentered && videoRef.current && !videoRef.current.paused) {
-          console.log(`VideoCard ${video.id}: Forcing immediate pause as video left center on iOS`);
+          console.log(
+            `VideoCard ${video.id}: Forcing immediate pause as video left center on iOS`
+          );
           videoRef.current.pause();
           setCurrentPlayingVideo(null);
         }
-        
+
         // removed setShouldPlay
       });
     };
@@ -423,7 +458,9 @@ export default function VideoCard({
 
     if (cardRef.current) {
       observerRef.current.observe(cardRef.current);
-      console.log(`VideoCard ${video.id}: Observer attached to card element with rootMargin: ${rootMargin}`);
+      console.log(
+        `VideoCard ${video.id}: Observer attached to card element with rootMargin: ${rootMargin}`
+      );
     }
 
     // Handle window resize to update observer settings
@@ -432,25 +469,33 @@ export default function VideoCard({
         observerRef.current.disconnect();
         // Re-run this effect with new screen dimensions
         const newWidth = window.innerWidth;
-        console.log(`VideoCard ${video.id}: Screen resized to ${newWidth}px, updating observer`);
+        console.log(
+          `VideoCard ${video.id}: Screen resized to ${newWidth}px, updating observer`
+        );
       }
     };
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
 
     // iOS-specific scroll listener as a backup to ensure videos pause when scrolled out
     const handleScroll = () => {
       if (!cardRef.current || !videoRef.current) return;
-      
+
       const rect = cardRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
-      
+
       // Calculate if video is significantly out of view (backup check for iOS)
       const isCompletelyOutOfView = rect.bottom < 0 || rect.top > windowHeight;
-      const isMostlyOutOfView = rect.bottom < windowHeight * 0.2 || rect.top > windowHeight * 0.8;
-      
-      if ((isCompletelyOutOfView || isMostlyOutOfView) && !videoRef.current.paused) {
-        console.log(`VideoCard ${video.id}: iOS backup scroll check - forcing pause as video is out of view`);
+      const isMostlyOutOfView =
+        rect.bottom < windowHeight * 0.2 || rect.top > windowHeight * 0.8;
+
+      if (
+        (isCompletelyOutOfView || isMostlyOutOfView) &&
+        !videoRef.current.paused
+      ) {
+        console.log(
+          `VideoCard ${video.id}: iOS backup scroll check - forcing pause as video is out of view`
+        );
         videoRef.current.pause();
         setCurrentPlayingVideo(null);
         // removed setShouldPlay
@@ -460,8 +505,10 @@ export default function VideoCard({
     // Only add scroll listener for iOS devices
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     if (isIOS) {
-      console.log(`VideoCard ${video.id}: Adding iOS-specific scroll listener as backup`);
-      window.addEventListener('scroll', handleScroll, { passive: true });
+      console.log(
+        `VideoCard ${video.id}: Adding iOS-specific scroll listener as backup`
+      );
+      window.addEventListener("scroll", handleScroll, { passive: true });
     }
 
     // Cleanup
@@ -470,9 +517,9 @@ export default function VideoCard({
         observerRef.current.disconnect();
         console.log(`VideoCard ${video.id}: Observer disconnected`);
       }
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
       if (isIOS) {
-        window.removeEventListener('scroll', handleScroll);
+        window.removeEventListener("scroll", handleScroll);
       }
     };
   }, [video.contentType, video.videoUrl, deviceInfo, setCurrentPlayingVideo]);
@@ -483,59 +530,73 @@ export default function VideoCard({
 
     // Use state-based device detection for consistency
     const { isMobile, isTablet, isDesktop } = deviceInfo;
-    
+
     // Determine playback trigger: scroll for mobile/tablet, hover for desktop
-    const deviceType = isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop';
-    const triggerType = isDesktop ? 'hover' : 'scroll';
-    
+    const deviceType = isMobile ? "mobile" : isTablet ? "tablet" : "desktop";
+    const triggerType = isDesktop ? "hover" : "scroll";
+
     // Responsive timing delays - shorter for mobile to be more responsive
     const playDelay = isMobile ? 100 : isTablet ? 150 : 200;
 
-    console.log(`VideoCard ${video.id}: Playback state change - shouldPlay: ${shouldPlayVideo} (${triggerType}), device: ${deviceType}, isHovered: ${isHovered}`);
+    console.log(
+      `VideoCard ${video.id}: Playback state change - shouldPlay: ${shouldPlayVideo} (${triggerType}), device: ${deviceType}, isHovered: ${isHovered}`
+    );
 
     if (shouldPlayVideo) {
       // For mobile devices, ensure we properly handle video transitions
       const isMobileDevice = isMobile || isTablet;
-      
+
       if (isMobileDevice) {
         // On mobile, be more aggressive about stopping other videos first
-        console.log(`VideoCard ${video.id}: Mobile device detected, ensuring clean video transition`);
+        console.log(
+          `VideoCard ${video.id}: Mobile device detected, ensuring clean video transition`
+        );
         pauseAllVideos();
-        
+
         // Wait for other videos to stop before starting this one
         setTimeout(() => {
           if (!videoRef.current || !shouldPlayVideo) return;
-          
+
           // Set this as the current playing video
           setCurrentPlayingVideo(videoRef.current);
-          
+
           // Prepare video for mobile playback
           videoRef.current.currentTime = 0;
           videoRef.current.muted = true; // Always start muted on mobile for autoplay compatibility
-          
+
           // Set mobile attributes
-          videoRef.current.setAttribute('playsinline', 'true');
-          videoRef.current.setAttribute('webkit-playsinline', 'true');
-          videoRef.current.setAttribute('x5-playsinline', 'true');
-          
+          videoRef.current.setAttribute("playsinline", "true");
+          videoRef.current.setAttribute("webkit-playsinline", "true");
+          videoRef.current.setAttribute("x5-playsinline", "true");
+
           // Attempt to play
-          videoRef.current.play().then(() => {
-            // Once playing successfully, apply user's mute preference after a short delay
-            // This allows the browser to fully establish the video playback before changing audio
-            setTimeout(() => {
-              if (videoRef.current && !isMuted) {
-                videoRef.current.muted = false;
-                console.log(`VideoCard ${video.id}: Applied user unmute preference on mobile`);
-              }
-            }, 100);
-          }).catch((error) => {
-            console.log(`VideoCard ${video.id}: Mobile autoplay failed:`, error);
-          });
+          videoRef.current
+            .play()
+            .then(() => {
+              // Once playing successfully, apply user's mute preference after a short delay
+              // This allows the browser to fully establish the video playback before changing audio
+              setTimeout(() => {
+                if (videoRef.current && !isMuted) {
+                  videoRef.current.muted = false;
+                  console.log(
+                    `VideoCard ${video.id}: Applied user unmute preference on mobile`
+                  );
+                }
+              }, 100);
+            })
+            .catch((error) => {
+              console.log(
+                `VideoCard ${video.id}: Mobile autoplay failed:`,
+                error
+              );
+            });
         }, 150); // Longer delay for mobile to ensure clean transition
       } else {
         // Desktop logic (hover-based)
         if (!isVideoAllowedToPlay(videoRef.current)) {
-          console.log(`VideoCard ${video.id}: Video not allowed to play, pausing all videos first`);
+          console.log(
+            `VideoCard ${video.id}: Video not allowed to play, pausing all videos first`
+          );
           pauseAllVideos();
           setTimeout(() => {
             if (videoRef.current) {
@@ -545,13 +606,17 @@ export default function VideoCard({
         } else {
           setCurrentPlayingVideo(videoRef.current);
         }
-        
+
         // Start this video
         videoRef.current.currentTime = 0;
         videoRef.current.muted = isMuted;
-        
+
         setTimeout(() => {
-          if (videoRef.current && shouldPlayVideo && isVideoAllowedToPlay(videoRef.current)) {
+          if (
+            videoRef.current &&
+            shouldPlayVideo &&
+            isVideoAllowedToPlay(videoRef.current)
+          ) {
             videoRef.current.play().catch((error) => {
               console.log("Autoplay failed for video", video.id, ":", error);
             });
@@ -561,27 +626,41 @@ export default function VideoCard({
     } else {
       // IMMEDIATELY pause this video when trigger condition is no longer met
       if (videoRef.current && !videoRef.current.paused) {
-        console.log(`VideoCard ${video.id}: IMMEDIATELY pausing video playback (${triggerType} ended)`);
-        
+        console.log(
+          `VideoCard ${video.id}: IMMEDIATELY pausing video playback (${triggerType} ended)`
+        );
+
         // Force immediate pause without delay
         videoRef.current.pause();
         setCurrentPlayingVideo(null);
-        
+
         // For mobile devices, add additional pause enforcement
         const isMobileDevice = isMobile || isTablet;
         if (isMobileDevice) {
           setTimeout(() => {
-            if (videoRef.current && !videoRef.current.paused && !shouldPlayVideo) {
-              console.log(`VideoCard ${video.id}: Mobile double-check pause - forcing pause again`);
+            if (
+              videoRef.current &&
+              !videoRef.current.paused &&
+              !shouldPlayVideo
+            ) {
+              console.log(
+                `VideoCard ${video.id}: Mobile double-check pause - forcing pause again`
+              );
               videoRef.current.pause();
               setCurrentPlayingVideo(null);
             }
           }, 50);
-          
+
           // Third check for really stubborn mobile browsers
           setTimeout(() => {
-            if (videoRef.current && !videoRef.current.paused && !shouldPlayVideo) {
-              console.log(`VideoCard ${video.id}: Mobile triple-check pause - final pause attempt`);
+            if (
+              videoRef.current &&
+              !videoRef.current.paused &&
+              !shouldPlayVideo
+            ) {
+              console.log(
+                `VideoCard ${video.id}: Mobile triple-check pause - final pause attempt`
+              );
               videoRef.current.pause();
               videoRef.current.currentTime = videoRef.current.currentTime; // Force state refresh
               setCurrentPlayingVideo(null);
@@ -590,7 +669,17 @@ export default function VideoCard({
         }
       }
     }
-  }, [shouldPlayVideo, isHovered, isMuted, setCurrentPlayingVideo, pauseAllVideos, isVideoAllowedToPlay, video.id, video.contentType, deviceInfo]);
+  }, [
+    shouldPlayVideo,
+    isHovered,
+    isMuted,
+    setCurrentPlayingVideo,
+    pauseAllVideos,
+    isVideoAllowedToPlay,
+    video.id,
+    video.contentType,
+    deviceInfo,
+  ]);
 
   // Format duration helper
   const formatDuration = (seconds: number | null): string => {
@@ -656,14 +745,18 @@ export default function VideoCard({
     if (videoRef.current) {
       const newMutedState = !isMuted;
       setIsMuted(newMutedState);
-      
+
       // The useEffect will sync the video element's muted property
-      console.log(`VideoCard ${video.id}: Toggling mute to ${newMutedState ? 'muted' : 'unmuted'}`);
-      
+      console.log(
+        `VideoCard ${video.id}: Toggling mute to ${
+          newMutedState ? "muted" : "unmuted"
+        }`
+      );
+
       // If the video is currently playing and we're unmuting, ensure it continues to play
       const { isMobile, isTablet, isDesktop } = deviceInfo;
       const shouldBePlaying = isDesktop ? isHovered : shouldPlayVideo;
-      
+
       if (!newMutedState && shouldBePlaying && videoRef.current.paused) {
         videoRef.current.play().catch((error) => {
           console.log("Error playing video after unmute:", error);
@@ -763,7 +856,7 @@ export default function VideoCard({
           <div className="absolute inset-0">
             {(() => {
               const { isMobile, isTablet, isDesktop } = deviceInfo;
-              
+
               let shouldShowVideo = false;
               if (isDesktop) {
                 // Desktop: show video when hovering
@@ -772,7 +865,7 @@ export default function VideoCard({
                 // iPad/Mobile: show video when centered or hovering (for touch interactions)
                 shouldShowVideo = shouldPlayVideo || isHovered;
               }
-              
+
               return shouldShowVideo;
             })() ? (
               <>
@@ -803,16 +896,30 @@ export default function VideoCard({
                     // Ensure mobile attributes are set for autoplay compatibility
                     if (videoRef.current) {
                       // Set mobile-specific attributes but respect current muted state
-                      videoRef.current.setAttribute('playsinline', 'true');
-                      videoRef.current.setAttribute('webkit-playsinline', 'true');
-                      videoRef.current.setAttribute('x5-playsinline', 'true');
+                      videoRef.current.setAttribute("playsinline", "true");
+                      videoRef.current.setAttribute(
+                        "webkit-playsinline",
+                        "true"
+                      );
+                      videoRef.current.setAttribute("x5-playsinline", "true");
                     }
                     // Ensure video plays when loaded and trigger is active
-                    if (playNow && videoRef.current && isVideoAllowedToPlay(videoRef.current)) {
+                    if (
+                      playNow &&
+                      videoRef.current &&
+                      isVideoAllowedToPlay(videoRef.current)
+                    ) {
                       setTimeout(() => {
-                        if (videoRef.current && playNow && isVideoAllowedToPlay(videoRef.current)) {
+                        if (
+                          videoRef.current &&
+                          playNow &&
+                          isVideoAllowedToPlay(videoRef.current)
+                        ) {
                           videoRef.current.play().catch((error) => {
-                            console.log("Autoplay failed on loadedData:", error);
+                            console.log(
+                              "Autoplay failed on loadedData:",
+                              error
+                            );
                           });
                         }
                       }, loadDelay);
@@ -823,12 +930,16 @@ export default function VideoCard({
                     // and that no other videos are playing
                     if (videoRef.current) {
                       if (!isVideoAllowedToPlay(videoRef.current)) {
-                        console.log(`VideoCard ${video.id}: Video started playing but not allowed, pausing immediately`);
+                        console.log(
+                          `VideoCard ${video.id}: Video started playing but not allowed, pausing immediately`
+                        );
                         videoRef.current.pause();
                         return;
                       }
                       setCurrentPlayingVideo(videoRef.current);
-                      console.log(`VideoCard ${video.id}: Video started playing successfully`);
+                      console.log(
+                        `VideoCard ${video.id}: Video started playing successfully`
+                      );
                     }
                   }}
                   onPause={() => {
@@ -843,7 +954,7 @@ export default function VideoCard({
                 {(() => {
                   const { isMobile, isTablet, isDesktop } = deviceInfo;
                   const isPlaying = !videoRef.current?.paused;
-                  
+
                   let shouldShowOverlay = false;
                   if (isDesktop) {
                     // Desktop: show overlay when hovering and video is playing
@@ -852,21 +963,14 @@ export default function VideoCard({
                     // iPad/Mobile: show overlay when video is centered and playing
                     shouldShowOverlay = shouldPlayVideo && isPlaying;
                   }
-                  
+
                   return shouldShowOverlay;
-                })() && (
-                  <>
-                    <div className="absolute inset-0 bg-red-500/15 border-2 border-red-500/30 pointer-events-none transition-all duration-500 rounded-lg" />
-                    <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium pointer-events-none">
-                      AUTOPLAY
-                    </div>
-                  </>
-                )}
+                })() && <></>}
                 {/* Show mute button based on device-specific play conditions */}
                 {(() => {
                   const { isMobile, isTablet, isDesktop } = deviceInfo;
                   const isPlaying = !videoRef.current?.paused;
-                  
+
                   let shouldShowButton = false;
                   if (isDesktop) {
                     // Desktop: show button when hovering and video is playing
@@ -875,7 +979,7 @@ export default function VideoCard({
                     // iPad/Mobile: show button when video is centered and playing
                     shouldShowButton = shouldPlayVideo && isPlaying;
                   }
-                  
+
                   return shouldShowButton;
                 })() && (
                   <button
@@ -964,8 +1068,7 @@ export default function VideoCard({
             <span style={{ color: "#9333ea" }}>
               {video.categoryName || "Category"}{" "}
             </span>
-            •{" "}
-            {video.aiGenerator || "AI Artist"}{" "}
+            • {video.aiGenerator || "AI Artist"}{" "}
             {(video.uploaderName || username) && (
               <>
                 •{" "}
