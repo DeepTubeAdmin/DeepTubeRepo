@@ -620,7 +620,7 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
           }
         }
       `}</style>
-      <div className="container mx-auto px-4 py-8 space-y-12 relative">
+      <div className="container mx-auto px-4 pb-8 relative">
         {/* Invisible Red Zone Overlay for mobile/tablet/iPad only (no color, no border, no animation) */}
         <div
           ref={redZoneRef}
