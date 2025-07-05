@@ -5,6 +5,8 @@ import React, {
   useMemo,
   useCallback,
   useContext,
+  createContext,
+  useContext as useReactContext,
 } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -91,6 +93,15 @@ interface ContentChunk {
   images: ClientVideo[];
 }
 
+// Context to track which videos should play
+export const RedZoneContext = createContext<{
+  activeIds: Set<string>;
+  reportOverlap: (id: string, area: number) => void;
+}>({
+  activeIds: new Set(),
+  reportOverlap: () => {},
+});
+
 export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   // Get shuffle context
   const { shuffleSeed: contextShuffleSeed, triggerShuffle } =
@@ -110,12 +121,27 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
   const [lastFeaturedVideo, setLastFeaturedVideo] =
     useState<ClientVideo | null>(null);
 
+  // Red zone state
+  const [activeIds, setActiveIds] = useState<Set<string>>(new Set());
+  const overlapMap = useRef<{ [id: string]: number }>({});
+
+  // Handler for VideoCards to report their overlap
+  const reportOverlap = (id: string, area: number) => {
+    overlapMap.current[id] = area;
+    // Collect all ids with area > 0
+    const ids = Object.entries(overlapMap.current)
+      .filter(([_, a]) => a > 0)
+      .map(([vid]) => vid);
+    setActiveIds(new Set(ids));
+  };
+
   // Ref hooks
   const previousDataRef = useRef<ContentFeedResponse | undefined>(undefined);
   const sortMenuRef = useRef<HTMLDivElement>(null);
   const sortButtonRef = useRef<HTMLButtonElement>(null);
   const isInitialMount = useRef(true);
   const currentPageRef = useRef(page);
+  const redZoneRef = useRef<HTMLDivElement>(null); // Ref for the red zone overlay
 
   // Generate a new shuffle seed on every mount (page refresh) or use URL parameter if available
   const [localShuffleSeed, setLocalShuffleSeed] = useState(() => {
@@ -582,221 +608,251 @@ export default function ContentFeed({ categorySlug }: ContentFeedProps) {
 
   // Render the content feed
   return (
-    <div className="container mx-auto px-4 py-8 space-y-12">
-      {/* Header with Sort Controls - Always visible */}
-      <div className="flex justify-between items-center mb-6">
-        {/* Section title */}
-        <h2 className="text-xl font-bold text-white">
-          {data?.featured?.video || lastFeaturedVideo
-            ? "Featured Video"
-            : "Content Feed"}
-        </h2>
+    <RedZoneContext.Provider value={{ activeIds, reportOverlap }}>
+      <style>{`
+        /* Hide the red zone overlay on desktop, show only on mobile/tablet/iPad */
+        .red-zone-autoplay {
+          display: block;
+        }
+        @media (min-width: 1024px) {
+          .red-zone-autoplay {
+            display: none !important;
+          }
+        }
+      `}</style>
+      <div className="container mx-auto px-4 pb-8 relative">
+        {/* Invisible Red Zone Overlay for mobile/tablet/iPad only (no color, no border, no animation) */}
+        <div
+          ref={redZoneRef}
+          className="fixed left-1/2 top-1/2 z-50 pointer-events-none red-zone-autoplay"
+          style={{
+            transform: "translate(-50%, -50%)",
+            width: '100vw',
+            maxWidth: '100vw',
+            height: '180px',
+            marginTop: '-90px',
+            background: 'none',
+            border: 'none',
+            boxShadow: 'none',
+          }}
+        />
 
-        {/* Controls: Sort Button */}
-        <div className="flex items-center">
-          {/* Sort Button and Dropdown */}
-          <div className="relative">
-            <Button
-              ref={sortButtonRef}
-              onClick={toggleSortMenu}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-1 px-3 py-1.5 text-sm border-gray-700 bg-black/50 hover:bg-black/80"
-            >
-              <Filter className="h-3.5 w-3.5" />
-              <span>Sort</span>
-            </Button>
+        {/* Header with Sort Controls - Always visible */}
+        <div className="flex justify-between items-center mb-6">
+          {/* Section title */}
+          <h2 className="text-xl font-bold text-white">
+            {data?.featured?.video || lastFeaturedVideo
+              ? "Featured Video"
+              : "Content Feed"}
+          </h2>
 
-            {showSortMenu && (
-              <div
-                ref={sortMenuRef}
-                className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-black border border-gray-700 ring-1 ring-black ring-opacity-5 z-50"
+          {/* Controls: Sort Button */}
+          <div className="flex items-center">
+            {/* Sort Button and Dropdown */}
+            <div className="relative">
+              <Button
+                ref={sortButtonRef}
+                onClick={toggleSortMenu}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm border-gray-700 bg-black/50 hover:bg-black/80"
               >
-                <div className="py-1" role="menu" aria-orientation="vertical">
-                  <button
-                    className={`${
-                      sortBy === "oldest"
-                        ? "bg-gray-800 text-orange-500"
-                        : "text-white"
-                    } block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
-                    onClick={() => handleSortChange("oldest")}
-                    role="menuitem"
-                  >
-                    Oldest First
-                  </button>
-                  <button
-                    className={`${
-                      sortBy === "newest"
-                        ? "bg-gray-800 text-orange-500"
-                        : "text-white"
-                    } block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
-                    onClick={() => handleSortChange("newest")}
-                    role="menuitem"
-                  >
-                    Newest First
-                  </button>
-                  <button
-                    className={`${
-                      sortBy === "most-viewed"
-                        ? "bg-gray-800 text-orange-500"
-                        : "text-white"
-                    } block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
-                    onClick={() => handleSortChange("most-viewed")}
-                    role="menuitem"
-                  >
-                    Most Viewed
-                  </button>
-                  <button
-                    className={`${
-                      sortBy === "trending"
-                        ? "bg-gray-800 text-orange-500"
-                        : "text-white"
-                    } block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
-                    onClick={() => handleSortChange("trending")}
-                    role="menuitem"
-                  >
-                    Trending
-                  </button>
-                  <button
-                    className={`${
-                      sortBy === "popular"
-                        ? "bg-gray-800 text-orange-500"
-                        : "text-white"
-                    } block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
-                    onClick={() => handleSortChange("popular")}
-                    role="menuitem"
-                  >
-                    Popular
-                  </button>
+                <Filter className="h-3.5 w-3.5" />
+                <span>Sort</span>
+              </Button>
+
+              {showSortMenu && (
+                <div
+                  ref={sortMenuRef}
+                  className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-black border border-gray-700 ring-1 ring-black ring-opacity-5 z-50"
+                >
+                  <div className="py-1" role="menu" aria-orientation="vertical">
+                    <button
+                      className={`${
+                        sortBy === "oldest"
+                          ? "bg-gray-800 text-orange-500"
+                          : "text-white"
+                      } block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                      onClick={() => handleSortChange("oldest")}
+                      role="menuitem"
+                    >
+                      Oldest First
+                    </button>
+                    <button
+                      className={`${
+                        sortBy === "newest"
+                          ? "bg-gray-800 text-orange-500"
+                          : "text-white"
+                      } block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                      onClick={() => handleSortChange("newest")}
+                      role="menuitem"
+                    >
+                      Newest First
+                    </button>
+                    <button
+                      className={`${
+                        sortBy === "most-viewed"
+                          ? "bg-gray-800 text-orange-500"
+                          : "text-white"
+                      } block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                      onClick={() => handleSortChange("most-viewed")}
+                      role="menuitem"
+                    >
+                      Most Viewed
+                    </button>
+                    <button
+                      className={`${
+                        sortBy === "trending"
+                          ? "bg-gray-800 text-orange-500"
+                          : "text-white"
+                      } block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                      onClick={() => handleSortChange("trending")}
+                      role="menuitem"
+                    >
+                      Trending
+                    </button>
+                    <button
+                      className={`${
+                        sortBy === "popular"
+                          ? "bg-gray-800 text-orange-500"
+                          : "text-white"
+                      } block px-4 py-2 text-sm w-full text-left hover:bg-gray-800`}
+                      onClick={() => handleSortChange("popular")}
+                      role="menuitem"
+                    >
+                      Popular
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Featured Video Section - Always show if we have a featured video */}
-      {(data?.featured?.video || lastFeaturedVideo) && (
-        <section className="mb-12">
-          <div className="max-w-4xl mx-auto">
-            {(() => {
-              try {
-                const featuredVideo = data?.featured?.video
-                  ? transformVideoForClient(data.featured.video)
-                  : lastFeaturedVideo!;
+        {/* Featured Video Section - Always show if we have a featured video */}
+        {(data?.featured?.video || lastFeaturedVideo) && (
+          <section className="mb-12">
+            <div className="max-w-4xl mx-auto">
+              {(() => {
+                try {
+                  const featuredVideo = data?.featured?.video
+                    ? transformVideoForClient(data.featured.video)
+                    : lastFeaturedVideo!;
 
-                return <VideoCard video={featuredVideo} size="large" />;
-              } catch (error) {
-                return (
-                  <div className="text-center py-8">
-                    <p className="text-gray-400">
-                      Failed to load featured video
-                    </p>
-                  </div>
-                );
-              }
-            })()}
-          </div>
-        </section>
-      )}
+                  return <VideoCard video={featuredVideo} size="large" redZoneRef={redZoneRef} />;
+                } catch (error) {
+                  return (
+                    <div className="text-center py-8">
+                      <p className="text-gray-400">
+                        Failed to load featured video
+                      </p>
+                    </div>
+                  );
+                }
+              })()}
+            </div>
+          </section>
+        )}
 
-      {/* Endless Content Section - No section title as requested */}
-      <section>
-        {/* Render content chunks (4 rows video + 2 rows images, repeating) */}
-        {renderContent && renderContent.length > 0 ? (
-          renderContent.map((chunk, chunkIndex) => {
-            // For every chunk, render videos first then images
-            return (
-              <div key={`content-chunk-${chunkIndex}`} className="mb-12">
-                {/* Video Grid (4 rows of videos) */}
-                {chunk.videos && chunk.videos.length > 0 && (
-                  <div className="mb-8">
-                    <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mb-4">
-                      {chunk.videos.map((video, index) => {
+        {/* Endless Content Section - No section title as requested */}
+        <section>
+          {/* Render content chunks (4 rows video + 2 rows images, repeating) */}
+          {renderContent && renderContent.length > 0 ? (
+            renderContent.map((chunk, chunkIndex) => {
+              // For every chunk, render videos first then images
+              return (
+                <div key={`content-chunk-${chunkIndex}`} className="mb-12">
+                  {/* Video Grid (4 rows of videos) */}
+                  {chunk.videos && chunk.videos.length > 0 && (
+                    <div className="mb-8">
+                      <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mb-4">
+                        {chunk.videos.map((video, index) => {
+                          try {
+                            return (
+                              <VideoCard
+                                key={`content-video-${video.id}-${chunkIndex}-${index}`}
+                                video={video}
+                                redZoneRef={redZoneRef}
+                              />
+                            );
+                          } catch (error) {
+                            console.error(
+                              "Error rendering VideoCard:",
+                              error,
+                              video
+                            );
+                            return null;
+                          }
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {/* Image Grid (2 rows of images) */}
+                  {chunk.images && chunk.images.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
+                      {chunk.images.map((image, index) => {
                         try {
                           return (
-                            <VideoCard
-                              key={`content-video-${video.id}-${chunkIndex}-${index}`}
-                              video={video}
+                            <LazyImageCard
+                              key={`content-image-${image.id}-${chunkIndex}-${index}`}
+                              image={image}
                             />
                           );
                         } catch (error) {
                           console.error(
-                            "Error rendering VideoCard:",
+                            "Error rendering LazyImageCard:",
                             error,
-                            video
+                            image
                           );
                           return null;
                         }
                       })}
                     </div>
-                  </div>
-                )}
-                {/* Image Grid (2 rows of images) */}
-                {chunk.images && chunk.images.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
-                    {chunk.images.map((image, index) => {
-                      try {
-                        return (
-                          <LazyImageCard
-                            key={`content-image-${image.id}-${chunkIndex}-${index}`}
-                            image={image}
-                          />
-                        );
-                      } catch (error) {
-                        console.error(
-                          "Error rendering LazyImageCard:",
-                          error,
-                          image
-                        );
-                        return null;
-                      }
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-400">No content available</p>
-          </div>
-        )}
-
-        {/* Loading indicator for infinite scroll or end of content message */}
-        <div id="loading-indicator" className="flex justify-center p-8">
-          {(isLoading || data?.content?.hasMore) && (
-            <div className="flex items-center gap-2 text-orange-500">
-              <Loader2 className="h-6 w-6 animate-spin" />
-              <span className="text-sm">Loading more content...</span>
-            </div>
-          )}
-
-          {!isLoading && !data?.content?.hasMore && (
-            <div className="text-center py-8 px-4">
-              <div className="max-w-md mx-auto">
-                <div className="text-gray-400 text-lg mb-2">
-                  🎬 You've reached the end!
+                  )}
                 </div>
-                <p className="text-gray-500 text-sm">
-                  You've seen all the content in this category. Try exploring
-                  other categories or check back later for new uploads.
-                </p>
-                <Button
-                  onClick={() => {
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                  variant="outline"
-                  size="sm"
-                  className="mt-4 text-orange-500 border-orange-500 hover:bg-orange-500 hover:text-black"
-                >
-                  Back to Top
-                </Button>
-              </div>
+              );
+            })
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-400">No content available</p>
             </div>
           )}
-        </div>
-      </section>
-    </div>
+
+          {/* Loading indicator for infinite scroll or end of content message */}
+          <div id="loading-indicator" className="flex justify-center p-8">
+            {(isLoading || data?.content?.hasMore) && (
+              <div className="flex items-center gap-2 text-orange-500">
+                <Loader2 className="h-6 w-6 animate-spin" />
+                <span className="text-sm">Loading more content...</span>
+              </div>
+            )}
+
+            {!isLoading && !data?.content?.hasMore && (
+              <div className="text-center py-8 px-4">
+                <div className="max-w-md mx-auto">
+                  <div className="text-gray-400 text-lg mb-2">
+                    🎬 You've reached the end!
+                  </div>
+                  <p className="text-gray-500 text-sm">
+                    You've seen all the content in this category. Try exploring
+                    other categories or check back later for new uploads.
+                  </p>
+                  <Button
+                    onClick={() => {
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="mt-4 text-orange-500 border-orange-500 hover:bg-orange-500 hover:text-black"
+                  >
+                    Back to Top
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+    </RedZoneContext.Provider>
   );
 }
